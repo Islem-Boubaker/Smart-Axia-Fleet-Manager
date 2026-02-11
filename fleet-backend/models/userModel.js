@@ -1,15 +1,28 @@
-import mongoose from "mongoose";
+import { DataTypes } from 'sequelize';
+import { sequelize } from '../config/connectdb.js';
 
-const userSchema = new mongoose.Schema(
-  {
-    username: { type: String, required: true, unique: true },
-    email: { type: String, required: true, unique: true },
-    password: { type: String, required: true },
-    role: { type: String, enum: ["admin", "user"], default: "user" },
+const User = sequelize.define('User', {
+  id: {
+    type: DataTypes.INTEGER,
+    primaryKey: true,
+    autoIncrement: true,
   },
-  { timestamps: true },
-);
-
-const User = mongoose.model("User", userSchema);
+  name: {
+    type: DataTypes.STRING,
+    allowNull: false,
+  },
+  email: {
+    type: DataTypes.STRING,
+    unique: true,
+    allowNull: false,
+  },
+  password: {
+    type: DataTypes.STRING,
+    allowNull: false,
+  },
+}, {
+  tableName: 'users',
+  timestamps: true, // adds createdAt, updatedAt
+});
 
 export default User;

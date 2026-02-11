@@ -1,15 +1,28 @@
-const mongoose = require('mongoose');
+import { Sequelize } from 'sequelize';
+import dotenv from 'dotenv';
+
+dotenv.config();
+
+const sequelize = new Sequelize(
+  process.env.DB_NAME,
+  process.env.DB_USER,
+  process.env.DB_PASSWORD,
+  {
+    host: process.env.DB_HOST,
+    port: process.env.DB_PORT,
+    dialect: 'postgres',
+    logging: false,
+  }
+);
 
 const connectDB = async () => {
-  const dbURI = process.env.MONGODB_URI || 'mongodb://localhost:27017/fleetdb';
-
   try {
-    await mongoose.connect(dbURI);
-    console.log('Database connected successfully');
+    await sequelize.authenticate();
+    console.log('Database connected');
   } catch (err) {
-    console.error('Error connecting to the database:', err);
-    process.exit(1); 
+    console.error('Database error:', err.message);
+    process.exit(1);
   }
 };
 
-module.exports = connectDB;
+export { sequelize, connectDB };
