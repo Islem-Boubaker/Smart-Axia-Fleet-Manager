@@ -1,59 +1,60 @@
-import User from '../models/userModel.js';
-
-// CREATE
+import * as userService from '../services/userService.js';
+import { StatusCodes } from 'http-status-codes';
 export const createUser = async (req, res) => {
   try {
-    const { name, email, password } = req.body;
-    const newUser = await User.create({ name, email, password });
+    const newUser = await userService.createUserSvc(req.body);
     res.status(201).json(newUser);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
 };
 
-// READ ALL
 export const getAllUsers = async (req, res) => {
   try {
-    const users = await User.findAll();
-    res.status(200).json(users);
+    const users = await userService.getAllUsersSvc();
+    res.status(StatusCodes.OK).json(users);
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({ error: error.message });
   }
 };
 
-// READ ONE
 export const getUserById = async (req, res) => {
   try {
-    const { id } = req.params;
-    const user = await User.findByPk(id);
-    if (!user) return res.status(404).json({ message: 'User not found' });
-    res.status(200).json(user);
+    const user = await userService.getUserByIdSvc(req.params.id);
+    if (!user) return res.status(StatusCodes.NOT_FOUND).json({ message: 'User not found' });
+    res.status(StatusCodes.OK).json(user);
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({ error: error.message });
   }
 };
 
-// UPDATE
 export const updateUser = async (req, res) => {
   try {
-    const { id } = req.params;
-    const [updated] = await User.update(req.body, { where: { id } });
-    if (!updated) return res.status(404).json({ message: 'User not found' });
-    const updatedUser = await User.findByPk(id);
-    res.status(200).json(updatedUser);
+    const updatedUser = await userService.updateUserSvc(req.params.id, req.body);
+    if (!updatedUser) return res.status(StatusCodes.NOT_FOUND).json({ message: 'User not found' });
+    res.status(StatusCodes.OK).json(updatedUser);
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({ error: error.message });
   }
 };
 
-// DELETE
 export const deleteUser = async (req, res) => {
   try {
-    const { id } = req.params;
-    const deleted = await User.destroy({ where: { id } });
-    if (!deleted) return res.status(404).json({ message: 'User not found' });
-    res.status(200).json({ message: 'User deleted' });
+    const deleted = await userService.deleteUserSvc(req.params.id);
+    if (!deleted) return res.status(StatusCodes.NOT_FOUND).json({ message: 'User not found' });
+    res.sendStatus(StatusCodes.NO_CONTENT);
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({ error: error.message });
   }
+};
+
+export const login = async (req, res) => {
+  try {
+    const { email, password } = req.body;
+    const token = await userService.loginUserSvc(email, password);
+    if (!token) return res.status(StatusCodes.UNAUTHORIZED).json({ message: 'Invalid credentials' });
+    res.status(StatusCodes.OK).json({ token });
+  } catch (error) {
+    res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({ error: error.message });
+  } 
 };

@@ -5,13 +5,11 @@ import startServer from './server.js';
 import userRoutes from './routes/userRoute.js';
 import  dotenv from 'dotenv';
 dotenv.config();
-
 const app = express();
 const PORT = process.env.PORT || 3000;
-
 app.use(cors());
 app.use(bodyParser.json());
 
-app.use('/users', userRoutes);
+app.use('/', [userRoutes]);
 
 startServer(app, PORT);
