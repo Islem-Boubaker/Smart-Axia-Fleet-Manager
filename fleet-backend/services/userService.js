@@ -1,0 +1,48 @@
+import User from '../models/userModel.js';
+import bcrypt from 'bcryptjs';
+import jwt from 'jsonwebtoken';
+
+export const createUserSvc = async (userData) => {
+  const salt = await bcrypt.genSalt(10);
+  userData.password = await bcrypt.hash(userData.password, salt);
+  return await User.create(userData);
+};
+
+export const getAllUsersSvc = async () => {
+  return await User.findAll();
+};
+
+export const getUserByIdSvc = async (id) => {
+  return await User.findByPk(id);
+};
+
+export const updateUserSvc = async (id, updateData) => {
+  const [updated] = await User.update(updateData, { where: { id } });
+  if (!updated) return null;
+  return await User.findByPk(id);
+};
+
+export const deleteUserSvc = async (id) => {
+  return await User.destroy({ where: { id } });
+};
+
+
+export const loginUserSvc = async (email, password) => {
+    console.log('Login attempt for email:', email);
+  const user = await User.findOne({ where: { email } });
+  if (!user) return null;
+
+  
+  const isMatch = await bcrypt.compare(password, user.password);
+  if (!isMatch) return null;
+
+  const token = jwt.sign(
+    { 
+      id: user.id, 
+      role: user.role 
+    },
+    process.env.JWT_SECRET,
+    { expiresIn: '1d' }
+  );
+  return { token, user: { id: user.id, name: user.name, role: user.role } };
+};
