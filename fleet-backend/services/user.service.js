@@ -1,7 +1,6 @@
-import User from '../models/userModel.js';
+import User from '../models/user.model.js';
 import bcrypt from 'bcryptjs';
-import jwt from 'jsonwebtoken';
-
+import { generateAccessToken } from "../utils/jwt.js";
 export const createUserSvc = async (userData) => {
   const salt = await bcrypt.genSalt(10);
   userData.password = await bcrypt.hash(userData.password, salt);
@@ -36,13 +35,12 @@ export const loginUserSvc = async (email, password) => {
   const isMatch = await bcrypt.compare(password, user.password);
   if (!isMatch) return null;
 
-  const token = jwt.sign(
+  const token = generateAccessToken(
     { 
       id: user.id, 
       role: user.role 
-    },
-    process.env.JWT_SECRET,
-    { expiresIn: '1d' }
-  );
+    }
+  );      
+   
   return { token, user: { id: user.id, name: user.name, role: user.role } };
 };
