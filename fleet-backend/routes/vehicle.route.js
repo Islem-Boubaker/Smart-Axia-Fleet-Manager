@@ -4,16 +4,16 @@ import * as authMiddleware from '../middlewares/auth.middlewares.js';
 
 const router = express.Router();
 
-router.post('/vehicle/', authMiddleware.authenticate, authMiddleware.authorizeRoles('ADMIN', 'MANAGER'), vehicleController.createVehicle);
+router.post('/vehicle/addvehicle', authMiddleware.authenticate, authMiddleware.authorizeRoles('ADMIN', 'MANAGER', 'DRIVER'), vehicleController.createVehicle);
 
 
-router.get('/vehicle/', authMiddleware.authenticate, authMiddleware.authorizeRoles('ADMIN', 'MANAGER'), vehicleController.getAllVehicles);
+router.get('/vehicle/getvehicles', authMiddleware.authenticate, authMiddleware.authorizeRoles('ADMIN', 'MANAGER'), vehicleController.getAllVehicles);
 
-router.get('/vehicle/:id', authMiddleware.authenticate, authMiddleware.authorizeRoles('ADMIN', 'MANAGER'), vehicleController.getVehicleById);
+router.get('/vehicle/getvehicle/:id', authMiddleware.authenticate, authMiddleware.authorizeRoles('ADMIN', 'MANAGER'), vehicleController.getVehicleById);
 
 
-router.put('/vehicle/:id', authMiddleware.authenticate, authMiddleware.authorizeRoles('ADMIN', 'MANAGER'), vehicleController.updateVehicle);
+router.put('/vehicle/updatevehicle/:id', authMiddleware.authenticate, authMiddleware.authorizeRoles('ADMIN', 'MANAGER'), vehicleController.updateVehicle);
 
-router.delete('/vehicle/:id', authMiddleware.authenticate, authMiddleware.authorizeRoles('ADMIN', 'MANAGER'), vehicleController.deleteVehicle);
+router.delete('/vehicle/deletevehicle/:id',authMiddleware.authenticate, authMiddleware.authorizeRoles('ADMIN', 'MANAGER'), vehicleController.deleteVehicle);
 
 export default router;
