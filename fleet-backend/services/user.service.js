@@ -1,6 +1,10 @@
 import User from '../models/user.model.js';
 import bcrypt from 'bcryptjs';
 import { generateAccessToken } from "../utils/jwt.js";
+
+
+
+
 export const createUserSvc = async (userData) => {
   const salt = await bcrypt.genSalt(10);
   userData.password = await bcrypt.hash(userData.password, salt);
@@ -16,6 +20,10 @@ export const getUserByIdSvc = async (id) => {
 };
 
 export const updateUserSvc = async (id, updateData) => {
+  if (updateData.password) {
+    const salt = await bcrypt.genSalt(10);
+    updateData.password = await bcrypt.hash(updateData.password, salt);
+  }
   const [updated] = await User.update(updateData, { where: { id } });
   if (!updated) return null;
   return await User.findByPk(id);

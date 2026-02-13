@@ -1,12 +1,12 @@
 import { Router } from 'express';
-import { createUser, getAllUsers, getUserById, updateUser, deleteUser,login } from '../controllers/user.controller.js';
-import { authenticate, authorizeRoles } from '../middlewares/auth.middlewares.js';
+import * as userController from '../controllers/user.controller.js';
+import * as authMiddleware from '../middlewares/auth.middlewares.js';
 const router = Router();
 
-router.get('/user/', authenticate, authorizeRoles('ADMIN'), getAllUsers);
-router.get('/user/:id', authenticate, authorizeRoles('ADMIN'), getUserById);
-router.post('/user/signup', createUser);
-router.put('/user/:id', authenticate, updateUser);
-router.delete('/user/:id', authenticate, deleteUser);
-router.post('/user/login', login);
+router.get('/user/', authMiddleware.authenticate, authMiddleware.authorizeRoles('ADMIN'), userController.getAllUsers);
+router.get('/user/:id', authMiddleware.authenticate, authMiddleware.authorizeRoles('ADMIN', 'DRIVER'), userController.getUserById);
+router.post('/user/signup', userController.createUser);
+router.put('/user/:id', authMiddleware.authenticate, userController.updateUser);
+router.delete('/user/:id', authMiddleware.authenticate, userController.deleteUser);
+router.post('/user/login', userController.login);
 export default router;
