@@ -1,15 +1,15 @@
 import { DataTypes } from 'sequelize';
 import { sequelize } from '../config/connectdb.js';
+import bcrypt from 'bcryptjs';
 
 const User = sequelize.define(
   'User',
   {
     id: {
       type: DataTypes.UUID,
-      defaultValue: DataTypes.UUIDV4, // Génère automatiquement un UUID v4 (ex: 550e8400-e29b...)
+      defaultValue: DataTypes.UUIDV4,
       primaryKey: true,
     },
-
     name: {
       type: DataTypes.STRING(100),
       allowNull: false,
@@ -17,7 +17,6 @@ const User = sequelize.define(
         notEmpty: true,
       },
     },
-
     email: {
       type: DataTypes.STRING(150),
       allowNull: false,
@@ -26,18 +25,15 @@ const User = sequelize.define(
         isEmail: true,
       },
     },
-
     password: {
       type: DataTypes.STRING,
       allowNull: false,
     },
-
     role: {
       type: DataTypes.ENUM('ADMIN', 'DRIVER', 'MANAGER'),
       allowNull: false,
       defaultValue: 'DRIVER',
     },
-
     isActive: {
       type: DataTypes.BOOLEAN,
       defaultValue: true,
@@ -46,7 +42,28 @@ const User = sequelize.define(
   {
     tableName: 'users',
     timestamps: true,
+    hooks: {
+    
+      beforeCreate: async (user) => {
+        if (user.password) {
+          const salt = await bcrypt.genSalt(10);
+          user.password = await bcrypt.hash(user.password, salt);
+        }
+      },
+      
+      beforeUpdate: async (user) => {
+        if (user.changed('password')) {
+          const salt = await bcrypt.genSalt(10);
+          user.password = await bcrypt.hash(user.password, salt);
+        }
+      },
+    },
   }
 );
+
+
+User.prototype.comparePassword = async function (candidatePassword) {
+  return await bcrypt.compare(candidatePassword, this.password);
+};
 
 export default User;
