@@ -1,13 +1,11 @@
 import User from '../models/user.model.js';
-import bcrypt from 'bcryptjs';
-import { generateAccessToken } from "../utils/jwt.js";
 
+import * as Token from '../utils/jwt.js';
 
 
 
 export const createUserSvc = async (userData) => {
-  const salt = await bcrypt.genSalt(10);
-  userData.password = await bcrypt.hash(userData.password, salt);
+  
   return await User.create(userData);
 };
 
@@ -20,10 +18,7 @@ export const getUserByIdSvc = async (id) => {
 };
 
 export const updateUserSvc = async (id, updateData) => {
-  if (updateData.password) {
-    const salt = await bcrypt.genSalt(10);
-    updateData.password = await bcrypt.hash(updateData.password, salt);
-  }
+ 
   const [updated] = await User.update(updateData, { where: { id } });
   if (!updated) return null;
   return await User.findByPk(id);
@@ -34,21 +29,67 @@ export const deleteUserSvc = async (id) => {
 };
 
 
+
+
 export const loginUserSvc = async (email, password) => {
-    console.log('Login attempt for email:', email);
   const user = await User.findOne({ where: { email } });
-  if (!user) return null;
-
   
-  const isMatch = await bcrypt.compare(password, user.password);
-  if (!isMatch) return null;
-
-  const token = generateAccessToken(
-    { 
-      id: user.id, 
-      role: user.role 
+  if (!user) {
+    throw new Error('Invalid email or password');
+  }
+  
+ 
+  
+  // Utiliser la méthode comparePassword du model
+  const isMatch = await user.comparePassword(password);
+  
+  if (!isMatch) {
+    throw new Error('Invalid email or password');
+  }
+  
+  const payload = {
+    id: user.id,
+    role: user.role,
+    email: user.email
+  };
+  
+  // Générer les deux tokens
+  const accessToken = Token.generateAccessToken(payload);
+  const refreshToken = Token.generateRefreshToken(payload);
+  
+  return {
+    accessToken,
+    refreshToken,
+    user: {
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      role: user.role
     }
-  );      
-   
-  return { token, user: { id: user.id, name: user.name, role: user.role } };
+  };
+};
+
+export const refreshTokenSvc = async (refreshToken) => {
+  try {
+    const decoded = Token.verifyRefreshToken(refreshToken);
+    
+    // Vérifier si l'utilisateur existe toujours
+    const user = await User.findByPk(decoded.id);
+    
+    if (!user || !user.isActive) {
+      throw new Error('User not found or inactive');
+    }
+    
+    const payload = {
+      id: user.id,
+      role: user.role,
+      email: user.email
+    };
+    
+    const newAccessToken = Token.generateAccessToken(payload);
+    
+    return { accessToken: newAccessToken };
+  } catch (error) {
+    throw new Error('Invalid or expired refresh token');
+  }
 };
