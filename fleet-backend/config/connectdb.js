@@ -14,15 +14,4 @@ const sequelize = new Sequelize(
     logging: false,
   }
 );
-
-const connectDB = async () => {
-  try {
-    await sequelize.authenticate();
-    console.log('Database connected');
-  } catch (err) {
-    console.error('Database error:', err.message);
-    process.exit(1);
-  }
-};
-
-export { sequelize, connectDB };
+export { sequelize };
