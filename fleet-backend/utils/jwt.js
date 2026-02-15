@@ -1,33 +1,38 @@
 import jwt from "jsonwebtoken";
+import dotenv from "dotenv";
 
-/**
- * Generate Access Token
- */
+dotenv.config();
+
+
 export const generateAccessToken = (payload) => {
   return jwt.sign(payload, process.env.JWT_SECRET, {
-    expiresIn: "1h", // change if needed (15m, 2h, etc.)
+    expiresIn: process.env.JWT_EXPIRES_IN , 
   });
 };
 
-/**
- * Generate Refresh Token
- */
 export const generateRefreshToken = (payload) => {
   return jwt.sign(payload, process.env.JWT_REFRESH_SECRET, {
-    expiresIn: "7d",
+    expiresIn: process.env.JWT_REFRESH_EXPIRES_IN ,
   });
 };
 
-/**
- * Verify Access Token
- */
+
 export const verifyAccessToken = (token) => {
   return jwt.verify(token, process.env.JWT_SECRET);
 };
 
-/**
- * Verify Refresh Token
- */
+
 export const verifyRefreshToken = (token) => {
   return jwt.verify(token, process.env.JWT_REFRESH_SECRET);
+};
+
+export const decodeToken = (token) => {
+  return jwt.decode(token, { complete: true });
+};
+
+export const extractTokenFromHeader = (authHeader) => {
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    return null;
+  }
+  return authHeader.substring(7);
 };
