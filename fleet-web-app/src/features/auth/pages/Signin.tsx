@@ -1,11 +1,5 @@
-export default function Signin() {
-  return (
-    <div className="">
-      <form action="">
-        <div>
-          <label htmlFor=""></label>
-        </div>
-      </form>
-    </div>
-  )
-}
+const Signin = () => {
+  return <div>Signin</div>;
+};
+
+export default Signin;
