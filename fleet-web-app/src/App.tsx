@@ -1,8 +1,7 @@
+import { AppRouter } from "./app/router";
 
-export default function App() {
-  return (
-    <div>
-      islem
-    </div>
-  )
+function App() {
+  return <AppRouter />;
 }
+
+export default App;
