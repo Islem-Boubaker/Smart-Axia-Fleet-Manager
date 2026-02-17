@@ -1,6 +1,7 @@
 import { FiTruck, FiUsers, FiMapPin, FiTrendingUp } from 'react-icons/fi';
 import { Card, Badge } from '../components/ui';
 import DashboardLayout from '../components/layout/DashboardLayout';
+import Header from '../components/Header';
 
 const Dashboard = () => {
   const stats = [
@@ -55,10 +56,7 @@ const Dashboard = () => {
     <DashboardLayout>
       <div className="space-y-6">
         {/* Page Header */}
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
-          <p className="text-gray-600 mt-1">Welcome back! Here's your fleet overview.</p>
-        </div>
+      <Header />
 
         {/* Stats Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
