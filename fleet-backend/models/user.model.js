@@ -38,6 +38,10 @@ const User = sequelize.define(
       type: DataTypes.BOOLEAN,
       defaultValue: true,
     },
+    datepermi:{
+      type: DataTypes.DATE,
+       allowNull: true,
+    },
   },
   {
     tableName: 'users',
