@@ -15,9 +15,9 @@ export interface Vehicle {
   vin: string;
   status: 'active' | 'maintenance' | 'inactive';
   mileage: number;
-  fuelType: 'gasoline' | 'diesel' | 'electric' | 'hybrid';
-  lastService?: Date;
-  assignedDriver?: string;
+  fuelType: 'essence' | 'diesel' | 'électrique' | 'hybride';
+  lastService?: string;
+  driver?: string;
 }
 
 export interface Driver {
@@ -26,31 +26,39 @@ export interface Driver {
   email: string;
   phone: string;
   licenseNumber: string;
-  licenseExpiry: Date;
+  licenseExpiry: string;
   status: 'active' | 'inactive';
   assignedVehicle?: string;
+  totalTrips?: number;
+  rating?: number;
 }
 
 export interface Trip {
   id: string;
-  vehicleId: string;
-  driverId: string;
-  startDate: Date;
-  endDate?: Date;
+  vehicle: string;
+  driver: string;
   startLocation: string;
-  endLocation?: string;
-  distance?: number;
-  status: 'ongoing' | 'completed' | 'cancelled';
+  endLocation: string;
+  startTime: string;
+  endTime: string | null;
+  distance: string;
+  status: 'ongoing' | 'completed' | 'cancelled' | 'scheduled';
+  fuel: string;
+  cost: string;
 }
 
 export interface Maintenance {
   id: string;
-  vehicleId: string;
-  type: 'routine' | 'repair' | 'inspection';
+  vehicle: string;
+  type: string;
   description: string;
-  cost: number;
-  date: Date;
-  status: 'scheduled' | 'in-progress' | 'completed';
+  scheduledDate: string;
+  completedDate: string | null;
+  status: string;
+  mileage: number;
+  cost: string;
+  technician: string;
+  priority: string;
 }
 
 export interface AuthState {

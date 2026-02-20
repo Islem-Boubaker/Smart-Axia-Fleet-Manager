@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { FiMail, FiLock, FiUser, FiTruck } from 'react-icons/fi';
-import { Button, Input } from '../../../components/ui';
+import { Button, Input } from '../../../shared/components';
 import { ROUTES } from '../../../utils/constants';
 
 interface SignUpForm {
