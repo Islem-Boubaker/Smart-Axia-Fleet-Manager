@@ -1,3 +1,24 @@
+import { useState, useEffect } from 'react';
+import { mockVehicles } from '../../../data/mockData';
+import type { Vehicle } from '../../../types';
+
 export const useVehicles = () => {
-  // TODO: implement vehicles logic
+  const [vehicles, setVehicles] = useState<Vehicle[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    // Simulate API call with mock data
+    const fetchVehicles = () => {
+      setIsLoading(true);
+      setTimeout(() => {
+        setVehicles(mockVehicles);
+        setIsLoading(false);
+      }, 500);
+    };
+
+    fetchVehicles();
+  }, []);
+
+  return { vehicles, isLoading, error };
 };
