@@ -1,5 +1,5 @@
 import User from '../models/user.model.js';
-
+import Reclamation from '../models/reclamation.model.js';
 import * as Token from '../utils/jwt.js';
 
 
@@ -40,7 +40,7 @@ export const loginUserSvc = async (email, password) => {
 
 
 
-  // Utiliser la méthode comparePassword du model
+
   const isMatch = await user.comparePassword(password);
 
   if (!isMatch) {
@@ -93,3 +93,7 @@ export const refreshTokenSvc = async (refreshToken) => {
     throw new Error('Invalid or expired refresh token');
   }
 };
+
+
+
+

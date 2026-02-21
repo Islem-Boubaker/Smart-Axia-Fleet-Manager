@@ -4,6 +4,7 @@ import dotenv from 'dotenv';
 import cookieParser from 'cookie-parser';
 import userRoutes from './routes/user.route.js';
 import vehicleRoutes from './routes/vehicle.route.js';
+import reclamationRoutes from './routes/reclamation.route.js';
 import { errorHandler } from './middlewares/error.middleware.js';
 
 dotenv.config();
@@ -19,7 +20,7 @@ app.use(cors({
 app.use(express.json());
 app.use(cookieParser());
 
-app.use('/', [userRoutes, vehicleRoutes]);
+app.use('/', [userRoutes, vehicleRoutes,reclamationRoutes]);
 app.use(errorHandler);
 
 export default app;
