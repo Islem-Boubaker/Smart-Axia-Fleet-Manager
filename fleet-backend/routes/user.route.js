@@ -7,6 +7,10 @@ router.get('/user/getusers', authMiddleware.authenticate, authMiddleware.authori
 router.get('/user/getuser/:id', authMiddleware.authenticate, authMiddleware.authorizeRoles('ADMIN', 'MANAGER'), userController.getUserById);
 router.post('/user/signup', userController.createUser);
 router.put('/user/updateuser/:id', authMiddleware.authenticate, userController.updateUser);
-router.delete('/user/deleteuser/:id',authMiddleware.authenticate, userController.deleteUser);
+router.delete('/user/deleteuser/:id', authMiddleware.authenticate, userController.deleteUser);
 router.post('/user/login', userController.login);
+
+
+    
 export default router;
+

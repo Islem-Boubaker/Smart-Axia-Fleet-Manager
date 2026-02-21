@@ -87,3 +87,25 @@ export const logout = async (req, res) => {
   res.clearCookie('refreshToken');
   res.json({ success: true, message: 'Logged out successfully' });
 };
+
+export const createVehicleReclamation = async (req, res, next) => {
+  try {
+    const { vehicleId, subject, message } = req.body;
+    req.user.id="ec0886e2-08da-46b6-a860-cc253a7a051c";
+
+    const result = await userService.createVehicleReclamationSvc(
+      req.user.id,
+      vehicleId,
+      subject,
+      message
+    );
+
+    res.status(StatusCodes.CREATED).json({
+      success: true,
+      message: "Vehicle reclamation submitted successfully",
+      data: result,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
