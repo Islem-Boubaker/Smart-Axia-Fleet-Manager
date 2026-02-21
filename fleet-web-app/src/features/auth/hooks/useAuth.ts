@@ -1,6 +1,6 @@
 import { useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAppDispatch, useAppSelector } from '../../../hooks/useRedux';
+import { useAppDispatch, useAppSelector } from '../../../shared/hooks';
 import { setCredentials, signOut as signOutAction, setLoading, setError } from '../../../store/authSlice';
 import { authService, SignInCredentials, SignUpData } from '../services/auth.service';
 
