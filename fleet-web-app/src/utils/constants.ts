@@ -1,4 +1,4 @@
-export const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+export const API_BASE_URL = import.meta.env.VITE_API_URL;
 
 export const ROUTES = {
   HOME: '/',
@@ -11,7 +11,8 @@ export const ROUTES = {
   MAINTENANCE: '/maintenance',
   REPORTS: '/reports',
   SETTINGS: '/settings',
-} as const;
+  FLEET: '/fleet',
+};
 
 export const VEHICLE_STATUS_COLORS = {
   active: 'bg-green-100 text-green-800',

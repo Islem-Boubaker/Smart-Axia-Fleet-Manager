@@ -8,29 +8,48 @@ export interface User {
 
 export interface Vehicle {
   id: string;
-  make: string;
-  model: string;
-  year: number;
-  licensePlate: string;
-  vin: string;
-  status: 'active' | 'maintenance' | 'inactive';
-  mileage: number;
-  fuelType: 'essence' | 'diesel' | 'électrique' | 'hybride';
-  lastService?: string;
-  driver?: string;
+  vin?: string;
+  name: string;
+  plaque_immatriculation?: string;
+  type: 'voiture' | 'camion' | 'moto' | 'camionnette';
+  compteur_kilometrique: number;
+  Active: boolean;
+  Vehicle_Model: 'Car' | 'SUV' | 'Van' | 'Truck' | 'Bus' | 'Motorcycle';
+  Mileage: number;
+  Vehicle_Age: number;
+  Maintenance_History: 'Good' | 'Average' | 'Poor';
+  Reported_Issues: number;
+  Service_History: number;
+  Accident_History: number;
+  Fuel_Efficiency?: number | null;
+  Engine_Size?: number | null;
+  Tire_Condition: 'New' | 'Good' | 'Worn Out';
+  Brake_Condition: 'New' | 'Good' | 'Worn Out';
+  Battery_Status: 'New' | 'Good' | 'Weak';
+  Days_Since_Last_Service: number;
+  Need_Maintenance: boolean;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface ApiResponse<T> {
+  success: boolean;
+  data: T;
+  message?: string;
 }
 
 export interface Driver {
   id: string;
   name: string;
   email: string;
-  phone: string;
-  licenseNumber: string;
-  licenseExpiry: string;
-  status: 'active' | 'inactive';
+  phone?: string;
+  licenseNumber?: string;
+  licenseExpiry?: string;
+  status: 'active' | 'inactive' | 'on-leave';
   assignedVehicle?: string;
   totalTrips?: number;
   rating?: number;
+  role?: string;
 }
 
 export interface Trip {
@@ -63,7 +82,6 @@ export interface Maintenance {
 
 export interface AuthState {
   user: User | null;
-  token: string | null;
   isAuthenticated: boolean;
   loading: boolean;
   error: string | null;
