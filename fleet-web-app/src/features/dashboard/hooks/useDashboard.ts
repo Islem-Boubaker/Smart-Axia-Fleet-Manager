@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { FiTruck, FiUsers, FiMapPin, FiTrendingUp } from 'react-icons/fi';
-import { dashboardService } from '../services/dashboard.service';
+import { dashboardService } from '../services/dashboard.service.ts';
 
 export const useDashboard = () => {
   const [isLoading, setIsLoading] = useState(true);
