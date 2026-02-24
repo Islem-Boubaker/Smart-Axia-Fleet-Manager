@@ -1,8 +1,12 @@
+// ─────────────────────────────────────────────────────────────
+//  useAuth — cookie-based auth hook (no tokens in JS)
+// ─────────────────────────────────────────────────────────────
 import { useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAppDispatch, useAppSelector } from '../../../shared/hooks';
-import { setCredentials, signOut as signOutAction, setLoading, setError } from '../../../store/authSlice';
-import { authService, SignInCredentials, SignUpData } from '../services/auth.service';
+import { setUser, clearUser, setLoading, setError } from '../../../store/authSlice';
+import { authAPI } from '../services/auth.service';
+import type { SignInCredentials, SignUpData } from '../services/auth.service';
 
 export const useAuth = () => {
   const dispatch = useAppDispatch();
@@ -14,11 +18,12 @@ export const useAuth = () => {
       try {
         dispatch(setLoading(true));
         dispatch(setError(null));
-        const response = await authService.signIn(credentials);
-        dispatch(setCredentials(response));
+        const authUser = await authAPI.signIn(credentials);
+        dispatch(setUser(authUser));
         navigate('/dashboard');
-      } catch (err: any) {
-        const errorMessage = err.response?.data?.message || 'Sign in failed';
+      } catch (err: unknown) {
+        const axiosErr = err as { response?: { data?: { message?: string } } };
+        const errorMessage = axiosErr.response?.data?.message || 'Sign in failed';
         dispatch(setError(errorMessage));
         throw err;
       } finally {
@@ -33,11 +38,12 @@ export const useAuth = () => {
       try {
         dispatch(setLoading(true));
         dispatch(setError(null));
-        const response = await authService.signUp(data);
-        dispatch(setCredentials(response));
+        const authUser = await authAPI.signUp(data);
+        dispatch(setUser(authUser));
         navigate('/dashboard');
-      } catch (err: any) {
-        const errorMessage = err.response?.data?.message || 'Sign up failed';
+      } catch (err: unknown) {
+        const axiosErr = err as { response?: { data?: { message?: string } } };
+        const errorMessage = axiosErr.response?.data?.message || 'Sign up failed';
         dispatch(setError(errorMessage));
         throw err;
       } finally {
@@ -49,13 +55,13 @@ export const useAuth = () => {
 
   const signOut = useCallback(async () => {
     try {
-      await authService.signOut();
-      dispatch(signOutAction());
+      await authAPI.signOut();
+      dispatch(clearUser());
       navigate('/signin');
     } catch (err) {
       console.error('Sign out error:', err);
-      // Sign out locally even if API call fails
-      dispatch(signOutAction());
+      // Clear locally even if API call fails
+      dispatch(clearUser());
       navigate('/signin');
     }
   }, [dispatch, navigate]);

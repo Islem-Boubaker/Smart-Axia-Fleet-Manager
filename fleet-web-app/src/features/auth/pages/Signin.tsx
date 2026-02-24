@@ -3,7 +3,11 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { FiMail, FiLock, FiTruck } from 'react-icons/fi';
 import { Button, Input } from '../../../shared/components';
-import { ROUTES } from '../../../utils/constants';
+import { authAPI } from '../services/auth.service';
+import type { SignInCredentials } from '../services/auth.service';
+import { ROUTES } from '../../../utils/constants.ts';
+import { useDispatch } from 'react-redux';
+import { setUser } from '../../../store/authSlice';
 
 interface SignInForm {
   email: string;
@@ -13,22 +17,31 @@ interface SignInForm {
 
 export default function Signin() {
   const navigate = useNavigate();
+  const dispatch = useDispatch();
   const [isLoading, setIsLoading] = useState(false);
-  const {
-    register,
-    handleSubmit,
-    formState: { errors },
-  } = useForm<SignInForm>();
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const { register, handleSubmit, formState: { errors } } = useForm<SignInForm>();
 
   const onSubmit = async (data: SignInForm) => {
     setIsLoading(true);
+    setErrorMsg(null);
     try {
-      // TODO: Implement API call
-      console.log('Sign in data:', data);
-      await new Promise(resolve => setTimeout(resolve, 1500)); // Simulate API call
+      const credentials: SignInCredentials = {
+        email: data.email,
+        password: data.password,
+      };
+
+      // Backend sets httpOnly cookies automatically.
+      // We only receive the user profile in the JSON body.
+      const user = await authAPI.signIn(credentials);
+      if (!user) throw new Error('Login failed');
+
+      dispatch(setUser(user));
       navigate(ROUTES.DASHBOARD);
-    } catch (error) {
-      console.error('Sign in error:', error);
+    } catch (error: unknown) {
+      const axiosError = error as { response?: { data?: { message?: string } }; message?: string };
+      const msg = axiosError.response?.data?.message || axiosError.message || 'Failed to sign in';
+      setErrorMsg(msg);
     } finally {
       setIsLoading(false);
     }
@@ -42,57 +55,56 @@ export default function Signin() {
           <div className="inline-flex items-center justify-center w-16 h-16 bg-blue-600 rounded-2xl mb-4">
             <FiTruck className="text-white text-3xl" />
           </div>
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">
-            Welcome Back
-          </h1>
-          <p className="text-gray-600">
-            Sign in to access your fleet dashboard
-          </p>
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">Welcome Back</h1>
+          <p className="text-gray-600">Sign in to access your fleet dashboard</p>
         </div>
 
         {/* Sign In Form */}
         <div className="bg-white rounded-2xl shadow-xl border border-gray-100 p-8">
+          {/* Error banner */}
+          {errorMsg && (
+            <div className="mb-4 p-3 rounded-lg bg-red-50 border border-red-200 text-red-700 text-sm">
+              {errorMsg}
+            </div>
+          )}
+
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-            <div>
-              <div className="relative">
-                <FiMail className="absolute left-3 top-10 text-gray-400" />
-                <Input
-                  label="Email Address"
-                  type="email"
-                  placeholder="you@example.com"
-                  className="pl-10"
-                  error={errors.email?.message}
-                  {...register('email', {
-                    required: 'Email is required',
-                    pattern: {
-                      value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
-                      message: 'Invalid email address',
-                    },
-                  })}
-                />
-              </div>
+            {/* Email */}
+            <div className="relative">
+              <FiMail className="absolute left-3 top-10 text-gray-400" />
+              <Input
+                label="Email Address"
+                type="email"
+                placeholder="you@example.com"
+                className="pl-10"
+                error={errors.email?.message}
+                {...register('email', {
+                  required: 'Email is required',
+                  pattern: {
+                    value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
+                    message: 'Invalid email address',
+                  },
+                })}
+              />
             </div>
 
-            <div>
-              <div className="relative">
-                <FiLock className="absolute left-3 top-10 text-gray-400" />
-                <Input
-                  label="Password"
-                  type="password"
-                  placeholder="Enter your password"
-                  className="pl-10"
-                  error={errors.password?.message}
-                  {...register('password', {
-                    required: 'Password is required',
-                    minLength: {
-                      value: 6,
-                      message: 'Password must be at least 6 characters',
-                    },
-                  })}
-                />
-              </div>
+            {/* Password */}
+            <div className="relative">
+              <FiLock className="absolute left-3 top-10 text-gray-400" />
+              <Input
+                label="Password"
+                type="password"
+                placeholder="Enter your password"
+                className="pl-10"
+                error={errors.password?.message}
+                {...register('password', {
+                  required: 'Password is required',
+                  minLength: { value: 6, message: 'Password must be at least 6 characters' },
+                })}
+              />
             </div>
 
+            {/* Remember me */}
             <div className="flex items-center justify-between">
               <label className="flex items-center">
                 <input
@@ -110,12 +122,8 @@ export default function Signin() {
               </Link>
             </div>
 
-            <Button
-              type="submit"
-              fullWidth
-              isLoading={isLoading}
-              size="lg"
-            >
+            {/* Submit */}
+            <Button type="submit" fullWidth isLoading={isLoading} size="lg">
               Sign In
             </Button>
           </form>
@@ -123,10 +131,7 @@ export default function Signin() {
           <div className="mt-6 text-center">
             <p className="text-sm text-gray-600">
               Don't have an account?{' '}
-              <Link
-                to={ROUTES.SIGN_UP}
-                className="text-blue-600 hover:text-blue-700 font-medium"
-              >
+              <Link to={ROUTES.SIGN_UP} className="text-blue-600 hover:text-blue-700 font-medium">
                 Sign up
               </Link>
             </p>

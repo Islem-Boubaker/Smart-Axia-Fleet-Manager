@@ -1,4 +1,11 @@
+// ─────────────────────────────────────────────────────────────
+//  Auth API — cookie-based (tokens are NEVER in JavaScript)
+//
+//  The backend sets/clears httpOnly cookies automatically.
+//  This service only deals with the JSON body (user profile).
+// ─────────────────────────────────────────────────────────────
 import { api } from '../../../shared/services/api';
+import type { User } from '../../../types';
 
 export interface SignInCredentials {
   email: string;
@@ -12,39 +19,52 @@ export interface SignUpData {
   companyName?: string;
 }
 
-export interface AuthResponse {
-  user: {
-    id: string;
-    name: string;
-    email: string;
-    role: string;
-  };
-  token: string;
+export interface AuthUser {
+  id: string;
+  name: string;
+  email: string;
+  role: User['role'];
 }
 
-export const authService = {
-  signIn: async (credentials: SignInCredentials): Promise<AuthResponse> => {
-    const response = await api.post<AuthResponse>('/auth/signin', credentials);
-    return response.data;
+export const authAPI = {
+  /**
+   * POST /user/login
+   * Backend sets accessToken + refreshToken + csrf-token cookies.
+   * We only return the user object from the JSON body.
+   */
+  async signIn(credentials: SignInCredentials): Promise<AuthUser> {
+    const response = await api.post('/user/login', credentials);
+    // Backend returns { success: true, data: { user } }
+    return response.data.data.user;
   },
 
-  signUp: async (data: SignUpData): Promise<AuthResponse> => {
-    const response = await api.post<AuthResponse>('/auth/signup', data);
-    return response.data;
+  /**
+   * POST /user/signup
+   */
+  async signUp(data: SignUpData): Promise<AuthUser> {
+    const response = await api.post('/user/signup', data);
+    return response.data.data;
   },
 
-  signOut: async (): Promise<void> => {
-    await api.post('/auth/signout');
-    localStorage.removeItem('token');
+  /**
+   * POST /user/logout — clears all auth cookies server-side.
+   */
+  async signOut(): Promise<void> {
+    await api.post('/user/logout');
   },
 
-  refreshToken: async (): Promise<{ token: string }> => {
-    const response = await api.post<{ token: string }>('/auth/refresh');
-    return response.data;
+  /**
+   * POST /user/refresh-token — silently refreshes the access cookie.
+   */
+  async refreshToken(): Promise<void> {
+    await api.post('/user/refresh-token');
   },
 
-  getCurrentUser: async () => {
-    const response = await api.get('/auth/me');
-    return response.data;
+  /**
+   * GET /user/me — returns the authenticated user's profile.
+   */
+  async getCurrentUser(): Promise<AuthUser> {
+    const response = await api.get('/user/me');
+    return response.data.data;
   },
 };

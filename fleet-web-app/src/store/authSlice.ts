@@ -1,11 +1,24 @@
+// ─────────────────────────────────────────────────────────────
+//  Auth slice — cookie-based (NO localStorage, NO token in JS)
+//
+//  This slice only tracks the user profile and UI state.
+//  Tokens live exclusively in httpOnly cookies managed by the
+//  browser and the backend — JavaScript never touches them.
+// ─────────────────────────────────────────────────────────────
 import { createSlice } from '@reduxjs/toolkit';
 import type { PayloadAction } from '@reduxjs/toolkit';
-import type { User, AuthState } from '../types';
+import type { User } from '../types';
+
+export interface AuthState {
+  user: User | null;
+  isAuthenticated: boolean;
+  loading: boolean;
+  error: string | null;
+}
 
 const initialState: AuthState = {
   user: null,
-  token: localStorage.getItem('token'),
-  isAuthenticated: !!localStorage.getItem('token'),
+  isAuthenticated: false,
   loading: false,
   error: null,
 };
@@ -14,20 +27,16 @@ const authSlice = createSlice({
   name: 'auth',
   initialState,
   reducers: {
-    setCredentials: (
-      state,
-      action: PayloadAction<{ user: User; token: string }>
-    ) => {
-      state.user = action.payload.user;
-      state.token = action.payload.token;
+    /** Called after successful login or /user/me fetch */
+    setUser: (state, action: PayloadAction<User>) => {
+      state.user = action.payload;
       state.isAuthenticated = true;
-      localStorage.setItem('token', action.payload.token);
+      state.error = null;
     },
-    signOut: (state) => {
+    /** Called after logout or failed refresh */
+    clearUser: (state) => {
       state.user = null;
-      state.token = null;
       state.isAuthenticated = false;
-      localStorage.removeItem('token');
     },
     setLoading: (state, action: PayloadAction<boolean>) => {
       state.loading = action.payload;
@@ -38,6 +47,5 @@ const authSlice = createSlice({
   },
 });
 
-export const { setCredentials, signOut, setLoading, setError } =
-  authSlice.actions;
+export const { setUser, clearUser, setLoading, setError } = authSlice.actions;
 export default authSlice.reducer;
