@@ -13,10 +13,15 @@ import axios from 'axios';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
-// ── Helper: read a cookie by name ────────────────────────────
-function getCookie(name: string): string | undefined {
-  const match = document.cookie.match(new RegExp(`(?:^|; )${name}=([^;]*)`));
-  return match?.[1];
+// ── In-memory CSRF token (cross-origin can't read backend cookies) ───
+let csrfToken: string | null = null;
+
+export function setCsrfToken(token: string | null) {
+  csrfToken = token;
+}
+
+export function getCsrfToken(): string | null {
+  return csrfToken;
 }
 
 // ── Create Axios instance ────────────────────────────────────
@@ -28,9 +33,8 @@ const api = axios.create({
 
 // ── Request interceptor: attach CSRF token ───────────────────
 api.interceptors.request.use((config) => {
-  const csrf = getCookie('csrf-token');
-  if (csrf) {
-    config.headers['X-CSRF-Token'] = csrf;
+  if (csrfToken) {
+    config.headers['X-CSRF-Token'] = csrfToken;
   }
   return config;
 });
@@ -66,7 +70,10 @@ api.interceptors.response.use(
       isRefreshing = true;
 
       try {
-        await api.post('/user/refresh-token');
+        const refreshRes = await api.post('/user/refresh-token');
+        if (refreshRes.data?.csrfToken) {
+          setCsrfToken(refreshRes.data.csrfToken);
+        }
         processQueue(null);
         return api(originalRequest);           // retry original request
       } catch (refreshError) {
