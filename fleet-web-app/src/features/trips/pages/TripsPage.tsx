@@ -1,14 +1,12 @@
 import { useState } from 'react';
-import { FiPlus, FiSearch } from 'react-icons/fi';
-import { Card, Button, Input } from '../../../shared/components';
-import DashboardLayout from '../../../shared/components/DashboardLayout';
-import TripCard from '../components/TripCard';
+import TripsHeader from '../components/TripsHeader';
+import TripsFilters from '../components/TripsFilters';
+import TripsList from '../components/TripsList';
 
 const TripsPage = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
 
-  // Mock data - replace with useTrips hook when API is ready
   const trips = [
     {
       id: '1',
@@ -21,7 +19,7 @@ const TripsPage = () => {
       distance: '270 km',
       status: 'ongoing',
       fuel: '25L',
-      cost: '65 TND',
+      cost: '65 TND'
     },
     {
       id: '2',
@@ -34,7 +32,7 @@ const TripsPage = () => {
       distance: '115 km',
       status: 'completed',
       fuel: '15L',
-      cost: '38 TND',
+      cost: '38 TND'
     },
     {
       id: '3',
@@ -47,7 +45,7 @@ const TripsPage = () => {
       distance: '95 km',
       status: 'ongoing',
       fuel: '10L',
-      cost: '25 TND',
+      cost: '25 TND'
     },
     {
       id: '4',
@@ -60,7 +58,7 @@ const TripsPage = () => {
       distance: '85 km',
       status: 'completed',
       fuel: '0 kWh',
-      cost: '12 TND',
+      cost: '12 TND'
     },
     {
       id: '5',
@@ -73,7 +71,7 @@ const TripsPage = () => {
       distance: '145 km',
       status: 'completed',
       fuel: '18L',
-      cost: '45 TND',
+      cost: '45 TND'
     },
     {
       id: '6',
@@ -86,11 +84,11 @@ const TripsPage = () => {
       distance: '105 km',
       status: 'scheduled',
       fuel: 'N/A',
-      cost: 'N/A',
-    },
+      cost: 'N/A'
+    }
   ];
 
-  const filteredTrips = trips.filter((trip) => {
+  const filteredTrips = trips.filter(trip => {
     const matchesSearch = `${trip.driver} ${trip.vehicle} ${trip.startLocation} ${trip.endLocation}`
       .toLowerCase()
       .includes(searchQuery.toLowerCase());
@@ -99,67 +97,18 @@ const TripsPage = () => {
   });
 
   return (
-    <DashboardLayout>
+    <>
       <div className="space-y-6">
-        {/* Page Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900">Trips</h1>
-            <p className="text-gray-600 mt-1">Track and manage trips</p>
-          </div>
-          <Button>
-            <FiPlus className="mr-2" />
-            Schedule Trip
-          </Button>
-        </div>
-
-        {/* Search and Filters */}
-        <Card>
-          <div className="flex flex-col sm:flex-row gap-4">
-            <div className="flex-1">
-              <div className="relative">
-                <FiSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
-                <Input
-                  type="text"
-                  placeholder="Search trips..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-10"
-                />
-              </div>
-            </div>
-            <select
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
-              className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-            >
-              <option value="all">All Status</option>
-              <option value="scheduled">Scheduled</option>
-              <option value="ongoing">Ongoing</option>
-              <option value="completed">Completed</option>
-              <option value="cancelled">Cancelled</option>
-            </select>
-          </div>
-        </Card>
-
-        {/* Trips List */}
-        {filteredTrips.length > 0 ? (
-          <div className="space-y-4">
-            {filteredTrips.map((trip) => (
-              <Card key={trip.id} padding="md">
-                <TripCard trip={trip} />
-              </Card>
-            ))}
-          </div>
-        ) : (
-          <Card>
-            <div className="text-center py-12">
-              <p className="text-gray-500">No trips found.</p>
-            </div>
-          </Card>
-        )}
+        <TripsHeader />
+        <TripsFilters
+          searchQuery={searchQuery}
+          onSearchChange={setSearchQuery}
+          statusFilter={statusFilter}
+          onStatusChange={setStatusFilter}
+        />
+        <TripsList trips={filteredTrips} />
       </div>
-    </DashboardLayout>
+    </>
   );
 };
 
