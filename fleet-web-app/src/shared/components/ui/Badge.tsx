@@ -5,7 +5,7 @@ interface BadgeProps {
   className?: string;
 }
 
-const Badge = ({ children, variant = 'default', size = 'md', className = '' }: BadgeProps) => {
+export const Badge = ({ children, variant = 'default', size = 'md', className = '' }: BadgeProps) => {
   const variants = {
     success: 'bg-green-100 text-green-800',
     warning: 'bg-yellow-100 text-yellow-800',
@@ -29,4 +29,4 @@ const Badge = ({ children, variant = 'default', size = 'md', className = '' }: B
   );
 };
 
-export default Badge;
+
