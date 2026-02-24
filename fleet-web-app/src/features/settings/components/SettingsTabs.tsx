@@ -1,12 +1,13 @@
 import { memo } from 'react';
+import type { SettingsTab } from '../settings.types';
 
-interface SettingsTabProps {
-  tabs: Array<{ id: string; label: string; icon: any }>;
+interface Props {
+  tabs: SettingsTab[];
   activeTab: string;
   onTabChange: (tabId: string) => void;
 }
 
-const SettingsTabs = memo(({ tabs, activeTab, onTabChange }: SettingsTabProps) => {
+const SettingsTabs = memo(({ tabs, activeTab, onTabChange }: Props) => {
   return (
     <nav className="space-y-1">
       {tabs.map((tab) => {
