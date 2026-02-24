@@ -1,11 +1,12 @@
 import { memo } from 'react';
+import type { IconType } from 'react-icons';
 
 interface ReportCardProps {
   title: string;
   value: string;
   change: string;
   trend: 'up' | 'down';
-  icon: any;
+  icon: IconType;
   color: string;
 }
 
