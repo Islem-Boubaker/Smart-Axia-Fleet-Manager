@@ -1,35 +1,51 @@
-import { useState } from 'react';
-import type { FormEvent } from 'react';
-import { Input, Button } from '../../../shared/components';
+import { useState } from "react";
+import type { FormEvent } from "react";
+import { Input } from "../../../shared/components/ui/Input";
+import { Button } from "../../../shared/components/ui/Button";
+
+interface DriverFormData {
+  name: string;
+  email: string;
+  password: string;
+  phone: string;
+  licenseNumber: string;
+  licenseExpiry: string;
+  status: string;
+  assignedVehicle: string;
+  rating: number;
+}
 
 interface DriverFormProps {
-  driver?: any;
-  onSubmit: (data: any) => void;
+  driver?: DriverFormData & { id?: string };
+  onSubmit: (data: DriverFormData) => void;
   onCancel: () => void;
 }
 
 const DriverForm = ({ driver, onSubmit, onCancel }: DriverFormProps) => {
-  const [formData, setFormData] = useState({
-    name: driver?.name || '',
-    email: driver?.email || '',
-    phone: driver?.phone || '',
-    licenseNumber: driver?.licenseNumber || '',
-    licenseExpiry: driver?.licenseExpiry || '',
-    status: driver?.status || 'active',
-    assignedVehicle: driver?.assignedVehicle || '',
+  const [formData, setFormData] = useState<DriverFormData>({
+    name: driver?.name || "",
+    email: driver?.email || "",
+    password: "",
+    phone: driver?.phone || "",
+    licenseNumber: driver?.licenseNumber || "",
+    licenseExpiry: driver?.licenseExpiry || "",
+    status: driver?.status || "active",
+    assignedVehicle: driver?.assignedVehicle || "",
     rating: driver?.rating || 4.8,
   });
 
-  const handleSubmit = (e: FormEvent) => {
+  const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     onSubmit(formData);
   };
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+  const handleChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
+  ) => {
     const { name, value } = e.target;
     setFormData((prev) => ({
       ...prev,
-      [name]: name === 'rating' ? Number(value) : value,
+      [name]: name === "rating" ? Number(value) : value,
     }));
   };
 
@@ -64,6 +80,21 @@ const DriverForm = ({ driver, onSubmit, onCancel }: DriverFormProps) => {
           />
         </div>
 
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Password <span className="text-red-500">*</span>
+            </label>
+            <Input
+              type="password"
+              name="password"
+              value={formData.password}
+              onChange={handleChange}
+              placeholder="Minimum 6 characters"
+              required={!driver}
+              minLength={6}
+            />
+          </div>
+        
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">
             Phone <span className="text-red-500">*</span>
@@ -153,7 +184,7 @@ const DriverForm = ({ driver, onSubmit, onCancel }: DriverFormProps) => {
 
       <div className="flex gap-3 pt-4">
         <Button type="submit" className="flex-1">
-          {driver ? 'Update Driver' : 'Add Driver'}
+          {driver ? "Update Driver" : "Add Driver"}
         </Button>
         <Button type="button" variant="secondary" onClick={onCancel}>
           Cancel

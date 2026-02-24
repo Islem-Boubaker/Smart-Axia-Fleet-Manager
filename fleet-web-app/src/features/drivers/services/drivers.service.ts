@@ -1,30 +1,37 @@
 import { api } from '../../../shared/services/api';
-import type { Driver } from '../../../types';
+import type { Driver, ApiResponse } from '../../../types';
 
 export type { Driver };
 
 export const driversService = {
-  getDrivers: async () => {
-    const response = await api.get<Driver[]>('/drivers');
-    return response.data;
+  getDrivers: async (): Promise<Driver[]> => {
+    const response = await api.get<ApiResponse<Driver[]>>('/user/getusers');
+    // Backend returns all users — filter to drivers only
+    return (response.data.data ?? []).filter(
+      (u) => u.role === 'DRIVER',
+    );
   },
 
-  getDriverById: async (id: string) => {
-    const response = await api.get<Driver>(`/drivers/${id}`);
-    return response.data;
+  getDriverById: async (id: string): Promise<Driver> => {
+    const response = await api.get<ApiResponse<Driver>>(`/user/getuser/${id}`);
+    return response.data.data;
   },
 
-  createDriver: async (data: Partial<Driver>) => {
-    const response = await api.post<Driver>('/drivers', data);
-    return response.data;
+  createDriver: async (data: Partial<Driver> & { password: string }): Promise<Driver> => {
+    
+    const response = await api.post<ApiResponse<Driver>>('/user/createdriver', {
+      ...data,
+      role: 'DRIVER',
+    });
+    return response.data.data;
   },
 
-  updateDriver: async (id: string, data: Partial<Driver>) => {
-    const response = await api.put<Driver>(`/drivers/${id}`, data);
-    return response.data;
+  updateDriver: async (id: string, data: Partial<Driver>): Promise<Driver> => {
+    const response = await api.put<ApiResponse<Driver>>(`/user/updateuser/${id}`, data);
+    return response.data.data;
   },
 
-  deleteDriver: async (id: string) => {
-    await api.delete(`/drivers/${id}`);
+  deleteDriver: async (id: string): Promise<void> => {
+    await api.delete(`/user/deleteuser/${id}`);
   },
 };
