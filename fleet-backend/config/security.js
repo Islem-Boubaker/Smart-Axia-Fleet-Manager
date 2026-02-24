@@ -20,6 +20,14 @@ export const COOKIE_OPTIONS = {
     path: '/user/refresh-token',
     maxAge: 7 * 24 * 60 * 60 * 1000,
   },
+
+  csrfToken: {
+    httpOnly: false,                          // JS must read this cookie
+    secure: isProduction,
+    sameSite: isProduction ? 'none' : 'lax',  // cross-origin in prod
+    path: '/',
+    maxAge: 15 * 60 * 1000,                  // match access token lifetime
+  },
 };
 // ── CORS settings ────────────────────────────────────────────
 export const CORS_OPTIONS = {
