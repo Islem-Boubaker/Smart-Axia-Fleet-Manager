@@ -5,9 +5,9 @@ const Reclamation = sequelize.define(
   "Reclamation",
   {
     id: {
-      type: DataTypes.INTEGER,
+      type: DataTypes.UUID,
+      defaultValue: DataTypes.UUIDV4,
       primaryKey: true,
-      autoIncrement: true,
     },
     subject: {
       type: DataTypes.STRING,
@@ -35,9 +35,8 @@ const Reclamation = sequelize.define(
     tableName: "reclamations",
     timestamps: true,
     createdAt: "createdAt",
- 
+
   }
 );
 
 export default Reclamation;
-  

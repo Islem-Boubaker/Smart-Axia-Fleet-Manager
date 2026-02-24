@@ -42,6 +42,32 @@ const User = sequelize.define(
       type: DataTypes.DATE,
        allowNull: true,
     },
+    phone: {
+      type: DataTypes.STRING(20),
+      allowNull: true,
+    },
+    licenseNumber: {
+      type: DataTypes.STRING(50),
+      allowNull: true,
+    },
+    licenseExpiry: {
+      type: DataTypes.DATEONLY,
+      allowNull: true,
+    },
+    status: {
+      type: DataTypes.ENUM('active', 'inactive', 'on-leave'),
+      allowNull: true,
+      defaultValue: 'active',
+    },
+    assignedVehicle: {
+      type: DataTypes.STRING(50),
+      allowNull: true,
+    },
+    rating: {
+      type: DataTypes.FLOAT,
+      allowNull: true,
+      validate: { min: 0, max: 5 },
+    },
   },
   {
     tableName: 'users',

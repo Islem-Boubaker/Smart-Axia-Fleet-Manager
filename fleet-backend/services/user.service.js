@@ -5,23 +5,30 @@ import * as Token from '../utils/jwt.js';
 
 
 export const createUserSvc = async (userData) => {
-
-  return await User.create(userData);
+  const user = await User.create(userData);
+  const { password, ...safeUser } = user.toJSON();
+  return safeUser;
 };
 
 export const getAllUsersSvc = async () => {
-  return await User.findAll();
+  return await User.findAll({ attributes: { exclude: ['password'] } });
 };
 
 export const getUserByIdSvc = async (id) => {
   return await User.findByPk(id);
 };
-
 export const updateUserSvc = async (id, updateData) => {
+  const user = await User.findByPk(id);
+  if (!user) return null;
 
-  const [updated] = await User.update(updateData, { where: { id } });
-  if (!updated) return null;
-  return await User.findByPk(id);
+  if (!updateData.password || updateData.password.trim() === '') {
+    delete updateData.password;
+  }
+
+  await User.update(updateData, { where: { id }, individualHooks: true });
+
+  const updated = await User.findByPk(id);
+  return updated;
 };
 
 export const deleteUserSvc = async (id) => {
@@ -35,7 +42,9 @@ export const loginUserSvc = async (email, password) => {
   const user = await User.findOne({ where: { email } });
 
   if (!user) {
-    throw new Error('Invalid email or password');
+    const err = new Error('Invalid email or password');
+    err.statusCode = 401;
+    throw err;
   }
 
 
@@ -44,13 +53,16 @@ export const loginUserSvc = async (email, password) => {
   const isMatch = await user.comparePassword(password);
 
   if (!isMatch) {
-    throw new Error('Invalid email or password');
+    const err = new Error('Invalid email or password');
+    err.statusCode = 401;
+    throw err;
   }
 
   const payload = {
     id: user.id,
     role: user.role,
-    email: user.email
+    email: user.email,
+    phone: user.phone
   };
 
   // Générer les deux tokens
@@ -64,7 +76,8 @@ export const loginUserSvc = async (email, password) => {
       id: user.id,
       name: user.name,
       email: user.email,
-      role: user.role
+      role: user.role,
+      phone: user.phone
     }
   };
 };
@@ -77,7 +90,9 @@ export const refreshTokenSvc = async (refreshToken) => {
     const user = await User.findByPk(decoded.id);
 
     if (!user || !user.isActive) {
-      throw new Error('User not found or inactive');
+      const err = new Error('User not found or inactive');
+      err.statusCode = 401;
+      throw err;
     }
 
     const payload = {
@@ -90,7 +105,9 @@ export const refreshTokenSvc = async (refreshToken) => {
 
     return { accessToken: newAccessToken };
   } catch (error) {
-    throw new Error('Invalid or expired refresh token');
+    const err = new Error('Invalid or expired refresh token');
+    err.statusCode = 401;
+    throw err;
   }
 };
 
