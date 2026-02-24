@@ -20,7 +20,7 @@ interface NotificationPopupProps {
   triggerRef?: React.RefObject<HTMLElement>;
 }
 
-const NotificationPopup = ({
+export const NotificationPopup = ({
   isOpen,
   onClose,
   notifications,
@@ -192,3 +192,4 @@ const NotificationPopup = ({
 };
 
 export default NotificationPopup;
+

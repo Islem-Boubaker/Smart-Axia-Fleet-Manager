@@ -1,5 +1,6 @@
-import { memo, useMemo } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { memo, useMemo } from "react";
+import { Link, useLocation } from "react-router-dom";
+import UserAvatar from "../ui/UserAvatar";
 import {
   FiHome,
   FiTruck,
@@ -9,28 +10,28 @@ import {
   FiBarChart2,
   FiSettings,
   FiX,
-} from 'react-icons/fi';
-import { ROUTES } from '../../utils/constants';
+} from "react-icons/fi";
+import { ROUTES } from "../../../utils/constants";
 
 interface SidebarProps {
   isOpen: boolean;
   setIsOpen: (open: boolean) => void;
 }
 
-const Sidebar = memo(({ isOpen, setIsOpen }: SidebarProps) => {
+export const Sidebar = memo(({ isOpen, setIsOpen }: SidebarProps) => {
   const location = useLocation();
 
   const menuItems = useMemo(
     () => [
-      { icon: FiHome, label: 'Dashboard', path: ROUTES.DASHBOARD },
-      { icon: FiTruck, label: 'Vehicles', path: ROUTES.VEHICLES },
-      { icon: FiUsers, label: 'Drivers', path: ROUTES.DRIVERS },
-      { icon: FiMapPin, label: 'Trips', path: ROUTES.TRIPS },
-      { icon: FiTool, label: 'Maintenance', path: ROUTES.MAINTENANCE },
-      { icon: FiBarChart2, label: 'Reports', path: ROUTES.REPORTS },
-      { icon: FiSettings, label: 'Settings', path: ROUTES.SETTINGS },
+      { icon: FiHome, label: "Dashboard", path: ROUTES.DASHBOARD },
+      { icon: FiTruck, label: "Vehicles", path: ROUTES.VEHICLES },
+      { icon: FiUsers, label: "Drivers", path: ROUTES.DRIVERS },
+      { icon: FiMapPin, label: "Trips", path: ROUTES.TRIPS },
+      { icon: FiTool, label: "Maintenance", path: ROUTES.MAINTENANCE },
+      { icon: FiBarChart2, label: "Reports", path: ROUTES.REPORTS },
+      { icon: FiSettings, label: "Settings", path: ROUTES.SETTINGS },
     ],
-    []
+    [],
   );
 
   return (
@@ -46,7 +47,7 @@ const Sidebar = memo(({ isOpen, setIsOpen }: SidebarProps) => {
       {/* Sidebar */}
       <aside
         className={`fixed lg:static inset-y-0 left-0 z-30 w-64 bg-white border-r border-gray-200 transform transition-transform duration-300 ease-in-out ${
-          isOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
+          isOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
         }`}
       >
         <div className="flex flex-col h-full">
@@ -82,8 +83,8 @@ const Sidebar = memo(({ isOpen, setIsOpen }: SidebarProps) => {
                       to={item.path}
                       className={`flex items-center space-x-3 px-4 py-3 rounded-lg transition-all ${
                         isActive
-                          ? 'bg-blue-50 text-blue-600 font-medium'
-                          : 'text-gray-700 hover:bg-gray-50'
+                          ? "bg-blue-50 text-blue-600 font-medium"
+                          : "text-gray-700 hover:bg-gray-50"
                       }`}
                     >
                       <Icon className="text-xl" />
@@ -94,27 +95,11 @@ const Sidebar = memo(({ isOpen, setIsOpen }: SidebarProps) => {
               })}
             </ul>
           </nav>
-
-          {/* User Info */}
           <div className="p-4 border-t border-gray-200">
-            <div className="flex items-center space-x-3 p-3 rounded-lg bg-gray-50">
-              <div className="w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center text-white font-medium">
-                BG
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-gray-900 truncate">
-                  Bedis Ghodbane
-                </p>
-                <p className="text-xs text-gray-500 truncate">Admin</p>
-              </div>
-            </div>
+            <UserAvatar />
           </div>
         </div>
       </aside>
     </>
   );
 });
-
-Sidebar.displayName = 'Sidebar';
-
-export default Sidebar;
