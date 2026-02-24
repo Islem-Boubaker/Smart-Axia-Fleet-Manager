@@ -37,15 +37,15 @@ export const COOKIE_OPTIONS = {
 // ── CORS settings ────────────────────────────────────────────
 export const CORS_OPTIONS = {
   origin: (origin, callback) => {
-    const allowedOrigins = (process.env.CLIENT_URL)
-      .split(',')
-      .map(o => o.trim());
+    if (!origin) return callback(null, true);
 
-    // Allow requests with no origin (mobile apps, Postman, curl)
-    if (!origin || allowedOrigins.includes(origin)) {
+    if (
+      origin === process.env.CLIENT_URL ||
+      origin.endsWith(".vercel.app")
+    ) {
       callback(null, true);
     } else {
-      callback(new Error(`Origin ${origin} not allowed by CORS`));
+      callback(new Error("Not allowed by CORS"));
     }
   },
   credentials: true,                      // required for cookies
