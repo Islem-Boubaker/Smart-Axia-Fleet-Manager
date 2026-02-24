@@ -4,36 +4,23 @@ dotenv.config();
 
 const isProduction = process.env.NODE_ENV === 'production';
 
-// ── Cookie settings ──────────────────────────────────────────
 export const COOKIE_OPTIONS = {
-  /** Short-lived access token cookie */
   accessToken: {
-    httpOnly: true,                       // JS can NEVER read it
-    secure: isProduction,                 // HTTPS only in prod
-    sameSite: isProduction ? 'strict' : 'lax',
+    httpOnly: true,
+    secure: isProduction,                
+    sameSite: isProduction ? 'none' : 'lax',  
     path: '/',
-    maxAge: 15 * 60 * 1000,              // 15 minutes
+    maxAge: 15 * 60 * 1000,
   },
 
-  /** Long-lived refresh token cookie */
   refreshToken: {
     httpOnly: true,
     secure: isProduction,
-    sameSite: isProduction ? 'strict' : 'lax',
-    path: '/user/refresh-token',          // only sent to refresh endpoint
-    maxAge: 7 * 24 * 60 * 60 * 1000,     // 7 days
-  },
-
-  /** CSRF token cookie — readable by JS (NOT httpOnly) */
-  csrfToken: {
-    httpOnly: false,                      // frontend must read this
-    secure: isProduction,
-    sameSite: isProduction ? 'strict' : 'lax',
-    path: '/',
+    sameSite: isProduction ? 'none' : 'lax',  
+    path: '/user/refresh-token',
     maxAge: 7 * 24 * 60 * 60 * 1000,
   },
 };
-
 // ── CORS settings ────────────────────────────────────────────
 export const CORS_OPTIONS = {
   origin: (origin, callback) => {
