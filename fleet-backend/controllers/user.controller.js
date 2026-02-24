@@ -91,13 +91,13 @@ export const login = async (req, res, next) => {
     // 2. Set HTTP-only refresh token cookie (scoped path)
     res.cookie('refreshToken', refreshToken, COOKIE_OPTIONS.refreshToken);
 
-    // 3. Set CSRF cookie (readable by JS)
+    // 3. Set CSRF cookie + return in body (cross-origin can't read cookies)
     const csrfToken = generateCsrfToken();
     res.cookie('csrf-token', csrfToken, COOKIE_OPTIONS.csrfToken);
 
     res.status(StatusCodes.OK).json({
       success: true,
-      data: { user },
+      data: { user, csrfToken },
     });
   } catch (error) {
     next(error);
@@ -130,7 +130,7 @@ export const refreshToken = async (req, res, next) => {
     const csrfToken = generateCsrfToken();
     res.cookie('csrf-token', csrfToken, COOKIE_OPTIONS.csrfToken);
 
-    res.status(StatusCodes.OK).json({ success: true, message: 'Token refreshed' });
+    res.status(StatusCodes.OK).json({ success: true, message: 'Token refreshed', csrfToken });
   } catch (error) {
     // Clear stale cookies on failure
     res.clearCookie('accessToken',  { path: COOKIE_OPTIONS.accessToken.path });

@@ -4,7 +4,7 @@
 //  The backend sets/clears httpOnly cookies automatically.
 //  This service only deals with the JSON body (user profile).
 // ─────────────────────────────────────────────────────────────
-import { api } from '../../../shared/services/api';
+import { api, setCsrfToken } from '../../../shared/services/api';
 import type { User } from '../../../types';
 
 export interface SignInCredentials {
@@ -34,7 +34,8 @@ export const authAPI = {
    */
   async signIn(credentials: SignInCredentials): Promise<AuthUser> {
     const response = await api.post('/user/login', credentials);
-    // Backend returns { success: true, data: { user } }
+    // Backend returns { success: true, data: { user, csrfToken } }
+    setCsrfToken(response.data.data.csrfToken);
     return response.data.data.user;
   },
 
@@ -51,13 +52,17 @@ export const authAPI = {
    */
   async signOut(): Promise<void> {
     await api.post('/user/logout');
+    setCsrfToken(null);
   },
 
   /**
    * POST /user/refresh-token — silently refreshes the access cookie.
    */
   async refreshToken(): Promise<void> {
-    await api.post('/user/refresh-token');
+    const response = await api.post('/user/refresh-token');
+    if (response.data?.csrfToken) {
+      setCsrfToken(response.data.csrfToken);
+    }
   },
 
   /**
