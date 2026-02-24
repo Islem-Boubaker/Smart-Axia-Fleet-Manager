@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react';
-import DashboardLayout from '../../../shared/components/DashboardLayout';
+
 import { Button, GlobalCard } from '../../../shared/components';
 import MaintenanceTable from '../components/MaintenanceTable';
 import MaintenanceForm from '../components/MaintenanceForm';
@@ -17,7 +17,7 @@ const MaintenancePage = () => {
   }, []);
 
   return (
-    <DashboardLayout>
+    <>
       <div className="space-y-6">
         <div className="flex justify-between items-center">
           <div>
@@ -49,7 +49,7 @@ const MaintenancePage = () => {
           onCancel={() => setIsScheduleModalOpen(false)}
         />
       </GlobalCard>
-    </DashboardLayout>
+    </>
   );
 };
 

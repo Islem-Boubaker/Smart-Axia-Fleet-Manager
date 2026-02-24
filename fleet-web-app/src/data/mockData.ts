@@ -1,66 +1,7 @@
 import type { Vehicle, Driver, Trip, Maintenance } from '../types';
 
 export const mockVehicles: Vehicle[] = [
-  {
-    id: '1',
-    make: 'Toyota',
-    model: 'Camry',
-    year: 2022,
-    licensePlate: '123 TU 4567',
-    vin: '1HGBH41JXMN109186',
-    status: 'active',
-    mileage: 45230,
-    fuelType: 'essence',
-    driver: 'Mohamed Ben Salah',
-  },
-  {
-    id: '2',
-    make: 'Honda',
-    model: 'Accord',
-    year: 2021,
-    licensePlate: '167 TU 2389',
-    vin: '2HGBH41JXMN109187',
-    status: 'maintenance',
-    mileage: 58920,
-    fuelType: 'hybride',
-    driver: 'N/A',
-  },
-  {
-    id: '3',
-    make: 'Ford',
-    model: 'F-150',
-    year: 2023,
-    licensePlate: '234 TU 8912',
-    vin: '3HGBH41JXMN109188',
-    status: 'active',
-    mileage: 12450,
-    fuelType: 'diesel',
-    driver: 'Fatma Chaabani',
-  },
-  {
-    id: '4',
-    make: 'Chevrolet',
-    model: 'Malibu',
-    year: 2022,
-    licensePlate: '156 TU 3421',
-    vin: '4HGBH41JXMN109189',
-    status: 'active',
-    mileage: 32100,
-    fuelType: 'essence',
-    driver: 'Ahmed Trabelsi',
-  },
-  {
-    id: '5',
-    make: 'Tesla',
-    model: 'Model 3',
-    year: 2023,
-    licensePlate: '189 TU 6754',
-    vin: '5HGBH41JXMN109190',
-    status: 'active',
-    mileage: 8750,
-    fuelType: 'électrique',
-    driver: 'Sarra Hamdi',
-  },
+  
 ];
 
 export const mockDrivers: Driver[] = [
@@ -278,4 +219,70 @@ export const mockMaintenance: Maintenance[] = [
     technician: 'Ahmed Mechanic',
     priority: 'medium',
   },
+];
+
+// Reports Page Data
+export const overviewStats = [
+  {
+    title: 'Total Vehicles',
+    value: '48',
+    change: '+3 this month',
+    trend: 'up' as const,
+    icon: 'FiTruck',
+    color: 'blue',
+  },
+  {
+    title: 'Active Vehicles',
+    value: '42',
+    change: '+5 from last month',
+    trend: 'up' as const,
+    icon: 'FiCheckCircle',
+    color: 'green',
+  },
+  {
+    title: 'Total Distance',
+    value: '125,450 km',
+    change: '+12% vs last month',
+    trend: 'up' as const,
+    icon: 'FiNavigation',
+    color: 'purple',
+  },
+  {
+    title: 'Total Fuel Cost',
+    value: '45,230 TND',
+    change: '+8% vs last month',
+    trend: 'down' as const,
+    icon: 'FiDollarSign',
+    color: 'orange',
+  },
+];
+
+export const vehiclePerformance = [
+  { vehicle: 'Toyota Camry', trips: 145, distance: '12,450 km', fuel: '1,058 L', efficiency: '8.5 L/100km', revenue: '4,350 TND' },
+  { vehicle: 'Honda Accord', trips: 132, distance: '15,320 km', fuel: '1,225 L', efficiency: '8.0 L/100km', revenue: '5,120 TND' },
+  { vehicle: 'Ford F-150', trips: 98, distance: '8,750 km', fuel: '1,050 L', efficiency: '12.0 L/100km', revenue: '3,280 TND' },
+  { vehicle: 'Chevrolet Malibu', trips: 76, distance: '10,230 km', fuel: '870 L', efficiency: '8.5 L/100km', revenue: '2,950 TND' },
+  { vehicle: 'Tesla Model 3', trips: 52, distance: '6,500 km', fuel: '0 L', efficiency: '0 L/100km', revenue: '1,890 TND' },
+];
+
+export const fuelAnalysis = [
+  { type: 'Essence', vehicles: 22, consumption: '9,467 L', cost: '20,354 TND', percentage: 45 },
+  { type: 'Diesel', vehicles: 17, consumption: '7,363 L', cost: '15,831 TND', percentage: 35 },
+  { type: 'Hybride', vehicles: 7, consumption: '3,156 L', cost: '6,785 TND', percentage: 15 },
+  { type: 'Électrique', vehicles: 2, consumption: '1,048 kWh', cost: '2,260 TND', percentage: 5 },
+];
+
+export const maintenanceSummary = [
+  { category: 'Routine', count: 15, cost: '4,250 TND', avgCost: '283 TND' },
+  { category: 'Repair', count: 12, cost: '6,890 TND', avgCost: '574 TND' },
+  { category: 'Inspection', count: 8, cost: '1,200 TND', avgCost: '150 TND' },
+];
+
+export const monthlyTrends = [
+  { month: 'Jan', trips: 145, distance: 18500, revenue: 5670 },
+  { month: 'Feb', trips: 132, distance: 17200, revenue: 6050 },
+  { month: 'Mar', trips: 156, distance: 21400, revenue: 5800 },
+  { month: 'Apr', trips: 142, distance: 19800, revenue: 6120 },
+  { month: 'May', trips: 168, distance: 22500, revenue: 5910 },
+  { month: 'Jun', trips: 175, distance: 23800, revenue: 6860 },
 ];
