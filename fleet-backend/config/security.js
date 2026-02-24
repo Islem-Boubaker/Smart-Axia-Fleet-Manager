@@ -26,13 +26,15 @@ export const CORS_OPTIONS = {
   origin: (origin, callback) => {
     if (!origin) return callback(null, true);
 
+    const allowedOrigin = (process.env.CLIENT_URL || '').replace(/\/+$/, '');
+
     if (
-      origin === process.env.CLIENT_URL ||
-      origin.endsWith(".vercel.app")
+      origin === allowedOrigin ||
+      origin.endsWith('.vercel.app')
     ) {
       callback(null, true);
     } else {
-      callback(new Error("Not allowed by CORS"));
+      callback(new Error('Not allowed by CORS'));
     }
   },
   credentials: true,                      // required for cookies

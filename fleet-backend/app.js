@@ -18,14 +18,13 @@ dotenv.config();
 
 const app = express();
 
-// ── 1. Security headers (Helmet) ────────────────────────────
+// ── 1. CORS — must run BEFORE helmet so preflight OPTIONS gets headers ─
+app.use(cors(CORS_OPTIONS));
+
+// ── 2. Security headers (Helmet) ────────────────────────────
 //    Sets X-Content-Type-Options, X-Frame-Options, Strict-Transport-Security,
 //    X-XSS-Protection, Referrer-Policy, and more.
 app.use(helmet(HELMET_OPTIONS));
-
-
-// ── 2. CORS — only allow configured origins with credentials ─
-app.use(cors(CORS_OPTIONS));
 
 // ── 3. Global rate limiter (DDoS / abuse protection) ─────────
 app.use(rateLimit(RATE_LIMIT.api));
