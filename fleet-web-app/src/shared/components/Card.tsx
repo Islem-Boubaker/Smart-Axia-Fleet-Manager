@@ -9,7 +9,7 @@ interface CardProps {
   padding?: 'none' | 'sm' | 'md' | 'lg';
 }
 
-const Card = ({
+export const Card = ({
   children,
   title,
   subtitle,

@@ -11,7 +11,7 @@ interface GlobalCardProps {
   maxWidth?: 'sm' | 'md' | 'lg' | 'xl' | '2xl';
 }
 
-const GlobalCard = ({
+export const GlobalCard = ({
   isOpen,
   onClose,
   title,
@@ -97,4 +97,4 @@ const GlobalCard = ({
   );
 };
 
-export default GlobalCard;
+
