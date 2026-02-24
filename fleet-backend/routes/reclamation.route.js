@@ -1,6 +1,6 @@
 import express from "express";
 import * as reclamationController from "../controllers/reclamation.controller.js";
-import * as authMiddleware from "../middlewares/auth.middleware.js";
+import * as authMiddleware from "../middlewares/auth.middlewares.js";
 
 
 const router = express.Router();

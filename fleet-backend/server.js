@@ -1,8 +1,8 @@
 import app from './app.js';
 import {sequelize } from './config/connectdb.js';
 import './models/index.js';
-const PORT = process.env.PORT;
 
+const PORT = process.env.PORT;
 async function startServer() {
   try {
     await sequelize.authenticate();
@@ -17,4 +17,7 @@ async function startServer() {
   }
 }
 
+
+
 startServer();
+

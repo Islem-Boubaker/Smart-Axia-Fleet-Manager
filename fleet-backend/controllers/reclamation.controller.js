@@ -1,9 +1,7 @@
 import { StatusCodes } from "http-status-codes";
 import * as reclamationService from "../services/reclamation.service.js";
 
-/**
- * Create reclamation
- */
+
 export const createVehicleReclamation = async (req, res, next) => {
   try {
     const { vehicleId, subject, message } = req.body;
@@ -25,9 +23,7 @@ export const createVehicleReclamation = async (req, res, next) => {
   }
 };
 
-/**
- * Get all reclamations (Admin)
- */
+
 export const getAllReclamations = async (req, res, next) => {
   try {
     const result = await reclamationService.getAllReclamationsSvc();
@@ -41,9 +37,7 @@ export const getAllReclamations = async (req, res, next) => {
   }
 };
 
-/**
- * Get logged user reclamations
- */
+
 export const getMyReclamations = async (req, res, next) => {
   try {
     const result = await reclamationService.getUserReclamationsSvc(
@@ -59,9 +53,7 @@ export const getMyReclamations = async (req, res, next) => {
   }
 };
 
-/**
- * Update reclamation status
- */
+
 export const updateReclamationStatus = async (req, res, next) => {
   try {
     const { id } = req.params;
@@ -80,9 +72,7 @@ export const updateReclamationStatus = async (req, res, next) => {
   }
 };
 
-/**
- * Delete reclamation
- */
+
 export const deleteReclamation = async (req, res, next) => {
   try {
     const { id } = req.params;
