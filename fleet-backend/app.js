@@ -40,6 +40,7 @@ app.use(cookieParser());
 // ── 6. Remove fingerprinting header ──────────────────────────
 app.disable('x-powered-by');
 
+app.set("trust proxy", 1);
 // ── 7. Routes ────────────────────────────────────────────────
 app.use('/', [userRoutes, vehicleRoutes, reclamationRoutes]);
 
