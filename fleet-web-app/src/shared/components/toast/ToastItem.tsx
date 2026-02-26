@@ -65,18 +65,25 @@ const ToastItem = ({ toast, onRemove }: ToastItemProps) => {
     setTimeout(() => onRemove(toast.id), 300); // match exit animation duration
   }, [onRemove, toast.id]);
 
-  // Slide-in on mount
+  // Slide-in on mount — double rAF ensures the browser has painted
+  // the initial (off-screen) frame before we transition in.
+  // This avoids batching issues in production / StrictMode.
   useEffect(() => {
-    const frame = requestAnimationFrame(() => setIsVisible(true));
-    return () => cancelAnimationFrame(frame);
+    let cancelled = false;
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        if (!cancelled) setIsVisible(true);
+      });
+    });
+    return () => { cancelled = true; };
   }, []);
 
-  // Auto-dismiss timer
+  // Auto-dismiss timer (keyed on createdAt so it resets after updates)
   useEffect(() => {
     if (toast.duration <= 0) return;
     const timeout = setTimeout(handleClose, toast.duration);
     return () => clearTimeout(timeout);
-  }, [toast.duration, handleClose]);
+  }, [toast.duration, toast.createdAt, handleClose]);
 
   return (
     <div
