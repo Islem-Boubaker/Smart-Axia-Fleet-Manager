@@ -1,66 +1,86 @@
-// ─────────────────────────────────────────────────────────────
-//  Axios instance — cookie-based auth (no localStorage)
-//
-//  Security model:
-//    • accessToken & refreshToken are in httpOnly cookies
-//      → the browser sends them automatically
-//    • CSRF token lives in a readable cookie; we copy it to
-//      the X-CSRF-Token header on every mutating request
-//    • On 401 the interceptor silently attempts a token refresh
-//      before redirecting to /signin
-// ─────────────────────────────────────────────────────────────
-import axios from 'axios';
+
+// src/lib/api.ts
+
+import axios, {
+  AxiosError
+} from "axios";
+import type { AxiosInstance,AxiosRequestConfig,
+  AxiosResponse, InternalAxiosRequestConfig } from "axios";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
-// ── In-memory CSRF token (cross-origin can't read backend cookies) ───
-let csrfToken: string | null = null;
 
-export function setCsrfToken(token: string | null) {
-  csrfToken = token;
+function getCsrfTokenFromCookie(): string | null {
+  if (typeof document === "undefined") return null;
+
+  const match = document.cookie
+    .split("; ")
+    .find((row) => row.startsWith("csrf-token="));
+
+  return match ? match.split("=")[1] : null;
 }
 
-export function getCsrfToken(): string | null {
-  return csrfToken;
-}
-
-// ── Create Axios instance ────────────────────────────────────
-const api = axios.create({
+const api: AxiosInstance = axios.create({
   baseURL: API_BASE_URL,
-  withCredentials: true,                  // ← send cookies on every request
-  headers: { 'Content-Type': 'application/json' },
+  withCredentials: true, 
+  headers: {
+    "Content-Type": "application/json",
+  },
 });
 
-// ── Request interceptor: attach CSRF token ───────────────────
-api.interceptors.request.use((config) => {
-  if (csrfToken) {
-    config.headers['X-CSRF-Token'] = csrfToken;
-  }
-  return config;
-});
 
-// ── Response interceptor: silent refresh on 401 ──────────────
+api.interceptors.request.use(
+  (config: InternalAxiosRequestConfig): InternalAxiosRequestConfig => {
+    const csrfToken = getCsrfTokenFromCookie();
+
+    if (csrfToken) {
+      config.headers["x-csrf-token"] = csrfToken;
+    }
+
+    return config;
+  },
+  (error: AxiosError) => Promise.reject(error)
+);
+
+
+
 let isRefreshing = false;
-let pendingQueue: Array<{ resolve: (v: unknown) => void; reject: (e: unknown) => void }> = [];
 
-function processQueue(error: unknown) {
-  pendingQueue.forEach(({ resolve, reject }) => (error ? reject(error) : resolve(undefined)));
+let pendingQueue: {
+  resolve: (value?: unknown) => void;
+  reject: (reason?: unknown) => void;
+}[] = [];
+
+function processQueue(error: unknown): void {
+  pendingQueue.forEach((promise) => {
+    if (error) promise.reject(error);
+    else promise.resolve(undefined);
+  });
+
   pendingQueue = [];
 }
 
 api.interceptors.response.use(
-  (response) => response,
-  async (error) => {
-    const originalRequest = error.config;
+  (response: AxiosResponse): AxiosResponse => response,
 
-    // Only attempt refresh for 401 that is NOT the refresh call itself
+  async (error: AxiosError): Promise<AxiosResponse | Promise<never>> => {
+    const originalRequest = error.config as AxiosRequestConfig & {
+      _retry?: boolean;
+    };
+
+    if (!error.response) {
+      return Promise.reject(error);
+    }
+
+    const status = error.response.status;
+
+    
     if (
-      error.response?.status === 401 &&
+      status === 401 &&
       !originalRequest._retry &&
-      !originalRequest.url?.includes('/user/refresh-token')
+      !originalRequest.url?.includes("/user/refresh-token")
     ) {
       if (isRefreshing) {
-        // Queue this request until refresh resolves
         return new Promise((resolve, reject) => {
           pendingQueue.push({ resolve, reject });
         }).then(() => api(originalRequest));
@@ -70,15 +90,17 @@ api.interceptors.response.use(
       isRefreshing = true;
 
       try {
-        const refreshRes = await api.post('/user/refresh-token');
-        if (refreshRes.data?.csrfToken) {
-          setCsrfToken(refreshRes.data.csrfToken);
-        }
+        await api.post("/user/refresh-token");
+
         processQueue(null);
-        return api(originalRequest);           // retry original request
+
+        return api(originalRequest);
       } catch (refreshError) {
         processQueue(refreshError);
-        window.location.href = '/signin';       // refresh failed → re-login
+
+     
+        window.location.href = "/signin";
+
         return Promise.reject(refreshError);
       } finally {
         isRefreshing = false;
@@ -89,39 +111,8 @@ api.interceptors.response.use(
   }
 );
 
-// ── Domain-specific API helpers ──────────────────────────────
 
-export const vehiclesAPI = {
-  getAll: () => api.get('/vehicles'),
-  getById: (id: string) => api.get(`/vehicles/${id}`),
-  create: (data: Record<string, unknown>) => api.post('/vehicles', data),
-  update: (id: string, data: Record<string, unknown>) => api.put(`/vehicles/${id}`, data),
-  delete: (id: string) => api.delete(`/vehicles/${id}`),
-};
 
-export const driversAPI = {
-  getAll: () => api.get('/user/getusers'),
-  getById: (id: string) => api.get(`/user/getuser/${id}`),
-  create: (data: Record<string, unknown>) => api.post('/user/createdriver', data),
-  update: (id: string, data: Record<string, unknown>) => api.put(`/user/updateuser/${id}`, data),
-  delete: (id: string) => api.delete(`/user/deleteuser/${id}`),
-};
-
-export const tripsAPI = {
-  getAll: () => api.get('/trips'),
-  getById: (id: string) => api.get(`/trips/${id}`),
-  create: (data: Record<string, unknown>) => api.post('/trips', data),
-  update: (id: string, data: Record<string, unknown>) => api.put(`/trips/${id}`, data),
-  delete: (id: string) => api.delete(`/trips/${id}`),
-};
-
-export const maintenanceAPI = {
-  getAll: () => api.get('/maintenance'),
-  getById: (id: string) => api.get(`/maintenance/${id}`),
-  create: (data: Record<string, unknown>) => api.post('/maintenance', data),
-  update: (id: string, data: Record<string, unknown>) => api.put(`/maintenance/${id}`, data),
-  delete: (id: string) => api.delete(`/maintenance/${id}`),
-};
-
-export { api };
 export default api;
+export { api };
+
