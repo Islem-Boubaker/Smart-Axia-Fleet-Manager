@@ -49,12 +49,14 @@ router.get(
 router.put(
   '/user/updateuser/:id',
   authMiddleware.authenticate,
+  authMiddleware.authorizeRoles('ADMIN'),
   csrfMiddleware.verifyCsrf,
   userController.updateUser
 );
 router.delete(
   '/user/deleteuser/:id',
   authMiddleware.authenticate,
+  authMiddleware.authorizeRoles('ADMIN'),
   csrfMiddleware.verifyCsrf,
   userController.deleteUser
 );

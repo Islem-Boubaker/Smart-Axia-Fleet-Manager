@@ -18,6 +18,14 @@ export const errorHandler = (err, req, res, _next) => {
     });
   }
 
+  // ── Sequelize foreign-key constraint errors ──
+  if (err.name === 'SequelizeForeignKeyConstraintError') {
+    return res.status(409).json({
+      success: false,
+      message: 'Cannot delete this record because it is referenced by other records',
+    });
+  }
+
   // ── Application errors with an explicit statusCode ──
   const statusCode = err.statusCode || 500;
   res.status(statusCode).json({
