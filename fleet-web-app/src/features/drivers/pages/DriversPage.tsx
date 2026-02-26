@@ -1,6 +1,7 @@
 import { useState, useCallback } from "react";
 
 import { useDrivers } from "../hooks/useDrivers";
+import { toast } from "../../../shared/components";
 import DriversHeader from "../components/DriversHeader";
 import DriversSearch from "../components/DriversSearch";
 import DriversGrid from "../components/DriversGrid";
@@ -13,7 +14,7 @@ const DriversPage = () => {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [selectedDriver, setSelectedDriver] = useState<Driver | null>(null);
 
-  const { drivers, isLoading, error, addDriver, updateDriver, deleteDriver } =useDrivers();
+  const { drivers, isLoading, addDriver, updateDriver, deleteDriver } =useDrivers();
 
   const filteredDrivers = drivers.filter((driver) =>
     `${driver.name} ${driver.email} ${driver.licenseNumber ?? ""}`
@@ -23,11 +24,13 @@ const DriversPage = () => {
 
   const handleAddDriver = useCallback(
     async (data: Partial<Driver> & { password: string }) => {
+      const loadingId = toast.loading('Adding driver…');
       try {
         await addDriver({ ...data, role: "DRIVER" });
+        toast.update(loadingId, { type: 'success', title: 'Success', message: 'Driver added successfully!' });
         setIsAddModalOpen(false);
-      } catch {
-        /* error already stored in hook */
+      } catch (err: any) {
+        toast.update(loadingId, { type: 'error', title: 'Error', message: err.message || 'Failed to add driver' });
       }
     },
     [addDriver],
@@ -41,12 +44,14 @@ const DriversPage = () => {
   const handleUpdateDriver = useCallback(
     async (data: Partial<Driver>) => {
       if (!selectedDriver?.id) return;
+      const loadingId = toast.loading('Updating driver…');
       try {
         await updateDriver(selectedDriver.id, data);
+        toast.update(loadingId, { type: 'success', title: 'Success', message: 'Driver updated successfully!' });
         setIsEditModalOpen(false);
         setSelectedDriver(null);
-      } catch {
-        /* error already stored in hook */
+      } catch (err: any) {
+        toast.update(loadingId, { type: 'error', title: 'Error', message: err.message || 'Failed to update driver' });
       }
     },
     [selectedDriver, updateDriver],
@@ -56,10 +61,12 @@ const DriversPage = () => {
     async (driverId: string) => {
       if (!window.confirm("Are you sure you want to delete this driver?"))
         return;
+      const loadingId = toast.loading('Deleting driver…');
       try {
         await deleteDriver(driverId);
-      } catch {
-        /* error already stored in hook */
+        toast.update(loadingId, { type: 'success', title: 'Deleted', message: 'Driver deleted successfully.' });
+      } catch (err: any) {
+        toast.update(loadingId, { type: 'error', title: 'Error', message: err.message || 'Failed to delete driver' });
       }
     },
     [deleteDriver],
@@ -68,11 +75,6 @@ const DriversPage = () => {
   return (
     <>
       <div className="space-y-6">
-        {error && (
-          <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
-            {error}
-          </div>
-        )}
         <DriversHeader onAdd={() => setIsAddModalOpen(true)} />
         <DriversSearch value={searchQuery} onChange={setSearchQuery} />
         <DriversGrid

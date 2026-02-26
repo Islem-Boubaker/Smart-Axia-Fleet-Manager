@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { FiMail, FiLock, FiTruck } from 'react-icons/fi';
-import { Button, Input } from '../../../shared/components';
+import { Button, Input, toast } from '../../../shared/components';
 import { authAPI } from '../services/auth.service';
 import type { SignInCredentials } from '../services/auth.service';
 import { ROUTES } from '../../../utils/constants.ts';
@@ -37,10 +37,12 @@ export default function Signin() {
       if (!user) throw new Error('Login failed');
 
       dispatch(setUser(user));
+      toast.success('Welcome back!');
       navigate(ROUTES.DASHBOARD);
     } catch (error: unknown) {
       const axiosError = error as { response?: { data?: { message?: string } }; message?: string };
       const msg = axiosError.response?.data?.message || axiosError.message || 'Failed to sign in';
+      toast.error(msg);
       setErrorMsg(msg);
     } finally {
       setIsLoading(false);

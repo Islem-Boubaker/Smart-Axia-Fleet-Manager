@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { FiMail, FiLock, FiUser, FiTruck } from 'react-icons/fi';
-import { Button, Input } from '../../../shared/components';
+import { Button, Input, toast } from '../../../shared/components';
 import { ROUTES } from '../../../utils/constants';
 import { authAPI } from '../services/auth.service';
 import type { SignUpData } from '../services/auth.service';
@@ -41,17 +41,14 @@ export default function Signup() {
 
       await authAPI.signUp(payload);
 
+      toast.success('Account created successfully! Please sign in.');
       // Redirect after success
       navigate(ROUTES.SIGN_IN);
     } catch (error) {
       const axiosError = error as AxiosError<{ message?: string }>;
 
-      console.error('Sign up error:', axiosError.response?.data);
-
-      alert(
-        axiosError.response?.data?.message ||
-          'Failed to create account. Please try again.'
-      );
+      const msg = axiosError.response?.data?.message || 'Failed to create account. Please try again.';
+      toast.error(msg);
     } finally {
       setIsLoading(false);
     }

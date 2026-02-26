@@ -4,7 +4,7 @@ import * as authMiddleware from '../middlewares/auth.middlewares.js';
 
 const router = express.Router();
 
-router.post('/vehicle/addvehicle', authMiddleware.authenticate, authMiddleware.authorizeRoles('ADMIN', 'MANAGER', 'DRIVER'), vehicleController.createVehicle);
+router.post('/vehicle/addvehicle', authMiddleware.authenticate, authMiddleware.authorizeRoles('ADMIN', 'MANAGER'), vehicleController.createVehicle);
 
 
 router.get('/vehicle/getvehicles', authMiddleware.authenticate, authMiddleware.authorizeRoles('ADMIN', 'MANAGER'), vehicleController.getAllVehicles);

@@ -37,8 +37,7 @@ export const CORS_OPTIONS = {
     const allowedOrigin = (process.env.CLIENT_URL || '').replace(/\/+$/, '');
 
     if (
-      origin === allowedOrigin ||
-      origin.endsWith('.vercel.app')
+      origin === allowedOrigin 
     ) {
       callback(null, true);
     } else {
