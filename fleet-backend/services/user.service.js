@@ -15,20 +15,37 @@ export const getAllUsersSvc = async () => {
 };
 
 export const getUserByIdSvc = async (id) => {
-  return await User.findByPk(id);
+  return await User.findByPk(id, { attributes: { exclude: ['password'] } });
 };
 export const updateUserSvc = async (id, updateData) => {
   const user = await User.findByPk(id);
   if (!user) return null;
 
-  if (!updateData.password || updateData.password.trim() === '') {
-    delete updateData.password;
+  let normalizedUpdate = updateData;
+
+  // Some clients/middleware can deliver JSON bodies as strings.
+  if (typeof normalizedUpdate === 'string') {
+    try {
+      normalizedUpdate = JSON.parse(normalizedUpdate);
+    } catch {
+      normalizedUpdate = {};
+    }
   }
 
-  await User.update(updateData, { where: { id }, individualHooks: true });
+  if (!normalizedUpdate || typeof normalizedUpdate !== 'object') {
+    normalizedUpdate = {};
+  }
 
-  const updated = await User.findByPk(id);
-  return updated;
+  const sanitizedUpdate = { ...normalizedUpdate };
+
+  if (!sanitizedUpdate.password || sanitizedUpdate.password.trim() === '') {
+    delete sanitizedUpdate.password;
+  }
+
+  await user.update(sanitizedUpdate);
+
+  const { password, ...safeUser } = user.toJSON();
+  return safeUser;
 };
 
 export const deleteUserSvc = async (id) => {

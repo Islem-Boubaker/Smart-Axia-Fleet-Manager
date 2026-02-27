@@ -50,6 +50,8 @@ export const CORS_OPTIONS = {
     'Content-Type',
     'Authorization',
     'X-CSRF-Token',                       // our CSRF header
+    'X-XSRF-Token',                       // axios / common convention
+    'CSRF-Token',                         // some clients use this
     'X-Requested-With',
   ],
   exposedHeaders: ['X-CSRF-Token'],

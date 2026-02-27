@@ -13,7 +13,8 @@ import vehicleRoutes from './routes/vehicle.route.js';
 import reclamationRoutes from './routes/reclamation.route.js';
 import { errorHandler } from './middlewares/error.middleware.js';
 import { CORS_OPTIONS, HELMET_OPTIONS, RATE_LIMIT } from './config/security.js';
-
+import maintenanceRoutes from './routes/maintenance.route.js';
+import notificationRoutes from './routes/notification.route.js';    
 dotenv.config();
 
 const app = express();
@@ -43,7 +44,7 @@ app.disable('x-powered-by');
 
 app.set("trust proxy", 1);
 // ── 7. Routes ────────────────────────────────────────────────
-app.use('/', [userRoutes, vehicleRoutes, reclamationRoutes]);
+app.use('/', [userRoutes, vehicleRoutes, reclamationRoutes,maintenanceRoutes,notificationRoutes]);
 
 // ── 8. Global error handler ──────────────────────────────────
 app.use(errorHandler);
