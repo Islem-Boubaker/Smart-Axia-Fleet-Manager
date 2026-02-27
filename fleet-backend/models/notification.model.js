@@ -1,5 +1,5 @@
-import { DataTypes } from sequelize;
-import sequelize from '../config/connectdb.js';
+import { DataTypes } from 'sequelize';
+import { sequelize } from '../config/connectdb.js';
 
 
 const Notification = sequelize.define(
