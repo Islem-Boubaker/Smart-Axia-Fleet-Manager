@@ -3,7 +3,7 @@ import { FiMenu } from 'react-icons/fi';
 import type { HeaderProps } from '../../types/types';
 import { HeaderSearch } from './HeaderSearch';
 import { HeaderNotifications } from './HeaderNotifications';
-import  HeaderUser from '../../ui/UserAvatar';
+import UserMenu from '../../ui/UserMenu';
 
 export const Header = memo(({ toggleSidebar }: HeaderProps) => {
   return (
@@ -25,7 +25,7 @@ export const Header = memo(({ toggleSidebar }: HeaderProps) => {
         {/* Right */}
         <div className="flex items-center space-x-4">
           <HeaderNotifications />
-          <HeaderUser />
+          <UserMenu/>
         </div>
 
       </div>
