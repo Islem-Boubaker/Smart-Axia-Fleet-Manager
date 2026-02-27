@@ -1,11 +1,11 @@
 
-// src/lib/api.ts
-
 import axios, {
   AxiosError
 } from "axios";
 import type { AxiosInstance,AxiosRequestConfig,
   AxiosResponse, InternalAxiosRequestConfig } from "axios";
+
+import { getCsrfToken, setCsrfToken, clearCsrfToken } from './csrfToken';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
@@ -28,13 +28,41 @@ const api: AxiosInstance = axios.create({
   },
 });
 
+const csrfBootstrapClient = axios.create({
+  baseURL: API_BASE_URL,
+  withCredentials: true,
+  headers: {
+    "Content-Type": "application/json",
+  },
+});
+
+async function ensureCsrfToken(): Promise<string | null> {
+  const existing = getCsrfToken();
+  if (existing) return existing;
+
+  try {
+    const response = await csrfBootstrapClient.post('/user/refresh-token');
+    const token = response.data?.data?.csrfToken ?? response.data?.csrfToken;
+    setCsrfToken(token);
+    return getCsrfToken();
+  } catch {
+    return null;
+  }
+}
+
+function shouldAttachCsrf(config: InternalAxiosRequestConfig): boolean {
+  const method = (config.method || 'get').toUpperCase();
+  return method !== 'GET' && method !== 'HEAD' && method !== 'OPTIONS';
+}
+
 
 api.interceptors.request.use(
-  (config: InternalAxiosRequestConfig): InternalAxiosRequestConfig => {
-    const csrfToken = getCsrfTokenFromCookie();
-
-    if (csrfToken) {
-      config.headers["x-csrf-token"] = csrfToken;
+  async (config: InternalAxiosRequestConfig): Promise<InternalAxiosRequestConfig> => {
+    if (shouldAttachCsrf(config)) {
+      const token = getCsrfToken() || getCsrfTokenFromCookie() || (await ensureCsrfToken());
+      if (token) {
+        config.headers["X-CSRF-Token"] = token;
+      }
     }
 
     return config;
@@ -61,7 +89,11 @@ function processQueue(error: unknown): void {
 }
 
 api.interceptors.response.use(
-  (response: AxiosResponse): AxiosResponse => response,
+  (response: AxiosResponse): AxiosResponse => {
+    const token = response.data?.data?.csrfToken ?? response.data?.csrfToken;
+    if (token) setCsrfToken(token);
+    return response;
+  },
 
   async (error: AxiosError): Promise<AxiosResponse | Promise<never>> => {
     const originalRequest = error.config as AxiosRequestConfig & {
@@ -73,6 +105,17 @@ api.interceptors.response.use(
     }
 
     const status = error.response.status;
+
+    if (status === 403) {
+      const data = error.response.data as unknown;
+      const message =
+        typeof data === 'object' && data !== null && 'message' in data
+          ? (data as { message?: unknown }).message
+          : undefined;
+      if (typeof message === 'string' && message.toLowerCase().includes('csrf')) {
+        clearCsrfToken();
+      }
+    }
 
     
     if (
