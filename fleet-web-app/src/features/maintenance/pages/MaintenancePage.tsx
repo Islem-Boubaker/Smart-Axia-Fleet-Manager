@@ -5,14 +5,14 @@ import MaintenanceTable from '../components/MaintenanceTable';
 import MaintenanceForm from '../components/MaintenanceForm';
 import { useMaintenance } from '../hooks/useMaintenance';
 import { FiPlus } from 'react-icons/fi';
+import {maintenanceService} from '../services/maintenance.service';
 
 const MaintenancePage = () => {
   const { records, isLoading } = useMaintenance();
   const [isScheduleModalOpen, setIsScheduleModalOpen] = useState(false);
 
-  const handleScheduleMaintenance = useCallback((data: any) => {
-    console.log('Schedule maintenance:', data);
-    // TODO: Implement schedule maintenance API call
+  const handleScheduleMaintenance = useCallback((data: Record<string, unknown>) => {
+    maintenanceService.create(data)
     setIsScheduleModalOpen(false);
   }, []);
 

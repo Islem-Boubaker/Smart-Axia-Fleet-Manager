@@ -1,66 +1,41 @@
-const validPriority = ['low', 'medium', 'high'];
+import { z } from "zod";
 
-const validStatus = [
-    'scheduled',
-    'in_progress',
-    'completed',
-    'cancelled'
-];
+const validPriority = ["low", "medium", "high"];
+const validStatus = ["scheduled", "in_progress", "completed", "cancelled"];
 
+const createMaintenanceSchema = z.object({
+  vehiclePlate: z.string().min(1, "vehiclePlate required"),
+  scheduledDate: z
+    .string()
+    .min(1, "scheduledDate required")
+    .refine((v) => !Number.isNaN(Date.parse(v)), {
+      message: "scheduledDate must be a valid date",
+    }),
+  technician: z.string().min(1, "technician required"),
+
+
+  cost: z.coerce
+    .number({ invalid_type_error: "valid cost required" })
+    .min(0, "valid cost required"),
+
+  priority: z.enum(validPriority).optional(),
+  status: z.enum(validStatus).optional(),
+});
 
 export const validateCreateMaintenance = (req, res, next) => {
+  const parsed = createMaintenanceSchema.safeParse(req.body);
 
-    const {
-        vehiclePlate,
-        scheduledDate,
-        technician,
-        cost,
-        priority,
-        status
-    } = req.body;
-
-
-    if (!vehiclePlate)
-        return res.status(400).json({
-            success: false,
-            message: 'vehiclePlate required'
-        });
-
-
-    if (!scheduledDate)
-        return res.status(400).json({
-            success: false,
-            message: 'scheduledDate required'
-        });
-
-
-    if (!technician)
-        return res.status(400).json({
-            success: false,
-            message: 'technician required'
-        });
-
-
-    if (cost == null || cost < 0)
-        return res.status(400).json({
-            success: false,
-            message: 'valid cost required'
-        });
-
-
-    if (priority && !validPriority.includes(priority))
-        return res.status(400).json({
-            success: false,
-            message: 'invalid priority'
-        });
-
-
-    if (status && !validStatus.includes(status))
-        return res.status(400).json({
-            success: false,
-            message: 'invalid status'
-        });
-
-
-    next();
+  if (!parsed.success) {
+    return res.status(422).json({
+      success: false,
+      message: "Validation error",
+      errors: parsed.error.issues.map((i) => ({
+        field: i.path.join("."),
+        message: i.message,
+      })),
+      code: "VALIDATION_ERROR",
+    });
+  }
+  req.body = parsed.data;
+  next();
 };

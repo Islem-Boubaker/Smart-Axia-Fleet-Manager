@@ -1,11 +1,4 @@
-import {
-    createMaintenanceService,
-    getAllMaintenancesService,
-    getMaintenanceByIdService,
-    updateMaintenanceService,
-    deleteMaintenanceService,
-    updateMaintenanceStatusService
-} from '../services/maintenance.service.js';
+import * as MaintenanceService from '../services/maintenance.service.js';
 
 import { successResponse, errorResponse } from '../utils/response.js';
 
@@ -15,7 +8,7 @@ export const createMaintenance = async (req, res) => {
 
     try {
 
-        const maintenance = await createMaintenanceService(req.body);
+        const maintenance = await MaintenanceService.createMaintenance(req.body);
 
         return successResponse(
             res,
@@ -38,7 +31,7 @@ export const getAllMaintenances = async (req, res) => {
 
     try {
 
-        const maintenances = await getAllMaintenancesService();
+        const maintenances = await MaintenanceService.getAllMaintenances();
 
         return successResponse(
             res,
@@ -60,7 +53,7 @@ export const getMaintenanceById = async (req, res) => {
 
     try {
 
-        const maintenance = await getMaintenanceByIdService(req.params.id);
+        const maintenance = await MaintenanceService.getMaintenanceById(req.params.id);
 
         if (!maintenance)
             return errorResponse(res, 'Maintenance not found', 404);
@@ -81,7 +74,7 @@ export const updateMaintenance = async (req, res) => {
 
     try {
 
-        const maintenance = await updateMaintenanceService(
+        const maintenance = await MaintenanceService.updateMaintenance(
             req.params.id,
             req.body
         );
@@ -109,7 +102,7 @@ export const deleteMaintenance = async (req, res) => {
 
     try {
 
-        const deleted = await deleteMaintenanceService(req.params.id);
+        const deleted = await MaintenanceService.deleteMaintenance(req.params.id);
 
         if (!deleted)
             return errorResponse(res, 'Maintenance not found', 404);
@@ -137,7 +130,7 @@ export const updateMaintenanceStatus = async (req, res) => {
         const { status } = req.body;
 
         const maintenance =
-            await updateMaintenanceStatusService(
+            await MaintenanceService.updateMaintenanceStatus(
                 req.params.id,
                 status
             );

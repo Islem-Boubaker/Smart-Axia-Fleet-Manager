@@ -8,19 +8,22 @@ import rateLimit from 'express-rate-limit';
 import cookieParser from 'cookie-parser';
 import dotenv from 'dotenv';
 
-import userRoutes from './routes/user.route.js';
-import vehicleRoutes from './routes/vehicle.route.js';
-import reclamationRoutes from './routes/reclamation.route.js';
+import userRoutes from './routes/user.routes.js';
+import vehicleRoutes from './routes/vehicle.routes.js';
+import reclamationRoutes from './routes/reclamation.routes.js';
 import { errorHandler } from './middlewares/error.middleware.js';
 import { CORS_OPTIONS, HELMET_OPTIONS, RATE_LIMIT } from './config/security.js';
-import maintenanceRoutes from './routes/maintenance.route.js';
-import notificationRoutes from './routes/notification.route.js';    
+import maintenanceRoutes from './routes/maintenance.routes.js';
+import notificationRoutes from './routes/notification.routes.js';    
+import tripRoutes from './routes/trip.routes.js';
 dotenv.config();
 
 const app = express();
 
 // ── 1. CORS — must run BEFORE helmet so preflight OPTIONS gets headers ─
 app.use(cors(CORS_OPTIONS));
+
+
 
 // ── 2. Security headers (Helmet) ────────────────────────────
 //    Sets X-Content-Type-Options, X-Frame-Options, Strict-Transport-Security,
@@ -44,7 +47,7 @@ app.disable('x-powered-by');
 
 app.set("trust proxy", 1);
 // ── 7. Routes ────────────────────────────────────────────────
-app.use('/', [userRoutes, vehicleRoutes, reclamationRoutes,maintenanceRoutes,notificationRoutes]);
+app.use('/', [userRoutes, vehicleRoutes, reclamationRoutes,maintenanceRoutes,notificationRoutes,tripRoutes]);
 
 // ── 8. Global error handler ──────────────────────────────────
 app.use(errorHandler);
