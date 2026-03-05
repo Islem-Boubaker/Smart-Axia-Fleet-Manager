@@ -1,4 +1,4 @@
-import { vehicleService, type Vehicle } from '../../vehicles/services/vehicles.service';
+import { vehiclesService, type Vehicle } from '../../vehicles/services/vehicles.service';
 import { useState, useEffect } from 'react';
 import { maintenanceService } from '../services/maintenance.service';
 import type { Maintenance } from '../../../types';
@@ -46,7 +46,7 @@ export const useVehicles = () => {
     try {
       setIsLoading(true);
       setError(null);
-      const data = await vehicleService.getAll();
+      const data = await vehiclesService.getVehicles();
       setVehicles(data ?? []);
     } catch (err: any) {
       setError(err?.response?.data?.message || 'Failed to fetch vehicles');
