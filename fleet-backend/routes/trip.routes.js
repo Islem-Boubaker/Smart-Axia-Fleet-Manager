@@ -43,7 +43,7 @@ router.patch(
   tripController.updateTrip
 );
 
-// Update status (admin/manager) — tu peux ajouter DRIVER si tu veux qu’il démarre/termine
+
 router.patch(
   '/trips/:id/status',
   auth.authorizeRoles('ADMIN', 'MANAGER'),
