@@ -19,8 +19,8 @@ export const createUser = async (req, res, next) => {
 
 export const getAllUsers = async (req, res, next) => {
   try {
-    const users = await userService.getAllUsersSvc();
-    res.status(StatusCodes.OK).json({ success: true, data: users });
+    const result = await userService.getAllUsersSvc(req.query);
+    res.status(StatusCodes.OK).json({ success: true, ...result });
   } catch (error) {
     next(error);
   }

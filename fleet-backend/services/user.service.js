@@ -1,6 +1,7 @@
 import User from '../models/user.model.js';
 import Reclamation from '../models/reclamation.model.js';
 import * as Token from '../utils/jwt.js';
+import { getPagination, getPagingData } from '../utils/pagination.js';
 
 
 
@@ -10,8 +11,15 @@ export const createUserSvc = async (userData) => {
   return safeUser;
 };
 
-export const getAllUsersSvc = async () => {
-  return await User.findAll({ attributes: { exclude: ['password'] } });
+export const getAllUsersSvc = async (query = {}) => {
+  const { page, limit, offset } = getPagination(query);
+  const { count, rows } = await User.findAndCountAll({
+    attributes: { exclude: ['password'] },
+    limit,
+    offset,
+    order: [['createdAt', 'DESC']],
+  });
+  return getPagingData(count, rows, page, limit);
 };
 
 export const getUserByIdSvc = async (id) => {
