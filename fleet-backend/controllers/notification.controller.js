@@ -1,171 +1,93 @@
-import {
-    createNotificationService,
-    getAllNotificationsService,
-    getNotificationByIdService,
-    updateNotificationService,
-    deleteNotificationService,
-    markNotificationAsReadService
-} from '../services/notification.service.js';
+import * as notificationService from '../services/notification.service.js';
+import { successResponse } from '../utils/response.js';
 
-
-// CREATE
-export const createNotification = async (req, res) => {
-    try {
-
-        const notification = await createNotificationService(req.body);
-
-        res.status(201).json({
-            success: true,
-            data: notification
-        });
-
-    } catch (error) {
-
-        res.status(500).json({
-            success: false,
-            message: error.message
-        });
-
-    }
+export const createNotification = async (req, res, next) => {
+  try {
+    const notification = await notificationService.createNotificationService(req.body);
+    successResponse(res, notification, 'Notification created', 201);
+  } catch (err) {
+    next(err);
+  }
 };
 
-
-// GET ALL
-export const getAllNotifications = async (req, res) => {
-    try {
-
-        const notifications = await getAllNotificationsService();
-
-        res.status(200).json({
-            success: true,
-            data: notifications
-        });
-
-    } catch (error) {
-
-        res.status(500).json({
-            success: false,
-            message: error.message
-        });
-
-    }
+export const getAllNotifications = async (req, res, next) => {
+  try {
+    const result = await notificationService.getAllNotificationsService(req.query, req.user);
+    successResponse(res, result, 'Notifications retrieved');
+  } catch (err) {
+    next(err);
+  }
 };
 
-
-// GET ONE
-export const getNotificationById = async (req, res) => {
-    try {
-
-        const notification = await getNotificationByIdService(req.params.id);
-
-        if (!notification) {
-            return res.status(404).json({
-                success: false,
-                message: 'Notification not found'
-            });
-        }
-
-        res.status(200).json({
-            success: true,
-            data: notification
-        });
-
-    } catch (error) {
-
-        res.status(500).json({
-            success: false,
-            message: error.message
-        });
-
-    }
+export const getNotificationById = async (req, res, next) => {
+  try {
+    const notification = await notificationService.getNotificationByIdService(
+      req.params.notificationId,
+      req.user
+    );
+    successResponse(res, notification, 'Notification fetched');
+  } catch (err) {
+    next(err);
+  }
 };
 
-
-// UPDATE
-export const updateNotification = async (req, res) => {
-    try {
-
-        const notification = await updateNotificationService(
-            req.params.id,
-            req.body
-        );
-
-        if (!notification) {
-            return res.status(404).json({
-                success: false,
-                message: 'Notification not found'
-            });
-        }
-
-        res.status(200).json({
-            success: true,
-            data: notification
-        });
-
-    } catch (error) {
-
-        res.status(500).json({
-            success: false,
-            message: error.message
-        });
-
-    }
+export const updateNotification = async (req, res, next) => {
+  try {
+    const notification = await notificationService.updateNotificationService(
+      req.params.notificationId,
+      req.body,
+      req.user
+    );
+    successResponse(res, notification, 'Notification updated');
+  } catch (err) {
+    next(err);
+  }
 };
 
-
-// DELETE
-export const deleteNotification = async (req, res) => {
-    try {
-
-        const deleted = await deleteNotificationService(req.params.id);
-
-        if (!deleted) {
-            return res.status(404).json({
-                success: false,
-                message: 'Notification not found'
-            });
-        }
-
-        res.status(200).json({
-            success: true,
-            message: 'Notification deleted successfully'
-        });
-
-    } catch (error) {
-
-        res.status(500).json({
-            success: false,
-            message: error.message
-        });
-
-    }
+export const deleteNotification = async (req, res, next) => {
+  try {
+    await notificationService.deleteNotificationService(req.params.notificationId, req.user);
+    successResponse(res, null, 'Notification deleted');
+  } catch (err) {
+    next(err);
+  }
 };
 
+export const markAsRead = async (req, res, next) => {
+  try {
+    const notification = await notificationService.markNotificationAsReadService(
+      req.params.notificationId,
+      req.user
+    );
+    successResponse(res, notification, 'Notification marked as read');
+  } catch (err) {
+    next(err);
+  }
+};
 
-// MARK AS READ
-export const markAsRead = async (req, res) => {
-    try {
+export const markAllAsRead = async (req, res, next) => {
+  try {
+    const result = await notificationService.markAllNotificationsAsReadService(req.user);
+    successResponse(res, result, 'All notifications marked as read');
+  } catch (err) {
+    next(err);
+  }
+};
 
-        const notification = await markNotificationAsReadService(req.params.id);
+export const getUnreadCount = async (req, res, next) => {
+  try {
+    const count = await notificationService.getUnreadCountService(req.user);
+    successResponse(res, { count }, 'Unread count fetched');
+  } catch (err) {
+    next(err);
+  }
+};
 
-        if (!notification) {
-            return res.status(404).json({
-                success: false,
-                message: 'Notification not found'
-            });
-        }
-
-        res.status(200).json({
-            success: true,
-            data: notification
-        });
-
-    } catch (error) {
-
-        res.status(500).json({
-            success: false,
-            message: error.message
-        });
-
-    }
+export const clearReadNotifications = async (req, res, next) => {
+  try {
+    const result = await notificationService.clearReadNotificationsService(req.user);
+    successResponse(res, result, 'Read notifications cleared');
+  } catch (err) {
+    next(err);
+  }
 };

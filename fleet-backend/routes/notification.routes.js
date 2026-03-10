@@ -1,37 +1,76 @@
 import express from 'express';
-import {
-  createNotification,
-  getAllNotifications,
-  getNotificationById,
-  updateNotification,
-  deleteNotification,
-  markAsRead
-} from '../controllers/notification.controller.js';
-import { checkOwnership } from '../middlewares/ownership.middleware.js';
+import * as notificationController from '../controllers/notification.controller.js';
+import * as authmiddlewares from '../middlewares/auth.middlewares.js';
+import checkOwnership from '../middlewares/ownership.middleware.js';
+import csrfMiddleware from '../middlewares/csrf.middleware.js';
+import Notification from '../models/notification.model.js';
+
 const router = express.Router();
 
+router.use(authmiddlewares.authenticate);
 
+router.post(
+  '/notification/',
+  authmiddlewares.authorizeRoles('ADMIN', 'MANAGER'),
+  csrfMiddleware.verifyCsrf,
+  notificationController.createNotification
+);
 
-router.post('/notifications/', createNotification);
+router.get(
+  '/notification/',
+  authmiddlewares.authorizeRoles('ADMIN', 'MANAGER', 'DRIVER'),
+  notificationController.getAllNotifications
+);
 
+router.get(
+  '/notification/:notificationId',
+  authmiddlewares.authorizeRoles('ADMIN', 'MANAGER', 'DRIVER'),
+  checkOwnership(Notification, { ownerField: 'userId' }),
+  notificationController.getNotificationById
+);
 
+router.put(
+  '/notification/:notificationId',
+  authmiddlewares.authorizeRoles('ADMIN', 'MANAGER'),
+  csrfMiddleware.verifyCsrf,
+  checkOwnership(Notification, { ownerField: 'userId' }),
+  notificationController.updateNotification
+);
 
-router.get('/notifications/',checkOwnership(Notification, { ownerField: 'userId' }), getAllNotifications);
+router.delete(
+  '/notification/:notificationId',
+  authmiddlewares.authorizeRoles('ADMIN', 'MANAGER', 'DRIVER'),
+  csrfMiddleware.verifyCsrf,
+  checkOwnership(Notification, { ownerField: 'userId' }),
+  notificationController.deleteNotification
+);
 
+router.patch(
+  '/notification/:notificationId/read',
+  authmiddlewares.authorizeRoles('ADMIN', 'MANAGER', 'DRIVER'),
+  csrfMiddleware.verifyCsrf,
+  checkOwnership(Notification, { ownerField: 'userId' }),
+  notificationController.markAsRead
+);
 
+router.patch(
+  '/notification/read-all',
+  authmiddlewares.authorizeRoles('ADMIN', 'MANAGER', 'DRIVER'),
+  csrfMiddleware.verifyCsrf,
+  notificationController.markAllAsRead
+);
 
-router.get('/notifications/:notificationId', checkOwnership(Notification, { ownerField: 'userId' }), getNotificationById);
+router.get(
+  '/notification/unread-count',
+  authmiddlewares.authorizeRoles('ADMIN', 'MANAGER', 'DRIVER'),
+  notificationController.getUnreadCount
+);
 
-
-
-router.put('/notifications/:notificationId', updateNotification);
-
-
-
-router.delete('/notifications/:notificationId', checkOwnership(Notification, { ownerField: 'userId' }), deleteNotification);
-
-
-router.patch('/notifications/:notificationId/read', checkOwnership(Notification, { ownerField: 'userId' }), markAsRead);
-
+router.delete(
+  '/notification/clear-read',
+  authmiddlewares.authorizeRoles('ADMIN', 'MANAGER', 'DRIVER'),
+  csrfMiddleware.verifyCsrf,
+  notificationController.clearReadNotifications
+);
 
 export default router;

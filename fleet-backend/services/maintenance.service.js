@@ -1,4 +1,5 @@
 import Maintenance from '../models/maintenance.model.js';
+import { getPagination, getPagingData } from '../utils/pagination.js';
 
 
 // CREATE
@@ -8,10 +9,14 @@ export const createMaintenanceService = async (data) => {
 
 
 // GET ALL
-export const getAllMaintenancesService = async () => {
-    return await Maintenance.findAll({
-        order: [['createdAt', 'DESC']]
+export const getAllMaintenancesService = async (query = {}) => {
+    const { page, limit, offset } = getPagination(query);
+    const { count, rows } = await Maintenance.findAndCountAll({
+        limit,
+        offset,
+        order: [['createdAt', 'DESC']],
     });
+    return getPagingData(count, rows, page, limit);
 };
 
 
