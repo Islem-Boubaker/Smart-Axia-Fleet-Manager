@@ -114,6 +114,11 @@ const Vehicle = sequelize.define(
       type: DataTypes.BOOLEAN,
       defaultValue: false,
     },
+    status: {
+      type: DataTypes.ENUM('AVAILABLE', 'IN_MAINTENANCE', 'OUT_OF_SERVICE', 'ON_TRIP'),
+      allowNull: false,
+      defaultValue: 'AVAILABLE',
+    },
   },
   {
     tableName: 'vehicles',

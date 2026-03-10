@@ -12,8 +12,8 @@ export const createVehicle = async (req, res, next) => {
 
 export const getAllVehicles = async (req, res, next) => {
     try {
-        const vehicles = await vehicleService.getAllVehicles();
-        res.status(StatusCodes.OK).json({ success: true, data: vehicles });
+        const result = await vehicleService.getAllVehicles(req.query);
+        res.status(StatusCodes.OK).json({ success: true, ...result });
     } catch (err) {
         next(err);
     }
