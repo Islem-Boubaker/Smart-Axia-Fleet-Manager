@@ -1,4 +1,5 @@
 import Notification from '../models/notification.model.js';
+import { getPagination, getPagingData } from '../utils/pagination.js';
 
 
 // CREATE
@@ -7,12 +8,16 @@ export const createNotificationService = async (data) => {
 };
 
 
-// GET ALL
-export const getAllNotificationsService = async () => {
-    return await Notification.findAll({
-        order: [['createdAt', 'DESC']]
-    });
-};
+    // GET ALL
+    export const getAllNotificationsService = async (query = {}) => {
+        const { page, limit, offset } = getPagination(query);
+        const { count, rows } = await Notification.findAndCountAll({
+            limit,
+            offset,
+            order: [['createdAt', 'DESC']],
+        });
+        return getPagingData(count, rows, page, limit);
+    };
 
 
 // GET BY ID

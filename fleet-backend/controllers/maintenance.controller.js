@@ -31,13 +31,13 @@ export const getAllMaintenances = async (req, res) => {
 
     try {
 
-        const maintenances = await MaintenanceService.getAllMaintenances();
+        const result = await MaintenanceService.getAllMaintenancesService(req.query);
 
-        return successResponse(
-            res,
-            maintenances,
-            'Maintenances fetched'
-        );
+        return res.status(200).json({
+            success: true,
+            message: 'Maintenances fetched',
+            ...result,
+        });
 
     } catch (error) {
 
