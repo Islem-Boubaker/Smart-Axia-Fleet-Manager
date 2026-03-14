@@ -1,61 +1,83 @@
-import React from "react";
-import { View, TextInput, TouchableOpacity, Text } from "react-native";
+import React, { useState } from "react";
+import {
+  View,
+  TextInput,
+  TouchableOpacity,
+  Text,
+  TextInputProps,
+} from "react-native";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 
-type InputProps = {
+interface InputProps extends TextInputProps {
+  label?: string;
+  placeholder?: string;
   value: string;
   onChangeText: (value: string) => void;
   editable?: boolean;
-  showPassword: boolean;
-  onToggleVisibility: () => void;
-};
+  isPassword?: boolean;
+  icon?: string;
+}
 
 export function Input({
+  label,
+  placeholder,
   value,
   onChangeText,
   editable = true,
-  showPassword,
-  onToggleVisibility,
+  isPassword = false,
+  icon = "email",
+  keyboardType,
+  autoCapitalize,
+  ...props
 }: InputProps) {
+  const [showPassword, setShowPassword] = useState(false);
+
+  const iconName = isPassword ? "lock" : icon;
+  const secureTextEntry = isPassword && !showPassword;
+
   return (
-    <View className="mb-6">
-      
-      <Text className="text-sm font-semibold text-gray-900 mb-2">
-        Password
-      </Text>
+    <View className="">
+      {label && (
+        <Text className="text-base font-semibold text-slate-900 mb-2.5">
+          {label}
+        </Text>
+      )}
 
-      <View className="flex-row items-center bg-gray-50 border border-gray-200 rounded-lg px-4">
-
+      <View className="flex-row items-center bg-slate-100 border border-slate-300 rounded-xl px-4 h-14">
         <MaterialCommunityIcons
-          name="lock"
+          name={iconName}
           size={20}
-          color="#9CA3AF"
-          style={{ marginRight: 8 }}
+          color="#94A3B8"
+          style={{ marginRight: 12 }}
         />
 
         <TextInput
-          className="flex-1 py-3 text-[15px] text-gray-900"
-          placeholder="Enter your password"
-          placeholderTextColor="#9CA3AF"
+          className="flex-1 text-base text-slate-900"
+          placeholder={placeholder}
+          placeholderTextColor="#CBD5E1"
           value={value}
           onChangeText={onChangeText}
           editable={editable}
-          secureTextEntry={!showPassword}
+          secureTextEntry={secureTextEntry}
+          keyboardType={keyboardType}
+          autoCapitalize={autoCapitalize}
+          {...props}
         />
 
-        <TouchableOpacity
-          onPress={onToggleVisibility}
-          className="p-2"
-        >
-          <MaterialCommunityIcons
-            name={showPassword ? "eye-off" : "eye"}
-            size={20}
-            color="#9CA3AF"
-          />
-        </TouchableOpacity>
-
+        {isPassword && (
+          <TouchableOpacity
+            onPress={() => setShowPassword(!showPassword)}
+            className="p-2"
+            activeOpacity={0.6}
+          >
+            <MaterialCommunityIcons
+              name={showPassword ? "eye-off" : "eye"}
+              size={20}
+              color="#94A3B8"
+            />
+          </TouchableOpacity>
+        )}
       </View>
-
     </View>
   );
 }
