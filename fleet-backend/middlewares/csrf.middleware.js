@@ -53,3 +53,7 @@ export const verifyCsrf = (req, res, next) => {
 
   return next();
 };
+
+export default {
+  verifyCsrf,
+};

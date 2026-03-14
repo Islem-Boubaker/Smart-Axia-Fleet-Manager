@@ -19,6 +19,19 @@ export const getAllNotifications = async (req, res, next) => {
   }
 };
 
+export const getNotificationsByType = async (req, res, next) => {
+  try {
+    const result = await notificationService.getNotificationsByTypeService(
+      req.params.type,
+      req.user,
+      req.query
+    );
+    successResponse(res, result, 'Notifications by type retrieved');
+  } catch (err) {
+    next(err);
+  }
+};
+
 export const getNotificationById = async (req, res, next) => {
   try {
     const notification = await notificationService.getNotificationByIdService(
@@ -87,6 +100,27 @@ export const clearReadNotifications = async (req, res, next) => {
   try {
     const result = await notificationService.clearReadNotificationsService(req.user);
     successResponse(res, result, 'Read notifications cleared');
+  } catch (err) {
+    next(err);
+  }
+};
+
+export const clearAllNotifications = async (req, res, next) => {
+  try {
+    const result = await notificationService.clearAllNotificationsService(req.user);
+    successResponse(res, result, 'All notifications cleared');
+  } catch (err) {
+    next(err);
+  }
+};
+
+export const markAsUnread = async (req, res, next) => {
+  try {
+    const notification = await notificationService.markNotificationAsUnreadService(
+      req.params.notificationId,
+      req.user
+    );
+    successResponse(res, notification, 'Notification marked as unread');
   } catch (err) {
     next(err);
   }

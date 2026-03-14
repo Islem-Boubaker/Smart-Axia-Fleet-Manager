@@ -13,7 +13,7 @@ const Notification = sequelize.define(
     // 🔔 who receives it
     userId: {
       type: DataTypes.UUID,
-      allowNull: false,
+      allowNull: true,
       references: { model: "users", key: "id" },
       onDelete: "CASCADE",
     },
@@ -41,7 +41,7 @@ const Notification = sequelize.define(
       allowNull: false,
     },
 
-    // 🔗 link to entity (generic)
+
     entityType: {
       type: DataTypes.STRING, // "maintenance" | "vehicle" | "trip" | "reclamation" ...
       allowNull: true,

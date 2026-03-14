@@ -123,3 +123,5 @@ export const checkOwnershipAnyField = (
     }
   };
 };
+
+export default checkOwnership;
