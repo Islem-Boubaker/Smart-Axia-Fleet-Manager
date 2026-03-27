@@ -9,13 +9,12 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useFocusEffect } from "@react-navigation/native";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
-import { Trip } from "../../types";
-import { tripsApi } from "../../services/api/tripsApi";
-import { TripCard } from "../../components/cards/TripCard";
-import { LoadingSpinner } from "../../components/common/LoadingSpinner";
+import { tripsApi } from "../services/trips.api";
+import { TripCard } from "@/features/trips/components/TripCard";
+import { LoadingSpinner } from "@/shared/components/ui/LoadingSpinner";
 
 interface TripsScreenState {
-  trips: Trip[];
+  trips: any[];
   selectedFilter: "all" | "pending" | "active" | "completed";
   isLoading: boolean;
   isRefreshing: boolean;
@@ -44,7 +43,7 @@ export function TripsScreen({ navigation, route }: any) {
     try {
       setState((prev) => ({ ...prev, isLoading: true, error: null }));
 
-      const trips = await tripsApi.getAssignedTrips();
+      const trips = await tripsApi.getAllTrips();
 
       setState((prev) => ({
         ...prev,
@@ -187,3 +186,5 @@ export function TripsScreen({ navigation, route }: any) {
     </SafeAreaView>
   );
 }
+
+export default TripsScreen;

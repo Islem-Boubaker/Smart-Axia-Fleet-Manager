@@ -9,11 +9,12 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useFocusEffect } from "@react-navigation/native";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
-import { Trip, Vehicle } from "../../types";
-import { tripsApi } from "../../services/api/tripsApi";
-import { vehicleApi } from "../../services/api/vehicleApi";
-import { PrimaryButton } from "../../components/buttons/PrimaryButton";
-import { LoadingSpinner } from "../../components/common/LoadingSpinner";
+import { tripsApi } from "../services/trips.api";
+import { driverApi } from "@/features/driver/services/driver.api";
+import { PrimaryButton } from "@/shared/components/ui/PrimaryButton";
+import { LoadingSpinner } from "@/shared/components/ui/LoadingSpinner";
+import type { Trip } from "../types/trip.types";
+import type { Vehicle } from "@/features/driver/types/driver.types";
 
 interface ActiveTripState {
   trip: Trip | null;
@@ -38,9 +39,7 @@ export function ActiveTripScreen({ navigation }: any) {
 
       const [trip, vehicle] = await Promise.all([
         tripsApi.getActiveTrip(),
-        vehicleApi.getAssignedVehicle(),
-      ]);
-
+          driverApi.getAssignedVehicle(),
       setState((prev) => ({
         ...prev,
         trip: trip || null,
