@@ -19,7 +19,7 @@ router.post(
 
 
 router.get(
-  '/notification/',
+  '/notifications/',
   notificationController.getAllNotifications
 );
 

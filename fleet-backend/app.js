@@ -24,6 +24,9 @@ app.use(cors(CORS_OPTIONS));
 
 
 
+
+
+
 app.use(helmet(HELMET_OPTIONS));
 
 
@@ -45,4 +48,7 @@ app.use('/', [userRoutes, vehicleRoutes, reclamationRoutes, maintenanceRoutes, n
 app.use(errorHandler);
 
 export default app;
+
+
+
 

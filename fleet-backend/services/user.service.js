@@ -71,10 +71,6 @@ export const loginUserSvc = async (email, password) => {
     err.statusCode = 401;
     throw err;
   }
-
-
-
-
   const isMatch = await user.comparePassword(password);
 
   if (!isMatch) {
