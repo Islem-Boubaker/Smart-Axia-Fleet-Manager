@@ -1,20 +1,39 @@
-import { api } from '@/src/shared/services/api';
-import type { LoginCredentials, SignupData, AuthResponse } from '../auth.types';
+import { api } from '@/shared/services/api';
+import type { Vehicle, DashboardStats } from '../types/driver.types';
 
-export const authApi = {
-  login: async (credentials: LoginCredentials): Promise<AuthResponse> => {
-    return api.post<AuthResponse>('/auth/login', credentials);
+interface ApiResponse<T> {
+  success: boolean;
+  data: T;
+}
+
+/**
+ * Driver-specific dashboard and vehicle data APIs
+ */
+export const driverApi = {
+  /**
+   * Get dashboard overview statistics
+   */
+  getDashboardStats: async (): Promise<DashboardStats> => {
+    const response = await api.get<ApiResponse<DashboardStats>>('/driver/dashboard/stats');
+    return response.data.data;
   },
 
-  signup: async (data: SignupData): Promise<AuthResponse> => {
-    return api.post<AuthResponse>('/auth/signup', data);
+  /**
+   * Get assigned vehicle information
+   */
+  getAssignedVehicle: async (): Promise<Vehicle> => {
+    const response = await api.get<ApiResponse<Vehicle>>('/driver/vehicle');
+    return response.data.data;
   },
 
-  logout: async (): Promise<void> => {
-    return api.post<void>('/auth/logout', {});
-  },
-
-  refreshToken: async (): Promise<{ token: string }> => {
-    return api.post<{ token: string }>('/auth/refresh', {});
+  /**
+   * Update driver location during trip
+   */
+  updateLocation: async (latitude: number, longitude: number): Promise<{ success: boolean }> => {
+    const response = await api.post<ApiResponse<{ success: boolean }>>('/driver/location', {
+      latitude,
+      longitude,
+    });
+    return response.data.data;
   },
 };
