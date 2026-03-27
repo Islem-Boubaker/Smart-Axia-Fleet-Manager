@@ -1,55 +1,77 @@
 import "../index.css";
-import { useEffect } from "react";
-import { Slot } from "expo-router";
-import { Provider, useDispatch, useSelector } from "react-redux";
-import * as SecureStore from "expo-secure-store";
+import { SafeAreaProvider } from "react-native-safe-area-context";
+import { Stack } from "expo-router";
+import { Provider, useSelector } from "react-redux";
 import { View, ActivityIndicator } from "react-native";
 
 import { store } from "../store/index";
-import type { RootState, AppDispatch } from "../store";
-import { setUser, clearUser } from "../store/authSlice";
-import { useAuthGuard } from "../features/auth/hooks/useAuth";
+import type { RootState } from "../store";
 
 function AppLayout() {
-  const dispatch = useDispatch<AppDispatch>();
-  const { isLoading } = useSelector((state: RootState) => state.auth);
-
-  useAuthGuard();
-
-  useEffect(() => {
-    const checkAuth = async (): Promise<void> => {
-      try {
-        const token = await SecureStore.getItemAsync("accessToken");
-        const userStr = await SecureStore.getItemAsync("user");
-
-        if (token && userStr) {
-          dispatch(setUser(JSON.parse(userStr)));
-        } else {
-          dispatch(clearUser());
-        }
-      } catch {
-        dispatch(clearUser());
-      }
-    };
-
-    checkAuth();
-  }, [dispatch]);
+  const isAuthenticated = useSelector(
+    (state: RootState) => state.auth.isAuthenticated,
+  );
+  const isLoading = useSelector((state: RootState) => state.auth.isLoading);
 
   if (isLoading) {
     return (
-      <View className="flex-1 items-center justify-center">
-        <ActivityIndicator size="large" color="#3B82F6" />
+      <View className="flex-1 items-center justify-center bg-white">
+        <ActivityIndicator size="large" color="#2D9B6F" />
       </View>
     );
   }
 
-  return <Slot />;
+  return (
+    <Stack screenOptions={{ headerShown: false }}>
+      {isAuthenticated ? (
+        <>
+          <Stack.Screen name="/home" />
+
+          <Stack.Screen
+            name="notifications"
+            options={{ animation: "slide_from_right" }}
+          />
+          <Stack.Screen
+            name="trips/[id]"
+            options={{ animation: "slide_from_right" }}
+          />
+          <Stack.Screen
+            name="trips/live"
+            options={{ animation: "slide_from_bottom" }}
+          />
+          <Stack.Screen
+            name="maps"
+            options={{ animation: "slide_from_bottom" }}
+          />
+          <Stack.Screen
+            name="reclamations/create"
+            options={{ animation: "slide_from_right" }}
+          />
+          <Stack.Screen
+            name="profile/settings"
+            options={{ animation: "slide_from_right" }}
+          />
+        </>
+      ) : (
+        <Stack.Screen
+          name="/login"
+          options={{ headerShown: false, gestureEnabled: false }}
+        />
+      )}
+
+      
+    </Stack>
+  );
 }
 
 export default function RootLayout() {
   return (
     <Provider store={store}>
-      <AppLayout />
+      <SafeAreaProvider>
+        <AppLayout />
+      </SafeAreaProvider>
     </Provider>
   );
 }
+
+

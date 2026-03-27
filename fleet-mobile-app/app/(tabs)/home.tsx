@@ -1,9 +1,7 @@
-import { View, Text } from 'react-native';
+import { DashboardScreen } from "@/features/driver/screens/DashboardScreen";
 
-export default function Home() {
-  return (
-    <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-      <Text>Home Screen</Text>
-    </View>
-  );
+export default function HomeRoute() {
+  return <DashboardScreen />;
 }
+
+HomeRoute.displayName = 'HomeRoute';
