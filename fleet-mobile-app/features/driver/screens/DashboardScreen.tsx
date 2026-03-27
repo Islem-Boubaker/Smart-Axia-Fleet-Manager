@@ -1,59 +1,69 @@
 import React from "react";
-import { ScrollView, RefreshControl } from "react-native";
+import { View, Text, ScrollView, StatusBar } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useAuth } from "../../store/AuthContext";
-import { LoadingSpinner } from "../../components/common/LoadingSpinner";
-import { useDashboard } from "../hooks/useDashboard";
-import { DashboardHeader } from "../components/DashboardHeader";
-import { DashboardSummarySection } from "../components/DashboardSummarySection";
-import { ActiveTripSection } from "../components/ActiveTripSection";
-import { QuickActionsSection } from "../components/QuickActionsSection";
+import { MaterialIcons } from "@expo/vector-icons";
 
-export function DashboardScreen({ navigation }: any) {
-  const { state: authState } = useAuth();
+import TaskCard from "../components/TaskCard";
+import TripCard from "../components/TripCard";
+import { router } from "expo-router";
+import {
+  CURRENT_TASK,
+  UPCOMING_TASK,
+  RECENT_TRIPS,
+} from "../data/dashboard";
 
-  const {
-    activeTrip,
-    vehicle,
-    isLoading,
-    isRefreshing,
-    completedCount,
-    pendingCount,
-    handleRefresh,
-  } = useDashboard();
-
-  if (isLoading) {
-    return <LoadingSpinner fullScreen />;
-  }
-
+function DashboardScreen() {
   return (
-    <SafeAreaView className="flex-1 bg-gray-100" edges={["top"]}>
-      <ScrollView
-        contentContainerClassName="px-4 py-4"
-        refreshControl={
-          <RefreshControl
-            refreshing={isRefreshing}
-            onRefresh={handleRefresh}
-            tintColor="#3B82F6"
-          />
-        }
-      >
-        <DashboardHeader userName={authState.user?.name} />
+    <SafeAreaView className="flex-1 bg-gray-100">
+      <StatusBar barStyle="dark-content" />
 
-        <DashboardSummarySection
-          completedCount={completedCount}
-          pendingCount={pendingCount}
-          activeTrip={activeTrip}
-          vehicle={vehicle}
-          navigation={navigation}
-        />
+      {/* HEADER */}
+      <View className="flex-row justify-between px-5 py-3 items-center">
+        <View className="flex-row items-center gap-3">
+          <MaterialIcons name="menu" size={22} />
+          <View>
+            <Text className="text-xs text-gray-400">Current Location</Text>
+            <Text className="font-bold">Tunis, Tunisia</Text>
+          </View>
+        </View>
 
-        <ActiveTripSection activeTrip={activeTrip} />
+        <View className="flex-row gap-3">
+          {/* <MaterialIcons name="search" size={22} /> */}
+          <MaterialIcons name="notifications-none" size={22} onPress={() => router.push("/notifications")} />
+        </View>
+      </View>
 
-        <QuickActionsSection navigation={navigation} />
+      {/* GREETING */}
+      <View className="px-5 mb-2">
+        <Text className="text-lg font-bold">
+          Good morning, Islem 
+        </Text>
+        <Text className="text-xs text-gray-400">
+          Tuesday — 2 trips today
+        </Text>
+      </View>
+
+      {/* CONTENT */}
+      <ScrollView className="px-5">
+
+        <View className="flex-row gap-3 mb-5">
+          <TaskCard task={CURRENT_TASK} isCurrent />
+          <TaskCard task={UPCOMING_TASK} isCurrent={false} />
+        </View>
+
+        <View className="flex-row justify-between mb-2">
+          <Text className="font-bold">Recent Trips</Text>
+          <Text className="text-emerald-600">View all</Text>
+        </View>
+
+        {RECENT_TRIPS.map((trip) => (
+          <TripCard key={trip.id} trip={trip} />
+        ))}
+
       </ScrollView>
     </SafeAreaView>
   );
 }
 
+export { DashboardScreen };
 export default DashboardScreen;

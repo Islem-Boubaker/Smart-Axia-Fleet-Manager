@@ -1,20 +1,51 @@
-import { api } from '@/src/shared/services/api';
-import type { LoginCredentials, SignupData, AuthResponse } from '../auth.types';
+import { api } from '@/shared/services/api';
+import type { Trip, TripFilters, TripDetails } from '../types/trip.types';
 
-export const authApi = {
-  login: async (credentials: LoginCredentials): Promise<AuthResponse> => {
-    return api.post<AuthResponse>('/auth/login', credentials);
+interface ApiResponse<T> {
+  success: boolean;
+  data: T;
+}
+
+export const tripsApi = {
+  /**
+   * Fetch all trips for the current authenticated driver
+   */
+  getAllTrips: async (filters?: TripFilters): Promise<Trip[]> => {
+    const response = await api.get<ApiResponse<Trip[]>>('/trips', {
+      params: filters,
+    });
+    return response.data.data;
   },
 
-  signup: async (data: SignupData): Promise<AuthResponse> => {
-    return api.post<AuthResponse>('/auth/signup', data);
+  /**
+   * Fetch details of a specific trip
+   */
+  getTripDetail: async (tripId: string): Promise<TripDetails> => {
+    const response = await api.get<ApiResponse<TripDetails>>(`/trips/${tripId}`);
+    return response.data.data;
   },
 
-  logout: async (): Promise<void> => {
-    return api.post<void>('/auth/logout', {});
+  /**
+   * Start a trip
+   */
+  startTrip: async (tripId: string): Promise<Trip> => {
+    const response = await api.post<ApiResponse<Trip>>(`/trips/${tripId}/start`, {});
+    return response.data.data;
   },
 
-  refreshToken: async (): Promise<{ token: string }> => {
-    return api.post<{ token: string }>('/auth/refresh', {});
+  /**
+   * Complete a trip with final details
+   */
+  completeTrip: async (tripId: string, completion: { notes?: string }): Promise<Trip> => {
+    const response = await api.post<ApiResponse<Trip>>(`/trips/${tripId}/complete`, completion);
+    return response.data.data;
+  },
+
+  /**
+   * Get active trip for the driver
+   */
+  getActiveTrip: async (): Promise<Trip | null> => {
+    const response = await api.get<ApiResponse<Trip | null>>('/trips/active');
+    return response.data.data;
   },
 };

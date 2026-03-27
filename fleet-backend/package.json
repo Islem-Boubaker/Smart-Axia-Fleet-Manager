@@ -6,8 +6,11 @@
   "scripts": {
     "start": "node server.js",
     "dev": "nodemon server.js",
-    "client": "cd ../fleet-web-app && npm run dev",
-    "start:all": "concurrently \"npm run dev\" \"npm run client\""
+    "client-web": "cd ../fleet-web-app && npm run dev",
+    "client-mobile": "start cmd /k \"cd /d C:\\Users\\islem\\OneDrive\\Desktop\\PFE\\Smart-Axia-Fleet-Manager\\fleet-mobile-app && npx expo start\"",
+    "start:all": "concurrently \"npm run dev\" \"npm run client-web\" \"npm run client-mobile\"",
+    "start:all-mobile": "concurrently \"npm run dev\" \"npm run client-mobile\"",
+    "start:all-web": "concurrently \"npm run dev\" \"npm run client-web\""
   },
   "keywords": [],
   "author": "",

@@ -1,10 +1,7 @@
-import { Text, View } from "react-native";
+import ProfileScreen  from "@/features/profile/screens/ProfileScreen";
 
-
-export default function Profile() {
-  return (
-    <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-      <Text>Profile Screen</Text>
-    </View>
-  );
+export default function ProfileRoute() {
+  return <ProfileScreen />;
 }
+
+ProfileRoute.displayName = 'ProfileRoute';

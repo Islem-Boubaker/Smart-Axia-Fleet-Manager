@@ -1,56 +1,51 @@
+import axios from 'axios';
+import { buildCookieHeader, syncCookiesFromServer } from './cookieJar';
 
-class ApiService {
-  private baseURL: string;
+const apiUrl = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:3000';
 
-  constructor() {
-    this.baseURL = process.env.API_URL;
-  }
-
-  async get<T>(endpoint: string): Promise<T> {
-    const response = await fetch(`${this.baseURL}${endpoint}`);
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
-    }
-    return response.json();
-  }
-
-  async post<T>(endpoint: string, data: unknown): Promise<T> {
-    const response = await fetch(`${this.baseURL}${endpoint}`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(data),
-    });
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
-    }
-    return response.json();
-  }
-
-  async put<T>(endpoint: string, data: unknown): Promise<T> {
-    const response = await fetch(`${this.baseURL}${endpoint}`, {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(data),
-    });
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
-    }
-    return response.json();
-  }
-
-  async delete<T>(endpoint: string): Promise<T> {
-    const response = await fetch(`${this.baseURL}${endpoint}`, {
-      method: 'DELETE',
-    });
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
-    }
-    return response.json();
-  }
+if (!apiUrl) {
+  console.warn('⚠️ WARNING: EXPO_PUBLIC_API_URL not configured! Using localhost fallback.');
 }
 
-export const api = new ApiService();
+console.log('🔧 Initializing API with baseURL:', apiUrl);
+
+export const api = axios.create({
+  baseURL: apiUrl,
+  withCredentials: true,
+  timeout: 10000,
+});
+
+
+
+api.interceptors.request.use(async (config) => {
+  const cookie = await buildCookieHeader();
+  if (cookie) config.headers['Cookie'] = cookie;
+  return config;
+});
+
+
+api.interceptors.response.use(async (response) => {
+ 
+  const setCookieHeader = response.headers['set-cookie'];
+  if (setCookieHeader) {
+    const cookies = parseCookiesFromHeader(setCookieHeader);
+    await syncCookiesFromServer(cookies);
+  }
+  return response;
+});
+
+
+function parseCookiesFromHeader(setCookieHeader: string | string[]): Record<string, string> {
+  const cookies: Record<string, string> = {};
+  const headers = Array.isArray(setCookieHeader) ? setCookieHeader : [setCookieHeader];
+
+  for (const header of headers) {
+    const [cookiePair] = header.split(';'); 
+    const [name, value] = cookiePair.trim().split('=');
+    if (name && value) {
+      cookies[name.trim()] = decodeURIComponent(value.trim());
+    }
+  }
+
+  return cookies;
+}

@@ -1,5 +1,5 @@
 import app from './app.js';
-import {sequelize } from './config/connectdb.js';
+import { sequelize } from './config/connectdb.js';
 import './models/index.js';
 
 const PORT = process.env.PORT;
@@ -9,18 +9,11 @@ async function startServer() {
     await sequelize.sync({ alter: true });
     console.log("✅ Supabase connected successfully!");
 
-    app.listen(PORT, () => {
+    app.listen(PORT,'0.0.0.0', () => {
       console.log(`Server running on port ${PORT}`);
     });
   } catch (error) {
     console.error("❌ Unable to connect:", error);
   }
 }
-
-
-
 startServer();
-
-
-
-

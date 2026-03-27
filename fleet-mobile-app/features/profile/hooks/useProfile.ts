@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { vehicleApi } from "../services/profile.api";
-import { Vehicle } from "../../../types";
+import type { Vehicle } from "@/features/driver/types/driver.types";
 
 interface ProfileState {
   vehicle: Vehicle | null;
