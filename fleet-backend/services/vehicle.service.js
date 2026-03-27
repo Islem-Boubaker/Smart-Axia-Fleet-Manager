@@ -1,12 +1,19 @@
 import Vehicle from '../models/vehicle.model.js';
 import Reclamation from '../models/reclamation.model.js';
+import { getPagination, getPagingData } from '../utils/pagination.js';
 
 export const createVehicle = async (data) => {
     return await Vehicle.create(data);
 };
 
-export const getAllVehicles = async () => {
-    return await Vehicle.findAll();
+export const getAllVehicles = async (query = {}) => {
+    const { page, limit, offset } = getPagination(query);
+    const { count, rows } = await Vehicle.findAndCountAll({
+        limit,
+        offset,
+        order: [['createdAt', 'DESC']],
+    });
+    return getPagingData(count, rows, page, limit);
 };
 
 export const getVehicleById = async (id) => {

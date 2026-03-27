@@ -1,14 +1,20 @@
 import { memo } from 'react';
-import { FiTruck, FiCalendar, FiTool, FiDollarSign, FiAlertCircle } from 'react-icons/fi';
+import { FiTruck, FiCalendar, FiTool, FiDollarSign} from 'react-icons/fi';
 import { Badge } from '../../../shared/components';
-
+import type { Maintenance } from '../../../types';
+import { maintenanceService } from '../services/maintenance.service';
 interface MaintenanceTableProps {
-  data: any[];
+  data: Maintenance[];
 }
 
 const MaintenanceTable = memo(({ data }: MaintenanceTableProps) => {
-  const getStatusColor = (status: string) => {
-    switch (status) {
+  const records = data ?? [];
+
+  type BadgeVariant = 'success' | 'warning' | 'error' | 'info' | 'default';
+
+  const getStatusColor = (status: string): BadgeVariant => {
+    const normalized = String(status).replace(/_/g, '-');
+    switch (normalized) {
       case 'completed':
         return 'success';
       case 'in-progress':
@@ -20,7 +26,7 @@ const MaintenanceTable = memo(({ data }: MaintenanceTableProps) => {
     }
   };
 
-  const getPriorityColor = (priority: string) => {
+  const getPriorityColor = (priority: string): BadgeVariant => {
     switch (priority) {
       case 'high':
         return 'error';
@@ -32,28 +38,21 @@ const MaintenanceTable = memo(({ data }: MaintenanceTableProps) => {
         return 'default';
     }
   };
-
-  // Count upcoming maintenance (scheduled for next 7 days)
-  const upcomingCount = data.filter(record => record.status === 'scheduled').length;
+  const handleUpdateStatus = async (id: string) => {
+    try {
+      const updatedRecord = await maintenanceService.updateStatus(id, 'completed');
+      console.log('Status updated:', updatedRecord);
+    } catch (error) {
+      console.error('Failed to update status:', error);
+    }
+  };
 
   return (
     <div className="space-y-4">
-      {/* Upcoming Maintenance Alert */}
-      {upcomingCount > 0 && (
-        <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 flex items-start">
-          <FiAlertCircle className="text-amber-600 mt-0.5 mr-3 flex-shrink-0" />
-          <div>
-            <h4 className="font-semibold text-amber-900">Upcoming Maintenance</h4>
-            <p className="text-sm text-amber-700 mt-1">
-              {upcomingCount} vehicle{upcomingCount > 1 ? 's' : ''} scheduled for maintenance in the next 7 days
-            </p>
-          </div>
-        </div>
-      )}
-
+  
       {/* Maintenance Cards Grid */}
       <div className="space-y-4">
-        {data.map((record) => (
+        {records.map((record: Maintenance) => (
           <div
             key={record.id}
             className="bg-white border border-gray-200 rounded-lg p-6 hover:shadow-md transition-shadow"
@@ -65,10 +64,10 @@ const MaintenanceTable = memo(({ data }: MaintenanceTableProps) => {
                   {record.type}
                 </h3>
                 <div className="flex gap-2">
-                  <Badge variant={getStatusColor(record.status) as any}>
+                  <Badge variant={getStatusColor(record.status)}>
                     {record.status}
                   </Badge>
-                  <Badge variant={getPriorityColor(record.priority) as any}>
+                  <Badge variant={getPriorityColor(record.priority)}>
                     {record.priority} priority
                   </Badge>
                 </div>
@@ -79,7 +78,7 @@ const MaintenanceTable = memo(({ data }: MaintenanceTableProps) => {
                 <button className="px-4 py-2 text-sm font-medium text-blue-600 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors">
                   View Details
                 </button>
-                <button className="px-4 py-2 text-sm font-medium text-green-600 bg-green-50 rounded-lg hover:bg-green-100 transition-colors">
+                <button  onClick={() => handleUpdateStatus(record.id)} className="px-4 py-2 text-sm font-medium text-green-600 bg-green-50 rounded-lg hover:bg-green-100 transition-colors">
                   Update Status
                 </button>
               </div>
@@ -91,7 +90,7 @@ const MaintenanceTable = memo(({ data }: MaintenanceTableProps) => {
                 <FiTruck className="text-gray-400 mr-3" />
                 <div>
                   <p className="text-xs text-gray-500">Vehicle</p>
-                  <p className="text-sm font-medium text-gray-900">{record.vehicle}</p>
+                  <p className="text-sm font-medium text-gray-900">{record.vehicle || '—'}</p>
                 </div>
               </div>
               <div className="flex items-center">
@@ -131,6 +130,6 @@ const MaintenanceTable = memo(({ data }: MaintenanceTableProps) => {
   );
 });
 
-MaintenanceTable.displayName = 'MaintenanceTable';
+
 
 export default MaintenanceTable;

@@ -26,11 +26,11 @@ export const createVehicleReclamation = async (req, res, next) => {
 
 export const getAllReclamations = async (req, res, next) => {
   try {
-    const result = await reclamationService.getAllReclamationsSvc();
+    const result = await reclamationService.getAllReclamationsSvc(req.query);
 
     res.status(StatusCodes.OK).json({
       success: true,
-      data: result,
+      ...result,
     });
   } catch (error) {
     next(error);
@@ -41,12 +41,13 @@ export const getAllReclamations = async (req, res, next) => {
 export const getMyReclamations = async (req, res, next) => {
   try {
     const result = await reclamationService.getUserReclamationsSvc(
-      req.user.id
+      req.user.id,
+      req.query
     );
 
     res.status(StatusCodes.OK).json({
       success: true,
-      data: result,
+      ...result,
     });
   } catch (error) {
     next(error);

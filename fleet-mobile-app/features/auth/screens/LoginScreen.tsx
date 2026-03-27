@@ -1,92 +1,52 @@
-import { useState } from 'react';
-import { View, TextInput, TouchableOpacity, StyleSheet, Alert } from 'react-native';
-import { ThemedText } from '@/src/shared/components/ThemedText';
-import { ThemedView } from '@/src/shared/components/ThemedView';
-import { useAuth } from '../hooks/useAuth';
+import React, { useState } from "react";
+import { ScrollView, KeyboardAvoidingView, Platform } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 
-export default function LoginScreen() {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const { login, loading } = useAuth();
+import { useLogin } from "../hooks/useLogin";
+import type { LoginCredentials } from "../auth.types";
+
+import { LoginHeader } from "../components/LoginHeader";
+import { LoginForm } from "../components/LoginForm";
+import { LoginFooter } from "../components/LoginFooter";
+
+export function LoginScreen() {
+  const { login, isLoading, error } = useLogin();
+
+  const [credentials, setCredentials] = useState<LoginCredentials>({
+    email: "",
+    password: "",
+  });
 
   const handleLogin = async () => {
-    try {
-      await login({ email, password });
-      Alert.alert('Success', 'Logged in successfully!');
-    } catch (error) {
-      Alert.alert('Error', error instanceof Error ? error.message : 'Login failed');
-    }
+    if (!credentials.email || !credentials.password) return;
+    await login(credentials);
   };
 
   return (
-    <ThemedView style={styles.container}>
-      <ThemedText type="title" style={styles.title}>
-        Login
-      </ThemedText>
-
-      <TextInput
-        style={styles.input}
-        placeholder="Email"
-        value={email}
-        onChangeText={setEmail}
-        keyboardType="email-address"
-        autoCapitalize="none"
-      />
-
-      <TextInput
-        style={styles.input}
-        placeholder="Password"
-        value={password}
-        onChangeText={setPassword}
-        secureTextEntry
-      />
-
-      <TouchableOpacity
-        style={[styles.button, loading && styles.buttonDisabled]}
-        onPress={handleLogin}
-        disabled={loading}
+    <SafeAreaView className="flex-1 bg-gray-100" edges={["top", "left", "right"]}>
+      <KeyboardAvoidingView
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        className="flex-1"
       >
-        <ThemedText style={styles.buttonText}>
-          {loading ? 'Loading...' : 'Login'}
-        </ThemedText>
-      </TouchableOpacity>
-    </ThemedView>
+        <ScrollView
+          showsVerticalScrollIndicator={false}
+          contentContainerClassName="flex-grow px-6 py-6"
+        >
+          <LoginHeader />
+
+          <LoginForm
+            credentials={credentials}
+            setCredentials={setCredentials}
+            isLoading={isLoading}
+            error={error}
+            onLogin={handleLogin}
+          />
+
+          <LoginFooter />
+        </ScrollView>
+      </KeyboardAvoidingView>
+    </SafeAreaView>
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    padding: 20,
-    justifyContent: 'center',
-  },
-  title: {
-    marginBottom: 30,
-    textAlign: 'center',
-  },
-  input: {
-    height: 50,
-    borderWidth: 1,
-    borderColor: '#ddd',
-    borderRadius: 8,
-    paddingHorizontal: 15,
-    marginBottom: 15,
-    fontSize: 16,
-  },
-  button: {
-    backgroundColor: '#0a7ea4',
-    height: 50,
-    borderRadius: 8,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginTop: 10,
-  },
-  buttonDisabled: {
-    opacity: 0.6,
-  },
-  buttonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-});
+export default LoginScreen;

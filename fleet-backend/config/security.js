@@ -34,15 +34,20 @@ export const CORS_OPTIONS = {
   origin: (origin, callback) => {
     if (!origin) return callback(null, true);
 
-    const allowedOrigin = (process.env.CLIENT_URL || '').replace(/\/+$/, '');
+    const raw = process.env.CLIENT_URL || '';
+    const allowedOrigins = raw
+      .split(',')
+      .map((s) => s.trim())
+      .filter(Boolean)
+      .map((s) => s.replace(/\/+$/, ''));
 
-    if (
-      origin === allowedOrigin 
-    ) {
-      callback(null, true);
-    } else {
-      callback(new Error('Not allowed by CORS'));
+    const normalizedOrigin = String(origin).replace(/\/+$/, '');
+
+    if (allowedOrigins.length === 0 || allowedOrigins.includes(normalizedOrigin)) {
+      return callback(null, true);
     }
+
+    return callback(new Error('Not allowed by CORS'));
   },
   credentials: true,                      // required for cookies
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
@@ -50,6 +55,8 @@ export const CORS_OPTIONS = {
     'Content-Type',
     'Authorization',
     'X-CSRF-Token',                       // our CSRF header
+    'X-XSRF-Token',                       // axios / common convention
+    'CSRF-Token',                         // some clients use this
     'X-Requested-With',
   ],
   exposedHeaders: ['X-CSRF-Token'],

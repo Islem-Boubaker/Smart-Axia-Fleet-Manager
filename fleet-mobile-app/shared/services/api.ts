@@ -1,13 +1,9 @@
-import { ENV } from '@/src/config/env';
 
-/**
- * Base API service for making HTTP requests
- */
 class ApiService {
   private baseURL: string;
 
   constructor() {
-    this.baseURL = ENV.API_URL;
+    this.baseURL = process.env.API_URL;
   }
 
   async get<T>(endpoint: string): Promise<T> {

@@ -1,4 +1,5 @@
 import Reclamation from "../models/reclamation.model.js";
+import { getPagination, getPagingData } from '../utils/pagination.js';
 
 /**
  * Create vehicle reclamation
@@ -20,30 +21,42 @@ export const createVehicleReclamationSvc = async (
 /**
  * Get all reclamations (Admin)
  */
-export const getAllReclamationsSvc = async () => {
-  return await Reclamation.findAll({
+export const getAllReclamationsSvc = async (query = {}) => {
+  const { page, limit, offset } = getPagination(query);
+  const { count, rows } = await Reclamation.findAndCountAll({
+    limit,
+    offset,
     order: [["createdAt", "DESC"]],
   });
+  return getPagingData(count, rows, page, limit);
 };
 
 /**
  * Get reclamations by user
  */
-export const getUserReclamationsSvc = async (userId) => {
-  return await Reclamation.findAll({
+export const getUserReclamationsSvc = async (userId, query = {}) => {
+  const { page, limit, offset } = getPagination(query);
+  const { count, rows } = await Reclamation.findAndCountAll({
     where: { userId },
+    limit,
+    offset,
     order: [["createdAt", "DESC"]],
   });
+  return getPagingData(count, rows, page, limit);
 };
 
 /**
  * Get reclamations by vehicle
  */
-export const getVehicleReclamationsSvc = async (vehicleId) => {
-  return await Reclamation.findAll({
+export const getVehicleReclamationsSvc = async (vehicleId, query = {}) => {
+  const { page, limit, offset } = getPagination(query);
+  const { count, rows } = await Reclamation.findAndCountAll({
     where: { vehicleId },
+    limit,
+    offset,
     order: [["createdAt", "DESC"]],
   });
+  return getPagingData(count, rows, page, limit);
 };
 
 /**

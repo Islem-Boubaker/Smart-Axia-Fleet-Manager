@@ -1,6 +1,7 @@
 
 
 import { api } from '../../../shared/services/api';
+import { setCsrfToken } from '../../../shared/services/csrfToken';
 import type { User } from '../../../types';
 
 export interface SignInCredentials {
@@ -29,6 +30,8 @@ export const authAPI = {
 
     const response = await api.post('/user/login', credentials);
 
+    setCsrfToken(response.data?.data?.csrfToken);
+
     return response.data.data.user;
   },
 
@@ -52,7 +55,8 @@ export const authAPI = {
   
   async refreshToken(): Promise<void> {
 
-    await api.post('/user/refresh-token');
+    const response = await api.post('/user/refresh-token');
+    setCsrfToken(response.data?.data?.csrfToken ?? response.data?.csrfToken);
   },
 
 
