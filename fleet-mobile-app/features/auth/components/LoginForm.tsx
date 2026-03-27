@@ -2,8 +2,8 @@ import React from "react";
 import { View, Text, TouchableOpacity } from "react-native";
 import { router } from "expo-router";
 
-import { PrimaryButton } from "../../../shared/components/ui/PrimaryButton";
-import { ErrorMessage } from "../../../shared/components/ui/ErrorMessage";
+import { PrimaryButton } from "@/shared/components/ui/PrimaryButton";
+import { ErrorMessage } from "@/shared/components/ui/ErrorMessage";
 import { Input } from "./ui/Input";
 
 import type { LoginCredentials } from "../auth.types";

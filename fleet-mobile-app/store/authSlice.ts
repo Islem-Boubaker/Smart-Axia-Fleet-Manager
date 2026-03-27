@@ -10,7 +10,7 @@ interface AuthState {
 
 const initialState: AuthState = {
   isAuthenticated: false,
-  isLoading: true,           // true on startup — checking token
+  isLoading: false,
   user: null,
 };
 
