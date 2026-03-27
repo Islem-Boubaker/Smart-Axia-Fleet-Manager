@@ -1,27 +1,33 @@
-import React from "react";
-import { View, Text, StyleSheet } from "react-native";
-import { Vehicle } from "../../../types";
+import { View, Text } from "react-native";
+import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 
-export function VehicleCard({ vehicle }: { vehicle: Vehicle }) {
+export default function VehicleCard({ vehicle }: any) {
   if (!vehicle) return null;
 
   return (
-    <View style={styles.card}>
-      <Text>
-        {vehicle.make} {vehicle.model}
+    <View className="bg-white rounded-2xl mx-5 mb-4 px-5 py-4">
+      <Text className="text-[11px] font-bold text-gray-400 tracking-widest mb-3">
+        MY VEHICLE
       </Text>
-      <Text>Year: {vehicle.year}</Text>
-      <Text>Plate: {vehicle.licensePlate}</Text>
-      <Text>Mileage: {vehicle.mileage} km</Text>
-      <Text>Fuel: {vehicle.fuelLevel}%</Text>
+
+      <View className="flex-row items-center gap-3">
+        <View className="w-10 h-10 rounded-xl bg-emerald-50 items-center justify-center">
+          <MaterialIcons name="directions-car" size={22} color="#2D9B6F" />
+        </View>
+
+        <View className="flex-1">
+          <Text className="text-sm font-bold text-slate-900">
+            {vehicle.brand} {vehicle.model}
+          </Text>
+          <Text className="text-xs text-gray-400">{vehicle.plate}</Text>
+        </View>
+
+        <View className="bg-emerald-50 px-2.5 py-1 rounded-full">
+          <Text className="text-xs font-semibold text-emerald-700">
+            {vehicle.status}
+          </Text>
+        </View>
+      </View>
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  card: {
-    backgroundColor: "#fff",
-    padding: 16,
-    borderRadius: 10,
-  },
-});

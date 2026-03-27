@@ -1,37 +1,12 @@
-import React from "react";
-import { View, Text, StyleSheet } from "react-native";
-import { MaterialCommunityIcons } from "@expo/vector-icons";
-import { colors } from "../../../theme/colors";
+import { View } from "react-native";
+import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 
-export function ProfileHeader({ user }: any) {
+export default function ProfileHeader() {
   return (
-    <View style={styles.container}>
-      <MaterialCommunityIcons
-        name="account-circle"
-        size={80}
-        color={colors.primary}
-      />
-
-      <Text style={styles.name}>{user?.name}</Text>
-
-      <Text style={styles.status}>
-        {user?.status === "active" ? "✓ Active" : "Inactive"}
-      </Text>
+    <View className="items-center pt-2 pb-5">
+      <View className="w-[90px] h-[90px] rounded-full bg-emerald-100 items-center justify-center border-[3px] border-white shadow-md">
+        <MaterialIcons name="person" size={50} color="#2D9B6F" />
+      </View>
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    alignItems: "center",
-    marginBottom: 24,
-  },
-  name: {
-    fontSize: 22,
-    fontWeight: "700",
-  },
-  status: {
-    fontSize: 14,
-    color: colors.success,
-  },
-});
