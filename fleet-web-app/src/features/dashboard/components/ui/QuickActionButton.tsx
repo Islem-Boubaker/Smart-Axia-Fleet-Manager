@@ -15,6 +15,6 @@ const colorClasses = {
 export const QuickActionButton = ({ icon: Icon, label, color }: QuickActionButtonProps) => (
   <button className={`p-4 text-center rounded-lg transition-colors ${colorClasses[color]}`}>
     <Icon className="mx-auto text-2xl mb-2" />
-    <p className="text-sm font-medium text-gray-900">{label}</p>
+    <p className="text-sm font-medium text-gray-900 dark:text-slate-100">{label}</p>
   </button>
 );

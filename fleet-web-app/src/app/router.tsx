@@ -4,7 +4,6 @@ import SignUp from "../features/auth/pages/Signup";
 import DashboardPage from "../features/dashboard/pages/DashboardPage";
 import VehiclesPage from "../features/vehicles/pages/VehiclesPage";
 import MaintenancePage from "../features/maintenance/pages/MaintenancePage";
-import FleetPage from "../features/fleet/pages/FleetPage";
 import DriversPage from "../features/drivers/pages/DriversPage";
 import TripsPage from "../features/trips/pages/TripsPage";
 import ReportsPage from "../features/reports/pages/ReportsPage";
@@ -23,7 +22,6 @@ export default function AppRouter() {
         <Route element={<DashboardLayout />}>
           <Route path={ROUTES.DASHBOARD} element={<DashboardPage />} />
           <Route path={ROUTES.VEHICLES} element={<VehiclesPage />} />
-          <Route path={ROUTES.FLEET} element={<FleetPage />} />
           <Route path={ROUTES.DRIVERS} element={<DriversPage />} />
           <Route path={ROUTES.TRIPS} element={<TripsPage />} />
           <Route path={ROUTES.MAINTENANCE} element={<MaintenancePage />} />

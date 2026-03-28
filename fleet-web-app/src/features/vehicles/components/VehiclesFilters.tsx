@@ -8,6 +8,7 @@ interface Props {
   onActiveChange: (value: string) => void;
   typeFilter: string;
   onTypeChange: (value: string) => void;
+  dark?: boolean;
 }
 
 const VehiclesFilters = ({
@@ -16,23 +17,24 @@ const VehiclesFilters = ({
   activeFilter,
   onActiveChange,
   typeFilter,
-  onTypeChange
+  onTypeChange,
+  dark = false,
 }: Props) => (
-  <Card>
+  <Card className={dark ? 'bg-slate-800 border-slate-700' : ''}>
     <div className="flex flex-col sm:flex-row gap-4">
       <div className="flex-1 relative">
-        <FiSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+        <FiSearch className={`absolute left-3 top-1/2 transform -translate-y-1/2 ${dark ? 'text-slate-400' : 'text-gray-400'}`} />
         <Input
           type="text"
           placeholder="Search by name or plate..."
-          className="pl-10"
+          className={`pl-10 ${dark ? 'bg-slate-900 border-slate-600 text-slate-100 placeholder-slate-400' : ''}`}
           value={searchQuery}
           onChange={e => onSearchChange(e.target.value)}
         />
       </div>
       <div className="flex gap-2">
         <select
-          className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className={`px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${dark ? 'bg-slate-900 border-slate-600 text-slate-100' : 'border-gray-300 bg-white text-gray-900'}`}
           value={activeFilter}
           onChange={e => onActiveChange(e.target.value)}
         >
@@ -41,7 +43,7 @@ const VehiclesFilters = ({
           <option value="false">Inactive</option>
         </select>
         <select
-          className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className={`px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${dark ? 'bg-slate-900 border-slate-600 text-slate-100' : 'border-gray-300 bg-white text-gray-900'}`}
           value={typeFilter}
           onChange={e => onTypeChange(e.target.value)}
         >

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useOutletContext } from 'react-router-dom';
 
 import ReportsHeader from "../components/ReportsHeader";
 import ReportsFilters from "../components/ReportsFilters";
@@ -15,14 +16,20 @@ import {
   maintenanceSummary,
 } from "../../../data/mockData";
 import { useRef } from "react";
+
+interface ThemeContext {
+  dark: boolean;
+}
+
 const ReportsPage = () => {
+  const { dark } = useOutletContext<ThemeContext>();
   const pdfRef = useRef<HTMLDivElement>(null);
   const [reportType, setReportType] = useState("overview");
   const [dateRange, setDateRange] = useState("month");
 
   return (
     <>
-      <div className="space-y-6">
+      <div className={`rounded-3xl border p-6 space-y-6 ${dark ? 'bg-slate-900 border-slate-700' : 'bg-white border-gray-100'}`}>
         <ReportsHeader />
         <ReportsFilters
           reportType={reportType}

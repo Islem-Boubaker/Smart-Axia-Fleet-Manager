@@ -1,4 +1,5 @@
 import { useState, useCallback } from "react";
+import { useOutletContext } from 'react-router-dom';
 
 import { useDrivers } from "../hooks/useDrivers";
 import { toast } from "../../../shared/components";
@@ -8,7 +9,12 @@ import DriversGrid from "../components/DriversGrid";
 import DriverModal from "../components/DriverModal";
 import type { Driver } from "../../../types";
 
+interface ThemeContext {
+  dark: boolean;
+}
+
 const DriversPage = () => {
+  const { dark } = useOutletContext<ThemeContext>();
   const [searchQuery, setSearchQuery] = useState("");
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -74,8 +80,8 @@ const DriversPage = () => {
 
   return (
     <>
-      <div className="space-y-6">
-        <DriversHeader onAdd={() => setIsAddModalOpen(true)} />
+      <div className={`rounded-3xl border p-6 space-y-6 ${dark ? 'bg-slate-900 border-slate-700' : 'bg-white border-gray-100'}`}>
+        <DriversHeader onAdd={() => setIsAddModalOpen(true)} dark={dark} />
         <DriversSearch value={searchQuery} onChange={setSearchQuery} />
         <DriversGrid
           drivers={filteredDrivers}

@@ -1,5 +1,6 @@
 export interface HeaderProps {
-  toggleSidebar: () => void;
+  dark: boolean;
+  setDark: (dark: boolean) => void;
 }
 
 export interface Notification {

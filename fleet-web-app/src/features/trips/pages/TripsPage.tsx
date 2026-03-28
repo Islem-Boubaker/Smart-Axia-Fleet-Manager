@@ -1,9 +1,15 @@
 import { useState } from 'react';
+import { useOutletContext } from 'react-router-dom';
 import TripsHeader from '../components/TripsHeader';
 import TripsFilters from '../components/TripsFilters';
 import TripsList from '../components/TripsList';
 
+interface ThemeContext {
+  dark: boolean;
+}
+
 const TripsPage = () => {
+  const { dark } = useOutletContext<ThemeContext>();
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
 
@@ -98,7 +104,7 @@ const TripsPage = () => {
 
   return (
     <>
-      <div className="space-y-6">
+      <div className={`rounded-3xl border p-6 space-y-6 ${dark ? 'bg-slate-900 border-slate-700' : 'bg-white border-gray-100'}`}>
         <TripsHeader />
         <TripsFilters
           searchQuery={searchQuery}
