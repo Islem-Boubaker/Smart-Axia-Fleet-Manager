@@ -1,28 +1,22 @@
-import React from 'react';
-import { View, Text, ScrollView, ActivityIndicator } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { useNotification } from '../hooks/useNotification';
-import { NotificationHeader } from '../components/NotificationHeader';
-import { NotificationGroupCard } from '../components/NotificationGroupCard';
+import * as React from "react";
+import { View, Text, ScrollView, ActivityIndicator } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { useNotification } from "../hooks/useNotification";
+import { NotificationHeader } from "../components/NotificationHeader";
+import { NotificationGroupCard } from "../components/NotificationGroupCard";
 
 export default function NotificationsScreen() {
-  const {
-    groups,
-    loading,
-    error,
-    unreadCount,
-    markRead,
-    markAllRead,
-  } = useNotification();
-
-  // Fetch on mount (comment out while using mock data)
-  // useEffect(() => { fetchNotifications(); }, []);
+  const { groups, loading, error, unreadCount, markAsRead, markAllAsRead } =
+    useNotification();
 
   return (
-    <SafeAreaView edges={['top', 'left', 'right']} className="flex-1 bg-gray-100">
+    <SafeAreaView
+      edges={["top", "left", "right"]}
+      className="flex-1 bg-gray-100"
+    >
       {/* Header */}
       <NotificationHeader
-        onMarkAllRead={markAllRead}
+        onMarkAllRead={markAllAsRead}
         unreadCount={unreadCount}
       />
 
@@ -41,7 +35,7 @@ export default function NotificationsScreen() {
       )}
 
       {/* Empty state */}
-      {!loading && !error && groups.every(g => g.items.length === 0) && (
+      {!loading && !error && groups.every((g) => g.items.length === 0) && (
         <View className="flex-1 items-center justify-center px-8">
           <Text className="text-4xl mb-3">🔔</Text>
           <Text className="text-base font-semibold text-slate-900 mb-1">
@@ -59,11 +53,11 @@ export default function NotificationsScreen() {
           showsVerticalScrollIndicator={false}
           contentContainerClassName="px-4 pt-4 pb-8"
         >
-          {groups.map(group => (
+          {groups.map((group) => (
             <NotificationGroupCard
               key={group.group}
               group={group}
-              onItemPress={markRead}
+              onItemPress={markAsRead}
             />
           ))}
         </ScrollView>
@@ -72,4 +66,4 @@ export default function NotificationsScreen() {
   );
 }
 
-NotificationsScreen.displayName = 'NotificationsScreen';
+NotificationsScreen.displayName = "NotificationsScreen";

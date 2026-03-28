@@ -7,10 +7,11 @@ import { View, ActivityIndicator } from "react-native";
 import { store } from "../store/index";
 import type { RootState } from "../store";
 
+import { useAuthGuard } from "../features/auth/hooks/useAuth";
+
 function AppLayout() {
-  const isAuthenticated = useSelector(
-    (state: RootState) => state.auth.isAuthenticated,
-  );
+  useAuthGuard();
+
   const isLoading = useSelector((state: RootState) => state.auth.isLoading);
 
   if (isLoading) {
@@ -23,43 +24,34 @@ function AppLayout() {
 
   return (
     <Stack screenOptions={{ headerShown: false }}>
-      {isAuthenticated ? (
-        <>
-          <Stack.Screen name="/home" />
+      <Stack.Screen name="index" options={{ headerShown: false }} />
+      <Stack.Screen name="(auth)" options={{ headerShown: false }} />
+      <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
 
-          <Stack.Screen
-            name="notifications"
-            options={{ animation: "slide_from_right" }}
-          />
-          <Stack.Screen
-            name="trips/[id]"
-            options={{ animation: "slide_from_right" }}
-          />
-          <Stack.Screen
-            name="/trips/live"
-            options={{ animation: "slide_from_bottom" }}
-          />
-          <Stack.Screen
-            name="/maps"
-            options={{ animation: "slide_from_bottom" }}
-          />
-          <Stack.Screen
-            name="reclamations/create"
-            options={{ animation: "slide_from_right" }}
-          />
-          <Stack.Screen
-            name="profile/settings"
-            options={{ animation: "slide_from_right" }}
-          />
-        </>
-      ) : (
-        <Stack.Screen
-          name="(auth)/login"
-          options={{ headerShown: false, gestureEnabled: false }}
-        />
-      )}
-
-      
+      <Stack.Screen
+        name="notifications"
+        options={{ animation: "slide_from_right" }}
+      />
+      <Stack.Screen
+        name="trips/[id]"
+        options={{ animation: "slide_from_right" }}
+      />
+      <Stack.Screen
+        name="trips/live"
+        options={{ animation: "slide_from_bottom" }}
+      />
+      <Stack.Screen
+        name="maps/index"
+        options={{ animation: "slide_from_bottom" }}
+      />
+      <Stack.Screen
+        name="reclamations/create"
+        options={{ animation: "slide_from_right" }}
+      />
+      <Stack.Screen
+        name="profile/settings"
+        options={{ animation: "slide_from_right" }}
+      />
     </Stack>
   );
 }
@@ -73,5 +65,3 @@ export default function RootLayout() {
     </Provider>
   );
 }
-
-

@@ -39,7 +39,8 @@ export function ActiveTripScreen({ navigation }: any) {
 
       const [trip, vehicle] = await Promise.all([
         tripsApi.getActiveTrip(),
-          driverApi.getAssignedVehicle(),
+        driverApi.getAssignedVehicle(),
+      ]);
       setState((prev) => ({
         ...prev,
         trip: trip || null,
