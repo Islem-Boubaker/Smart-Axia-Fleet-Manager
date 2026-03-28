@@ -1,37 +1,12 @@
-import { memo, useState, useCallback, useRef } from 'react';
+import { memo, useState, useRef } from 'react';
 import { FiBell } from 'react-icons/fi';
 import NotificationPopup from '../../NotificationPopup';
-import type { Notification } from '../../types/types';
-
-const mockNotifications: Notification[] = [
-  {
-    id: '1',
-    type: 'maintenance',
-    title: 'Maintenance Due',
-    message: 'Toyota Camry is due for oil change in 2 days',
-    timestamp: '5 minutes ago',
-    read: false,
-  },
-];
+import { useNotificationSocket } from '../../../hooks/useNotificationSocket';
 
 export const HeaderNotifications = memo(() => {
   const [isOpen, setIsOpen] = useState(false);
-  const [notifications, setNotifications] = useState(mockNotifications);
+  const { notifications, unreadCount, markAsRead, markAllAsRead } = useNotificationSocket();
   const bellRef = useRef<HTMLElement>(null) as React.MutableRefObject<HTMLElement>;
-
-  const handleMarkAsRead = useCallback((id: string) => {
-    setNotifications(prev =>
-      prev.map(n => (n.id === id ? { ...n, read: true } : n))
-    );
-  }, []);
-
-  const handleMarkAllAsRead = useCallback(() => {
-    setNotifications(prev =>
-      prev.map(n => ({ ...n, read: true }))
-    );
-  }, []);
-
-  const unreadCount = notifications.filter(n => !n.read).length;
 
   return (
     <div className="relative">
@@ -53,8 +28,8 @@ export const HeaderNotifications = memo(() => {
         isOpen={isOpen}
         onClose={() => setIsOpen(false)}
         notifications={notifications}
-        onMarkAsRead={handleMarkAsRead}
-        onMarkAllAsRead={handleMarkAllAsRead}
+        onMarkAsRead={markAsRead}
+        onMarkAllAsRead={markAllAsRead}
         triggerRef={bellRef}
       />
     </div>
