@@ -1,7 +1,8 @@
 import axios from 'axios';
 import { buildCookieHeader, syncCookiesFromServer } from './cookieJar';
+import { resolveApiBaseUrl } from '../utils/apiBase';
 
-const apiUrl = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:3000';
+const apiUrl = resolveApiBaseUrl(process.env.EXPO_PUBLIC_API_URL);
 
 if (!apiUrl) {
   console.warn('⚠️ WARNING: EXPO_PUBLIC_API_URL not configured! Using localhost fallback.');

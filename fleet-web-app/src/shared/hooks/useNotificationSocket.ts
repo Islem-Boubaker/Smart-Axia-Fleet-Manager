@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState, useCallback } from "react";
 import { io, Socket } from "socket.io-client";
 import notificationApi from "../../features/notifications/services/notification.api";
 import type { NotificationRecord } from "../../features/notifications/services/notification.api";
+import { toast } from "../components";
 
 export interface HeaderNotificationItem {
   id: string;
@@ -42,6 +43,7 @@ function toHeaderNotification(notification: NotificationRecord): HeaderNotificat
 
 export function useNotificationSocket({ token }: UseNotificationSocketOptions = {}) {
   const socketRef = useRef<Socket | null>(null);
+  const shownToastIdsRef = useRef<Set<string>>(new Set());
   const [isConnected, setIsConnected] = useState(false);
   const [items, setItems] = useState<NotificationRecord[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
@@ -92,10 +94,20 @@ export function useNotificationSocket({ token }: UseNotificationSocketOptions = 
     });
 
     socket.on("notification:new", (notification: NotificationRecord) => {
+      let inserted = false;
       setItems((prev) => {
         if (prev.some((item) => item.id === notification.id)) return prev;
+        inserted = true;
         return [notification, ...prev];
       });
+
+      if (inserted && !shownToastIdsRef.current.has(notification.id)) {
+        shownToastIdsRef.current.add(notification.id);
+        toast.info(notification.message, {
+          title: notification.title,
+          duration: 5000,
+        });
+      }
 
       if (!notification.read && !notification.readAt) {
         setUnreadCount((count) => count + 1);

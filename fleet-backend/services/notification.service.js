@@ -1,4 +1,4 @@
-import { Op } from "sequelize";
+import { Op, fn, col } from "sequelize";
 import { Expo } from "expo-server-sdk";
 import Notification from "../models/notification.model.js";
 import User from "../models/user.model.js";
@@ -73,7 +73,7 @@ const NotificationService = {
     const unreadCount = await NotificationService.getUnreadCount(data.userId);
     emitToUser(data.userId, "notification:count", { count: unreadCount });
 
-    if (data.sendPush !== false) {
+    if (data.sendPush !== false && User?.rawAttributes?.expoPushToken) {
       const user = await User.findByPk(data.userId, {
         attributes: ["id", "expoPushToken"],
       });
@@ -112,13 +112,20 @@ const NotificationService = {
       individualHooks: true,
     });
 
+    const uniqueUserIds = [...new Set(notifications.map((notification) => notification.userId))];
+    const unreadByUser = await NotificationService.getUnreadCountsByUserIds(uniqueUserIds);
+
     for (const notification of notifications) {
       emitToUser(notification.userId, "notification:new", notification.toJSON());
-      const count = await NotificationService.getUnreadCount(notification.userId);
-      emitToUser(notification.userId, "notification:count", { count });
     }
 
-    if (baseData.sendPush !== false) {
+    for (const userId of uniqueUserIds) {
+      emitToUser(userId, "notification:count", {
+        count: unreadByUser[userId] ?? 0,
+      });
+    }
+
+    if (baseData.sendPush !== false && User?.rawAttributes?.expoPushToken) {
       const users = await User.findAll({
         where: {
           id: recipients,
@@ -206,6 +213,30 @@ const NotificationService = {
         [Op.or]: [{ expiresAt: null }, { expiresAt: { [Op.gt]: new Date() } }],
       },
     });
+  },
+
+  async getUnreadCountsByUserIds(userIds = []) {
+    const uniqueUserIds = [...new Set((userIds || []).filter(Boolean))];
+    if (uniqueUserIds.length === 0) return {};
+
+    const rows = await Notification.findAll({
+      attributes: ["userId", [fn("COUNT", col("id")), "count"]],
+      where: {
+        userId: uniqueUserIds,
+        readAt: null,
+        isArchived: false,
+        [Op.or]: [{ expiresAt: null }, { expiresAt: { [Op.gt]: new Date() } }],
+      },
+      group: ["userId"],
+      raw: true,
+    });
+
+    const unreadByUser = Object.fromEntries(uniqueUserIds.map((id) => [id, 0]));
+    for (const row of rows) {
+      unreadByUser[row.userId] = Number(row.count) || 0;
+    }
+
+    return unreadByUser;
   },
 
   async markAsRead(notificationId, userId) {

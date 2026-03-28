@@ -4,6 +4,20 @@ import NotificationService from "../services/notification.service.js";
 
 let io = null;
 
+function parseCookies(rawCookie = "") {
+  if (!rawCookie) return {};
+
+  return rawCookie.split(";").reduce((acc, pair) => {
+    const [rawKey, ...rawValue] = pair.split("=");
+    if (!rawKey || rawValue.length === 0) return acc;
+
+    const key = rawKey.trim();
+    const value = rawValue.join("=").trim();
+    acc[key] = decodeURIComponent(value);
+    return acc;
+  }, {});
+}
+
 function initSocket(httpServer) {
   io = new Server(httpServer, {
     cors: {
@@ -18,9 +32,11 @@ function initSocket(httpServer) {
 
   io.use(async (socket, next) => {
     try {
+      const cookies = parseCookies(socket.handshake.headers?.cookie ?? "");
       const token =
         socket.handshake.auth?.token ??
-        socket.handshake.headers?.authorization?.replace("Bearer ", "");
+        socket.handshake.headers?.authorization?.replace("Bearer ", "") ??
+        cookies.accessToken;
 
       if (!token) {
         return next(new Error("Authentication required"));

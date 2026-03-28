@@ -8,8 +8,9 @@ import type {
   RawNotification,
 } from "../types/notification.types";
 import { buildCookieHeader } from "@/shared/services/cookieJar";
+import { resolveApiBaseUrl } from "@/shared/utils/apiBase";
 
-const SOCKET_URL = process.env.EXPO_PUBLIC_API_URL ?? "http://localhost:3000";
+const SOCKET_URL = resolveApiBaseUrl(process.env.EXPO_PUBLIC_API_URL);
 
 function mapType(rawType: string, group: string): NotificationType {
   const t = (rawType || group || "").toLowerCase();

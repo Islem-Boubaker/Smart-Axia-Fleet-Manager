@@ -127,6 +127,7 @@ const NotificationController = {
         title: req.body?.title,
         message: req.body?.message,
         metadata: req.body?.metadata ?? {},
+        sendPush: false,
       });
 
       return sendSuccess(res, notification, 201);

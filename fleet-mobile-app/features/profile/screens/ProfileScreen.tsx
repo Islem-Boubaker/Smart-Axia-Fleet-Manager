@@ -1,5 +1,6 @@
 import React, { useState } from "react";
-import { SafeAreaView, StatusBar, ScrollView, View, Text, TouchableOpacity, Alert } from "react-native";
+import { StatusBar, ScrollView, View, Text, TouchableOpacity, Alert } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { useSelector, useDispatch } from "react-redux";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
