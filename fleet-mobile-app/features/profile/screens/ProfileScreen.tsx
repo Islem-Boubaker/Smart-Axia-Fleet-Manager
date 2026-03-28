@@ -5,7 +5,7 @@ import { useSelector, useDispatch } from "react-redux";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 
 import { useProfile } from "../hooks/useProfile";
-import { clearUser } from "@/store/authSlice";
+import { clearUser } from "@/store/slices/authSlice";
 import { logout as logoutApi } from "../services/profile.api";
 import type { RootState } from "@/store";
 import { LoadingSpinner } from "@/shared/components/ui/LoadingSpinner";

@@ -1,7 +1,6 @@
-import { api } from '../../../shared/services/api';
+import { api } from '@/shared/services/api';
 import type { NotificationFilters } from '../types/notification.types';
 
-// Build query string from filter object
 function toQuery(params: Record<string, any>): string {
   const q = new URLSearchParams();
   Object.entries(params).forEach(([k, v]) => {
@@ -11,39 +10,48 @@ function toQuery(params: Record<string, any>): string {
 }
 
 export const notificationApi = {
-  getAll(filters: NotificationFilters = {}) {
-    return api.get(`/notifications${toQuery(filters)}`).then((r) => r.data.data);
+  async getAll(filters: NotificationFilters = {}) {
+    const r = await api.get(`/notifications${toQuery(filters)}`);
+    return r.data.data;
   },
 
-  getGrouped(filters: NotificationFilters = {}) {
-    return api.get(`/notifications/grouped${toQuery(filters)}`).then((r) => r.data.data);
+  async getGrouped(filters: NotificationFilters = {}) {
+    const r = await api.get(`/notifications/grouped${toQuery(filters)}`);
+    return r.data.data;
   },
 
-  getUnreadCount() {
-    return api.get('/notifications/unread-count').then((r) => r.data.data);
+  async getUnreadCount() {
+    const r = await api.get('/notifications/unread-count');
+    return r.data.data;
   },
 
-  getById(id: string) {
-    return api.get(`/notifications/${id}`).then((r) => r.data.data);
+  async getById(id: string) {
+    const r = await api.get(`/notifications/${id}`);
+    return r.data.data;
   },
 
-  markAsRead(id: string) {
-    return api.patch(`/notifications/${id}/read`).then((r) => r.data);
+  async markAsRead(id: string) {
+    const r = await api.patch(`/notifications/${id}/read`);
+    return r.data;
   },
 
-  markAllAsRead(group?: string) {
-    return api.patch('/notifications/read-all', { group }).then((r) => r.data);
+  async markAllAsRead(group?: string) {
+    const r = await api.patch('/notifications/read-all', { group });
+    return r.data;
   },
 
-  archive(id: string) {
-    return api.patch(`/notifications/${id}/archive`).then((r) => r.data);
+  async archive(id: string) {
+    const r = await api.patch(`/notifications/${id}/archive`);
+    return r.data;
   },
 
-  delete(id: string) {
-    return api.delete(`/notifications/${id}`).then((r) => r.data);
+  async delete(id: string) {
+    const r = await api.delete(`/notifications/${id}`);
+    return r.data;
   },
 
-  registerPushToken(userId: string, token: string) {
-    return api.post('/user/register-push-token', { userId, token }).then((r) => r.data);
+  async registerPushToken(userId: string, token: string) {
+    const r = await api.post('/user/register-push-token', { userId, token });
+    return r.data;
   },
 };

@@ -1,7 +1,7 @@
 import { api } from "@/shared/services/api";
 import { clearSession } from "@/features/auth/services/auth.api";
 import { store } from "@/store";
-import { clearUser } from "@/store/authSlice";
+import { clearUser } from "@/store/slices/authSlice";
 import {
   clearCookies,
 } from "@/shared/services/cookieJar";

@@ -28,7 +28,7 @@ const Notification = sequelize.define(
     },
     group: {
       type: DataTypes.ENUM(...Object.values(NOTIFICATION_GROUPS)),
-      allowNull: false,
+      allowNull: true,
     },
     priority: {
       type: DataTypes.ENUM(...Object.values(PRIORITY_LEVELS)),

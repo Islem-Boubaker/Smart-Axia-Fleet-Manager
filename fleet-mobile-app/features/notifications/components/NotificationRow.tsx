@@ -1,92 +1,48 @@
-import React from 'react'
-import { View, Text, TouchableOpacity } from 'react-native'
-import type { Notification } from '../types/notification.types'
-import { GROUP_CONFIG, PRIORITY_CONFIG } from '../types/notification.types'
+import React from 'react';
+import { View, Text, TouchableOpacity } from 'react-native';
+import type { NotificationItem } from '../types/notification.types';
+import { NotificationAvatar } from './NotificationAvatar';
 
 interface Props {
-  notification: Notification
-  onPress: () => void
+  item: NotificationItem;
+  onPress: (id: string) => void;
 }
 
-function timeAgo(dateStr: string): string {
-  const diff = Date.now() - new Date(dateStr).getTime()
-  const mins = Math.floor(diff / 60000)
-  if (mins < 1) return 'just now'
-  if (mins < 60) return `${mins}m ago`
-  const hrs = Math.floor(mins / 60)
-  if (hrs < 24) return `${hrs}h ago`
-  return `${Math.floor(hrs / 24)}d ago`
-}
-
-export function NotificationRow({ notification: n, onPress }: Props) {
-  const grpCfg = GROUP_CONFIG[n.group]
-  const priCfg = PRIORITY_CONFIG[n.priority]
-  const isUnread = !n.read_at
-
+export function NotificationRow({ item, onPress }: Props) {
   return (
     <TouchableOpacity
-      onPress={onPress}
-      activeOpacity={0.7}
-      className={`flex-row p-4 gap-3 border-b border-gray-100 ${isUnread ? 'bg-blue-50' : 'bg-white'}`}
+      className={`flex-row items-center px-4 py-3.5 gap-3 ${
+        item.unread ? 'bg-emerald-50/40' : 'bg-white'
+      }`}
+      onPress={() => onPress(item.id)}
+      activeOpacity={0.75}
     >
-      <View
-        className="w-10 h-10 rounded-full items-center justify-center shrink-0"
-        style={{ backgroundColor: grpCfg.bgColor }}
-      >
-        <Text className="text-lg">{grpCfg.icon}</Text>
-      </View>
+      {/* Icon avatar */}
+      <NotificationAvatar type={item.type} />
 
+      {/* Text body */}
       <View className="flex-1">
-        <View className="flex-row justify-between items-start mb-0.5">
-          <Text
-            numberOfLines={1}
-            className={`text-sm flex-1 mr-2 ${
-              isUnread ? 'font-bold text-gray-900' : 'font-medium text-gray-700'
-            }`}
-          >
-            {n.title}
-          </Text>
-          <Text className="text-[11px] text-gray-400 shrink-0">
-            {timeAgo(n.created_at)}
-          </Text>
-        </View>
-
-        <Text numberOfLines={2} className="text-xs text-gray-500 leading-4 mb-1.5">
-          {n.message}
+        <Text
+          className={`text-[13px] text-slate-900 mb-0.5 ${
+            item.unread ? 'font-bold' : 'font-medium'
+          }`}
+        >
+          {item.name}
         </Text>
-
-        <View className="flex-row gap-1.5">
-          <View
-            className="px-2 py-0.5 rounded-full"
-            style={{ backgroundColor: grpCfg.color + '20' }}
-          >
-            <Text
-              className="text-[10px] font-semibold"
-              style={{ color: grpCfg.color }}
-            >
-              {grpCfg.label}
-            </Text>
-          </View>
-
-          {(n.priority === 'high' || n.priority === 'critical') && (
-            <View
-              className="px-2 py-0.5 rounded-full"
-              style={{ backgroundColor: priCfg.color + '20' }}
-            >
-              <Text
-                className="text-[10px] font-semibold"
-                style={{ color: priCfg.color }}
-              >
-                {priCfg.label}
-              </Text>
-            </View>
-          )}
-        </View>
+        <Text className="text-xs text-gray-500 leading-[17px]" numberOfLines={2}>
+          {item.message}
+        </Text>
       </View>
 
-      {isUnread && (
-        <View className="w-2 h-2 rounded-full bg-blue-500 self-center shrink-0" />
-      )}
+      {/* Time + unread indicator */}
+      <View className="items-end gap-1.5 min-w-[40px]">
+        <Text className="text-[11px] text-gray-400 font-medium">{item.time}</Text>
+        {item.unread && (
+          <View className="w-2 h-2 rounded-full bg-red-500" />
+        )}
+      </View>
     </TouchableOpacity>
-  )
+  );
 }
+
+NotificationRow.displayName = 'NotificationRow';

@@ -1,8 +1,8 @@
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
-import type { Notification, NotificationGroup }         from '../types/notification.types';
-import { notificationApi }                              from '../services/notification.api';
+import type { Notification, NotificationGroup }         from '../../features/notifications/types/notification.types';
+import { notificationApi }             from '../../features/notifications/services/notification.api';
 
-// ─── Async thunks ─────────────────────────────────────────────────────────────
+
 
 export const fetchNotifications = createAsyncThunk(
   'notifications/fetchAll',
