@@ -1,0 +1,49 @@
+import { View, Text } from "react-native";
+import type { Trip } from "../types/trip.types";
+
+interface Props {
+  trips: Trip[];
+}
+
+const STATS = [
+  { key: "pending",   label: "PENDING",   fill: "#F59E0B", track: "#FEF3C7" },
+  { key: "active",    label: "ACTIVE",    fill: "#3B82F6", track: "#DBEAFE" },
+  { key: "completed", label: "DONE",      fill: "#10B981", track: "#D1FAE5" },
+] as const;
+
+export function TripStatsRow({ trips }: Props) {
+  const total = trips.length || 1;
+
+  return (
+    <View className="flex-row gap-2.5 px-5 pt-4 mb-4">
+      {STATS.map(({ key, label, fill, track }) => {
+        const count = trips.filter((t) => t.status === key).length;
+        const pct = (count / total) * 100;
+
+        return (
+          <View
+            key={key}
+            className="flex-1 bg-white rounded-2xl px-3  py-2.5"
+            style={{ elevation: 1, shadowColor: "#000", shadowOpacity: 0.04, shadowRadius: 4 }}
+          >
+            <Text className="text-lg font-extrabold text-slate-900">{count}</Text>
+            <Text className="text-[9px] font-bold text-gray-400 tracking-wide mt-0.5">
+              {label}
+            </Text>
+            {/* Mini progress bar */}
+            <View
+              className="h-[3px] rounded-full mt-1.5 overflow-hidden"
+              style={{ backgroundColor: track }}
+            >
+              <View
+                style={{ width: `${pct}%`, height: "100%", backgroundColor: fill, borderRadius: 2 }}
+              />
+            </View>
+          </View>
+        );
+      })}
+    </View>
+  );
+}
+
+TripStatsRow.displayName = "TripStatsRow";

@@ -36,11 +36,11 @@ function AppLayout() {
             options={{ animation: "slide_from_right" }}
           />
           <Stack.Screen
-            name="trips/live"
+            name="/trips/live"
             options={{ animation: "slide_from_bottom" }}
           />
           <Stack.Screen
-            name="maps"
+            name="/maps"
             options={{ animation: "slide_from_bottom" }}
           />
           <Stack.Screen
@@ -54,7 +54,7 @@ function AppLayout() {
         </>
       ) : (
         <Stack.Screen
-          name="/login"
+          name="(auth)/login"
           options={{ headerShown: false, gestureEnabled: false }}
         />
       )}

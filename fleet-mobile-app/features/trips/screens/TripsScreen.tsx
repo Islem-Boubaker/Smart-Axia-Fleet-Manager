@@ -1,188 +1,195 @@
-import React, { useState } from "react";
+import React, { useState, useCallback } from "react";
 import {
   View,
   Text,
   FlatList,
   TouchableOpacity,
   RefreshControl,
+  SafeAreaView,
+  StatusBar,
 } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
 import { useFocusEffect } from "@react-navigation/native";
-import { MaterialCommunityIcons } from "@expo/vector-icons";
+import { useRouter } from "expo-router";
+import MaterialIcons from "@expo/vector-icons/MaterialIcons";
+
 import { tripsApi } from "../services/trips.api";
-import { TripCard } from "@/features/trips/components/TripCard";
+import { TripCard } from "../components/TripCard";
+import { TripFilterChips } from "../components/TripFilterChips";
+import { TripStatsRow } from "../components/TripStatsRow";
+import { TripEmptyState } from "../components/TripEmptyState";
 import { LoadingSpinner } from "@/shared/components/ui/LoadingSpinner";
+import type { Trip } from "../types/trip.types";
+import type { FilterOption } from "../config/trips.config";
+import { data } from "../data/data";
 
-interface TripsScreenState {
-  trips: any[];
-  selectedFilter: "all" | "pending" | "active" | "completed";
-  isLoading: boolean;
-  isRefreshing: boolean;
-  error: string | null;
-}
+// ─── Types ────────────────────────────────────────────────────────
+type TripLike = Partial<Trip> & {
+  fromCoords?: { lat?: number; lng?: number };
+  toCoords?: { lat?: number; lng?: number };
+};
 
-const filterButtons = [
-  { id: "all", label: "All", icon: "list" },
-  { id: "pending", label: "Pending", icon: "clock-outline" },
-  { id: "active", label: "Active", icon: "progress-clock" },
-  { id: "completed", label: "Completed", icon: "check-circle" },
-];
+// ─── Normalize — every field guaranteed non-undefined ─────────────
+const normalizeTrip = (raw: TripLike, index: number): Trip => ({
+  id: String(raw?.id ?? index + 1),
+  tripNumber: raw?.tripNumber ?? "",
+  vehicle: raw?.vehicle ?? "",
+  from: raw?.from ?? "",
+  to: raw?.to ?? "",
+  distance: raw?.distance ?? "",
+  duration: raw?.duration ?? "",
+  date: raw?.date ?? "",
+  score: raw?.score ?? null,
+  lat: raw?.lat ?? raw?.fromCoords?.lat ?? 0,
+  lng: raw?.lng ?? raw?.fromCoords?.lng ?? 0,
+  status:
+    raw?.status === "completed" ||
+    raw?.status === "active" ||
+    raw?.status === "pending"
+      ? raw.status
+      : "pending",
+});
 
-export function TripsScreen({ navigation, route }: any) {
-  const initialFilter = route?.params?.filterStatus || "all";
+// ✅ Guard against data itself being undefined/null
+const normalizeTrips = (items: unknown): Trip[] => {
+  if (!Array.isArray(items)) return [];
+  return items.map((item, i) => normalizeTrip(item as TripLike, i));
+};
 
-  const [state, setState] = useState<TripsScreenState>({
-    trips: [],
-    selectedFilter: initialFilter,
-    isLoading: true,
-    isRefreshing: false,
-    error: null,
-  });
+const fallbackTrips: Trip[] = normalizeTrips(data);
 
+// ─── TripsScreen ──────────────────────────────────────────────────
+export function TripsScreen() {
+  const router = useRouter();
+
+  const [trips, setTrips] = useState<Trip[]>(fallbackTrips);
+  const [filter, setFilter] = useState<FilterOption>("all");
+  const [isLoading, setIsLoading] = useState(true);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  // ── Fetch ──────────────────────────────────────────────────────
   const fetchTrips = async () => {
     try {
-      setState((prev) => ({ ...prev, isLoading: true, error: null }));
-
-      const trips = await tripsApi.getAllTrips();
-
-      setState((prev) => ({
-        ...prev,
-        trips: trips || [],
-        isLoading: false,
-      }));
-    } catch (error: any) {
-      setState((prev) => ({
-        ...prev,
-        error: error?.message || "Failed to load trips",
-        isLoading: false,
-      }));
+      setError(null);
+      const apiData = await tripsApi.getAllTrips();
+      const normalized = normalizeTrips(apiData);
+      setTrips(normalized.length > 0 ? normalized : fallbackTrips);
+    } catch (err: any) {
+      setError(err?.message ?? "Failed to load trips");
+      setTrips(fallbackTrips);
+    } finally {
+      setIsLoading(false);
+      setIsRefreshing(false);
     }
   };
 
-  const handleRefresh = async () => {
-    setState((prev) => ({ ...prev, isRefreshing: true }));
-    await fetchTrips();
-    setState((prev) => ({ ...prev, isRefreshing: false }));
+  const handleRefresh = () => {
+    setIsRefreshing(true);
+    fetchTrips();
   };
 
   useFocusEffect(
-    React.useCallback(() => {
+    useCallback(() => {
+      setIsLoading(true);
       fetchTrips();
-    }, [])
+    }, []),
   );
 
-  const filteredTrips =
-    state.selectedFilter === "all"
-      ? state.trips
-      : state.trips.filter((trip) => trip.status === state.selectedFilter);
+  // ── Derived ────────────────────────────────────────────────────
+  const filtered =
+    filter === "all" ? trips : trips.filter((t) => t?.status === filter);
 
-  if (state.isLoading) {
-    return <LoadingSpinner fullScreen />;
-  }
+  if (isLoading) return <LoadingSpinner fullScreen />;
 
   return (
     <SafeAreaView className="flex-1 bg-gray-100">
+      <StatusBar barStyle="dark-content" backgroundColor="#F3F4F6" />
 
       {/* Header */}
-      <View className="flex-row justify-between items-center px-4 py-4">
-
-        <Text className="text-2xl font-bold text-gray-900">
-          My Trips
-        </Text>
-
-        <TouchableOpacity onPress={handleRefresh}>
-          <MaterialCommunityIcons
-            name="refresh"
-            size={24}
-            color="#3B82F6"
-          />
-        </TouchableOpacity>
-
-      </View>
-
-      {/* Filters */}
-      <View className="px-4 py-2 border-b border-gray-100 bg-white">
-
-        <FlatList
-          data={filterButtons}
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerClassName="gap-2"
-          keyExtractor={(item) => item.id}
-          renderItem={({ item }) => {
-            const active = state.selectedFilter === item.id;
-
-            return (
-              <TouchableOpacity
-                className={`flex-row items-center px-4 py-2 rounded-xl ${
-                  active ? "bg-blue-600" : "bg-gray-100"
-                }`}
-                onPress={() =>
-                  setState((prev) => ({
-                    ...prev,
-                    selectedFilter: item.id as any,
-                  }))
-                }
-              >
-                <MaterialCommunityIcons
-                  name={item.icon}
-                  size={16}
-                  color={active ? "#fff" : "#6B7280"}
-                  style={{ marginRight: 4 }}
-                />
-
-                <Text
-                  className={`text-[13px] font-semibold ${
-                    active ? "text-white" : "text-gray-500"
-                  }`}
-                >
-                  {item.label}
-                </Text>
-
-              </TouchableOpacity>
-            );
+      <View className="flex-row justify-between items-center px-5 pt-10 pb-2">
+        <View>
+          <Text className="text-2xl font-extrabold text-slate-900">
+            My Trips
+          </Text>
+          <Text className="text-xs text-gray-400 mt-0.5">
+            {trips.length} trip{trips.length !== 1 ? "s" : ""} assigned
+          </Text>
+        </View>
+        <TouchableOpacity
+          className="w-9 h-9 rounded-xl bg-white items-center justify-center"
+          style={{
+            elevation: 1,
+            shadowColor: "#000",
+            shadowOpacity: 0.06,
+            shadowRadius: 4,
           }}
-        />
-
+          onPress={handleRefresh}
+        >
+          <MaterialIcons name="refresh" size={20} color="#2D9B6F" />
+        </TouchableOpacity>
       </View>
 
-      {/* Trips List */}
+      {/* Filter chips */}
+      <TripFilterChips selected={filter} onChange={setFilter} />
+
+      {/* Stats */}
+      <TripStatsRow trips={trips} />
+
+      {/* Section header */}
+      <View className="flex-row justify-between items-center px-5 mb-2">
+        <Text className="text-[13px] font-bold text-gray-700">
+          {filter === "all"
+            ? "All trips"
+            : `${filter.charAt(0).toUpperCase() + filter.slice(1)} trips`}
+        </Text>
+        <Text className="text-[11px] text-gray-400">
+          {filtered.length} result{filtered.length !== 1 ? "s" : ""}
+        </Text>
+      </View>
+
+      {/* Error banner */}
+      {error && (
+        <View className="mx-5 mb-3 bg-red-50 border border-red-200 rounded-2xl px-4 py-3 flex-row items-center gap-2">
+          <MaterialIcons name="error-outline" size={16} color="#EF4444" />
+          <Text className="text-xs text-red-600 flex-1">{error}</Text>
+          <TouchableOpacity onPress={fetchTrips}>
+            <Text className="text-xs font-bold text-red-500">Retry</Text>
+          </TouchableOpacity>
+        </View>
+      )}
+
+      {/* Trip list */}
       <FlatList
-        data={filteredTrips}
-        contentContainerClassName="px-4 py-4"
-        keyExtractor={(item) => item.id}
+        data={filtered}
+        // ✅ Always return a string — never undefined
+        keyExtractor={(item, index) => String(item?.id ?? index)}
+        contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 24 }}
+        showsVerticalScrollIndicator={false}
         refreshControl={
           <RefreshControl
-            refreshing={state.isRefreshing}
+            refreshing={isRefreshing}
             onRefresh={handleRefresh}
-            tintColor="#3B82F6"
+            tintColor="#2D9B6F"
+            colors={["#2D9B6F"]}
           />
         }
-        renderItem={({ item }) => (
-          <TripCard
-            trip={item}
-            onPress={() =>
-              navigation.navigate("TripDetails", { tripId: item.id })
-            }
-          />
-        )}
-        ListEmptyComponent={
-          <View className="items-center justify-center py-10">
+        renderItem={({ item }) => {
+          // ✅ Skip rendering if item is somehow undefined
+          if (!item) return null;
 
-            <MaterialCommunityIcons
-              name="inbox-multiple"
-              size={48}
-              color="#D1D5DB"
+          return (
+            <TripCard
+              trip={item}
+              onPress={() => {
+                // ✅ Safe navigation — only push if id exists
+                if (!item.id) return;
+                router.replace("/maps");
+              }}
             />
-
-            <Text className="text-gray-500 text-base mt-4">
-              No {state.selectedFilter !== "all" ? state.selectedFilter : ""} trips
-            </Text>
-
-          </View>
-        }
+          );
+        }}
+        ListEmptyComponent={<TripEmptyState filter={filter} />}
       />
-
     </SafeAreaView>
   );
 }
