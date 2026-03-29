@@ -103,18 +103,23 @@ const TripsPage = () => {
   });
 
   return (
-    <>
-      <div className={`rounded-3xl border p-6 space-y-6 ${dark ? 'bg-slate-900 border-slate-700' : 'bg-white border-gray-100'}`}>
-        <TripsHeader />
+    <div className="space-y-8 lg:space-y-10 animate-fade-in">
+      <div
+        className={`rounded-[24px] border p-6 sm:p-8 lg:p-10 space-y-8 ${
+          dark ? 'border-slate-700/80 bg-slate-900/35 backdrop-blur-sm' : 'border-slate-200/90 bg-white/70 backdrop-blur-md shadow-soft'
+        }`}
+      >
+        <TripsHeader dark={dark} tripCount={filteredTrips.length} />
         <TripsFilters
           searchQuery={searchQuery}
           onSearchChange={setSearchQuery}
           statusFilter={statusFilter}
           onStatusChange={setStatusFilter}
+          dark={dark}
         />
-        <TripsList trips={filteredTrips} />
+        <TripsList trips={filteredTrips} dark={dark} />
       </div>
-    </>
+    </div>
   );
 };
 

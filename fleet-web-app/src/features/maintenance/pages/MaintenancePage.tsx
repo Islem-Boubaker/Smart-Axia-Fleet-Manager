@@ -1,12 +1,14 @@
 import { useState, useCallback } from 'react';
 import { useOutletContext } from 'react-router-dom';
 
-import { Button, GlobalCard } from '../../../shared/components';
+import { GlobalCard } from '../../../shared/components';
 import MaintenanceTable from '../components/MaintenanceTable';
 import MaintenanceForm from '../components/MaintenanceForm';
+import { ScheduledMaintenance } from '../components/ScheduledMaintenance';
+import { MaintenanceHeader } from '../components/MaintenanceHeader';
 import { useMaintenance } from '../hooks/useMaintenance';
-import { FiPlus } from 'react-icons/fi';
-import {maintenanceService} from '../services/maintenance.service';
+import { maintenanceService } from '../services/maintenance.service';
+import { pageShellClasses, pageShellInnerSpacing } from '../../../shared/utils/pageShell';
 
 interface ThemeContext {
   dark: boolean;
@@ -18,42 +20,40 @@ const MaintenancePage = () => {
   const [isScheduleModalOpen, setIsScheduleModalOpen] = useState(false);
 
   const handleScheduleMaintenance = useCallback((data: Record<string, unknown>) => {
-    maintenanceService.create(data)
+    maintenanceService.create(data);
     setIsScheduleModalOpen(false);
   }, []);
 
   return (
     <>
-      <div className={`rounded-3xl border p-6 space-y-6 ${dark ? 'bg-slate-900 border-slate-700' : 'bg-white border-gray-100'}`}>
-        <div className="flex justify-between items-center">
-          <div>
-            <h1 className={`text-3xl font-bold ${dark ? 'text-white' : 'text-gray-900'}`}>Maintenance</h1>
-            <p className={`${dark ? 'text-slate-300' : 'text-gray-600'} mt-1`}>Track vehicle maintenance and service records</p>
-          </div>
-          <Button onClick={() => setIsScheduleModalOpen(true)}>
-            <FiPlus className="mr-2" />
-            Schedule Maintenance
-          </Button>
+      <div className={`${pageShellClasses(dark)} ${pageShellInnerSpacing} animate-fade-in`}>
+        <MaintenanceHeader onSchedule={() => setIsScheduleModalOpen(true)} dark={dark} />
+
+        <ScheduledMaintenance dark={dark} />
+
+        <div className="space-y-3">
+          <h2 className={`text-lg font-bold ${dark ? 'text-white' : 'text-slate-900'}`}>All records</h2>
+          <p className={`text-sm ${dark ? 'text-slate-400' : 'text-slate-500'}`}>
+            History and in-progress maintenance
+          </p>
         </div>
 
         {isLoading ? (
-          <div className="text-center py-8">Loading...</div>
+          <div className={`text-center py-16 rounded-2xl border ${dark ? 'border-slate-700 text-slate-400' : 'border-slate-200 text-slate-500'}`}>
+            Loading…
+          </div>
         ) : (
-          <MaintenanceTable data={records} />
+          <MaintenanceTable data={records} dark={dark} />
         )}
       </div>
 
-      {/* Schedule Maintenance Modal */}
       <GlobalCard
         isOpen={isScheduleModalOpen}
         onClose={() => setIsScheduleModalOpen(false)}
-        title="Schedule Maintenance"
+        title="Schedule maintenance"
         maxWidth="2xl"
       >
-        <MaintenanceForm
-          onSubmit={handleScheduleMaintenance}
-          onCancel={() => setIsScheduleModalOpen(false)}
-        />
+        <MaintenanceForm onSubmit={handleScheduleMaintenance} onCancel={() => setIsScheduleModalOpen(false)} />
       </GlobalCard>
     </>
   );

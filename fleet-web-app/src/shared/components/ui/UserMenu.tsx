@@ -41,11 +41,11 @@ const UserMenu = () => {
       {/* Trigger */}
       <button
         onClick={() => setOpen((prev) => !prev)}
-        className="w-full flex items-center space-x-3 p-3 rounded-lg hover:bg-gray-100 transition-colors duration-150 focus:outline-none"
+        className="w-full flex items-center space-x-3 p-3 rounded-xl hover:bg-gray-100 dark:hover:bg-slate-800/80 transition-colors duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand/40"
       >
         <UserAvatar />
         <svg
-          className={`w-4 h-4 text-gray-400 transition-transform duration-200 ${open ? "rotate-180" : ""}`}
+          className={`w-4 h-4 text-gray-400 dark:text-slate-400 transition-transform duration-200 shrink-0 ${open ? "rotate-180" : ""}`}
           fill="none"
           stroke="currentColor"
           viewBox="0 0 24 24"
@@ -56,7 +56,7 @@ const UserMenu = () => {
 
       {/* Dropdown */}
       {open && (
-        <div className="absolute top-full left-0 mt-1 w-56 bg-white border border-gray-200 rounded-lg shadow-lg overflow-hidden z-50 block">
+        <div className="absolute top-full left-0 mt-1 w-56 bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl shadow-lg overflow-hidden z-50 block">
           {/* Settings */}
           <button
             onClick={handleSettings}
@@ -74,12 +74,12 @@ const UserMenu = () => {
             <span>Settings</span>
           </button>
 
-          <div className="border-t border-gray-100" />
+          <div className="border-t border-gray-100 dark:border-slate-700" />
 
           {/* Logout */}
           <button
             onClick={handleLogout}
-            className="w-full flex items-center space-x-3 px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition-colors duration-150"
+            className="w-full flex items-center space-x-3 px-4 py-2.5 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/40 transition-colors duration-150"
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path

@@ -23,8 +23,8 @@ const UserAvatar = () => {
         {initials}
       </div>
       <div className="flex-1 min-w-0 text-left">
-        <p className="text-sm font-medium text-gray-900 truncate">{name}</p>
-        <p className="text-xs text-gray-500 truncate">{role}</p>
+        <p className="text-sm font-medium text-gray-900 dark:text-slate-100 truncate">{name}</p>
+        <p className="text-xs text-gray-500 dark:text-slate-400 truncate">{role}</p>
       </div>
     </div>
   );

@@ -73,7 +73,7 @@ const PlannedTripsCalendar = ({ dark }: PlannedTripsCalendarProps) => {
                 <div className={`text-xs mt-2 ${muted}`}>scheduled on {day.dayLabel}</div>
                 <div className={`mt-4 h-2 w-full rounded-full ${dark ? 'bg-slate-700' : 'bg-gray-100'}`}>
                   <div
-                    className="h-2 rounded-full bg-violet-500"
+                    className="h-2 rounded-full bg-brand"
                     style={{ width: `${Math.min(100, day.tripsCount * 4)}%` }}
                   />
                 </div>

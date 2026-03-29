@@ -2,6 +2,12 @@
 @tailwind components;
 @tailwind utilities;
 
+@layer base {
+  html {
+    @apply antialiased;
+  }
+}
+
 /* ── Toast progress bar animation ─────────────────────────── */
 @keyframes toast-progress {
   from { width: 100%; }

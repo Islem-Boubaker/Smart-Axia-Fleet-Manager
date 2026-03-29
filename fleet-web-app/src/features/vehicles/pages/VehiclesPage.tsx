@@ -8,6 +8,7 @@ import VehiclesFilters from '../components/VehiclesFilters';
 import VehiclesGrid from '../components/VehiclesGrid';
 import VehicleModal from '../components/VehicleModal';
 import type { Vehicle } from '../../../types';
+import { pageShellClasses, pageShellInnerSpacing } from '../../../shared/utils/pageShell';
 
 interface ThemeContext {
   dark: boolean;
@@ -99,7 +100,7 @@ const VehiclesPage = () => {
 
   return (
     <>
-      <div className={`rounded-3xl border p-6 space-y-6 ${dark ? 'bg-slate-900 border-slate-700' : 'bg-white border-gray-100'}`}>
+      <div className={`${pageShellClasses(dark)} ${pageShellInnerSpacing} animate-fade-in`}>
         <VehiclesHeader onAdd={() => setIsAddModalOpen(true)} dark={dark} />
         <VehiclesFilters
           searchQuery={searchQuery}
@@ -115,6 +116,7 @@ const VehiclesPage = () => {
           isLoading={isLoading}
           onEdit={handleEditVehicle}
           onDelete={handleDeleteVehicle}
+          dark={dark}
         />
       </div>
 

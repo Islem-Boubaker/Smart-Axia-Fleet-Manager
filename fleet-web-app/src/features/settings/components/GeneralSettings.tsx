@@ -3,6 +3,11 @@ import { Card, Button } from '../../../shared/components';
 import SettingsSelect from './SettingsSelect';
 import type { GeneralPreferences, SelectOption } from '../settings.types';
 
+const cardExtra = (dark: boolean) =>
+  dark
+    ? 'rounded-2xl !border-slate-700/70 !bg-slate-900/40 shadow-soft ring-1 ring-white/[0.06] backdrop-blur-md'
+    : 'rounded-2xl !border-slate-200/90 !bg-white/75 shadow-glass backdrop-blur-sm';
+
 const LANGUAGE_OPTIONS: SelectOption[] = [
   { value: 'en', label: 'English' },
   { value: 'fr', label: 'Français' },
@@ -35,54 +40,66 @@ const CURRENCY_OPTIONS: SelectOption[] = [
 interface Props {
   settings: GeneralPreferences;
   onChange: (data: GeneralPreferences) => void;
+  dark?: boolean;
 }
 
-const GeneralSettings = ({ settings, onChange }: Props) => {
+const GeneralSettings = ({ settings, onChange, dark = false }: Props) => {
   const updateField = (field: keyof GeneralPreferences, value: string) => {
     onChange({ ...settings, [field]: value });
   };
 
   return (
-    <Card title="General Settings" subtitle="Application preferences">
-      <div className="space-y-4">
+    <Card
+      title="General"
+      subtitle="Application preferences"
+      dark={dark}
+      padding="lg"
+      className={cardExtra(dark)}
+    >
+      <div className="space-y-5">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <SettingsSelect
             label="Language"
             value={settings.language}
             options={LANGUAGE_OPTIONS}
             onChange={(value) => updateField('language', value)}
+            dark={dark}
           />
           <SettingsSelect
             label="Timezone"
             value={settings.timezone}
             options={TIMEZONE_OPTIONS}
             onChange={(value) => updateField('timezone', value)}
+            dark={dark}
           />
         </div>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <SettingsSelect
-            label="Date Format"
+            label="Date format"
             value={settings.dateFormat}
             options={DATE_FORMAT_OPTIONS}
             onChange={(value) => updateField('dateFormat', value)}
+            dark={dark}
           />
           <SettingsSelect
-            label="Distance Unit"
+            label="Distance unit"
             value={settings.distanceUnit}
             options={DISTANCE_UNIT_OPTIONS}
             onChange={(value) => updateField('distanceUnit', value)}
+            dark={dark}
           />
           <SettingsSelect
             label="Currency"
             value={settings.currency}
             options={CURRENCY_OPTIONS}
             onChange={(value) => updateField('currency', value)}
+            dark={dark}
           />
         </div>
-        <div className="flex justify-end">
-          <Button>
+        <div className="flex justify-end pt-2">
+          <Button className="rounded-xl">
             <FiSave className="mr-2" />
-            Save Changes
+            Save changes
           </Button>
         </div>
       </div>

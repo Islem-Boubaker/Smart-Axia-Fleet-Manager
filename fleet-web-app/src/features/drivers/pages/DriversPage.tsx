@@ -8,6 +8,7 @@ import DriversSearch from "../components/DriversSearch";
 import DriversGrid from "../components/DriversGrid";
 import DriverModal from "../components/DriverModal";
 import type { Driver } from "../../../types";
+import { pageShellClasses, pageShellInnerSpacing } from "../../../shared/utils/pageShell";
 
 interface ThemeContext {
   dark: boolean;
@@ -20,7 +21,7 @@ const DriversPage = () => {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [selectedDriver, setSelectedDriver] = useState<Driver | null>(null);
 
-  const { drivers, isLoading, addDriver, updateDriver, deleteDriver } =useDrivers();
+  const { drivers, isLoading, addDriver, updateDriver, deleteDriver } = useDrivers();
 
   const filteredDrivers = drivers.filter((driver) =>
     `${driver.name} ${driver.email} ${driver.licenseNumber ?? ""}`
@@ -80,14 +81,15 @@ const DriversPage = () => {
 
   return (
     <>
-      <div className={`rounded-3xl border p-6 space-y-6 ${dark ? 'bg-slate-900 border-slate-700' : 'bg-white border-gray-100'}`}>
+      <div className={`${pageShellClasses(dark)} ${pageShellInnerSpacing} animate-fade-in`}>
         <DriversHeader onAdd={() => setIsAddModalOpen(true)} dark={dark} />
-        <DriversSearch value={searchQuery} onChange={setSearchQuery} />
+        <DriversSearch value={searchQuery} onChange={setSearchQuery} dark={dark} />
         <DriversGrid
           drivers={filteredDrivers}
           isLoading={isLoading}
           onEdit={handleEditDriver}
           onDelete={handleDeleteDriver}
+          dark={dark}
         />
       </div>
       <DriverModal

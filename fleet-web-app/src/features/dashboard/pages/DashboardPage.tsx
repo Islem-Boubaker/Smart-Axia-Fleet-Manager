@@ -11,7 +11,7 @@ const DashboardPage = () => {
   const { dark } = useOutletContext<DashboardThemeContext>();
 
   return (
-    <div className="min-h-full rounded-3xl space-y-6" style={{ fontFamily: "'DM Sans', ui-sans-serif, system-ui" }}>
+    <div className="min-h-full space-y-10 lg:space-y-12 font-sans">
       <DashboardOverview dark={dark} />
       <PlannedTripsCalendar dark={dark} />
     </div>

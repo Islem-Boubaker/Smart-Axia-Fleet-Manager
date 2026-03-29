@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useOutletContext } from 'react-router-dom';
 
 import ReportsHeader from "../components/ReportsHeader";
@@ -15,7 +15,6 @@ import {
   monthlyTrends,
   maintenanceSummary,
 } from "../../../data/mockData";
-import { useRef } from "react";
 
 interface ThemeContext {
   dark: boolean;
@@ -28,26 +27,31 @@ const ReportsPage = () => {
   const [dateRange, setDateRange] = useState("month");
 
   return (
-    <>
-      <div className={`rounded-3xl border p-6 space-y-6 ${dark ? 'bg-slate-900 border-slate-700' : 'bg-white border-gray-100'}`}>
-        <ReportsHeader />
-        <ReportsFilters
-          reportType={reportType}
-          onReportTypeChange={setReportType}
-          dateRange={dateRange}
-          onDateRangeChange={setDateRange}
-        />
-        <div ref={pdfRef} id="pdf-content">
-          <OverviewStats stats={overviewStats} />
-          <VehiclePerformanceTable vehicles={vehiclePerformance} />
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <FuelAnalysis fuelData={fuelAnalysis} />
-            <MaintenanceSummary maintenanceData={maintenanceSummary} />
-          </div>
-          <MonthlyTrends trends={monthlyTrends} />
+    <div
+      className={`rounded-[24px] border p-6 sm:p-8 lg:p-10 space-y-8 lg:space-y-10 ${
+        dark
+          ? 'border-slate-700/80 bg-slate-900/35 backdrop-blur-sm'
+          : 'border-slate-200/90 bg-white/70 backdrop-blur-md shadow-soft'
+      }`}
+    >
+      <ReportsHeader dark={dark} />
+      <ReportsFilters
+        reportType={reportType}
+        onReportTypeChange={setReportType}
+        dateRange={dateRange}
+        onDateRangeChange={setDateRange}
+        dark={dark}
+      />
+      <div ref={pdfRef} id="pdf-content" className="space-y-8 lg:space-y-10">
+        <OverviewStats stats={overviewStats} dark={dark} />
+        <VehiclePerformanceTable vehicles={vehiclePerformance} dark={dark} />
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-10">
+          <FuelAnalysis fuelData={fuelAnalysis} dark={dark} />
+          <MaintenanceSummary maintenanceData={maintenanceSummary} dark={dark} />
         </div>
+        <MonthlyTrends trends={monthlyTrends} dark={dark} />
       </div>
-    </>
+    </div>
   );
 };
 

@@ -5,15 +5,20 @@ interface Props {
   value: string;
   options: SelectOption[];
   onChange: (value: string) => void;
+  dark?: boolean;
 }
 
-const SettingsSelect = ({ label, value, options, onChange }: Props) => (
+const SettingsSelect = ({ label, value, options, onChange, dark = false }: Props) => (
   <div>
-    <label className="block text-sm font-medium text-gray-700 mb-2">{label}</label>
+    <label className={`block text-sm font-medium mb-2 ${dark ? 'text-slate-400' : 'text-gray-700'}`}>{label}</label>
     <select
       value={value}
       onChange={(e) => onChange(e.target.value)}
-      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+      className={`w-full px-4 py-2.5 border rounded-xl focus:outline-none focus:ring-2 focus:ring-brand focus:border-transparent transition-shadow ${
+        dark
+          ? 'border-slate-600 bg-slate-800/80 text-slate-100'
+          : 'border-gray-300 bg-white text-gray-900'
+      }`}
     >
       {options.map((option) => (
         <option key={option.value} value={option.value}>

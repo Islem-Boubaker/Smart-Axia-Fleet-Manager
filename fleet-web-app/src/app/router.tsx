@@ -14,7 +14,8 @@ export default function AppRouter() {
   return (
     <BrowserRouter>
       <Routes>
-        {/* Public Routes */}
+        {/* Public Routes — "/" and /signin both show sign in */}
+        <Route path={ROUTES.HOME} element={<SignIn />} />
         <Route path={ROUTES.SIGN_IN} element={<SignIn />} />
         <Route path={ROUTES.SIGN_UP} element={<SignUp />} />
 

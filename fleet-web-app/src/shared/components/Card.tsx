@@ -7,6 +7,8 @@ interface CardProps {
   actions?: ReactNode;
   className?: string;
   padding?: 'none' | 'sm' | 'md' | 'lg';
+  /** Glass / slate styling for dark theme pages */
+  dark?: boolean;
 }
 
 export const Card = ({
@@ -16,6 +18,7 @@ export const Card = ({
   actions,
   className = '',
   padding = 'md',
+  dark = false,
 }: CardProps) => {
   const paddingClasses = {
     none: '',
@@ -24,13 +27,23 @@ export const Card = ({
     lg: 'p-8',
   };
 
+  const shell = dark
+    ? 'bg-slate-800/40 border-slate-700/80 shadow-none backdrop-blur-sm'
+    : 'bg-white border-gray-200 shadow-sm';
+
+  const headerRule = dark ? 'border-slate-700' : 'border-gray-200';
+
   return (
-    <div className={`bg-white rounded-xl shadow-sm border border-gray-200 ${className}`}>
+    <div className={`rounded-xl border ${shell} ${className}`}>
       {(title || subtitle || actions) && (
-        <div className={`border-b border-gray-200 ${paddingClasses[padding]} flex items-center justify-between`}>
+        <div className={`border-b ${headerRule} ${paddingClasses[padding]} flex items-center justify-between`}>
           <div>
-            {title && <h3 className="text-lg font-semibold text-gray-900">{title}</h3>}
-            {subtitle && <p className="text-sm text-gray-500 mt-1">{subtitle}</p>}
+            {title && (
+              <h3 className={`text-lg font-semibold ${dark ? 'text-white' : 'text-gray-900'}`}>{title}</h3>
+            )}
+            {subtitle && (
+              <p className={`text-sm mt-1 ${dark ? 'text-slate-400' : 'text-gray-500'}`}>{subtitle}</p>
+            )}
           </div>
           {actions && <div>{actions}</div>}
         </div>
