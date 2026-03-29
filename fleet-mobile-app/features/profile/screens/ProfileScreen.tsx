@@ -1,11 +1,12 @@
 import React, { useState } from "react";
-import { SafeAreaView, StatusBar, ScrollView, View, Text, TouchableOpacity, Alert } from "react-native";
+import { StatusBar, ScrollView, View, Text, TouchableOpacity, Alert } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { useSelector, useDispatch } from "react-redux";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 
 import { useProfile } from "../hooks/useProfile";
-import { clearUser } from "@/store/authSlice";
+import { clearUser } from "@/store/slices/authSlice";
 import { logout as logoutApi } from "../services/profile.api";
 import type { RootState } from "@/store";
 import { LoadingSpinner } from "@/shared/components/ui/LoadingSpinner";

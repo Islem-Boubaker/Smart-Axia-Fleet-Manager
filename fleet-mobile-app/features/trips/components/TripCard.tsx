@@ -1,148 +1,135 @@
-import React from "react";
 import { View, Text, TouchableOpacity } from "react-native";
-import { MaterialCommunityIcons } from "@expo/vector-icons";
-import type { Trip } from "@/features/trips/types/trip.types";
+import MaterialIcons from "@expo/vector-icons/MaterialIcons";
+import { STATUS_CONFIG } from "../config/trips.config";
+import type { Trip } from "../types/trip.types";
 
-interface TripCardProps {
+interface Props {
   trip: Trip;
-  onPress?: () => void;
+  onPress: () => void;
 }
 
-function getStatusColor(status: string) {
-  switch (status) {
-    case "completed":
-      return "#22C55E";
-    case "active":
-      return "#3B82F6";
-    case "pending":
-      return "#F59E0B";
-    case "cancelled":
-      return "#EF4444";
-    default:
-      return "#9CA3AF";
-  }
-}
+export function TripCard({ trip, onPress }: Props) {
+  // ✅ Guard — if trip is undefined/null, render nothing
+  if (!trip) return null;
 
-function getStatusIcon(status: string) {
-  switch (status) {
-    case "completed":
-      return "check-circle";
-    case "active":
-      return "progress-clock";
-    case "pending":
-      return "clock-outline";
-    case "cancelled":
-      return "close-circle";
-    default:
-      return "help-circle";
-  }
-}
-
-export function TripCard({ trip, onPress }: TripCardProps) {
-  const statusColor = getStatusColor(trip.status);
-  const statusIcon = getStatusIcon(trip.status);
+  // ✅ Safe fallback — never call Object.keys(undefined)
+  const status = trip.status ?? "pending";
+  const cfg = STATUS_CONFIG[status] ?? STATUS_CONFIG.pending;
 
   return (
     <TouchableOpacity
-      className="bg-white rounded-xl p-4 my-2 shadow-sm"
+      className="bg-white rounded-[18px] mb-3 overflow-hidden"
+      style={{
+        elevation: 1,
+        shadowColor: "#000",
+        shadowOpacity: 0.06,
+        shadowRadius: 6,
+        shadowOffset: { width: 0, height: 2 },
+      }}
       onPress={onPress}
-      activeOpacity={onPress ? 0.7 : 1}
+      activeOpacity={0.85}
     >
-      {/* Header */}
-      <View className="flex-row justify-between items-start mb-4">
-        <View>
-          <Text className="text-sm font-semibold text-gray-900">
-            Trip #{trip.id}
-          </Text>
+      {/* Colour accent bar */}
+      <View style={{ height: 4, backgroundColor: cfg.accentColor }} />
 
-          <Text className="text-xs text-gray-500 mt-1">
-            {new Date(trip.scheduledTime).toLocaleTimeString([], {
-              hour: "2-digit",
-              minute: "2-digit",
-            })}
-          </Text>
-        </View>
+      {/* Card body */}
+      <View className="px-4 pt-3.5 pb-3">
 
-        <View
-          className="flex-row items-center px-2 py-1 rounded-md"
-          style={{ backgroundColor: statusColor + "20" }}
-        >
-          <MaterialCommunityIcons
-            name={statusIcon}
-            size={16}
-            color={statusColor}
-          />
-
-          <Text
-            className="text-[11px] font-semibold capitalize ml-1"
-            style={{ color: statusColor }}
-          >
-            {trip.status}
-          </Text>
-        </View>
-      </View>
-
-      {/* Locations */}
-      <View className="my-4">
-
-        <View className="flex-row items-start my-2">
-          <MaterialCommunityIcons
-            name="map-marker"
-            size={18}
-            color="#3B82F6"
-          />
-
-          <Text className="flex-1 text-[13px] text-gray-900 ml-3 leading-5">
-            {trip.pickupLocation.address}
-          </Text>
-        </View>
-
-        <View className="w-[2px] h-5 bg-gray-200 ml-2 my-1" />
-
-        <View className="flex-row items-start my-2">
-          <MaterialCommunityIcons
-            name="map-marker-check"
-            size={18}
-            color="#22C55E"
-          />
-
-          <Text className="flex-1 text-[13px] text-gray-900 ml-3 leading-5">
-            {trip.destinationLocation.address}
-          </Text>
-        </View>
-
-      </View>
-
-      {/* Footer */}
-      {trip.distance && (
-        <View className="flex-row justify-around border-t border-gray-100 pt-4">
-
-          <View className="flex-row items-center gap-2">
-            <MaterialCommunityIcons
-              name="road"
-              size={16}
-              color="#6B7280"
-            />
-            <Text className="text-xs font-semibold text-gray-500">
-              {trip.distance} km
+        {/* Top row: vehicle + badge */}
+        <View className="flex-row items-start justify-between mb-2.5">
+          <View className="flex-1 mr-2">
+            <Text className="text-[15px] font-bold text-slate-900" numberOfLines={1}>
+              {trip.vehicle || "—"}
+            </Text>
+            <Text className="text-[11px] text-gray-400 mt-0.5">
+              # {trip.tripNumber || "—"}
             </Text>
           </View>
+          <View
+            className="px-2.5 py-1 rounded-full"
+            style={{ backgroundColor: cfg.badgeBg }}
+          >
+            <Text
+              className="text-[10px] font-bold uppercase tracking-wide"
+              style={{ color: cfg.badgeText }}
+            >
+              {cfg.label}
+            </Text>
+          </View>
+        </View>
 
-          {trip.fare && (
-            <View className="flex-row items-center gap-2">
-              <MaterialCommunityIcons
-                name="currency-usd"
-                size={16}
-                color="#6B7280"
-              />
-              <Text className="text-xs font-semibold text-gray-500">
-                ${trip.fare}
+        {/* Route: from → to */}
+        <View className="flex-row items-center gap-2 mb-3">
+          <View
+            className="w-2 h-2 rounded-full flex-shrink-0"
+            style={{ backgroundColor: cfg.accentColor }}
+          />
+          <Text
+            className="text-xs font-medium text-slate-700"
+            numberOfLines={1}
+            style={{ flex: 1 }}
+          >
+            {trip.from || "—"}
+          </Text>
+
+          <View className="flex-row items-center" style={{ width: 40 }}>
+            <View style={{ flex: 1, borderTopWidth: 1, borderStyle: "dashed", borderColor: "#E5E7EB" }} />
+            <MaterialIcons name="arrow-forward" size={10} color="#9CA3AF" />
+          </View>
+
+          <Text
+            className="text-xs font-medium text-slate-700 text-right"
+            numberOfLines={1}
+            style={{ flex: 1 }}
+          >
+            {trip.to || "—"}
+          </Text>
+          <View className="w-2 h-2 rounded-full bg-red-400 flex-shrink-0" />
+        </View>
+
+        {/* Meta: distance + duration + score */}
+        <View className="flex-row gap-4">
+          {!!trip.distance && (
+            <View className="flex-row items-center gap-1.5">
+              <MaterialIcons name="straighten" size={13} color="#9CA3AF" />
+              <Text className="text-[11px] text-gray-500 font-medium">
+                {trip.distance}
               </Text>
             </View>
           )}
-
+          {!!trip.duration && (
+            <View className="flex-row items-center gap-1.5">
+              <MaterialIcons name="schedule" size={13} color="#9CA3AF" />
+              <Text className="text-[11px] text-gray-500 font-medium">
+                {trip.duration}
+              </Text>
+            </View>
+          )}
+          {trip.score != null && (
+            <View className="flex-row items-center gap-1.5">
+              <MaterialIcons name="star" size={13} color="#F59E0B" />
+              <Text className="text-[11px] font-bold text-amber-600">
+                {trip.score}%
+              </Text>
+            </View>
+          )}
         </View>
-      )}
+      </View>
+
+      {/* Card footer */}
+      <View className="flex-row items-center justify-between px-4 py-2.5 border-t border-gray-100 bg-gray-50">
+        <View className="flex-row items-center gap-1.5">
+          <MaterialIcons name="calendar-today" size={11} color="#9CA3AF" />
+          <Text className="text-[11px] text-gray-400">
+            {trip.date || "—"}
+          </Text>
+        </View>
+        <Text className="text-[11px] font-bold text-emerald-600">
+          View details ›
+        </Text>
+      </View>
     </TouchableOpacity>
   );
 }
+
+TripCard.displayName = "TripCard";

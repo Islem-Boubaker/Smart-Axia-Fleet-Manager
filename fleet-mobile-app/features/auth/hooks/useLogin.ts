@@ -1,7 +1,7 @@
 import { useCallback } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { login as loginApi } from '../services/auth.api';
-import { setLoading } from '@/store/authSlice';
+import { setLoading } from '@/store/slices/authSlice';
 import type { RootState, AppDispatch } from '@/store';
 import type { LoginCredentials } from '../auth.types';
 

@@ -1,4 +1,5 @@
 import { api } from "@/shared/services/api";
+import { resolveApiBaseUrl } from "@/shared/utils/apiBase";
 
 export interface NetworkDiagnostics {
   apiUrl: string;
@@ -15,18 +16,19 @@ export interface NetworkDiagnostics {
  */
 export async function testNetworkConnection(): Promise<NetworkDiagnostics> {
   const apiUrl = process.env.EXPO_PUBLIC_API_URL ;
+  const resolvedUrl = resolveApiBaseUrl(apiUrl);
   console.log("🔍 Network Test Starting...");
   console.log("API URL from env:", process.env.EXPO_PUBLIC_API_URL);
-  console.log("Using API URL:", apiUrl);
+  console.log("Using API URL:", resolvedUrl);
 
   const diagnostics: NetworkDiagnostics = {
-    apiUrl: apiUrl || "NOT_CONFIGURED",
+    apiUrl: resolvedUrl || "NOT_CONFIGURED",
     isBackendReachable: false,
     loginEndpointExists: false,
     corsEnabled: false,
   };
 
-  if (!apiUrl) {
+  if (!resolvedUrl) {
     console.error("❌ API_URL not configured!");
     diagnostics.errorMessage = "API_URL not configured in .env";
     return diagnostics;
@@ -48,7 +50,7 @@ export async function testNetworkConnection(): Promise<NetworkDiagnostics> {
     console.log("📡 Testing backend reachability...");
 
     try {
-      const headResponse = await fetch(`${apiUrl}/user/login`, {
+      const headResponse = await fetch(`${resolvedUrl}/user/login`, {
         method: "OPTIONS",
         headers: {
           "Content-Type": "application/json",
@@ -112,6 +114,7 @@ export async function testNetworkConnection(): Promise<NetworkDiagnostics> {
  */
 export function logLoginError(error: any): void {
   try {
+    const resolvedUrl = resolveApiBaseUrl(process.env.EXPO_PUBLIC_API_URL);
     console.error("🔴 LOGIN ERROR DETAILS:");
     console.error("Error message:", error?.message || String(error));
     console.error("Error code:", error?.code);
@@ -126,7 +129,7 @@ export function logLoginError(error: any): void {
     if (error?.code === "ECONNREFUSED" || error?.code === "NETWORK_ERROR") {
       console.error(
         "⚠️ Connection refused - Backend might not be running at",
-        process.env.EXPO_PUBLIC_API_URL || 'http://192.168.1.15:3000'
+        resolvedUrl || 'http://192.168.1.15:3000'
       );
     }
 

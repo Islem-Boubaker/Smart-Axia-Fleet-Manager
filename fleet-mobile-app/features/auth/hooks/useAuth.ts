@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { useSelector } from 'react-redux';
-import { useRouter, useSegments } from 'expo-router';
+import { useRouter, useSegments, useRootNavigationState } from 'expo-router';
 import type { RootState } from '@/store';
 
 export function useAuthGuard() {
@@ -8,18 +8,26 @@ export function useAuthGuard() {
   const isLoading = useSelector((state: RootState) => state.auth.isLoading);
   const router = useRouter();
   const segments = useSegments();
+  const navigationState = useRootNavigationState();
 
   useEffect(() => {
     if (isLoading) return;
+    if (!navigationState?.key) return;
+    if (!segments?.[0]) return;
 
     const inAuthGroup = segments[0] === '(auth)';
+    const target = !isAuthenticated && !inAuthGroup
+      ? '/(auth)/login'
+      : isAuthenticated && inAuthGroup
+        ? '/(tabs)/home'
+        : null;
 
-    if (!isAuthenticated && !inAuthGroup) {
-      router.replace('/(auth)/login');
-    }
+    if (!target) return;
 
-    if (isAuthenticated && inAuthGroup) {
-      router.replace('/(tabs)/home');
-    }
-  }, [isAuthenticated, isLoading, segments, router]);
+    const timeout = setTimeout(() => {
+      router.replace(target);
+    }, 0);
+
+    return () => clearTimeout(timeout);
+  }, [isAuthenticated, isLoading, segments, router, navigationState?.key]);
 }

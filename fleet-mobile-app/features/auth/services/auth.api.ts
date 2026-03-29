@@ -1,7 +1,7 @@
 import * as SecureStore from "expo-secure-store";
 import { api } from "@/shared/services/api";
 import { store } from "@/store";
-import { setUser, clearUser } from "@/store/authSlice";
+import { setUser, clearUser } from "@/store/slices/authSlice";
 import {
   syncCookiesFromServer,
   clearCookies,
