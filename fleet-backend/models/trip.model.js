@@ -35,7 +35,7 @@ const Trip = sequelize.define(
     // 🌍 Region
     region: {
       type: DataTypes.STRING,
-      allowNull: false,
+      allowNull: true,
     },
 
     startLocation: {
