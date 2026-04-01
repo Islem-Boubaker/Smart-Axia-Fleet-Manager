@@ -1,8 +1,5 @@
-import React from 'react'
-import ChangePasswordScreen from '@/features/profile/screens/ChangePasswordScreen'
+import EmailNotificationsScreen from "@/features/profile/screens/EmailNotificationsScreen";
 
-export default function emailnotifications() {
-  return (
-    <ChangePasswordScreen />
-  )
+export default function EmailNotificationsRoute() {
+  return <EmailNotificationsScreen />;
 }

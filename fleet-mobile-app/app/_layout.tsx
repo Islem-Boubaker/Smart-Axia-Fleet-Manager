@@ -48,6 +48,22 @@ function AppLayout() {
           name="profile/settings"
           options={{ animation: "slide_from_right" }}
         />
+        <Stack.Screen
+          name="profile/edit"
+          options={{ animation: "slide_from_right" }}
+        />
+        <Stack.Screen
+          name="profile/change-password"
+          options={{ animation: "slide_from_right" }}
+        />
+        <Stack.Screen
+          name="profile/email-notifications"
+          options={{ animation: "slide_from_right" }}
+        />
+        <Stack.Screen
+          name="profile/language"
+          options={{ animation: "slide_from_right" }}
+        />
       </Stack>
 
       {isLoading && (
