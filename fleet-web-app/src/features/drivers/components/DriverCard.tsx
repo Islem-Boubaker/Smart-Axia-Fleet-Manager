@@ -6,81 +6,92 @@ interface DriverCardProps {
   driver: any;
   onEdit?: (driver: any) => void;
   onDelete?: (id: string) => void;
+  dark?: boolean;
 }
 
-const DriverCard = memo(({ driver, onEdit, onDelete }: DriverCardProps) => {
+const DriverCard = memo(({ driver, onEdit, onDelete, dark = false }: DriverCardProps) => {
+  const t = dark ? 'text-slate-100' : 'text-gray-900';
+  const sub = dark ? 'text-slate-400' : 'text-gray-600';
+  const border = dark ? 'border-slate-700' : 'border-gray-200';
+
   return (
     <div className="space-y-4">
-      {/* Header with avatar and rating */}
-      <div className="flex items-start justify-between">
-        <div className="flex items-center space-x-3">
-          <div className="w-16 h-16 bg-blue-600 rounded-full flex items-center justify-center">
-            <FiUser className="text-white text-2xl" />
+      <div className="flex items-start justify-between gap-3">
+        <div className="flex items-center space-x-3 min-w-0">
+          <div
+            className={`w-16 h-16 rounded-full flex items-center justify-center shrink-0 ${
+              dark ? 'bg-brand/25 text-brand' : 'bg-brand text-white'
+            }`}
+          >
+            <FiUser className={`text-2xl ${dark ? '' : 'text-white'}`} />
           </div>
-          <div>
-            <h3 className="text-lg font-semibold text-gray-900">{driver.name}</h3>
+          <div className="min-w-0">
+            <h3 className={`text-lg font-semibold truncate ${t}`}>{driver.name}</h3>
             <div className="flex items-center gap-2 mt-1">
-              <span className="inline-flex items-center px-2 py-1 rounded-md text-sm font-medium bg-yellow-100 text-yellow-800">
+              <span
+                className={`inline-flex items-center px-2 py-1 rounded-lg text-sm font-medium ${
+                  dark ? 'bg-amber-500/15 text-amber-300' : 'bg-amber-50 text-amber-800'
+                }`}
+              >
                 ⭐ {driver.rating || '4.8'}
               </span>
             </div>
           </div>
         </div>
-        <Badge variant={driver.status === 'active' ? 'success' : 'default'}>
-          {driver.status}
-        </Badge>
+        <Badge variant={driver.status === 'active' ? 'success' : 'default'}>{driver.status}</Badge>
       </div>
 
-      {/* Contact Information */}
       <div className="space-y-2">
-        <div className="flex items-center text-gray-600">
-          <FiMail className="mr-2 text-gray-400" />
-          <span className="text-sm">{driver.email}</span>
+        <div className={`flex items-center ${sub}`}>
+          <FiMail className={`mr-2 shrink-0 ${dark ? 'text-slate-500' : 'text-gray-400'}`} />
+          <span className="text-sm truncate">{driver.email}</span>
         </div>
-        <div className="flex items-center text-gray-600">
-          <FiPhone className="mr-2 text-gray-400" />
+        <div className={`flex items-center ${sub}`}>
+          <FiPhone className={`mr-2 shrink-0 ${dark ? 'text-slate-500' : 'text-gray-400'}`} />
           <span className="text-sm">{driver.phone}</span>
         </div>
       </div>
 
-      {/* Details Section with border */}
-      <div className="pt-4 border-t border-gray-200">
+      <div className={`pt-4 border-t ${border}`}>
         <div className="grid grid-cols-2 gap-3 text-sm">
           <div>
-            <span className="text-gray-500 block">License</span>
-            <span className="font-medium text-gray-900">{driver.licenseNumber}</span>
+            <span className={`block ${dark ? 'text-slate-500' : 'text-gray-500'}`}>License</span>
+            <span className={`font-medium ${t}`}>{driver.licenseNumber}</span>
           </div>
           <div>
-            <span className="text-gray-500 block">Expires</span>
-            <span className="font-medium text-gray-900">
-              {driver.licenseExpiry || '2026-12-31'}
-            </span>
+            <span className={`block ${dark ? 'text-slate-500' : 'text-gray-500'}`}>Expires</span>
+            <span className={`font-medium ${t}`}>{driver.licenseExpiry || '2026-12-31'}</span>
           </div>
           <div>
-            <span className="text-gray-500 block">Total Trips</span>
-            <span className="font-medium text-gray-900">{driver.totalTrips || '142'}</span>
+            <span className={`block ${dark ? 'text-slate-500' : 'text-gray-500'}`}>Total trips</span>
+            <span className={`font-medium ${t}`}>{driver.totalTrips || '142'}</span>
           </div>
           <div>
-            <span className="text-gray-500 block">Vehicle</span>
-            <span className="font-medium text-gray-900">
-              {driver.assignedVehicle || 'N/A'}
-            </span>
+            <span className={`block ${dark ? 'text-slate-500' : 'text-gray-500'}`}>Vehicle</span>
+            <span className={`font-medium truncate ${t}`}>{driver.assignedVehicle || 'N/A'}</span>
           </div>
         </div>
       </div>
 
-      {/* Action Buttons */}
-      <div className="flex gap-2 border-t border-gray-200 pt-4">
+      <div className={`flex gap-2 border-t pt-4 ${border}`}>
         <button
+          type="button"
           onClick={() => onEdit?.(driver)}
-          className="flex-1 px-3 py-2 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 transition-colors flex items-center justify-center gap-2 text-sm font-medium"
+          className={`flex-1 px-3 py-2.5 rounded-xl transition-colors flex items-center justify-center gap-2 text-sm font-medium ${
+            dark
+              ? 'bg-brand/15 text-brand hover:bg-brand/25'
+              : 'bg-brand-light text-brand-deep hover:bg-brand-light/80'
+          }`}
         >
           <FiEdit2 />
           Edit
         </button>
         <button
+          type="button"
           onClick={() => onDelete?.(driver.id)}
-          className="flex-1 px-3 py-2 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 transition-colors flex items-center justify-center gap-2 text-sm font-medium"
+          className={`flex-1 px-3 py-2.5 rounded-xl transition-colors flex items-center justify-center gap-2 text-sm font-medium ${
+            dark ? 'bg-red-500/15 text-red-400 hover:bg-red-500/25' : 'bg-red-50 text-red-600 hover:bg-red-100'
+          }`}
         >
           <FiTrash2 />
           Delete

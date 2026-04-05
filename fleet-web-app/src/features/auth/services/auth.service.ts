@@ -1,4 +1,8 @@
+
+
 import { api } from '../../../shared/services/api';
+import { setCsrfToken } from '../../../shared/services/csrfToken';
+import type { User } from '../../../types';
 
 export interface SignInCredentials {
   email: string;
@@ -12,39 +16,56 @@ export interface SignUpData {
   companyName?: string;
 }
 
-export interface AuthResponse {
-  user: {
-    id: string;
-    name: string;
-    email: string;
-    role: string;
-  };
-  token: string;
+export interface AuthUser {
+  id: string;
+  name: string;
+  email: string;
+  role: User['role'];
 }
 
-export const authService = {
-  signIn: async (credentials: SignInCredentials): Promise<AuthResponse> => {
-    const response = await api.post<AuthResponse>('/auth/signin', credentials);
-    return response.data;
+export const authAPI = {
+
+  
+  async signIn(credentials: SignInCredentials): Promise<AuthUser> {
+
+    const response = await api.post('/user/login', credentials);
+
+    setCsrfToken(response.data?.data?.csrfToken);
+
+    return response.data.data.user;
   },
 
-  signUp: async (data: SignUpData): Promise<AuthResponse> => {
-    const response = await api.post<AuthResponse>('/auth/signup', data);
-    return response.data;
+
+  
+  async signUp(data: SignUpData): Promise<AuthUser> {
+
+    const response = await api.post('/user/signup', data);
+
+    return response.data.data;
   },
 
-  signOut: async (): Promise<void> => {
-    await api.post('/auth/signout');
-    localStorage.removeItem('token');
+
+  
+  async signOut(): Promise<void> {
+
+    await api.post('/user/logout');
   },
 
-  refreshToken: async (): Promise<{ token: string }> => {
-    const response = await api.post<{ token: string }>('/auth/refresh');
-    return response.data;
+
+  
+  async refreshToken(): Promise<void> {
+
+    const response = await api.post('/user/refresh-token');
+    setCsrfToken(response.data?.data?.csrfToken ?? response.data?.csrfToken);
   },
 
-  getCurrentUser: async () => {
-    const response = await api.get('/auth/me');
-    return response.data;
+
+  
+  async getCurrentUser(): Promise<AuthUser> {
+
+    const response = await api.get('/user/me');
+
+    return response.data.data;
   },
+
 };

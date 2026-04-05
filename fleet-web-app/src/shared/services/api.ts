@@ -1,84 +1,161 @@
-import axios from 'axios';
-import { API_BASE_URL } from '../../utils/constants';
 
-const api = axios.create({
+import axios, {
+  AxiosError
+} from "axios";
+import type { AxiosInstance,AxiosRequestConfig,
+  AxiosResponse, InternalAxiosRequestConfig } from "axios";
+
+import { getCsrfToken, setCsrfToken, clearCsrfToken } from './csrfToken';
+
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+
+
+function getCsrfTokenFromCookie(): string | null {
+  if (typeof document === "undefined") return null;
+
+  const match = document.cookie
+    .split("; ")
+    .find((row) => row.startsWith("csrf-token="));
+
+  return match ? match.split("=")[1] : null;
+}
+
+const api: AxiosInstance = axios.create({
   baseURL: API_BASE_URL,
+  withCredentials: true, 
   headers: {
-    'Content-Type': 'application/json',
+    "Content-Type": "application/json",
   },
 });
 
-// Request interceptor to add auth token
+const csrfBootstrapClient = axios.create({
+  baseURL: API_BASE_URL,
+  withCredentials: true,
+  headers: {
+    "Content-Type": "application/json",
+  },
+});
+
+async function ensureCsrfToken(): Promise<string | null> {
+  const existing = getCsrfToken();
+  if (existing) return existing;
+
+  try {
+    const response = await csrfBootstrapClient.post('/user/refresh-token');
+    const token = response.data?.data?.csrfToken ?? response.data?.csrfToken;
+    setCsrfToken(token);
+    return getCsrfToken();
+  } catch {
+    return null;
+  }
+}
+
+function shouldAttachCsrf(config: InternalAxiosRequestConfig): boolean {
+  const method = (config.method || 'get').toUpperCase();
+  return method !== 'GET' && method !== 'HEAD' && method !== 'OPTIONS';
+}
+
+
 api.interceptors.request.use(
-  (config) => {
-    const token = localStorage.getItem('token');
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
+  async (config: InternalAxiosRequestConfig): Promise<InternalAxiosRequestConfig> => {
+    if (shouldAttachCsrf(config)) {
+      const token = getCsrfToken() || getCsrfTokenFromCookie() || (await ensureCsrfToken());
+      if (token) {
+        config.headers["X-CSRF-Token"] = token;
+      }
     }
+
     return config;
   },
-  (error) => {
-    return Promise.reject(error);
-  }
+  (error: AxiosError) => Promise.reject(error)
 );
 
-// Response interceptor for error handling
+
+
+let isRefreshing = false;
+
+let pendingQueue: {
+  resolve: (value?: unknown) => void;
+  reject: (reason?: unknown) => void;
+}[] = [];
+
+function processQueue(error: unknown): void {
+  pendingQueue.forEach((promise) => {
+    if (error) promise.reject(error);
+    else promise.resolve(undefined);
+  });
+
+  pendingQueue = [];
+}
+
 api.interceptors.response.use(
-  (response) => response,
-  (error) => {
-    if (error.response?.status === 401) {
-      // Handle unauthorized access
-      localStorage.removeItem('token');
-      window.location.href = '/signin';
+  (response: AxiosResponse): AxiosResponse => {
+    const token = response.data?.data?.csrfToken ?? response.data?.csrfToken;
+    if (token) setCsrfToken(token);
+    return response;
+  },
+
+  async (error: AxiosError): Promise<AxiosResponse | Promise<never>> => {
+    const originalRequest = error.config as AxiosRequestConfig & {
+      _retry?: boolean;
+    };
+
+    if (!error.response) {
+      return Promise.reject(error);
     }
+
+    const status = error.response.status;
+
+    if (status === 403) {
+      const data = error.response.data as unknown;
+      const message =
+        typeof data === 'object' && data !== null && 'message' in data
+          ? (data as { message?: unknown }).message
+          : undefined;
+      if (typeof message === 'string' && message.toLowerCase().includes('csrf')) {
+        clearCsrfToken();
+      }
+    }
+
+    
+    if (
+      status === 401 &&
+      !originalRequest._retry &&
+      !originalRequest.url?.includes("/user/refresh-token")
+    ) {
+      if (isRefreshing) {
+        return new Promise((resolve, reject) => {
+          pendingQueue.push({ resolve, reject });
+        }).then(() => api(originalRequest));
+      }
+
+      originalRequest._retry = true;
+      isRefreshing = true;
+
+      try {
+        await api.post("/user/refresh-token");
+
+        processQueue(null);
+
+        return api(originalRequest);
+      } catch (refreshError) {
+        processQueue(refreshError);
+
+     
+        window.location.href = "/signin";
+
+        return Promise.reject(refreshError);
+      } finally {
+        isRefreshing = false;
+      }
+    }
+
     return Promise.reject(error);
   }
 );
 
-// Auth API
-export const authAPI = {
-  signIn: (email: string, password: string) =>
-    api.post('/auth/signin', { email, password }),
-  signUp: (name: string, email: string, password: string) =>
-    api.post('/auth/signup', { name, email, password }),
-  signOut: () => api.post('/auth/signout'),
-};
 
-// Vehicles API
-export const vehiclesAPI = {
-  getAll: () => api.get('/vehicles'),
-  getById: (id: string) => api.get(`/vehicles/${id}`),
-  create: (data: any) => api.post('/vehicles', data),
-  update: (id: string, data: any) => api.put(`/vehicles/${id}`, data),
-  delete: (id: string) => api.delete(`/vehicles/${id}`),
-};
 
-// Drivers API
-export const driversAPI = {
-  getAll: () => api.get('/drivers'),
-  getById: (id: string) => api.get(`/drivers/${id}`),
-  create: (data: any) => api.post('/drivers', data),
-  update: (id: string, data: any) => api.put(`/drivers/${id}`, data),
-  delete: (id: string) => api.delete(`/drivers/${id}`),
-};
-
-// Trips API
-export const tripsAPI = {
-  getAll: () => api.get('/trips'),
-  getById: (id: string) => api.get(`/trips/${id}`),
-  create: (data: any) => api.post('/trips', data),
-  update: (id: string, data: any) => api.put(`/trips/${id}`, data),
-  delete: (id: string) => api.delete(`/trips/${id}`),
-};
-
-// Maintenance API
-export const maintenanceAPI = {
-  getAll: () => api.get('/maintenance'),
-  getById: (id: string) => api.get(`/maintenance/${id}`),
-  create: (data: any) => api.post('/maintenance', data),
-  update: (id: string, data: any) => api.put(`/maintenance/${id}`, data),
-  delete: (id: string) => api.delete(`/maintenance/${id}`),
-};
-
-export { api };
 export default api;
+export { api };
+

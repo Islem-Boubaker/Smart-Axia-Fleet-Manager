@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { mockDrivers } from '../../../data/mockData';
+import { driversService } from '../services/drivers.service';
 import type { Driver } from '../../../types';
 
 export const useDrivers = () => {
@@ -7,48 +7,58 @@ export const useDrivers = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchDrivers = useCallback(() => {
+  const fetchDrivers = useCallback(async () => {
     setIsLoading(true);
-    setTimeout(() => {
-      setDrivers(mockDrivers);
+    setError(null);
+    try {
+      const data = await driversService.getDrivers();
+  
+      setDrivers(data);
+    } catch (err: any) {
+      setError(err.response?.data?.message || err.message || 'Failed to fetch drivers');
+    } finally {
       setIsLoading(false);
-    }, 500);
+    }
   }, []);
 
   useEffect(() => {
     fetchDrivers();
   }, [fetchDrivers]);
 
-  const addDriver = useCallback(async (driver: Partial<Driver>) => {
+  const addDriver = useCallback(async (driverData: Partial<Driver> & { password: string }) => {
     try {
-      // Simulate API call - just add to local state
-      const newDriver = { ...driver, id: Date.now().toString() } as Driver;
+      const newDriver = await driversService.createDriver(driverData);
       setDrivers(prev => [...prev, newDriver]);
+      return newDriver;
     } catch (err: any) {
-      setError(err.message || 'Failed to add driver');
-      throw err;
+      const msg = err.response?.data?.message || err.message || 'Failed to add driver';
+      setError(msg);
+      throw new Error(msg);
     }
   }, []);
 
-  const updateDriver = useCallback(async (id: string, driver: Partial<Driver>) => {
+  const updateDriver = useCallback(async (id: string, driverData: Partial<Driver>) => {
     try {
-      // Simulate API call - update local state
-      setDrivers(prev => prev.map(d => d.id === id ? { ...d, ...driver } : d));
+      const updated = await driversService.updateDriver(id, driverData);
+      setDrivers(prev => prev.map(d => (d.id === id ? updated : d)));
+      return updated;
     } catch (err: any) {
-      setError(err.message || 'Failed to update driver');
-      throw err;
+      const msg = err.response?.data?.message || err.message || 'Failed to update driver';
+      setError(msg);
+      throw new Error(msg);
     }
   }, []);
 
   const deleteDriver = useCallback(async (id: string) => {
     try {
-      // Simulate API call - delete from local state
+      await driversService.deleteDriver(id);
       setDrivers(prev => prev.filter(d => d.id !== id));
     } catch (err: any) {
-      setError(err.message || 'Failed to delete driver');
-      throw err;
+      const msg = err.response?.data?.message || err.message || 'Failed to delete driver';
+      setError(msg);
+      throw new Error(msg);
     }
   }, []);
 
-  return { drivers, isLoading, error, addDriver, updateDriver, deleteDriver };
+  return { drivers, isLoading, error, fetchDrivers, addDriver, updateDriver, deleteDriver };
 };

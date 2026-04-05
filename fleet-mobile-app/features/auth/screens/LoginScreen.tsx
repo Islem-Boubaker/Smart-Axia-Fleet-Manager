@@ -1,92 +1,118 @@
-import { useState } from 'react';
-import { View, TextInput, TouchableOpacity, StyleSheet, Alert } from 'react-native';
-import { ThemedText } from '@/src/shared/components/ThemedText';
-import { ThemedView } from '@/src/shared/components/ThemedView';
-import { useAuth } from '../hooks/useAuth';
+import React, { useState } from "react";
+import {
+  ScrollView,
+  KeyboardAvoidingView,
+  Platform,
+  Alert,
+  View,
+  Text,
+  TouchableOpacity,
+} from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { router } from "expo-router";
 
-export default function LoginScreen() {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const { login, loading } = useAuth();
+import { useLogin } from "../hooks/useLogin";
+import type { LoginCredentials } from "../auth.types";
+import {
+  testNetworkConnection,
+  logLoginError,
+} from "@/shared/services/network.diagnostics";
 
-  const handleLogin = async () => {
+import { LoginHeader } from "../components/LoginHeader";
+import { LoginForm } from "../components/LoginForm";
+import { LoginFooter } from "../components/LoginFooter";
+
+export function LoginScreen() {
+  const { login, isLoading, error } = useLogin();
+  const [localError, setLocalError] = useState<string | null>(null);
+  const [isTestingConnection, setIsTestingConnection] = useState(false);
+
+  const [credentials, setCredentials] = useState<LoginCredentials>({
+    email: "",
+    password: "",
+  });
+
+  const handleTestConnection = async () => {
+    setIsTestingConnection(true);
     try {
-      await login({ email, password });
-      Alert.alert('Success', 'Logged in successfully!');
+      const diagnostics = await testNetworkConnection();
+      const message = `
+API URL: ${diagnostics.apiUrl}
+Backend Reachable: ${diagnostics.isBackendReachable ? "✅ Yes" : "❌ No"}
+CORS Enabled: ${diagnostics.corsEnabled ? "✅ Yes" : "❌ No"} 
+Login Endpoint: ${diagnostics.loginEndpointExists ? "✅ Exists" : "❌ Not found"}
+${diagnostics.errorMessage ? `Error: ${diagnostics.errorMessage}` : ""}
+      `.trim();
+
+      Alert.alert("Network Diagnostics", message);
     } catch (error) {
-      Alert.alert('Error', error instanceof Error ? error.message : 'Login failed');
+      Alert.alert("Test Failed", `Connection test error: ${error}`);
+    } finally {
+      setIsTestingConnection(false);
     }
   };
 
+  const handleLogin = async () => {
+    if (!credentials.email || !credentials.password) {
+      setLocalError("Please enter both email and password");
+      return;
+    }
+
+    try {
+      setLocalError(null);
+      await login(credentials);
+      router.replace("/(tabs)/home");
+    } catch (err: any) {
+      const message = err?.message || "Login failed. Please try again.";
+      setLocalError(message);
+      logLoginError(err);
+      Alert.alert("Login Error", message);
+    }
+  };
+
+  const displayError = localError || error;
+
   return (
-    <ThemedView style={styles.container}>
-      <ThemedText type="title" style={styles.title}>
-        Login
-      </ThemedText>
-
-      <TextInput
-        style={styles.input}
-        placeholder="Email"
-        value={email}
-        onChangeText={setEmail}
-        keyboardType="email-address"
-        autoCapitalize="none"
-      />
-
-      <TextInput
-        style={styles.input}
-        placeholder="Password"
-        value={password}
-        onChangeText={setPassword}
-        secureTextEntry
-      />
-
-      <TouchableOpacity
-        style={[styles.button, loading && styles.buttonDisabled]}
-        onPress={handleLogin}
-        disabled={loading}
+    <SafeAreaView
+      className="flex-1 bg-gray-100"
+      edges={["top", "left", "right"]}
+    >
+      <KeyboardAvoidingView
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        className="flex-1"
       >
-        <ThemedText style={styles.buttonText}>
-          {loading ? 'Loading...' : 'Login'}
-        </ThemedText>
-      </TouchableOpacity>
-    </ThemedView>
+        <ScrollView
+          showsVerticalScrollIndicator={false}
+          contentContainerClassName="flex-grow px-6 py-6"
+        >
+          <LoginHeader />
+
+          <LoginForm
+            credentials={credentials}
+            setCredentials={setCredentials}
+            isLoading={isLoading}
+            error={displayError}
+            onLogin={handleLogin}
+          />
+
+          {/* Network Test Button */}
+          <TouchableOpacity
+            onPress={handleTestConnection}
+            disabled={isTestingConnection}
+            className="mt-6 py-3 px-4 bg-blue-100 rounded-lg"
+          >
+            <Text className="text-center text-blue-600 font-semibold">
+              {isTestingConnection
+                ? "Testing Connection..."
+                : "Test Connection"}
+            </Text>
+          </TouchableOpacity>
+
+          <LoginFooter />
+        </ScrollView>
+      </KeyboardAvoidingView>
+    </SafeAreaView>
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    padding: 20,
-    justifyContent: 'center',
-  },
-  title: {
-    marginBottom: 30,
-    textAlign: 'center',
-  },
-  input: {
-    height: 50,
-    borderWidth: 1,
-    borderColor: '#ddd',
-    borderRadius: 8,
-    paddingHorizontal: 15,
-    marginBottom: 15,
-    fontSize: 16,
-  },
-  button: {
-    backgroundColor: '#0a7ea4',
-    height: 50,
-    borderRadius: 8,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginTop: 10,
-  },
-  buttonDisabled: {
-    opacity: 0.6,
-  },
-  buttonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-});
+export default LoginScreen;

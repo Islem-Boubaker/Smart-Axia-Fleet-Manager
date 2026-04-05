@@ -1,64 +1,33 @@
-import { useState } from 'react';
-import { authApi } from '../services/auth.api';
-import type { LoginCredentials, SignupData, User } from '../auth.types';
+import { useEffect } from 'react';
+import { useSelector } from 'react-redux';
+import { useRouter, useSegments, useRootNavigationState } from 'expo-router';
+import type { RootState } from '@/store';
 
-export function useAuth() {
-  const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+export function useAuthGuard() {
+  const isAuthenticated = useSelector((state: RootState) => state.auth.isAuthenticated);
+  const isLoading = useSelector((state: RootState) => state.auth.isLoading);
+  const router = useRouter();
+  const segments = useSegments();
+  const navigationState = useRootNavigationState();
 
-  const login = async (credentials: LoginCredentials) => {
-    try {
-      setLoading(true);
-      setError(null);
-      const response = await authApi.login(credentials);
-      setUser(response.user);
-      // TODO: Store token securely
-      return response;
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Login failed');
-      throw err;
-    } finally {
-      setLoading(false);
-    }
-  };
+  useEffect(() => {
+    if (isLoading) return;
+    if (!navigationState?.key) return;
+    if (!segments?.[0]) return;
 
-  const signup = async (data: SignupData) => {
-    try {
-      setLoading(true);
-      setError(null);
-      const response = await authApi.signup(data);
-      setUser(response.user);
-      // TODO: Store token securely
-      return response;
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Signup failed');
-      throw err;
-    } finally {
-      setLoading(false);
-    }
-  };
+    const inAuthGroup = segments[0] === '(auth)';
+    const target = !isAuthenticated && !inAuthGroup
+      ? '/(auth)/login'
+      : isAuthenticated && inAuthGroup
+        ? '/(tabs)/home'
+        : null;
 
-  const logout = async () => {
-    try {
-      setLoading(true);
-      await authApi.logout();
-      setUser(null);
-      // TODO: Clear stored token
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Logout failed');
-      throw err;
-    } finally {
-      setLoading(false);
-    }
-  };
+    if (!target) return;
 
-  return {
-    user,
-    loading,
-    error,
-    login,
-    signup,
-    logout,
-  };
+    const timeout = setTimeout(() => {
+      router.replace(target);
+    }, 0);
+
+    return () => clearTimeout(timeout);
+  }, [isAuthenticated, isLoading, segments, router, navigationState?.key]);
 }

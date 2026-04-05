@@ -1,28 +1,57 @@
-import { Sequelize } from 'sequelize';
-import dotenv from 'dotenv';
+import { Sequelize } from "sequelize";
+import dotenv from "dotenv";
 
 dotenv.config();
 
-const sequelize = new Sequelize(
-  process.env.DB_NAME,
-  process.env.DB_USER,
-  process.env.DB_PASSWORD,
-  {
-    host: process.env.DB_HOST,
-    port: process.env.DB_PORT,
-    dialect: 'postgres',
-    logging: false,
-  }
-);
+export const sequelize = new Sequelize(process.env.DATABASE_URL, {
+  dialect: "postgres",
+  logging: false,
+  dialectOptions: {
+    ssl: {
+      require: true,
+      rejectUnauthorized: false,
+    },
+  },
+});
 
-const connectDB = async () => {
-  try {
-    await sequelize.authenticate();
-    console.log('Database connected');
-  } catch (err) {
-    console.error('Database error:', err.message);
-    process.exit(1);
-  }
-};
+// import express from 'express';
+// import postgres from 'postgres';
+// import dotenv from 'dotenv';
 
-export { sequelize, connectDB };
+// dotenv.config();
+
+// const app = express();
+// const PORT = process.env.PORT || 3000;
+
+// // Create postgres connection
+// const connectionString = process.env.DATABASE_URL || "postgresql://postgres:Islem94998370@db.midqrmwtpqbqjcgcntzd.supabase.co:5432/postgres";
+
+// console.log("Connecting to database with URL:", connectionString);
+// if (!connectionString) {
+//   throw new Error("DATABASE_URL is not defined in .env");
+// }
+
+// const sql = postgres(connectionString, {
+//   ssl: 'require', // Required for Supabase
+// });
+
+// // Test connection function
+// async function startServer() {
+//   try {
+//     await sql`SELECT 1`; // Simple test query
+
+//     console.log("✅ Supabase connected successfully!");
+
+//     app.listen(PORT, () => {
+//       console.log(`🚀 Server running on port ${PORT}`);
+//     });
+
+//   } catch (error) {
+//     console.error("❌ Unable to connect:", error);
+//     process.exit(1);
+//   }
+// }
+
+// startServer();
+
+// export default sql;
