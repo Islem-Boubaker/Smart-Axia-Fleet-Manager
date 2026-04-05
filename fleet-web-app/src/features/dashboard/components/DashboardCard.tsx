@@ -23,8 +23,8 @@ const DashboardCard = memo(({ title, value, change, changeType, icon: Icon, colo
     <Card padding="md">
       <div className="flex items-center justify-between">
         <div>
-          <p className="text-sm text-gray-600 mb-1">{title}</p>
-          <p className="text-2xl font-bold text-gray-900">{value}</p>
+          <p className="text-sm text-gray-600 dark:text-slate-400 mb-1">{title}</p>
+          <p className="text-2xl font-bold text-gray-900 dark:text-slate-100">{value}</p>
           <p className={`text-sm mt-2 ${changeType === 'increase' ? 'text-green-600' : 'text-red-600'}`}>
             {change} from last month
           </p>

@@ -1,13 +1,15 @@
 import { memo } from 'react';
-import { FiTruck, FiCalendar, FiTool, FiDollarSign} from 'react-icons/fi';
+import { FiTruck, FiCalendar, FiTool, FiDollarSign } from 'react-icons/fi';
 import { Badge } from '../../../shared/components';
 import type { Maintenance } from '../../../types';
 import { maintenanceService } from '../services/maintenance.service';
+
 interface MaintenanceTableProps {
   data: Maintenance[];
+  dark?: boolean;
 }
 
-const MaintenanceTable = memo(({ data }: MaintenanceTableProps) => {
+const MaintenanceTable = memo(({ data, dark = false }: MaintenanceTableProps) => {
   const records = data ?? [];
 
   type BadgeVariant = 'success' | 'warning' | 'error' | 'info' | 'default';
@@ -38,6 +40,7 @@ const MaintenanceTable = memo(({ data }: MaintenanceTableProps) => {
         return 'default';
     }
   };
+
   const handleUpdateStatus = async (id: string) => {
     try {
       const updatedRecord = await maintenanceService.updateStatus(id, 'completed');
@@ -47,81 +50,90 @@ const MaintenanceTable = memo(({ data }: MaintenanceTableProps) => {
     }
   };
 
+  const cardBase = dark
+    ? 'border-slate-700/80 bg-slate-800/35 hover:border-slate-600'
+    : 'border-slate-200/90 bg-white/80 shadow-glass hover:shadow-soft';
+
+  const label = dark ? 'text-slate-500' : 'text-slate-500';
+  const value = dark ? 'text-slate-100' : 'text-slate-900';
+  const icon = dark ? 'text-slate-500' : 'text-slate-400';
+
   return (
-    <div className="space-y-4">
-  
-      {/* Maintenance Cards Grid */}
+    <div className="space-y-5">
       <div className="space-y-4">
         {records.map((record: Maintenance) => (
           <div
             key={record.id}
-            className="bg-white border border-gray-200 rounded-lg p-6 hover:shadow-md transition-shadow"
+            className={`rounded-2xl border p-5 sm:p-6 transition-all duration-200 hover:-translate-y-0.5 ${cardBase}`}
           >
-            <div className="flex items-start justify-between mb-4">
-              {/* Type heading */}
-              <div className="flex-1">
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                  {record.type}
-                </h3>
-                <div className="flex gap-2">
-                  <Badge variant={getStatusColor(record.status)}>
-                    {record.status}
-                  </Badge>
-                  <Badge variant={getPriorityColor(record.priority)}>
-                    {record.priority} priority
-                  </Badge>
+            <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4 mb-5">
+              <div className="flex-1 min-w-0">
+                <h3 className={`text-lg font-semibold mb-2 ${value}`}>{record.type}</h3>
+                <div className="flex flex-wrap gap-2">
+                  <Badge variant={getStatusColor(record.status)}>{record.status}</Badge>
+                  <Badge variant={getPriorityColor(record.priority)}>{record.priority} priority</Badge>
                 </div>
               </div>
 
-              {/* Action buttons */}
-              <div className="flex gap-2 ml-4">
-                <button className="px-4 py-2 text-sm font-medium text-blue-600 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors">
-                  View Details
+              <div className="flex flex-wrap gap-2 shrink-0">
+                <button
+                  type="button"
+                  className={`px-4 py-2 text-sm font-medium rounded-xl transition-colors ${
+                    dark
+                      ? 'text-brand bg-brand/15 hover:bg-brand/25'
+                      : 'text-brand-deep bg-brand-light hover:bg-brand-light/80'
+                  }`}
+                >
+                  View details
                 </button>
-                <button  onClick={() => handleUpdateStatus(record.id)} className="px-4 py-2 text-sm font-medium text-green-600 bg-green-50 rounded-lg hover:bg-green-100 transition-colors">
-                  Update Status
+                <button
+                  type="button"
+                  onClick={() => handleUpdateStatus(record.id)}
+                  className={`px-4 py-2 text-sm font-medium rounded-xl transition-colors ${
+                    dark
+                      ? 'text-emerald-300 bg-emerald-500/15 hover:bg-emerald-500/25'
+                      : 'text-emerald-700 bg-emerald-50 hover:bg-emerald-100'
+                  }`}
+                >
+                  Update status
                 </button>
               </div>
             </div>
 
-            {/* 4-column info grid */}
-            <div className="grid grid-cols-4 gap-6 mb-3">
-              <div className="flex items-center">
-                <FiTruck className="text-gray-400 mr-3" />
-                <div>
-                  <p className="text-xs text-gray-500">Vehicle</p>
-                  <p className="text-sm font-medium text-gray-900">{record.vehicle || '—'}</p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-5 mb-3">
+              <div className="flex items-center gap-3 min-w-0">
+                <FiTruck className={`shrink-0 ${icon}`} />
+                <div className="min-w-0">
+                  <p className={`text-xs ${label}`}>Vehicle</p>
+                  <p className={`text-sm font-medium truncate ${value}`}>{record.vehicle || '—'}</p>
                 </div>
               </div>
-              <div className="flex items-center">
-                <FiCalendar className="text-gray-400 mr-3" />
-                <div>
-                  <p className="text-xs text-gray-500">Scheduled Date</p>
-                  <p className="text-sm font-medium text-gray-900">{record.scheduledDate}</p>
+              <div className="flex items-center gap-3 min-w-0">
+                <FiCalendar className={`shrink-0 ${icon}`} />
+                <div className="min-w-0">
+                  <p className={`text-xs ${label}`}>Scheduled date</p>
+                  <p className={`text-sm font-medium ${value}`}>{record.scheduledDate}</p>
                 </div>
               </div>
-              <div className="flex items-center">
-                <FiTool className="text-gray-400 mr-3" />
-                <div>
-                  <p className="text-xs text-gray-500">Technician</p>
-                  <p className="text-sm font-medium text-gray-900">{record.technician || 'TBD'}</p>
+              <div className="flex items-center gap-3 min-w-0">
+                <FiTool className={`shrink-0 ${icon}`} />
+                <div className="min-w-0">
+                  <p className={`text-xs ${label}`}>Technician</p>
+                  <p className={`text-sm font-medium truncate ${value}`}>{record.technician || 'TBD'}</p>
                 </div>
               </div>
-              <div className="flex items-center">
-                <FiDollarSign className="text-gray-400 mr-3" />
-                <div>
-                  <p className="text-xs text-gray-500">Cost</p>
-                  <p className="text-sm font-medium text-gray-900">{record.cost}</p>
+              <div className="flex items-center gap-3 min-w-0">
+                <FiDollarSign className={`shrink-0 ${icon}`} />
+                <div className="min-w-0">
+                  <p className={`text-xs ${label}`}>Cost</p>
+                  <p className={`text-sm font-medium ${value}`}>{record.cost}</p>
                 </div>
               </div>
             </div>
 
-            {/* Additional info */}
-            <div className="flex gap-4 text-xs text-gray-500">
+            <div className={`flex flex-wrap gap-4 text-xs pt-3 border-t ${dark ? 'border-slate-700 text-slate-500' : 'border-slate-200 text-slate-500'}`}>
               <span>Mileage: {record.mileage || 'N/A'}</span>
-              {record.completedDate && (
-                <span>Completed: {record.completedDate}</span>
-              )}
+              {record.completedDate && <span>Completed: {record.completedDate}</span>}
             </div>
           </div>
         ))}
@@ -129,7 +141,5 @@ const MaintenanceTable = memo(({ data }: MaintenanceTableProps) => {
     </div>
   );
 });
-
-
 
 export default MaintenanceTable;

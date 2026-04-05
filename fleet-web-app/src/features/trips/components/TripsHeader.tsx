@@ -1,15 +1,29 @@
 import { FiPlus } from 'react-icons/fi';
 import { Button } from '../../../shared/components';
 
-const TripsHeader = () => (
-  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-    <div>
-      <h1 className="text-3xl font-bold text-gray-900">Trips</h1>
-      <p className="text-gray-600 mt-1">Track and manage trips</p>
+interface TripsHeaderProps {
+  dark?: boolean;
+  tripCount?: number;
+}
+
+const TripsHeader = ({ dark = false, tripCount }: TripsHeaderProps) => (
+  <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-6">
+    <div className="space-y-1">
+      <p className={`text-xs font-semibold uppercase tracking-[0.12em] ${dark ? 'text-slate-500' : 'text-slate-400'}`}>
+        Operations
+      </p>
+      <h1 className={`text-3xl sm:text-4xl font-extrabold tracking-tight ${dark ? 'text-white' : 'text-slate-900'}`}>
+        My trips
+      </h1>
+      {tripCount !== undefined && (
+        <p className={`text-sm ${dark ? 'text-slate-400' : 'text-slate-500'}`}>
+          {tripCount} trip{tripCount !== 1 ? 's' : ''} in view
+        </p>
+      )}
     </div>
-    <Button>
+    <Button className="rounded-xl shadow-soft shrink-0">
       <FiPlus className="mr-2" />
-      Schedule Trip
+      Schedule trip
     </Button>
   </div>
 );

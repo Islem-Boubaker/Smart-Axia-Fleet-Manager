@@ -4,6 +4,7 @@ export { Card } from './Card';
 export { DashboardLayout } from './layout/DashboardLayout';
 export { GlobalCard } from './GlobalCard';
 export { Header } from './layout/Header/Header';
+export { AppTopBar } from './layout/Header/AppTopBar';
 export { Input } from './ui/Input';
 export { NotificationPopup } from './NotificationPopup';
 export { Sidebar } from './layout/Sidebar';

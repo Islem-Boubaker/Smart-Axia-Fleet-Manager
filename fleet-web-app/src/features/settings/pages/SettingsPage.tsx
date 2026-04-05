@@ -1,31 +1,176 @@
 import { useState } from 'react';
-import { FiUser, FiBell, FiLock, FiGlobe } from 'react-icons/fi';
-import { Card } from '../../../shared/components';
-import SettingsTabs from '../components/SettingsTabs';
+import { useOutletContext } from 'react-router-dom';
+import { FiBell, FiEdit2, FiGlobe, FiLock, FiUser } from 'react-icons/fi';
+import { Card, Button } from '../../../shared/components';
 import ProfileSettings from '../components/ProfileSettings';
 import NotificationSettings from '../components/NotificationSettings';
 import SecuritySettings from '../components/SecuritySettings';
 import GeneralSettings from '../components/GeneralSettings';
-import type { ProfileData, NotificationPreferences, GeneralPreferences, SettingsTab } from '../settings.types';
-import { useAppSelector } from "../../../shared/hooks";
-const TABS: SettingsTab[] = [
-  { id: 'profile', label: 'Profile', icon: FiUser },
+import type { GeneralPreferences, NotificationPreferences, ProfileData } from '../settings.types';
+import { useAppSelector } from '../../../shared/hooks';
+import { pageShellClasses } from '../../../shared/utils/pageShell';
+
+interface ThemeContext {
+  dark: boolean;
+}
+
+const MENU_ITEMS = [
+  { id: 'profile', label: 'My Profile', icon: FiUser },
+  { id: 'security', label: 'Password & Security', icon: FiLock },
   { id: 'notifications', label: 'Notifications', icon: FiBell },
-  { id: 'security', label: 'Security', icon: FiLock },
   { id: 'general', label: 'General', icon: FiGlobe },
 ];
 
+const editBtnClass = (dark: boolean) =>
+  dark
+    ? '!bg-slate-800/90 !text-slate-100 border border-slate-600/80 hover:!bg-slate-700 shadow-none focus:ring-slate-500'
+    : '';
+
+const profileCardClass = (dark: boolean) =>
+  [
+    'rounded-2xl',
+    dark
+      ? '!border-slate-700/70 !bg-slate-900/40 shadow-soft ring-1 ring-white/[0.06] backdrop-blur-md'
+      : '!border-slate-200/90 !bg-white/75 shadow-glass backdrop-blur-sm',
+  ].join(' ');
+
+const ProfileFieldTiles = ({
+  items,
+  dark,
+}: {
+  items: Array<{ label: string; value: string }>;
+  dark: boolean;
+}) => (
+  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+    {items.map((item) => (
+      <div
+        key={item.label}
+        className={`rounded-xl px-4 py-3.5 border transition-colors ${
+          dark
+            ? 'border-slate-700/50 bg-slate-800/35 hover:bg-slate-800/55'
+            : 'border-slate-200/80 bg-slate-50/80 hover:bg-white'
+        }`}
+      >
+        <p className={`text-[11px] font-semibold uppercase tracking-[0.1em] ${dark ? 'text-slate-500' : 'text-slate-500'}`}>
+          {item.label}
+        </p>
+        <p className={`mt-2 text-base font-medium leading-snug ${dark ? 'text-slate-100' : 'text-slate-900'}`}>
+          {item.value || '—'}
+        </p>
+      </div>
+    ))}
+  </div>
+);
+
+const ProfileOverview = ({
+  profileData,
+  dark,
+  onEdit,
+}: {
+  profileData: ProfileData;
+  dark: boolean;
+  onEdit: () => void;
+}) => {
+  const personalMain = [
+    { label: 'First name', value: profileData.name.split(' ')[0] || '' },
+    { label: 'Last name', value: profileData.name.split(' ').slice(1).join(' ') || '' },
+    { label: 'Email', value: profileData.email },
+    { label: 'Phone', value: profileData.phone },
+  ];
+  const bioText = profileData.role || 'No bio added';
+
+  return (
+    <div className="space-y-6 lg:space-y-8">
+      <Card dark={dark} padding="lg" className={profileCardClass(dark)}>
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6">
+          <div className="flex items-center gap-5 min-w-0">
+            <div
+              className={`w-20 h-20 rounded-2xl flex items-center justify-center text-white font-bold text-xl shrink-0 bg-gradient-to-br from-amber-300 to-slate-700 ${
+                dark ? 'ring-2 ring-brand/30 shadow-lg shadow-black/20' : 'shadow-md'
+              }`}
+            >
+              {profileData.name
+                .split(' ')
+                .filter(Boolean)
+                .slice(0, 2)
+                .map((part) => part[0])
+                .join('') || 'U'}
+            </div>
+            <div className="min-w-0 space-y-1">
+              <h3 className={`text-2xl font-bold tracking-tight ${dark ? 'text-white' : 'text-slate-900'}`}>
+                {profileData.name || 'Unknown user'}
+              </h3>
+              <p className={dark ? 'text-slate-400' : 'text-slate-600'}>{profileData.role || 'No role set'}</p>
+              <p className={`text-sm ${dark ? 'text-slate-500' : 'text-slate-500'}`}>AXIA Fleet Manager</p>
+            </div>
+          </div>
+          <Button variant="secondary" onClick={onEdit} className={`rounded-xl shrink-0 ${editBtnClass(dark)}`}>
+            <FiEdit2 className="mr-2" />
+            Edit
+          </Button>
+        </div>
+      </Card>
+
+      <Card dark={dark} padding="lg" className={profileCardClass(dark)}>
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+          <h4 className={`text-lg font-bold ${dark ? 'text-white' : 'text-slate-900'}`}>Personal information</h4>
+          <Button variant="secondary" onClick={onEdit} className={`rounded-xl shrink-0 ${editBtnClass(dark)}`}>
+            <FiEdit2 className="mr-2" />
+            Edit
+          </Button>
+        </div>
+        <ProfileFieldTiles items={personalMain} dark={dark} />
+        <div
+          className={`mt-4 rounded-xl px-4 py-3.5 border ${
+            dark ? 'border-slate-700/50 bg-slate-800/25' : 'border-slate-200/80 bg-slate-50/60'
+          }`}
+        >
+          <p className={`text-[11px] font-semibold uppercase tracking-[0.1em] ${dark ? 'text-slate-500' : 'text-slate-500'}`}>
+            Bio
+          </p>
+          <p className={`mt-2 text-sm leading-relaxed ${dark ? 'text-slate-300' : 'text-slate-700'}`}>{bioText}</p>
+        </div>
+      </Card>
+
+      <Card dark={dark} padding="lg" className={profileCardClass(dark)}>
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+          <h4 className={`text-lg font-bold ${dark ? 'text-white' : 'text-slate-900'}`}>Address</h4>
+          <Button variant="secondary" onClick={onEdit} className={`rounded-xl shrink-0 ${editBtnClass(dark)}`}>
+            <FiEdit2 className="mr-2" />
+            Edit
+          </Button>
+        </div>
+        <ProfileFieldTiles
+          dark={dark}
+          items={[
+            { label: 'Country', value: 'Tunisia' },
+            { label: 'City / State', value: 'Tunis, Tunis' },
+            { label: 'Postal code', value: '1000' },
+            { label: 'TAX ID', value: 'AXIA-FT-2026' },
+          ]}
+        />
+      </Card>
+    </div>
+  );
+};
+
+const tabTitle: Record<string, string> = {
+  profile: 'My profile',
+  security: 'Password & security',
+  notifications: 'Notifications',
+  general: 'General',
+};
+
 const SettingsPage = () => {
-  
-  
- 
-    const { user } = useAppSelector((state) => state.auth);
+  const { dark } = useOutletContext<ThemeContext>();
+  const { user } = useAppSelector((state) => state.auth);
   const [activeTab, setActiveTab] = useState('profile');
+  const [isEditingProfile, setIsEditingProfile] = useState(false);
 
   const [profileData, setProfileData] = useState<ProfileData>({
     name: user?.name || '',
     email: user?.email || '',
-    phone: user?.phone || '',
+    phone: (user as { phone?: string } | null)?.phone || '',
     company: 'AXIA Fleet Manager',
     role: user?.role || '',
   });
@@ -51,35 +196,84 @@ const SettingsPage = () => {
   const renderTabContent = () => {
     switch (activeTab) {
       case 'profile':
-        return <ProfileSettings profileData={profileData} onChange={setProfileData} />;
+        if (isEditingProfile) {
+          return (
+            <div className="space-y-4">
+              <Button
+                variant="ghost"
+                onClick={() => setIsEditingProfile(false)}
+                className={dark ? '!text-slate-300 hover:!bg-slate-800' : ''}
+              >
+                Back to profile overview
+              </Button>
+              <ProfileSettings profileData={profileData} onChange={setProfileData} dark={dark} />
+            </div>
+          );
+        }
+        return <ProfileOverview profileData={profileData} dark={dark} onEdit={() => setIsEditingProfile(true)} />;
       case 'notifications':
-        return <NotificationSettings notifications={notifications} onChange={setNotifications} />;
+        return <NotificationSettings notifications={notifications} onChange={setNotifications} dark={dark} />;
       case 'security':
-        return <SecuritySettings />;
+        return <SecuritySettings dark={dark} />;
       case 'general':
-        return <GeneralSettings settings={generalSettings} onChange={setGeneralSettings} />;
+        return <GeneralSettings settings={generalSettings} onChange={setGeneralSettings} dark={dark} />;
       default:
         return null;
     }
   };
 
+  const shell = pageShellClasses(dark);
+
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold text-gray-900">Settings</h1>
-        <p className="text-gray-600 mt-1">Manage application settings</p>
-      </div>
+    <div className={`${shell} overflow-hidden animate-fade-in`}>
+      <div className="grid grid-cols-1 lg:grid-cols-[minmax(240px,280px),1fr] min-h-[70vh] gap-8 lg:gap-10 p-6 sm:p-8 lg:p-10">
+        <aside
+          className={`lg:pr-8 lg:border-r lg:pb-0 pb-8 border-b lg:border-b-0 ${
+            dark ? 'border-slate-700/80' : 'border-slate-200/80'
+          }`}
+        >
+          <p className={`text-xs font-semibold uppercase tracking-[0.12em] mb-4 ${dark ? 'text-slate-500' : 'text-slate-400'}`}>
+            Settings
+          </p>
+          <nav className="space-y-1">
+            {MENU_ITEMS.map((item) => {
+              const Icon = item.icon;
+              const isActive = activeTab === item.id;
 
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-        <div className="lg:col-span-1">
-          <Card padding="sm">
-            <SettingsTabs tabs={TABS} activeTab={activeTab} onTabChange={setActiveTab} />
-          </Card>
-        </div>
+              return (
+                <button
+                  key={item.id}
+                  type="button"
+                  onClick={() => {
+                    setActiveTab(item.id);
+                    if (item.id !== 'profile') {
+                      setIsEditingProfile(false);
+                    }
+                  }}
+                  className={`w-full text-left flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 ${
+                    isActive
+                      ? dark
+                        ? 'bg-brand/15 text-brand font-semibold ring-1 ring-brand/20'
+                        : 'bg-brand-light text-brand-deep font-semibold ring-1 ring-brand/10'
+                      : dark
+                        ? 'text-slate-300 hover:bg-slate-800/80 hover:text-white'
+                        : 'text-slate-600 hover:bg-white/80 hover:text-slate-900'
+                  }`}
+                >
+                  <Icon className="text-base shrink-0" />
+                  <span className="font-medium">{item.label}</span>
+                </button>
+              );
+            })}
+          </nav>
+        </aside>
 
-        <div className="lg:col-span-3 space-y-6">
-          {renderTabContent()}
-        </div>
+        <main className="min-w-0 lg:pl-2">
+          <h2 className={`text-2xl sm:text-3xl font-extrabold tracking-tight mb-6 lg:mb-8 ${dark ? 'text-white' : 'text-slate-900'}`}>
+            {tabTitle[activeTab] ?? 'Settings'}
+          </h2>
+          <div className="space-y-6 lg:space-y-8">{renderTabContent()}</div>
+        </main>
       </div>
     </div>
   );

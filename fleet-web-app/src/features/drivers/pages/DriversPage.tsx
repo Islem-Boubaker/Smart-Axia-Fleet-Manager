@@ -1,4 +1,5 @@
 import { useState, useCallback } from "react";
+import { useOutletContext } from 'react-router-dom';
 
 import { useDrivers } from "../hooks/useDrivers";
 import { toast } from "../../../shared/components";
@@ -7,14 +8,20 @@ import DriversSearch from "../components/DriversSearch";
 import DriversGrid from "../components/DriversGrid";
 import DriverModal from "../components/DriverModal";
 import type { Driver } from "../../../types";
+import { pageShellClasses, pageShellInnerSpacing } from "../../../shared/utils/pageShell";
+
+interface ThemeContext {
+  dark: boolean;
+}
 
 const DriversPage = () => {
+  const { dark } = useOutletContext<ThemeContext>();
   const [searchQuery, setSearchQuery] = useState("");
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [selectedDriver, setSelectedDriver] = useState<Driver | null>(null);
 
-  const { drivers, isLoading, addDriver, updateDriver, deleteDriver } =useDrivers();
+  const { drivers, isLoading, addDriver, updateDriver, deleteDriver } = useDrivers();
 
   const filteredDrivers = drivers.filter((driver) =>
     `${driver.name} ${driver.email} ${driver.licenseNumber ?? ""}`
@@ -74,14 +81,15 @@ const DriversPage = () => {
 
   return (
     <>
-      <div className="space-y-6">
-        <DriversHeader onAdd={() => setIsAddModalOpen(true)} />
-        <DriversSearch value={searchQuery} onChange={setSearchQuery} />
+      <div className={`${pageShellClasses(dark)} ${pageShellInnerSpacing} animate-fade-in`}>
+        <DriversHeader onAdd={() => setIsAddModalOpen(true)} dark={dark} />
+        <DriversSearch value={searchQuery} onChange={setSearchQuery} dark={dark} />
         <DriversGrid
           drivers={filteredDrivers}
           isLoading={isLoading}
           onEdit={handleEditDriver}
           onDelete={handleDeleteDriver}
+          dark={dark}
         />
       </div>
       <DriverModal

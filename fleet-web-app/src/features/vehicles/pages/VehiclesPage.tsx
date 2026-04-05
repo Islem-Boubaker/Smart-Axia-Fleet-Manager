@@ -1,4 +1,5 @@
 import { useState, useCallback } from 'react';
+import { useOutletContext } from 'react-router-dom';
 import axios from 'axios';
 import { useVehicles } from '../hooks/useVehicles';
 import { toast } from '../../../shared/components';
@@ -7,8 +8,14 @@ import VehiclesFilters from '../components/VehiclesFilters';
 import VehiclesGrid from '../components/VehiclesGrid';
 import VehicleModal from '../components/VehicleModal';
 import type { Vehicle } from '../../../types';
+import { pageShellClasses, pageShellInnerSpacing } from '../../../shared/utils/pageShell';
+
+interface ThemeContext {
+  dark: boolean;
+}
 
 const VehiclesPage = () => {
+  const { dark } = useOutletContext<ThemeContext>();
   const { vehicles, isLoading, createVehicle, updateVehicle, deleteVehicle } = useVehicles();
   const [searchQuery, setSearchQuery] = useState('');
   const [activeFilter, setActiveFilter] = useState('all');
@@ -93,8 +100,8 @@ const VehiclesPage = () => {
 
   return (
     <>
-      <div className="space-y-6">
-        <VehiclesHeader onAdd={() => setIsAddModalOpen(true)} />
+      <div className={`${pageShellClasses(dark)} ${pageShellInnerSpacing} animate-fade-in`}>
+        <VehiclesHeader onAdd={() => setIsAddModalOpen(true)} dark={dark} />
         <VehiclesFilters
           searchQuery={searchQuery}
           onSearchChange={setSearchQuery}
@@ -102,12 +109,14 @@ const VehiclesPage = () => {
           onActiveChange={setActiveFilter}
           typeFilter={typeFilter}
           onTypeChange={setTypeFilter}
+          dark={dark}
         />
         <VehiclesGrid
           vehicles={filteredVehicles}
           isLoading={isLoading}
           onEdit={handleEditVehicle}
           onDelete={handleDeleteVehicle}
+          dark={dark}
         />
       </div>
 

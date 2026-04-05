@@ -21,13 +21,19 @@ export interface Stat {
 
 interface Props {
   stats: Stat[];
+  dark?: boolean;
 }
 
-const OverviewStats = ({ stats }: Props) => (
-  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+const OverviewStats = ({ stats, dark = false }: Props) => (
+  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 md:gap-8">
     {stats.map((stat) => (
-      <Card key={stat.title} padding="md">
-        <ReportCard {...stat} icon={iconMap[stat.icon] ?? FiTruck} />
+      <Card
+        key={stat.title}
+        padding="lg"
+        dark={dark}
+        className={dark ? 'border-slate-700/80 shadow-none' : ''}
+      >
+        <ReportCard {...stat} icon={iconMap[stat.icon] ?? FiTruck} dark={dark} />
       </Card>
     ))}
   </div>
