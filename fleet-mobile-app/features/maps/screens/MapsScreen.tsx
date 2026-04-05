@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { View, StatusBar } from "react-native";
-import MapView from "react-native-maps";
+import MapView from "../components/MapView";
 
 
 import { useMapScreen } from "../hooks/useMaps";
@@ -51,7 +51,11 @@ export default function MapScreen() {
         showsCompass={false}
         onMapReady={fitRoute}
       >
-        <TripRouteLayer trip={trip} driverLocation={driverLocation} />
+        <TripRouteLayer
+          trip={trip}
+          driverLocation={driverLocation}
+          routeCoords={routeCoords}
+        />
       </MapView>
 
       {/* ── Top bar (back + vehicle name) ── */}

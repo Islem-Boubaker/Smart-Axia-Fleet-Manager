@@ -1,11 +1,12 @@
-// components/TripRouteLayer.tsx
 import { Marker, Polyline } from "react-native-maps";
-import type { TripRoute, Coordinate } from "../types/maps.types";
+import type { TripRoute } from "../types/maps.types";
+
+type Coordinate = { latitude: number; longitude: number };
 
 type Props = {
   trip: TripRoute;
   driverLocation: Coordinate;
-  routeCoords: Coordinate[]; // ← add this
+  routeCoords: Coordinate[];
 };
 
 export function TripRouteLayer({ trip, driverLocation, routeCoords }: Props) {

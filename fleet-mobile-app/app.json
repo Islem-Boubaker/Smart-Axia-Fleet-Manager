@@ -2,30 +2,38 @@
   "expo": {
     "name": "Smart Axia Fleet Manager",
     "slug": "Smart-Axia-Fleet-Manager",
+     "owner": "islemboubaker" ,
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
+
     "scheme": "fleetmobileapp",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
+
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "googleServicesFile": "./GoogleService-Info.plist",
+      "bundleIdentifier": "com.islemboubaker.SmartAxiaFleetManager"
     },
+
     "android": {
       "icon": "./assets/images/icon.png",
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
+      "googleServicesFile": "./google-services.json",
       "package": "com.islemboubaker.SmartAxiaFleetManager"
     },
+
     "web": {
       "output": "static",
       "favicon": "./assets/images/adaptive-icon.png",
       "bundler": "metro"
     },
+
     "plugins": [
-      "expo-router",
       [
         "expo-splash-screen",
         {
@@ -38,12 +46,26 @@
           }
         }
       ],
-      "expo-secure-store"
+      "expo-secure-store",
+      [
+        "expo-build-properties",
+        {
+          "ios": {
+            "useFrameworks": "static"
+          }
+        }
+      ],
+      "expo-web-browser",
+      "@react-native-firebase/app",
+      "@react-native-firebase/auth",
+      "expo-apple-authentication"
     ],
+
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
     },
+
     "extra": {
       "eas": {
         "projectId": "YOUR_PROJECT_ID"

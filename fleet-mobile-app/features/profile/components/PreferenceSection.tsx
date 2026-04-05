@@ -23,7 +23,7 @@ export default function PreferenceSection({
           value={darkMode}
           onToggle={() => setDarkMode(!darkMode)}
         />
-        <Divider />{" "}
+        <Divider />
         <LinkRow
           onPress={() => router.push("/profile/language")}
           icon={<Globe size={16} color="#6b7280" />}
