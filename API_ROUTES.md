@@ -2,137 +2,107 @@
 
 ## 1. Global Overview
 
-This backend is a Node.js + Express API for fleet management. It uses a layered MVC style:
+This backend is an Express.js API for fleet operations (users, vehicles, trips, maintenance, reclamations, notifications) built with an MVC layering:
 
 1. Routes define endpoint paths and middleware chains.
-2. Controllers handle HTTP concerns (status codes, response format).
-3. Services implement business logic and data access.
-4. Models define persistence schema (mainly Sequelize/PostgreSQL; maintenance uses a Mongoose model).
+2. Controllers handle HTTP responses and call services.
+3. Services implement business logic and persistence calls.
+4. Models define data schemas (mostly Sequelize/PostgreSQL).
 
-Main capabilities:
+Main features:
 
-- Authentication and authorization with JWT (cookie-first, Bearer fallback)
-- User management (signup/login/profile/admin CRUD)
-- Vehicle management
-- Trip lifecycle management (create, assign, start, complete, cancel, location)
+- Cookie/Bearer JWT authentication and role-based authorization
+- CSRF protection for state-changing endpoints when cookie auth is used
+- Vehicle lifecycle and driver assignment
+- Trip lifecycle management with business validation
 - Maintenance management
-- Reclamation handling
-- Notification center (list, grouped, unread counters, read/archive/delete)
+- Reclamation management with Cloudinary image uploads
+- Notification center (list/read/archive/delete/grouping/unread count)
+- Global security middleware (cors, helmet, rate limiting, error handling)
 
-Application-level middleware in `app.js`:
+Global middleware in app:
 
-- `cors` with credentials support
-- `helmet`
-- API rate limiting (`RATE_LIMIT.api`)
-- JSON and URL-encoded body parsing
-- `cookie-parser`
-- Global error handler
+- cors with credentials options
+- helmet
+- API rate limiter
+- JSON and URL-encoded parsers
+- cookie-parser
+- centralized error handler
 
-Cross-cutting concerns:
+Mounting:
 
-- `authenticate` validates JWT and fills `req.user`
-- `authorizeRoles` enforces role-based access
-- `verifyCsrf` enforces double-submit cookie on state-changing requests when cookie auth is used
-- Validation (Zod) is applied in trip and maintenance routes
-- Ownership checks are applied on many trip endpoints via `checkOwnership`
+- All routers are mounted at root `/`
+- Effective paths are exactly the route strings shown below
 
-## 3. Authentication, Security, and Conventions
+## 2. Authentication, Security, and Conventions
 
-### 3.1 Authentication modes
+### 2.1 Authentication
 
-The backend accepts either:
+Accepted auth modes:
 
-- `accessToken` cookie (preferred)
-- `Authorization: Bearer <token>`
+- accessToken cookie (preferred)
+- Authorization: Bearer token
 
-`/user/login` sets:
+Login sets:
 
-- `accessToken` (httpOnly)
-- `refreshToken` (httpOnly, scoped to `/user/refresh-token`)
-- `csrf-token` (readable by JS)
+- accessToken (httpOnly)
+- refreshToken (httpOnly, scoped to refresh route)
+- csrf-token cookie
 
-### 3.2 CSRF
+### 2.2 CSRF
 
-For non-safe methods (`POST`, `PUT`, `PATCH`, `DELETE`) on CSRF-protected routes:
+For protected mutation routes, include one of:
 
-- Send CSRF cookie (`csrf-token`) and matching header:
-  - `x-csrf-token`, or
-  - `x-xsrf-token`, or
-  - `csrf-token`
+- x-csrf-token
+- x-xsrf-token
+- csrf-token
 
-If request is Bearer-only (no auth cookies), CSRF check is skipped.
+When request uses bearer-only mode without auth cookies, CSRF middleware may skip checks depending on middleware logic.
 
-### 3.3 Common response envelopes
-
-Most endpoints use one of these patterns:
-
-Success:
+### 2.3 Common Success Envelope
 
 ```json
 {
   "success": true,
-  "message": "Success",
   "data": {}
 }
 ```
 
-Validation error:
+### 2.4 Common Error Envelope
 
 ```json
 {
   "success": false,
-  "message": "Validation error",
-  "errors": ["field: reason"],
-  "code": "VALIDATION_ERROR"
+  "message": "Error message"
 }
 ```
-
-Paginated list:
-
-```json
-{
-  "success": true,
-  "data": [],
-  "meta": {
-    "totalItems": 0,
-    "totalPages": 0,
-    "currentPage": 1,
-    "pageSize": 10
-  }
-}
-```
-
-### 3.4 Pagination convention
-
-Common query params:
-
-- `page` (default `1`, min `1`)
-- `limit` (default `10`, min `1`, max `100`)
 
 ---
 
-## Module: User
+# Module: User
 
-### Base Route
+## Base Route
 
 `/user`
 
-### Endpoint: Login
+---
 
-- Method: `POST`
+## Endpoint: Login
+
+- Method: POST
 - Route: `/user/login`
-- Description: Authenticate user, set auth cookies, and return profile + CSRF token
+- Description: Authenticate user and set auth cookies
 - Auth: Public
-- Rate Limit: `RATE_LIMIT.login`
+- Rate limit: login policy
 
-#### Request Body
+### Request Body
 
 | Name | Type | Required | Description |
 |------|------|----------|-------------|
-| email | string (email) | Yes | User email |
+| email | string | Yes | User email |
 | password | string | Yes | User password |
 
-#### Response Example
+### Response Example
 
 ```json
 {
@@ -140,1231 +110,677 @@ Common query params:
   "data": {
     "user": {
       "id": "uuid",
-      "name": "Jane Doe",
+      "name": "Jane",
       "email": "jane@example.com",
-      "role": "ADMIN",
-      "phone": "+21600000000"
+      "role": "ADMIN"
     },
-    "csrfToken": "hex-token"
+    "csrfToken": "token"
   }
 }
 ```
 
-### Endpoint: Signup
+## Endpoint: Refresh Token
 
-- Method: `POST`
-- Route: `/user/signup`
-- Description: Create a new user account
-- Auth: Public
+- Method: POST
+- Route: `/user/refresh-token`
+- Description: Rotate access token from refresh token cookie
+- Auth: Refresh token cookie required
 
-#### Request Body
+### Request Body
 
-Common fields accepted from user model:
+None
+
+## Endpoint: Logout
+
+- Method: POST
+- Route: `/user/logout`
+- Description: Clear auth cookies
+- Auth: Required
+- CSRF: Required
+
+### Request Body
+
+None
+
+## Endpoint: Get Current User
+
+- Method: GET
+- Route: `/user/me`
+- Description: Fetch authenticated profile
+- Auth: Required
+
+### Request Body
+
+None
+
+## Endpoint: Create Driver/User
+
+- Method: POST
+- Route: `/user/createdriver`
+- Description: Create user from admin/manager context
+- Auth: Required
+- Roles: ADMIN, MANAGER
+- CSRF: Required
+- Content-Type: application/json or multipart/form-data (avatar optional)
+
+### Request Body
 
 | Name | Type | Required | Description |
 |------|------|----------|-------------|
 | name | string | Yes | Full name |
-| email | string (email) | Yes | Unique email |
-| password | string | Yes | Plain password (hashed in model hook) |
-| role | enum(`ADMIN`,`DRIVER`,`MANAGER`) | No | Defaults to `DRIVER` |
-| phone | string | No | Phone number |
-| licenseNumber | string | No | Driver license number |
-| licenseExpiry | string (date) | No | License expiry date |
-| status | enum(`active`,`inactive`,`on-leave`) | No | Driver status |
-| assignedVehicle | string | No | Assigned vehicle reference |
-| rating | number | No | 0 to 5 |
+| email | string | Yes | Email |
+| password | string | Yes | Password |
+| role | enum | No | ADMIN, DRIVER, MANAGER |
+| avatar | file | No | Avatar image |
 
-#### Response Example
+## Endpoint: Get All Users
 
-```json
-{
-  "success": true,
-  "data": {
-    "id": "uuid",
-    "name": "Jane Doe",
-    "email": "jane@example.com",
-    "role": "DRIVER"
-  }
-}
-```
-
-### Endpoint: Refresh Token
-
-- Method: `POST`
-- Route: `/user/refresh-token`
-- Description: Renew access token from refresh cookie and rotate CSRF token
-- Auth: Refresh cookie required
-
-#### Request Body
-
-None
-
-#### Response Example
-
-```json
-{
-  "success": true,
-  "message": "Token refreshed",
-  "csrfToken": "hex-token"
-}
-```
-
-### Endpoint: Logout
-
-- Method: `POST`
-- Route: `/user/logout`
-- Description: Clear authentication cookies
-- Auth: Required
-- CSRF: Required
-
-#### Request Body
-
-None
-
-#### Response Example
-
-```json
-{
-  "success": true,
-  "message": "Logged out successfully"
-}
-```
-
-### Endpoint: Get Current User
-
-- Method: `GET`
-- Route: `/user/me`
-- Description: Return currently authenticated user profile
-- Auth: Required
-
-#### Request Body
-
-None
-
-#### Response Example
-
-```json
-{
-  "success": true,
-  "data": {
-    "id": "uuid",
-    "name": "Jane Doe",
-    "email": "jane@example.com",
-    "role": "ADMIN"
-  }
-}
-```
-
-### Endpoint: Create Driver/User (Admin/Manager)
-
-- Method: `POST`
-- Route: `/user/createdriver`
-- Description: Create a user from privileged context
-- Auth: Required
-- Roles: `ADMIN`, `MANAGER`
-- CSRF: Required
-
-#### Request Body
-
-Same shape as signup.
-
-#### Response Example
-
-```json
-{
-  "success": true,
-  "data": {
-    "id": "uuid",
-    "name": "New Driver",
-    "role": "DRIVER"
-  }
-}
-```
-
-### Endpoint: Get All Users
-
-- Method: `GET`
+- Method: GET
 - Route: `/user/getusers`
-- Description: Paginated user list
+- Description: List users (paginated)
 - Auth: Required
-- Roles: `ADMIN`
-- CSRF middleware is attached on this GET route in code
+- Roles: ADMIN
 
-#### Query Params
+### Query Params
 
 | Name | Type | Required | Description |
 |------|------|----------|-------------|
-| page | integer | No | Page number |
-| limit | integer | No | Page size (max 100) |
+| page | number | No | Page number |
+| limit | number | No | Page size |
 
-#### Response Example
+## Endpoint: Get User By ID
 
-```json
-{
-  "success": true,
-  "data": [],
-  "meta": {
-    "totalItems": 14,
-    "totalPages": 2,
-    "currentPage": 1,
-    "pageSize": 10
-  }
-}
-```
-
-### Endpoint: Get User By ID
-
-- Method: `GET`
+- Method: GET
 - Route: `/user/getuser/:id`
-- Description: Fetch one user by UUID
+- Description: Get one user by id
 - Auth: Required
-- Roles: `ADMIN`, `MANAGER`
-- CSRF middleware is attached on this GET route in code
+- Roles: ADMIN, MANAGER
 
-#### Path Params
+## Endpoint: Update User
 
-| Name | Type | Required | Description |
-|------|------|----------|-------------|
-| id | UUID | Yes | User ID |
-
-#### Response Example
-
-```json
-{
-  "success": true,
-  "data": {
-    "id": "uuid",
-    "name": "Jane Doe",
-    "email": "jane@example.com"
-  }
-}
-```
-
-### Endpoint: Update User
-
-- Method: `PUT`
+- Method: PUT
 - Route: `/user/updateuser/:id`
 - Description: Update user fields
 - Auth: Required
-- Roles: `ADMIN`
+- Roles: ADMIN
 - CSRF: Required
 
-#### Path Params
+## Endpoint: Delete User
 
-| Name | Type | Required | Description |
-|------|------|----------|-------------|
-| id | UUID | Yes | User ID |
-
-#### Request Body
-
-Any subset of user fields; empty/blank `password` is ignored by service.
-
-#### Response Example
-
-```json
-{
-  "success": true,
-  "data": {
-    "id": "uuid",
-    "name": "Updated Name",
-    "email": "updated@example.com"
-  }
-}
-```
-
-### Endpoint: Delete User
-
-- Method: `DELETE`
+- Method: DELETE
 - Route: `/user/deleteuser/:id`
-- Description: Delete a user
+- Description: Delete user
 - Auth: Required
-- Roles: `ADMIN`
+- Roles: ADMIN
 - CSRF: Required
 
-#### Path Params
+## Endpoint: Update User Avatar (Preferred)
+
+- Method: PATCH
+- Route: `/user/:id/avatar`
+- Description: Upload/update avatar in Cloudinary
+- Auth: Required
+- CSRF: Required
+- Content-Type: multipart/form-data
+
+### Request Body
 
 | Name | Type | Required | Description |
 |------|------|----------|-------------|
-| id | UUID | Yes | User ID |
+| avatar | file | Yes | Avatar image |
 
-#### Response Example
+## Endpoint: Update User Photo (Backward Compatible)
 
-HTTP `204 No Content`
+- Method: PUT
+- Route: `/user/:id/photo`
+- Description: Backward-compatible avatar update route
+- Auth: Required
+- CSRF: Required
+- Content-Type: multipart/form-data
 
 ---
 
-## Module: Vehicle
+# Module: Vehicle
 
-### Base Route
+## Base Route
 
 `/vehicle`
 
-All vehicle endpoints:
+All vehicle endpoints require auth and ADMIN or MANAGER role.
 
-- Auth required
-- Roles required: `ADMIN` or `MANAGER`
+---
 
-### Endpoint: Create Vehicle
+## Endpoint: Create Vehicle
 
-- Method: `POST`
+- Method: POST
 - Route: `/vehicle/addvehicle`
-- Description: Create a vehicle record
+- Description: Create vehicle, supports Cloudinary image upload
+- Auth: Required
+- Roles: ADMIN, MANAGER
+- Content-Type: application/json or multipart/form-data
 
-#### Request Body
-
-Representative fields from model:
+### Request Body
 
 | Name | Type | Required | Description |
 |------|------|----------|-------------|
 | name | string | Yes | Vehicle name |
-| Vehicle_Model | enum(`Car`,`SUV`,`Van`,`Truck`,`Bus`,`Motorcycle`) | Yes | Model class |
-| Vehicle_Age | integer | Yes | Vehicle age |
-| Maintenance_History | enum(`Good`,`Average`,`Poor`) | Yes | Maintenance quality |
-| Tire_Condition | enum(`New`,`Good`,`Worn Out`) | Yes | Tire condition |
-| Brake_Condition | enum(`New`,`Good`,`Worn Out`) | Yes | Brake condition |
-| Battery_Status | enum(`New`,`Good`,`Weak`) | Yes | Battery state |
-| status | enum(`AVAILABLE`,`IN_MAINTENANCE`,`OUT_OF_SERVICE`,`ON_TRIP`) | No | Defaults to `AVAILABLE` |
-| vin | string(17) | No | Unique VIN |
-| plaque_immatriculation | string | No | Unique plate |
+| Vehicle_Model | enum | Yes | Car, SUV, Van, Truck, Bus, Motorcycle |
+| Vehicle_Age | number | Yes | Vehicle age |
+| photos | file[] | No | Up to 5 files |
 
-#### Response Example
+## Endpoint: Get Vehicles
 
-```json
-{
-  "success": true,
-  "data": {
-    "id": "uuid",
-    "name": "Truck 1",
-    "status": "AVAILABLE"
-  }
-}
-```
-
-### Endpoint: Get Vehicles
-
-- Method: `GET`
+- Method: GET
 - Route: `/vehicle/getvehicles`
 - Description: Paginated vehicle list
+- Auth: Required
+- Roles: ADMIN, MANAGER
 
-#### Query Params
+## Endpoint: Get Vehicle By ID
 
-| Name | Type | Required | Description |
-|------|------|----------|-------------|
-| page | integer | No | Page number |
-| limit | integer | No | Page size |
-
-#### Response Example
-
-```json
-{
-  "success": true,
-  "data": [],
-  "meta": {
-    "totalItems": 30,
-    "totalPages": 3,
-    "currentPage": 1,
-    "pageSize": 10
-  }
-}
-```
-
-### Endpoint: Get Vehicle By ID
-
-- Method: `GET`
+- Method: GET
 - Route: `/vehicle/getvehicle/:id`
-- Description: Fetch vehicle by UUID
+- Description: Get one vehicle
+- Auth: Required
+- Roles: ADMIN, MANAGER
 
-#### Path Params
+## Endpoint: Update Vehicle
 
-| Name | Type | Required | Description |
-|------|------|----------|-------------|
-| id | UUID | Yes | Vehicle ID |
-
-#### Response Example
-
-```json
-{
-  "success": true,
-  "data": {
-    "id": "uuid",
-    "name": "Truck 1"
-  }
-}
-```
-
-### Endpoint: Update Vehicle
-
-- Method: `PUT`
+- Method: PUT
 - Route: `/vehicle/updatevehicle/:id`
-- Description: Update vehicle fields
+- Description: Update vehicle, supports photo replacement/upload
+- Auth: Required
+- Roles: ADMIN, MANAGER
+- Content-Type: application/json or multipart/form-data
 
-#### Path Params
+## Endpoint: Delete Vehicle
 
-| Name | Type | Required | Description |
-|------|------|----------|-------------|
-| id | UUID | Yes | Vehicle ID |
-
-#### Request Body
-
-Any updatable vehicle fields.
-
-#### Response Example
-
-```json
-{
-  "success": true,
-  "data": {
-    "id": "uuid",
-    "status": "IN_MAINTENANCE"
-  }
-}
-```
-
-### Endpoint: Delete Vehicle
-
-- Method: `DELETE`
+- Method: DELETE
 - Route: `/vehicle/deletevehicle/:id`
-- Description: Delete vehicle and related reclamations for that vehicle
+- Description: Delete vehicle
+- Auth: Required
+- Roles: ADMIN, MANAGER
 
-#### Path Params
+## Endpoint: Assign Driver
+
+- Method: PATCH
+- Route: `/vehicle/:id/assign-driver`
+- Description: Assign driver and optional trip to vehicle
+- Auth: Required
+- Roles: ADMIN, MANAGER
+
+### Request Body
 
 | Name | Type | Required | Description |
 |------|------|----------|-------------|
-| id | UUID | Yes | Vehicle ID |
+| driverId | UUID | Yes | Driver user id |
+| tripId | UUID | No | Trip id |
 
-#### Response Example
+## Endpoint: Unassign Driver
 
-```json
-{
-  "success": true,
-  "message": "Vehicle deleted successfully"
-}
-```
+- Method: PATCH
+- Route: `/vehicle/:id/unassign-driver`
+- Description: Remove driver assignment
+- Auth: Required
+- Roles: ADMIN, MANAGER
+
+## Endpoint: Check Idle Vehicles
+
+- Method: POST
+- Route: `/vehicle/check-idle`
+- Description: Run idle vehicle check
+- Auth: Required
+- Roles: ADMIN, MANAGER
+
+### Request Body
+
+| Name | Type | Required | Description |
+|------|------|----------|-------------|
+| thresholdMinutes | number | No | Idle threshold, default 30 |
 
 ---
 
-## Module: Trip
+# Module: Trip
 
-### Base Route
+## Base Route
 
 `/trips`
 
-All trip endpoints are behind `authenticate` middleware.
-
-### Endpoint: Create Trip
-
-- Method: `POST`
-- Route: `/trips`
-- Description: Create a trip with business and overlap validations
-- Roles: `ADMIN`, `MANAGER`
-- CSRF: Required
-
-#### Request Body
-
-| Name | Type | Required | Description |
-|------|------|----------|-------------|
-| vehicleId | UUID | Yes | Vehicle ID |
-| userId | UUID | Yes | Driver user ID |
-| region | string | Yes | Region name |
-| startLocation | string | Yes | Start location |
-| endLocation | string | Yes | End location |
-| startTime | string (ISO datetime) | Yes | Trip start |
-| endTime | string (ISO datetime) | No | Trip end (must be after startTime) |
-| distance | number > 0 | Yes | Distance |
-| fuel | string | No | Fuel info |
-| cost | number >= 0 | No | Cost |
-| status | enum | No | Service forces `scheduled` on create |
-
-#### Response Example
-
-```json
-{
-  "success": true,
-  "message": "Trip created",
-  "data": {
-    "id": "uuid",
-    "vehicleId": "uuid",
-    "userId": "uuid",
-    "status": "scheduled"
-  }
-}
-```
-
-### Endpoint: List Trips
-
-- Method: `GET`
-- Route: `/trips`
-- Description: Paginated trips with optional filters
-- Roles: `ADMIN`, `MANAGER`, `DRIVER`
-
-#### Query Params
-
-| Name | Type | Required | Description |
-|------|------|----------|-------------|
-| page | integer | No | Page number |
-| limit | integer | No | Page size |
-| status | string | No | Filter by trip status |
-| vehicleId | UUID | No | Filter by vehicle |
-| userId | UUID | No | Filter by driver |
-
-For `DRIVER` role, service enforces `userId = req.user.id`.
-
-#### Response Example
-
-```json
-{
-  "success": true,
-  "message": "Trips fetched",
-  "data": [],
-  "meta": {
-    "totalItems": 12,
-    "totalPages": 2,
-    "currentPage": 1,
-    "pageSize": 10
-  }
-}
-```
-
-### Endpoint: Get Trip By ID
-
-- Method: `GET`
-- Route: `/trips/:id`
-- Description: Get one trip
-- Roles: `ADMIN`, `MANAGER`, `DRIVER`
-- Ownership: Driver can only access own trips
-
-### Endpoint: Update Trip
-
-- Method: `PATCH`
-- Route: `/trips/:id`
-- Description: Update trip fields with overlap/time checks
-- Roles: `ADMIN`, `MANAGER`
-- CSRF: Required
-- Ownership middleware attached
-
-#### Request Body
-
-Any subset of create fields.
-
-### Endpoint: Update Trip Status
-
-- Method: `PATCH`
-- Route: `/trips/:id/status`
-- Description: Explicit status transition endpoint
-- Roles: `ADMIN`, `MANAGER`
-- CSRF: Required
-- Allowed transitions:
-  - `scheduled -> ongoing | cancelled`
-  - `ongoing -> completed | cancelled`
-
-#### Request Body
-
-| Name | Type | Required | Description |
-|------|------|----------|-------------|
-| status | enum(`scheduled`,`ongoing`,`completed`,`cancelled`) | Yes | New status |
-
-### Endpoint: Delete Trip
-
-- Method: `DELETE`
-- Route: `/trips/:id`
-- Description: Delete a trip (completed trips cannot be deleted)
-- Roles: `ADMIN`, `MANAGER`
-- CSRF: Required
-
-### Endpoint: Assign Driver To Trip
-
-- Method: `POST`
-- Route: `/trips/:id/assign-driver`
-- Description: Assign driver user to trip
-- Roles: `ADMIN`, `MANAGER`
-- CSRF: Required
-
-#### Request Body
-
-| Name | Type | Required | Description |
-|------|------|----------|-------------|
-| userId | UUID | Yes | Driver ID (must have role DRIVER) |
-
-### Endpoint: Unassign Driver From Trip
-
-- Method: `POST`
-- Route: `/trips/:id/unassign-driver`
-- Description: Remove assigned driver
-- Roles: `ADMIN`, `MANAGER`
-- CSRF: Required
-
-### Endpoint: Start Trip
-
-- Method: `PATCH`
-- Route: `/trips/:id/start`
-- Description: Move trip to `ongoing`
-- Roles: `DRIVER`, `ADMIN`, `MANAGER`
-- CSRF: Required
-
-### Endpoint: Complete Trip
-
-- Method: `PATCH`
-- Route: `/trips/:id/complete`
-- Description: Move trip to `completed`
-- Roles: `DRIVER`, `ADMIN`, `MANAGER`
-- CSRF: Required
-
-#### Request Body
-
-Optional completion payload:
-
-| Name | Type | Required | Description |
-|------|------|----------|-------------|
-| endTime | string (datetime) | No | Completion time |
-| cost | number | No | Final cost |
-| fuel | string | No | Final fuel usage |
-
-### Endpoint: Cancel Trip
-
-- Method: `PATCH`
-- Route: `/trips/:id/cancel`
-- Description: Move trip to `cancelled`
-- Roles: `DRIVER`, `ADMIN`, `MANAGER`
-- CSRF: Required
-
-### Endpoint: Get Live Location
-
-- Method: `GET`
-- Route: `/trips/:id/live-location`
-- Description: Return live location payload placeholder (only if status is ongoing)
-- Roles: `ADMIN`, `MANAGER`, `DRIVER`
-
-### Endpoint: Record Location Ping
-
-- Method: `POST`
-- Route: `/trips/:id/location-pings`
-- Description: Record location ping payload for ongoing trip
-- Roles: `DRIVER`
-- CSRF: Required
-
-#### Request Body
-
-| Name | Type | Required | Description |
-|------|------|----------|-------------|
-| latitude | number | Yes | Latitude |
-| longitude | number | Yes | Longitude |
-| speed | number | No | Speed |
-| recordedAt | string (datetime) | No | Ping timestamp |
-
-### Endpoint: Get Trip History
-
-- Method: `GET`
-- Route: `/trips/:id/history`
-- Description: Return trip history placeholder
-- Roles: `ADMIN`, `MANAGER`, `DRIVER`
-
-#### Generic Success Example (Trip endpoints)
-
-```json
-{
-  "success": true,
-  "message": "Trip updated",
-  "data": {
-    "id": "uuid",
-    "status": "ongoing"
-  }
-}
-```
+Router-level auth is enabled for all trip routes.
 
 ---
 
-## Module: Maintenance
+## Endpoint: Create Trip
 
-### Base Route
+- Method: POST
+- Route: `/trips`
+- Description: Create trip with validation chain
+- Auth: Required
+- Roles: ADMIN, MANAGER
+- CSRF: Required
+
+## Endpoint: List Trips
+
+- Method: GET
+- Route: `/trips`
+- Description: List trips with filters and pagination
+- Auth: Required
+- Roles: ADMIN, MANAGER, DRIVER
+
+### Query Params
+
+| Name | Type | Required | Description |
+|------|------|----------|-------------|
+| page | number | No | Page number |
+| limit | number | No | Page size |
+| status | string | No | Status filter |
+| vehicleId | UUID | No | Filter by vehicle |
+| userId | UUID | No | Filter by user |
+
+## Endpoint: Get Trip By ID
+
+- Method: GET
+- Route: `/trips/:id`
+- Description: Get one trip
+- Auth: Required
+- Roles: ADMIN, MANAGER, DRIVER
+- Ownership middleware: Applied
+
+## Endpoint: Update Trip
+
+- Method: PATCH
+- Route: `/trips/:id`
+- Description: Update trip fields
+- Auth: Required
+- Roles: ADMIN, MANAGER
+- CSRF: Required
+- Ownership middleware: Applied
+
+## Endpoint: Update Trip Status
+
+- Method: PATCH
+- Route: `/trips/:id/status`
+- Description: Update status with transition validation
+- Auth: Required
+- Roles: ADMIN, MANAGER
+- CSRF: Required
+- Ownership middleware: Applied
+
+## Endpoint: Delete Trip
+
+- Method: DELETE
+- Route: `/trips/:id`
+- Description: Delete trip
+- Auth: Required
+- Roles: ADMIN, MANAGER
+- CSRF: Required
+- Ownership middleware: Applied
+
+## Endpoint: Assign Driver To Trip
+
+- Method: POST
+- Route: `/trips/:id/assign-driver`
+- Description: Assign a driver
+- Auth: Required
+- Roles: ADMIN, MANAGER
+- CSRF: Required
+
+## Endpoint: Unassign Driver From Trip
+
+- Method: POST
+- Route: `/trips/:id/unassign-driver`
+- Description: Remove assigned driver
+- Auth: Required
+- Roles: ADMIN, MANAGER
+- CSRF: Required
+
+## Endpoint: Start Trip
+
+- Method: PATCH
+- Route: `/trips/:id/start`
+- Description: Start trip
+- Auth: Required
+- Roles: DRIVER, ADMIN, MANAGER
+- CSRF: Required
+- Ownership middleware: Applied
+
+## Endpoint: Complete Trip
+
+- Method: PATCH
+- Route: `/trips/:id/complete`
+- Description: Complete trip
+- Auth: Required
+- Roles: DRIVER, ADMIN, MANAGER
+- CSRF: Required
+- Ownership middleware: Applied
+
+## Endpoint: Cancel Trip
+
+- Method: PATCH
+- Route: `/trips/:id/cancel`
+- Description: Cancel trip
+- Auth: Required
+- Roles: DRIVER, ADMIN, MANAGER
+- CSRF: Required
+- Ownership middleware: Applied
+
+## Endpoint: Get Live Location
+
+- Method: GET
+- Route: `/trips/:id/live-location`
+- Description: Get current location payload for ongoing trip
+- Auth: Required
+- Roles: ADMIN, MANAGER, DRIVER
+- Ownership middleware: Applied
+
+## Endpoint: Record Location Ping
+
+- Method: POST
+- Route: `/trips/:id/location-pings`
+- Description: Record location ping
+- Auth: Required
+- Roles: DRIVER
+- CSRF: Required
+- Ownership middleware: Applied
+
+## Endpoint: Get Trip History
+
+- Method: GET
+- Route: `/trips/:id/history`
+- Description: Get trip history payload
+- Auth: Required
+- Roles: ADMIN, MANAGER, DRIVER
+- Ownership middleware: Applied
+
+---
+
+# Module: Maintenance
+
+## Base Route
 
 `/maintenances`
 
-Maintenance router applies globally:
+Router-level middleware applies to all maintenance routes:
 
-- `authenticate`
-- `authorizeRoles('ADMIN','MANAGER')`
-- `verifyCsrf` (applies to all maintenance routes, including GET)
-
-### Endpoint: Create Maintenance
-
-- Method: `POST`
-- Route: `/maintenances`
-- Description: Create maintenance entry
-
-#### Request Body
-
-Validated fields:
-
-| Name | Type | Required | Description |
-|------|------|----------|-------------|
-| vehiclePlate | string | Yes | Vehicle plate |
-| scheduledDate | string (date) | Yes | Scheduled date |
-| technician | string | Yes | Assigned technician |
-| cost | number >= 0 | Yes | Cost |
-| priority | enum(`low`,`medium`,`high`) | No | Priority |
-| status | enum(`scheduled`,`in_progress`,`completed`,`cancelled`) | No | Status |
-
-#### Response Example
-
-```json
-{
-  "success": true,
-  "message": "Maintenance created",
-  "data": {
-    "id": "..."
-  }
-}
-```
-
-### Endpoint: List Maintenances
-
-- Method: `GET`
-- Route: `/maintenances`
-- Description: Paginated maintenance list
-
-#### Query Params
-
-| Name | Type | Required | Description |
-|------|------|----------|-------------|
-| page | integer | No | Page number |
-| limit | integer | No | Page size |
-
-### Endpoint: Get Maintenance By ID
-
-- Method: `GET`
-- Route: `/maintenances/:id`
-- Description: Fetch one maintenance by ID
-
-### Endpoint: Update Maintenance
-
-- Method: `PUT`
-- Route: `/maintenances/:id`
-- Description: Replace/update maintenance with create validator rules
-
-### Endpoint: Delete Maintenance
-
-- Method: `DELETE`
-- Route: `/maintenances/:id`
-- Description: Delete maintenance record
-
-### Endpoint: Update Maintenance Status
-
-- Method: `PATCH`
-- Route: `/maintenances/:id/status`
-- Description: Update status only
-
-#### Request Body
-
-| Name | Type | Required | Description |
-|------|------|----------|-------------|
-| status | string | Yes | New maintenance status |
+- authenticate
+- authorizeRoles(ADMIN, MANAGER)
+- verifyCsrf
 
 ---
 
-## Module: Notification
+## Endpoint: Create Maintenance
 
-### Base Route
+- Method: POST
+- Route: `/maintenances`
+- Description: Create maintenance record
+- Auth: Required
+- Roles: ADMIN, MANAGER
+- CSRF: Required
+
+## Endpoint: List Maintenances
+
+- Method: GET
+- Route: `/maintenances`
+- Description: List maintenances
+- Auth: Required
+- Roles: ADMIN, MANAGER
+
+## Endpoint: Get Maintenance By ID
+
+- Method: GET
+- Route: `/maintenances/:id`
+- Description: Get one maintenance
+- Auth: Required
+- Roles: ADMIN, MANAGER
+
+## Endpoint: Update Maintenance
+
+- Method: PUT
+- Route: `/maintenances/:id`
+- Description: Update maintenance
+- Auth: Required
+- Roles: ADMIN, MANAGER
+- CSRF: Required
+
+## Endpoint: Delete Maintenance
+
+- Method: DELETE
+- Route: `/maintenances/:id`
+- Description: Delete maintenance
+- Auth: Required
+- Roles: ADMIN, MANAGER
+- CSRF: Required
+
+## Endpoint: Update Maintenance Status
+
+- Method: PATCH
+- Route: `/maintenances/:id/status`
+- Description: Update maintenance status only
+- Auth: Required
+- Roles: ADMIN, MANAGER
+- CSRF: Required
+
+---
+
+# Module: Notification
+
+## Base Route
 
 `/notifications`
 
-All notification endpoints require authentication.
+Router-level auth applies to all notification routes.
 
-### Endpoint: Get Notifications
+---
 
-- Method: `GET`
+## Endpoint: Get Notifications
+
+- Method: GET
 - Route: `/notifications`
-- Description: Paginated and filterable notification list
+- Description: List notifications with pagination/filter options
+- Auth: Required
 
-#### Query Params
+## Endpoint: Get Grouped Notifications
 
-| Name | Type | Required | Description |
-|------|------|----------|-------------|
-| page | integer | No | Page number |
-| limit | integer | No | Page size (default 20, max 100) |
-| group | string | No | Group filter |
-| priority | string | No | Priority filter |
-| type | string | No | Type filter |
-| unread | boolean | No | If true, only unread |
-| archived | boolean | No | If true include archived set; false returns non-archived |
-| since | datetime string | No | `createdAt >= since` |
-
-#### Response Example
-
-```json
-{
-  "success": true,
-  "message": "Success",
-  "data": {
-    "notifications": [],
-    "total": 100,
-    "limit": 20,
-    "offset": 0,
-    "hasMore": true
-  }
-}
-```
-
-### Endpoint: Get Grouped Notifications
-
-- Method: `GET`
+- Method: GET
 - Route: `/notifications/grouped`
-- Description: Notifications grouped by `group`
+- Description: Group notifications by group key
+- Auth: Required
 
-### Endpoint: Get Unread Count
+## Endpoint: Get Unread Count
 
-- Method: `GET`
+- Method: GET
 - Route: `/notifications/unread-count`
-- Description: Return unread count for authenticated user
+- Description: Get unread counter for current user
+- Auth: Required
 
-### Endpoint: Mark All As Read
+## Endpoint: Mark All As Read
 
-- Method: `PATCH`
+- Method: PATCH
 - Route: `/notifications/read-all`
-- Description: Mark all unread notifications as read (optional by group)
+- Description: Mark all notifications as read (optional group filter)
+- Auth: Required
 
-#### Request Body
+## Endpoint: Get Notification By ID
 
-| Name | Type | Required | Description |
-|------|------|----------|-------------|
-| group | string | No | Restrict update to one group |
-
-### Endpoint: Get Notification By ID
-
-- Method: `GET`
+- Method: GET
 - Route: `/notifications/:id`
-- Description: Fetch single user-owned notification
+- Description: Get one notification
+- Auth: Required
 
-### Endpoint: Mark Notification As Read
+## Endpoint: Mark Notification As Read
 
-- Method: `PATCH`
+- Method: PATCH
 - Route: `/notifications/:id/read`
 - Description: Mark one notification as read
+- Auth: Required
 
-### Endpoint: Archive Notification
+## Endpoint: Archive Notification
 
-- Method: `PATCH`
+- Method: PATCH
 - Route: `/notifications/:id/archive`
 - Description: Archive one notification
+- Auth: Required
 
-### Endpoint: Delete Notification
+## Endpoint: Delete Notification
 
-- Method: `DELETE`
+- Method: DELETE
 - Route: `/notifications/:id`
 - Description: Delete one notification
+- Auth: Required
 
-### Endpoint: Send Test Notification
+## Endpoint: Send Test Notification
 
-- Method: `POST`
+- Method: POST
 - Route: `/notifications/test`
-- Description: Create test notification (blocked in production)
-
-#### Request Body
-
-| Name | Type | Required | Description |
-|------|------|----------|-------------|
-| userId | UUID | No | Defaults to authenticated user |
-| type | string | No | Notification type |
-| title | string | No | Title |
-| message | string | No | Body |
-| metadata | object | No | Extra data |
+- Description: Create test notification (typically non-production)
+- Auth: Required
 
 ---
 
-## Module: Reclamation
+# Module: Reclamation
 
-### Base Route
+## Base Route
 
-This router is mounted at `/` in `app.js`, so its routes are currently root-level.
+Routes are mounted at root `/`.
 
-### Endpoint: Create Vehicle Reclamation
+---
 
-- Method: `POST`
+## Endpoint: Create Vehicle Reclamation
+
+- Method: POST
 - Route: `/reclamations/vehicle`
-- Description: Submit reclamation for a vehicle
+- Description: Create reclamation linked to a vehicle with optional images upload
 - Auth: Required
+- Content-Type: multipart/form-data
 
-#### Request Body
+### Request Body
 
 | Name | Type | Required | Description |
 |------|------|----------|-------------|
-| vehicleId | UUID | Yes | Vehicle ID |
+| vehicleId | UUID | Yes | Vehicle id |
 | subject | string | Yes | Subject |
-| message | string | Yes | Reclamation details |
+| message | string | Yes | Message |
+| images | file[] | No | Up to 5 images |
 
-#### Response Example
+## Endpoint: Create General Reclamation
 
-```json
-{
-  "success": true,
-  "message": "Vehicle reclamation submitted successfully",
-  "data": {
-    "id": "uuid",
-    "status": "PENDING"
-  }
-}
-```
-
-### Endpoint: Create General Reclamation
-
-- Method: `POST`
+- Method: POST
 - Route: `/reclamations`
-- Description: Create a general reclamation (optionally linked to a vehicle)
+- Description: Create a general reclamation
 - Auth: Required
 
-#### Request Body
+## Endpoint: Get My Reclamations
 
-| Name | Type | Required | Description |
-|------|------|----------|-------------|
-| subject | string | Yes | Reclamation title |
-| message | string | Yes | Reclamation details |
-| vehicleId | UUID | Optional in service, effectively required by model | Related vehicle ID |
-
-#### Response Example
-
-```json
-{
-  "success": true,
-  "message": "Reclamation created successfully",
-  "data": {
-    "id": "uuid",
-    "subject": "Late maintenance",
-    "status": "PENDING"
-  }
-}
-```
-
-### Endpoint: Get My Reclamations
-
-- Method: `GET`
+- Method: GET
 - Route: `/my/reclamations`
-- Description: List current user reclamations (paginated)
+- Description: List reclamations for authenticated user
 - Auth: Required
 
-#### Query Params
+## Endpoint: Get My Reclamation By ID
 
-| Name | Type | Required | Description |
-|------|------|----------|-------------|
-| page | integer | No | Page number |
-| limit | integer | No | Page size |
-
-#### Response Example
-
-```json
-{
-  "success": true,
-  "total": 25,
-  "page": 1,
-  "pages": 3,
-  "data": []
-}
-```
-
-### Endpoint: Get My Reclamation By ID
-
-- Method: `GET`
+- Method: GET
 - Route: `/my/reclamations/:id`
-- Description: Return a single reclamation owned by the authenticated user
+- Description: Get one owned reclamation
 - Auth: Required
 
-#### Path Params
+## Endpoint: Update My Reclamation
 
-| Name | Type | Required | Description |
-|------|------|----------|-------------|
-| id | UUID | Yes | Reclamation ID |
-
-#### Response Example
-
-```json
-{
-  "success": true,
-  "data": {
-    "id": "uuid",
-    "subject": "Engine issue",
-    "status": "PENDING"
-  }
-}
-```
-
-### Endpoint: Update My Reclamation
-
-- Method: `PUT`
+- Method: PUT
 - Route: `/my/reclamations/:id`
-- Description: Update an owned reclamation (allowed only while status is `PENDING`)
+- Description: Update owned reclamation
 - Auth: Required
 
-#### Path Params
+## Endpoint: Delete My Reclamation
 
-| Name | Type | Required | Description |
-|------|------|----------|-------------|
-| id | UUID | Yes | Reclamation ID |
-
-#### Request Body
-
-| Name | Type | Required | Description |
-|------|------|----------|-------------|
-| subject | string | No | Updated title |
-| message | string | No | Updated details |
-| vehicleId | UUID | No | Updated vehicle reference |
-
-#### Response Example
-
-```json
-{
-  "success": true,
-  "message": "Reclamation updated successfully",
-  "data": {
-    "id": "uuid",
-    "subject": "Updated subject"
-  }
-}
-```
-
-### Endpoint: Delete My Reclamation
-
-- Method: `DELETE`
+- Method: DELETE
 - Route: `/my/reclamations/:id`
-- Description: Delete an owned reclamation
+- Description: Delete owned reclamation
 - Auth: Required
 
-#### Path Params
+## Endpoint: Get All Reclamations
 
-| Name | Type | Required | Description |
-|------|------|----------|-------------|
-| id | UUID | Yes | Reclamation ID |
-
-#### Response Example
-
-```json
-{
-  "success": true,
-  "message": "Reclamation deleted successfully"
-}
-```
-
-### Endpoint: Get All Reclamations
-
-- Method: `GET`
+- Method: GET
 - Route: `/reclamations`
-- Description: List all reclamations (paginated)
+- Description: Admin list of reclamations
 - Auth: Required
-- Roles: `ADMIN`
+- Roles: ADMIN
 
-#### Query Params
+## Endpoint: Get Reclamation By ID
 
-| Name | Type | Required | Description |
-|------|------|----------|-------------|
-| page | integer | No | Page number |
-| limit | integer | No | Page size |
-
-#### Response Example
-
-```json
-{
-  "success": true,
-  "total": 100,
-  "page": 1,
-  "pages": 10,
-  "data": []
-}
-```
-
-### Endpoint: Get Reclamation By ID (Admin)
-
-- Method: `GET`
+- Method: GET
 - Route: `/reclamations/:id`
-- Description: Fetch a reclamation by ID
+- Description: Admin get one reclamation
 - Auth: Required
-- Roles: `ADMIN`
+- Roles: ADMIN
 
-#### Path Params
+## Endpoint: Update Reclamation Status
 
-| Name | Type | Required | Description |
-|------|------|----------|-------------|
-| id | UUID | Yes | Reclamation ID |
-
-#### Response Example
-
-```json
-{
-  "success": true,
-  "data": {
-    "id": "uuid",
-    "status": "PENDING",
-    "userId": "uuid"
-  }
-}
-```
-
-### Endpoint: Update Reclamation Status
-
-- Method: `PATCH`
+- Method: PATCH
 - Route: `/reclamations/:id/status`
-- Description: Update status of one reclamation
+- Description: Admin update status
 - Auth: Required
-- Roles: `ADMIN`
+- Roles: ADMIN
 
-#### Request Body
+## Endpoint: Delete Reclamation
 
-| Name | Type | Required | Description |
-|------|------|----------|-------------|
-| status | string | Yes | New status |
-
-#### Response Example
-
-```json
-{
-  "success": true,
-  "message": "Reclamation status updated",
-  "data": {
-    "id": "uuid",
-    "status": "RESOLVED"
-  }
-}
-```
-
-### Endpoint: Delete Reclamation
-
-- Method: `DELETE`
+- Method: DELETE
 - Route: `/reclamations/:id`
-- Description: Delete one reclamation
+- Description: Admin delete reclamation
 - Auth: Required
-- Roles: `ADMIN`
+- Roles: ADMIN
 
-#### Path Params
+## Endpoint: Filter Reclamations By Status
 
-| Name | Type | Required | Description |
-|------|------|----------|-------------|
-| id | UUID | Yes | Reclamation ID |
-
-#### Response Example
-
-```json
-{
-  "success": true,
-  "message": "Reclamation deleted successfully"
-}
-```
-
-### Endpoint: Filter Reclamations By Status
-
-- Method: `GET`
+- Method: GET
 - Route: `/reclamations/status/:status`
-- Description: Return all reclamations matching a status
+- Description: Admin status filter
 - Auth: Required
-- Roles: `ADMIN`
+- Roles: ADMIN
 
-#### Path Params
+## Endpoint: Search Reclamations
 
-| Name | Type | Required | Description |
-|------|------|----------|-------------|
-| status | string | Yes | Status filter (for example `PENDING`, `RESOLVED`, `REJECTED`) |
-
-#### Response Example
-
-```json
-{
-  "success": true,
-  "data": []
-}
-```
-
-### Endpoint: Search Reclamations
-
-- Method: `GET`
+- Method: GET
 - Route: `/reclamations/search`
-- Description: Advanced search with keyword and optional filters
+- Description: Admin search by keyword and filters
 - Auth: Required
-- Roles: `ADMIN`
+- Roles: ADMIN
 
-#### Query Params
+## Endpoint: Upload Reclamation Attachments (Preferred)
+
+- Method: PUT
+- Route: `/:id/attachments`
+- Description: Upload and append images to reclamation
+- Auth: Required
+- Content-Type: multipart/form-data
+
+### Request Body
 
 | Name | Type | Required | Description |
 |------|------|----------|-------------|
-| keyword | string | No | Search in subject and message |
-| status | string | No | Filter by status |
-| userId | UUID | No | Filter by owner |
-| vehicleId | UUID | No | Filter by vehicle |
-| startDate | date | No | Start creation date |
-| endDate | date | No | End creation date |
-| page | integer | No | Page number |
-| limit | integer | No | Page size |
+| images | file[] | Yes | Up to 5 images |
 
-#### Response Example
+## Endpoint: Upload Reclamation Attachments (Backward Compatible)
 
-```json
-{
-  "success": true,
-  "total": 7,
-  "page": 1,
-  "pages": 1,
-  "data": []
-}
-```
-
-### Endpoint: Upload Reclamation Attachment
-
-- Method: `POST`
+- Method: POST
 - Route: `/reclamations/:id/upload`
-- Description: Upload and attach a file path to a reclamation (expects middleware like multer to populate `req.file`)
+- Description: Backward-compatible attachment upload route
 - Auth: Required
-- Roles: Any authenticated user (no admin-only guard in route)
-
-#### Path Params
-
-| Name | Type | Required | Description |
-|------|------|----------|-------------|
-| id | UUID | Yes | Reclamation ID |
-
-#### Body
-
-`multipart/form-data` with one file field handled by upload middleware.
-
-#### Response Example
-
-```json
-{
-  "success": true,
-  "message": "File uploaded successfully",
-  "data": {
-    "id": "uuid"
-  }
-}
-```
+- Content-Type: multipart/form-data
 
 ---
 
-## 4. Common Error Cases by Middleware
+## 3. Validation and Middleware Notes
 
-### Authentication errors
+- Trip routes apply comprehensive validation middleware for create/update/status flows.
+- Maintenance routes use dedicated maintenance validator on create and update.
+- Global error middleware maps common ORM and server errors to structured responses.
+- Upload middleware uses Cloudinary storage (no local disk persistence).
 
-- `401` no token: `Authentication required — no token provided`
-- `401` expired token: `Access token expired`
-- `401` invalid token: `Invalid access token`
+## 4. Pagination Convention
 
-### Authorization errors
+Common query parameters across listing endpoints:
 
-- `403` role mismatch: `Access denied: insufficient permissions`
-
-### CSRF errors
-
-- `403` `CSRF token validation failed`
-
-### Validation errors
-
-- `422` with `code: VALIDATION_ERROR` for Zod validation failures
-
-### Global error handler examples
-
-- `400` Sequelize validation error
-- `409` duplicate unique field
-- `409` foreign-key conflict
-- `500` internal server error fallback
-
----
-
-## 5. Notes and Implementation Observations
-
-
-
-3. CSRF is attached on some `GET` routes (for example user and maintenance modules). `verifyCsrf` currently skips safe methods, so this does not block reads.
-4. Trip creation validator allows nullable `endTime`, while service enforces valid `startTime` and `endTime` for create path; callers should provide both to avoid service-level errors.
+| Name | Type | Default | Notes |
+|------|------|---------|-------|
+| page | number | 1 | Minimum 1 |
+| limit | number | 10 | Module-specific max may apply |

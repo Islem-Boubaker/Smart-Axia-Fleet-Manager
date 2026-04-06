@@ -10,11 +10,13 @@ const router = express.Router();
  * =========================
  */
 
-// Create vehicle reclamation
+
+
+// Backward-compatible route
 router.post(
   "/reclamations/vehicle",
   authMiddleware.authenticate,
-  reclamationController.createVehicleReclamation
+  ...reclamationController.createVehicleReclamation
 );
 
 // Create general reclamation
@@ -115,13 +117,18 @@ router.get(
 );
 
 
+router.put(
+  "/:id/attachments",
+  authMiddleware.authenticate,
+  ...reclamationController.uploadAttachmentCtrl
+);
 
+// Backward-compatible route
 router.post(
   "/reclamations/:id/upload",
   authMiddleware.authenticate,
-  reclamationController.uploadAttachment
+  ...reclamationController.uploadAttachmentCtrl
 );
-
 
 
 export default router;

@@ -1,49 +1,35 @@
-import { StatusCodes } from "http-status-codes";
-import * as reclamationService from "../services/reclamation.service.js";
+import { StatusCodes } from 'http-status-codes';
+import * as reclamationService from '../services/reclamation.service.js';
+import { uploadReclamationImages } from '../middlewares/upload.js';
 
-/**
- * =========================
- * 👤 USER CONTROLLERS
- * =========================
- */
+export const createVehicleReclamation = [
+  uploadReclamationImages.array('images', 5),
+  async (req, res, next) => {
+    try {
+      const { vehicleId, subject, message } = req.body;
+      const data = await reclamationService.createVehicleReclamationSvc(
+        req.user.id,
+        vehicleId,
+        subject,
+        message,
+        req.files
+      );
+      res.status(StatusCodes.CREATED).json({ success: true, data });
+    } catch (error) {
+      next(error);
+    }
+  },
+];
 
-// Create vehicle reclamation
-export const createVehicleReclamation = async (req, res, next) => {
-  try {
-    const { vehicleId, subject, message } = req.body;
-
-    const result = await reclamationService.createVehicleReclamationSvc(
-      req.user.id,
-      vehicleId,
-      subject,
-      message
-    );
-
-    res.status(StatusCodes.CREATED).json({
-      success: true,
-      message: "Vehicle reclamation submitted successfully",
-      data: result,
-    });
-  } catch (error) {
-    next(error);
-  }
-};
-
-// Create general reclamation
 export const createReclamation = async (req, res, next) => {
   try {
-    const { subject, message, vehicleId } = req.body;
+    const { subject, message } = req.body;
 
-    const result = await reclamationService.createReclamationSvc(
-      req.user.id,
-      subject,
-      message,
-      vehicleId
-    );
+    const result = await reclamationService.createReclamationSvc(req.user.id, subject, message);
 
     res.status(StatusCodes.CREATED).json({
       success: true,
-      message: "Reclamation created successfully",
+      message: 'Reclamation created successfully',
       data: result,
     });
   } catch (error) {
@@ -51,13 +37,9 @@ export const createReclamation = async (req, res, next) => {
   }
 };
 
-// Get my reclamations
 export const getMyReclamations = async (req, res, next) => {
   try {
-    const result = await reclamationService.getUserReclamationsSvc(
-      req.user.id,
-      req.query
-    );
+    const result = await reclamationService.getUserReclamationsSvc(req.user.id, req.query);
 
     res.status(StatusCodes.OK).json({
       success: true,
@@ -68,15 +50,11 @@ export const getMyReclamations = async (req, res, next) => {
   }
 };
 
-// Get single reclamation (owner)
 export const getMyReclamationById = async (req, res, next) => {
   try {
     const { id } = req.params;
 
-    const result = await reclamationService.getMyReclamationByIdSvc(
-      req.user.id,
-      id
-    );
+    const result = await reclamationService.getMyReclamationByIdSvc(req.user.id, id);
 
     res.status(StatusCodes.OK).json({
       success: true,
@@ -87,20 +65,15 @@ export const getMyReclamationById = async (req, res, next) => {
   }
 };
 
-// Update my reclamation
 export const updateMyReclamation = async (req, res, next) => {
   try {
     const { id } = req.params;
 
-    const result = await reclamationService.updateMyReclamationSvc(
-      req.user.id,
-      id,
-      req.body
-    );
+    const result = await reclamationService.updateMyReclamationSvc(req.user.id, id, req.body);
 
     res.status(StatusCodes.OK).json({
       success: true,
-      message: "Reclamation updated successfully",
+      message: 'Reclamation updated successfully',
       data: result,
     });
   } catch (error) {
@@ -108,7 +81,6 @@ export const updateMyReclamation = async (req, res, next) => {
   }
 };
 
-// Delete my reclamation
 export const deleteMyReclamation = async (req, res, next) => {
   try {
     const { id } = req.params;
@@ -117,20 +89,13 @@ export const deleteMyReclamation = async (req, res, next) => {
 
     res.status(StatusCodes.OK).json({
       success: true,
-      message: "Reclamation deleted successfully",
+      message: 'Reclamation deleted successfully',
     });
   } catch (error) {
     next(error);
   }
 };
 
-/**
- * =========================
- * 🛠 ADMIN CONTROLLERS
- * =========================
- */
-
-// Get all reclamations
 export const getAllReclamations = async (req, res, next) => {
   try {
     const result = await reclamationService.getAllReclamationsSvc(req.query);
@@ -144,7 +109,6 @@ export const getAllReclamations = async (req, res, next) => {
   }
 };
 
-// Get reclamation by ID
 export const getReclamationById = async (req, res, next) => {
   try {
     const { id } = req.params;
@@ -160,18 +124,16 @@ export const getReclamationById = async (req, res, next) => {
   }
 };
 
-// Update status
 export const updateReclamationStatus = async (req, res, next) => {
   try {
     const { id } = req.params;
     const { status } = req.body;
 
-    const result =
-      await reclamationService.updateReclamationStatusSvc(id, status);
+    const result = await reclamationService.updateReclamationStatusSvc(id, status);
 
     res.status(StatusCodes.OK).json({
       success: true,
-      message: "Reclamation status updated",
+      message: 'Reclamation status updated',
       data: result,
     });
   } catch (error) {
@@ -179,7 +141,6 @@ export const updateReclamationStatus = async (req, res, next) => {
   }
 };
 
-// Delete (admin)
 export const deleteReclamation = async (req, res, next) => {
   try {
     const { id } = req.params;
@@ -188,26 +149,18 @@ export const deleteReclamation = async (req, res, next) => {
 
     res.status(StatusCodes.OK).json({
       success: true,
-      message: "Reclamation deleted successfully",
+      message: 'Reclamation deleted successfully',
     });
   } catch (error) {
     next(error);
   }
 };
 
-/**
- * =========================
- * 📊 FILTER & SEARCH
- * =========================
- */
-
-// Filter by status
 export const getReclamationsByStatus = async (req, res, next) => {
   try {
     const { status } = req.params;
 
-    const result =
-      await reclamationService.getReclamationsByStatusSvc(status);
+    const result = await reclamationService.getReclamationsByStatusSvc(status);
 
     res.status(StatusCodes.OK).json({
       success: true,
@@ -218,7 +171,6 @@ export const getReclamationsByStatus = async (req, res, next) => {
   }
 };
 
-// Search (delegates to service)
 export const searchReclamations = async (req, res, next) => {
   try {
     const result = await reclamationService.searchReclamationsSvc(req.query);
@@ -232,27 +184,17 @@ export const searchReclamations = async (req, res, next) => {
   }
 };
 
-/**
- * =========================
- * 📎 FILE UPLOAD
- * =========================
- */
+export const uploadAttachmentCtrl = [
+  uploadReclamationImages.array('images', 5),
+  async (req, res, next) => {
+    try {
+      const data = await reclamationService.uploadAttachmentSvc(req.params.id, req.files);
+      res.status(StatusCodes.OK).json({ success: true, data });
+    } catch (error) {
+      next(error);
+    }
+  },
+];
 
-export const uploadAttachment = async (req, res, next) => {
-  try {
-    const { id } = req.params;
 
-    const result = await reclamationService.uploadAttachmentSvc(
-      id,
-      req.file // assuming multer
-    );
-
-    res.status(StatusCodes.OK).json({
-      success: true,
-      message: "File uploaded successfully",
-      data: result,
-    });
-  } catch (error) {
-    next(error);
-  }
-};
+export const uploadAttachment = uploadAttachmentCtrl;

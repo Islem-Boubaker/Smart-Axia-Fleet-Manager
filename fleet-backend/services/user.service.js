@@ -2,10 +2,49 @@ import User from '../models/user.model.js';
 import Reclamation from '../models/reclamation.model.js';
 import * as Token from '../utils/jwt.js';
 import { getPagination, getPagingData } from '../utils/pagination.js';
+import cloudinary from '../config/cloudinary.js';
 
+const extractCloudinaryPublicIdFromUrl = (url) => {
+  try {
+    const cleanUrl = url.split('?')[0];
+    const segments = cleanUrl.split('/').filter(Boolean);
+    const lastTwoSegments = segments.slice(-2);
+    if (lastTwoSegments.length < 2) return null;
+    return lastTwoSegments.join('/').replace(/\.[^.]+$/, '');
+  } catch {
+    return null;
+  }
+};
 
+export const updateUserPhotoSvc = async (id, file) => {
+  if (!file) throw Object.assign(new Error('No file uploaded'), { statusCode: 400 });
 
-export const createUserSvc = async (userData) => {
+  const user = await User.findByPk(id);
+  if (!user) throw Object.assign(new Error('User not found'), { statusCode: 404 });
+
+  // Delete old Cloudinary image if exists
+  if (user.avatar) {
+    try {
+      const publicId = extractCloudinaryPublicIdFromUrl(user.avatar);
+      if (publicId) {
+        await cloudinary.uploader.destroy(publicId);
+      }
+    } catch (e) {
+      console.warn('[Cloudinary] Failed to delete old photo:', e.message);
+    }
+  }
+
+  await user.update({ avatar: file.path }); // file.path = Cloudinary URL
+
+  const { password, ...safeUser } = user.toJSON();
+  return safeUser;
+};
+export const createUserSvc = async (userData, file = null) => {
+  // If a file was uploaded, attach the Cloudinary URL
+  if (file?.path) {
+    userData.avatar = file.path;
+  }
+
   const user = await User.create(userData);
   const { password, ...safeUser } = user.toJSON();
   return safeUser;
