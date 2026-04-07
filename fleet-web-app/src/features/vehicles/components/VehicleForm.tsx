@@ -1,6 +1,7 @@
 ﻿import { useState } from 'react';
 import type { FormEvent } from 'react';
-import { Input, Button } from '../../../shared/components';
+import { FiTruck, FiEdit2 } from 'react-icons/fi';
+import { Input } from '../../../shared/components';
 import type { Vehicle } from '../../../types';
 
 interface VehicleFormProps {
@@ -17,7 +18,9 @@ const numberFields = [
 ];
 
 const selectClass =
-  'w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500';
+  'w-full px-4 py-2.5 bg-white dark:bg-slate-800/50 border border-gray-200 dark:border-slate-700 text-sm text-gray-900 dark:text-white rounded-xl shadow-[0_1px_2px_rgba(0,0,0,0.02)] focus:outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand transition-all hover:border-gray-300 dark:hover:border-slate-600';
+
+const labelClass = "block text-[13px] text-gray-500 dark:text-slate-400 mb-1.5";
 
 const VehicleForm = ({ vehicle, onSubmit, onCancel, error }: VehicleFormProps) => {
   const [formData, setFormData] = useState({
@@ -71,36 +74,51 @@ const VehicleForm = ({ vehicle, onSubmit, onCancel, error }: VehicleFormProps) =
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4 max-h-[70vh] overflow-y-auto pr-2">
+    <form onSubmit={handleSubmit} className="space-y-6 max-h-[70vh] overflow-y-auto pr-2 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
       {error && (
-        <div className="bg-red-50 border border-red-300 text-red-700 px-4 py-3 rounded-lg text-sm">
+        <div className="bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/20 text-red-700 dark:text-red-400 px-4 py-3 rounded-xl text-sm shadow-sm mb-4">
           {error}
         </div>
       )}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+
+      {/* Header Section */}
+      <div className="flex items-start justify-between mb-2">
+        <div className="flex flex-col gap-3">
+          <div className="w-16 h-16 rounded-full bg-brand/10 flex items-center justify-center text-brand relative overflow-hidden">
+            <FiTruck className="w-8 h-8" />
+          </div>
+          {formData.name && (
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white">{formData.name}</h3>
+          )}
+        </div>
+        <button
+          type="button"
+          className="flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-gray-600 dark:text-gray-300 bg-white dark:bg-slate-800/50 border border-gray-200 dark:border-slate-700 rounded-lg hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors shadow-sm"
+        >
+          <span>Edit</span>
+          <FiEdit2 className="w-3.5 h-3.5" />
+        </button>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-5">
         {/* Name */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Name <span className="text-red-500">*</span>
-          </label>
-          <Input name="name" value={formData.name} onChange={handleChange} placeholder="Vehicle name" required />
+        <div className="md:col-span-2">
+          <Input label="Name" name="name" value={formData.name} onChange={handleChange} placeholder="Vehicle name" required />
         </div>
 
         {/* VIN */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">VIN</label>
-          <Input name="vin" value={formData.vin} onChange={handleChange} placeholder="17-char VIN" maxLength={17} />
+          <Input label="VIN" name="vin" value={formData.vin} onChange={handleChange} placeholder="17-char VIN" maxLength={17} />
         </div>
 
         {/* Plaque */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Plaque Immatriculation</label>
-          <Input name="plaque_immatriculation" value={formData.plaque_immatriculation} onChange={handleChange} placeholder="e.g., 123 TU 4567" />
+          <Input label="Plaque Immatriculation" name="plaque_immatriculation" value={formData.plaque_immatriculation} onChange={handleChange} placeholder="e.g., 123 TU 4567" />
         </div>
 
         {/* Type */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Type <span className="text-red-500">*</span></label>
+          <label className={labelClass}>Type</label>
           <select name="type" value={formData.type} onChange={handleChange} className={selectClass} required>
             <option value="voiture">Voiture</option>
             <option value="camion">Camion</option>
@@ -111,7 +129,7 @@ const VehicleForm = ({ vehicle, onSubmit, onCancel, error }: VehicleFormProps) =
 
         {/* Vehicle Model */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Vehicle Model <span className="text-red-500">*</span></label>
+          <label className={labelClass}>Vehicle Model</label>
           <select name="Vehicle_Model" value={formData.Vehicle_Model} onChange={handleChange} className={selectClass} required>
             <option value="Car">Car</option>
             <option value="SUV">SUV</option>
@@ -124,25 +142,22 @@ const VehicleForm = ({ vehicle, onSubmit, onCancel, error }: VehicleFormProps) =
 
         {/* Compteur */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Compteur Kilometrique (km)</label>
-          <Input type="number" name="compteur_kilometrique" value={formData.compteur_kilometrique} onChange={handleChange} min="0" />
+          <Input label="Compteur Kilometrique (km)" type="number" name="compteur_kilometrique" value={formData.compteur_kilometrique} onChange={handleChange} min="0" />
         </div>
 
         {/* Mileage */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Mileage (km)</label>
-          <Input type="number" name="Mileage" value={formData.Mileage} onChange={handleChange} min="0" />
+          <Input label="Mileage (km)" type="number" name="Mileage" value={formData.Mileage} onChange={handleChange} min="0" />
         </div>
 
         {/* Vehicle Age */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Vehicle Age (years)</label>
-          <Input type="number" name="Vehicle_Age" value={formData.Vehicle_Age} onChange={handleChange} min="0" />
+          <Input label="Vehicle Age (years)" type="number" name="Vehicle_Age" value={formData.Vehicle_Age} onChange={handleChange} min="0" />
         </div>
 
         {/* Maintenance History */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Maintenance History</label>
+          <label className={labelClass}>Maintenance History</label>
           <select name="Maintenance_History" value={formData.Maintenance_History} onChange={handleChange} className={selectClass}>
             <option value="Good">Good</option>
             <option value="Average">Average</option>
@@ -152,37 +167,32 @@ const VehicleForm = ({ vehicle, onSubmit, onCancel, error }: VehicleFormProps) =
 
         {/* Reported Issues */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Reported Issues</label>
-          <Input type="number" name="Reported_Issues" value={formData.Reported_Issues} onChange={handleChange} min="0" />
+          <Input label="Reported Issues" type="number" name="Reported_Issues" value={formData.Reported_Issues} onChange={handleChange} min="0" />
         </div>
 
         {/* Service History */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Service History</label>
-          <Input type="number" name="Service_History" value={formData.Service_History} onChange={handleChange} min="0" />
+          <Input label="Service History" type="number" name="Service_History" value={formData.Service_History} onChange={handleChange} min="0" />
         </div>
 
         {/* Accident History */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Accident History</label>
-          <Input type="number" name="Accident_History" value={formData.Accident_History} onChange={handleChange} min="0" />
+          <Input label="Accident History" type="number" name="Accident_History" value={formData.Accident_History} onChange={handleChange} min="0" />
         </div>
 
         {/* Fuel Efficiency */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Fuel Efficiency (L/100km)</label>
-          <Input type="number" name="Fuel_Efficiency" value={formData.Fuel_Efficiency} onChange={handleChange} min="0" step="0.1" />
+          <Input label="Fuel Efficiency (L/100km)" type="number" name="Fuel_Efficiency" value={formData.Fuel_Efficiency} onChange={handleChange} min="0" step="0.1" />
         </div>
 
         {/* Engine Size */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Engine Size (cc)</label>
-          <Input type="number" name="Engine_Size" value={formData.Engine_Size} onChange={handleChange} min="0" />
+          <Input label="Engine Size (cc)" type="number" name="Engine_Size" value={formData.Engine_Size} onChange={handleChange} min="0" />
         </div>
 
         {/* Tire Condition */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Tire Condition</label>
+          <label className={labelClass}>Tire Condition</label>
           <select name="Tire_Condition" value={formData.Tire_Condition} onChange={handleChange} className={selectClass}>
             <option value="New">New</option>
             <option value="Good">Good</option>
@@ -192,7 +202,7 @@ const VehicleForm = ({ vehicle, onSubmit, onCancel, error }: VehicleFormProps) =
 
         {/* Brake Condition */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Brake Condition</label>
+          <label className={labelClass}>Brake Condition</label>
           <select name="Brake_Condition" value={formData.Brake_Condition} onChange={handleChange} className={selectClass}>
             <option value="New">New</option>
             <option value="Good">Good</option>
@@ -202,7 +212,7 @@ const VehicleForm = ({ vehicle, onSubmit, onCancel, error }: VehicleFormProps) =
 
         {/* Battery Status */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Battery Status</label>
+          <label className={labelClass}>Battery Status</label>
           <select name="Battery_Status" value={formData.Battery_Status} onChange={handleChange} className={selectClass}>
             <option value="New">New</option>
             <option value="Good">Good</option>
@@ -212,30 +222,49 @@ const VehicleForm = ({ vehicle, onSubmit, onCancel, error }: VehicleFormProps) =
 
         {/* Days Since Last Service */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Days Since Last Service</label>
-          <Input type="number" name="Days_Since_Last_Service" value={formData.Days_Since_Last_Service} onChange={handleChange} min="0" />
+          <Input label="Days Since Last Service" type="number" name="Days_Since_Last_Service" value={formData.Days_Since_Last_Service} onChange={handleChange} min="0" />
         </div>
 
-        {/* Active */}
-        <div className="flex items-center gap-2 pt-6">
-          <input type="checkbox" id="Active" name="Active" checked={formData.Active} onChange={handleChange} className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500" />
-          <label htmlFor="Active" className="text-sm font-medium text-gray-700">Active</label>
-        </div>
-
-        {/* Need Maintenance */}
-        <div className="flex items-center gap-2 pt-6">
-          <input type="checkbox" id="Need_Maintenance" name="Need_Maintenance" checked={formData.Need_Maintenance} onChange={handleChange} className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500" />
-          <label htmlFor="Need_Maintenance" className="text-sm font-medium text-gray-700">Need Maintenance</label>
+        {/* Checkboxes */}
+        <div className="md:col-span-2 flex items-center gap-6 pt-2">
+          <label className="flex items-center gap-2 cursor-pointer group">
+            <div className="relative flex items-center justify-center">
+              <input type="checkbox" name="Active" checked={formData.Active} onChange={handleChange} className="peer sr-only" />
+              <div className="w-5 h-5 border-2 border-gray-300 dark:border-slate-600 rounded peer-checked:bg-gray-900 dark:peer-checked:bg-brand peer-checked:border-gray-900 dark:peer-checked:border-brand transition-colors"></div>
+              <svg className="absolute w-3.5 h-3.5 text-white opacity-0 peer-checked:opacity-100 pointer-events-none transition-opacity" viewBox="0 0 14 10" fill="none">
+                <path d="M1 5L4.5 8.5L13 1" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+            </div>
+            <span className="text-[13px] font-medium text-gray-700 dark:text-slate-300 group-hover:text-gray-900 dark:group-hover:text-white transition-colors">Active Status</span>
+          </label>
+          
+          <label className="flex items-center gap-2 cursor-pointer group">
+            <div className="relative flex items-center justify-center">
+              <input type="checkbox" name="Need_Maintenance" checked={formData.Need_Maintenance} onChange={handleChange} className="peer sr-only" />
+              <div className="w-5 h-5 border-2 border-gray-300 dark:border-slate-600 rounded peer-checked:bg-brand peer-checked:border-brand transition-colors"></div>
+              <svg className="absolute w-3.5 h-3.5 text-white opacity-0 peer-checked:opacity-100 pointer-events-none transition-opacity" viewBox="0 0 14 10" fill="none">
+                <path d="M1 5L4.5 8.5L13 1" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+            </div>
+            <span className="text-[13px] font-medium text-gray-700 dark:text-slate-300 group-hover:text-gray-900 dark:group-hover:text-white transition-colors">Needs Maintenance</span>
+          </label>
         </div>
       </div>
 
-      <div className="flex gap-3 pt-4">
-        <Button type="submit" className="flex-1">
-          {vehicle ? 'Update Vehicle' : 'Add Vehicle'}
-        </Button>
-        <Button type="button" variant="secondary" onClick={onCancel}>
+      <div className="flex items-center justify-between pt-6 mt-4">
+        <button
+          type="button"
+          onClick={onCancel}
+          className="px-5 py-2.5 text-sm font-medium text-gray-600 dark:text-slate-300 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl hover:bg-gray-50 dark:hover:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-offset-2 dark:focus:ring-offset-slate-900 focus:ring-gray-200 dark:focus:ring-slate-700 transition-all shadow-sm"
+        >
           Cancel
-        </Button>
+        </button>
+        <button
+          type="submit"
+          className="px-6 py-2.5 text-sm font-medium text-white bg-gray-900 dark:bg-brand rounded-xl hover:bg-black dark:hover:bg-brand-deep focus:outline-none focus:ring-2 focus:ring-offset-2 dark:focus:ring-offset-slate-900 focus:ring-gray-900 dark:focus:ring-brand transition-all shadow-md"
+        >
+          Save
+        </button>
       </div>
     </form>
   );

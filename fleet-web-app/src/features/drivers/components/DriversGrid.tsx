@@ -41,6 +41,7 @@ const DriversGrid = ({ drivers, isLoading, onEdit, onDelete, dark = false }: Pro
         <Card
           key={driver.id}
           padding="lg"
+          dark={dark}
           className={
             dark
               ? 'border-slate-700/80 bg-slate-800/35 backdrop-blur-sm shadow-none'
