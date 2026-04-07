@@ -10,6 +10,11 @@ const User = sequelize.define(
       defaultValue: DataTypes.UUIDV4,
       primaryKey: true,
     },
+    avatar:{
+        type: DataTypes.STRING, // URL of the avatar image
+        allowNull: true,
+      defaultValue: null,
+    },
     name: {
       type: DataTypes.STRING(100),
       allowNull: false,

@@ -3,7 +3,14 @@ import dotenv from "dotenv";
 
 dotenv.config();
 
-export const sequelize = new Sequelize(process.env.DATABASE_URL, {
+const databaseUrl = process.env.DATABASE_URL;
+if (!databaseUrl) {
+  throw new Error("DATABASE_URL is not defined in .env");
+}
+
+const isPooler = databaseUrl.includes(".pooler.") || databaseUrl.includes(":6543");
+
+export const sequelize = new Sequelize(databaseUrl, {
   dialect: "postgres",
   logging: false,
   dialectOptions: {
@@ -11,7 +18,11 @@ export const sequelize = new Sequelize(process.env.DATABASE_URL, {
       require: true,
       rejectUnauthorized: false,
     },
+    keepAlive: true,
   },
+  pool: isPooler
+    ? { max: 1, min: 0, idle: 10000, acquire: 60000, evict: 1000 }
+    : { max: 10, min: 0, idle: 10000, acquire: 60000, evict: 1000 },
 });
 
 // import express from 'express';

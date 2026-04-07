@@ -21,7 +21,11 @@ const Vehicle = sequelize.define(
       allowNull: false,
       validate: { notEmpty: true },
     },
-
+    photos: {
+      type: DataTypes.ARRAY(DataTypes.STRING),
+      allowNull: true,
+      defaultValue: [],
+    },
     plaque_immatriculation: {
       type: DataTypes.STRING(20),
       unique: true,
@@ -62,6 +66,7 @@ const Vehicle = sequelize.define(
     Maintenance_History: {
       type: DataTypes.ENUM('Good', 'Average', 'Poor'),
       allowNull: false,
+      defaultValue: 'Good',
     },
 
     Reported_Issues: {
@@ -92,16 +97,19 @@ const Vehicle = sequelize.define(
     Tire_Condition: {
       type: DataTypes.ENUM('New', 'Good', 'Worn Out'),
       allowNull: false,
+      defaultValue: 'Good',
     },
 
     Brake_Condition: {
       type: DataTypes.ENUM('New', 'Good', 'Worn Out'),
       allowNull: false,
+      defaultValue: 'Good',
     },
 
     Battery_Status: {
       type: DataTypes.ENUM('New', 'Good', 'Weak'),
       allowNull: false,
+      defaultValue: 'Good',
     },
 
     Days_Since_Last_Service: {

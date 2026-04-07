@@ -28,14 +28,19 @@ const Reclamation = sequelize.define(
     },
     vehicleId: {
       type: DataTypes.UUID,
+      allowNull: true,
+    },
+    images: {
+      type: DataTypes.ARRAY(DataTypes.STRING), // Array of image URLs
       allowNull: false,
+      defaultValue: [],
     },
   },
   {
     tableName: "reclamations",
     timestamps: true,
     createdAt: "createdAt",
-
+    updatedAt: "updatedAt",
   }
 );
 

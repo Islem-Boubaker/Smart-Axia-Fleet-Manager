@@ -7,29 +7,27 @@ import * as csrfMiddleware from '../middlewares/csrf.middleware.js';
 import { RATE_LIMIT } from '../config/security.js';
 
 const router = Router();
-
-
-
-
-
 router.post('/user/login', rateLimit(RATE_LIMIT.login), userController.login);
-router.post('/user/signup', userController.createUser);
 
 router.post('/user/refresh-token', userController.refreshToken);
-
 
 router.post('/user/logout', authMiddleware.authenticate, csrfMiddleware.verifyCsrf, userController.logout);
 
 router.get('/user/me', authMiddleware.authenticate, userController.getMe);
 
-
+router.patch (
+  '/user/:id/avatar',
+  authMiddleware.authenticate,
+  csrfMiddleware.verifyCsrf,
+  ...userController.updateUserAvatar
+);
 
 router.post(
   '/user/createdriver',
   authMiddleware.authenticate,
   csrfMiddleware.verifyCsrf,
   authMiddleware.authorizeRoles('ADMIN', 'MANAGER'),
-  userController.createUser
+  ...userController.createUser
 );
 
 router.get(
@@ -60,6 +58,14 @@ router.delete(
   csrfMiddleware.verifyCsrf,
   userController.deleteUser
 );
+
+router.put(
+  '/user/:id/photo',
+  authMiddleware.authenticate,
+  csrfMiddleware.verifyCsrf,
+  ...userController.updateUserAvatar
+);
+
 
 export default router;
 

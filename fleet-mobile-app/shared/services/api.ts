@@ -1,5 +1,6 @@
 import axios from 'axios';
 import { buildCookieHeader, syncCookiesFromServer } from './cookieJar';
+import { getCsrfToken } from './csrf';
 import { resolveApiBaseUrl } from '../utils/apiBase';
 
 const apiUrl = resolveApiBaseUrl(process.env.EXPO_PUBLIC_API_URL);
@@ -19,8 +20,12 @@ export const api = axios.create({
 
 
 api.interceptors.request.use(async (config) => {
+  const headers = config.headers ?? {};
   const cookie = await buildCookieHeader();
-  if (cookie) config.headers['Cookie'] = cookie;
+  if (cookie) headers['Cookie'] = cookie;
+  const csrfToken = getCsrfToken();
+  if (csrfToken) headers['x-csrf-token'] = csrfToken;
+  config.headers = headers;
   return config;
 });
 

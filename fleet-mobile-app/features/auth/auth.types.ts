@@ -16,7 +16,9 @@ export interface SignupData {
   name: string;
 }
 
+export type AuthProvider = 'apple' | 'google' | 'email' | 'password';
+
 export interface AuthResponse {
   user: User;
-  token: string;
+  csrfToken: string;
 }

@@ -3,6 +3,7 @@ import Vehicle from '../models/vehicle.model.js';
 import User from '../models/user.model.js';
 import { Op } from 'sequelize';
 import { getPagination, getPagingData } from '../utils/pagination.js';
+import { eventBus, FLEET_EVENTS } from '../events/eventBus.js';
 
 class ApiError extends Error {
   constructor(statusCode, message, code) {
@@ -107,6 +108,12 @@ const assertTransition = (currentStatus, nextStatus) => {
   }
 };
 
+const resolveManagerId = (trip, currentUser) => {
+  if (trip?.managerId) return trip.managerId;
+  if (currentUser?.role === 'MANAGER') return currentUser.id;
+  return null;
+};
+
 
 export const createTrip = async (payload, currentUser) => {
   assertValidTimeRange(payload.startTime, payload.endTime);
@@ -119,6 +126,20 @@ export const createTrip = async (payload, currentUser) => {
   }
 
   const trip = await Trip.create({ ...payload, status: 'scheduled' });
+
+  if (trip.userId) {
+    try {
+      eventBus.emitEvent(FLEET_EVENTS.TRIP_ASSIGNED, {
+        trip,
+        driverId: trip.userId,
+        managerId: resolveManagerId(trip, currentUser),
+        vehicleId: trip.vehicleId ?? null,
+      });
+    } catch (err) {
+      console.error('[EventBus] TRIP_ASSIGNED publish failed:', err);
+    }
+  }
+
   return trip;
 };
 
@@ -174,6 +195,45 @@ export const updateTripStatus = async (id, status, currentUser) => {
   assertDriverAccess(trip, currentUser);
   assertTransition(trip.status, status);
   await trip.update({ status });
+
+  const managerId = resolveManagerId(trip, currentUser);
+  if (status === 'ongoing') {
+    try {
+      eventBus.emitEvent(FLEET_EVENTS.TRIP_STARTED, {
+        trip,
+        driverId: trip.userId,
+        managerId,
+      });
+    } catch (err) {
+      console.error('[EventBus] TRIP_STARTED publish failed:', err);
+    }
+  }
+
+  if (status === 'completed') {
+    try {
+      eventBus.emitEvent(FLEET_EVENTS.TRIP_COMPLETED, {
+        trip,
+        driverId: trip.userId,
+        managerId,
+      });
+    } catch (err) {
+      console.error('[EventBus] TRIP_COMPLETED publish failed:', err);
+    }
+  }
+
+  if (status === 'cancelled') {
+    try {
+      eventBus.emitEvent(FLEET_EVENTS.TRIP_CANCELLED, {
+        trip,
+        driverId: trip.userId,
+        managerId,
+        reason: null,
+      });
+    } catch (err) {
+      console.error('[EventBus] TRIP_CANCELLED publish failed:', err);
+    }
+  }
+
   return trip;
 };
 
@@ -200,6 +260,18 @@ export const assignDriverToTrip = async (id, userId, currentUser) => {
   await assertNoDriverOverlap(userId, trip.startTime, trip.endTime, id);
 
   await trip.update({ userId });
+
+  try {
+    eventBus.emitEvent(FLEET_EVENTS.TRIP_ASSIGNED, {
+      trip,
+      driverId: userId,
+      managerId: resolveManagerId(trip, currentUser),
+      vehicleId: trip.vehicleId ?? null,
+    });
+  } catch (err) {
+    console.error('[EventBus] TRIP_ASSIGNED publish failed:', err);
+  }
+
   return trip;
 };
 
@@ -217,6 +289,17 @@ export const startTrip = async (id, currentUser) => {
   assertDriverAccess(trip, currentUser);
   assertTransition(trip.status, 'ongoing');
   await trip.update({ status: 'ongoing' });
+
+  try {
+    eventBus.emitEvent(FLEET_EVENTS.TRIP_STARTED, {
+      trip,
+      driverId: trip.userId,
+      managerId: resolveManagerId(trip, currentUser),
+    });
+  } catch (err) {
+    console.error('[EventBus] TRIP_STARTED publish failed:', err);
+  }
+
   return trip;
 };
 
@@ -231,6 +314,17 @@ export const completeTrip = async (id, payload, currentUser) => {
   if (payload.fuel !== undefined) updates.fuel = payload.fuel;
 
   await trip.update(updates);
+
+  try {
+    eventBus.emitEvent(FLEET_EVENTS.TRIP_COMPLETED, {
+      trip,
+      driverId: trip.userId,
+      managerId: resolveManagerId(trip, currentUser),
+    });
+  } catch (err) {
+    console.error('[EventBus] TRIP_COMPLETED publish failed:', err);
+  }
+
   return trip;
 };
 
@@ -239,6 +333,18 @@ export const cancelTrip = async (id, currentUser) => {
   assertDriverAccess(trip, currentUser);
   assertTransition(trip.status, 'cancelled');
   await trip.update({ status: 'cancelled' });
+
+  try {
+    eventBus.emitEvent(FLEET_EVENTS.TRIP_CANCELLED, {
+      trip,
+      driverId: trip.userId,
+      managerId: resolveManagerId(trip, currentUser),
+      reason: null,
+    });
+  } catch (err) {
+    console.error('[EventBus] TRIP_CANCELLED publish failed:', err);
+  }
+
   return trip;
 };
 

@@ -1,4 +1,5 @@
 import "../index.css";
+import "@/FirebaseConfig";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { Stack } from "expo-router";
 import { Provider, useSelector } from "react-redux";
@@ -7,11 +8,11 @@ import { View, ActivityIndicator } from "react-native";
 import { store } from "../store/index";
 import type { RootState } from "../store";
 
-import { useAuthGuard } from "../features/auth/hooks/useAuth";
+import { useAuthBootstrap, useAuthGuard } from "../features/auth/hooks/useAuth";
 import { useRealtimeNotificationToasts } from "../features/notifications/hooks/useRealtimeNotificationToasts";
 import { ToastProvider } from "../shared/components/toast";
-
 function AppLayout() {
+  useAuthBootstrap();
   useAuthGuard();
   useRealtimeNotificationToasts();
 
@@ -45,7 +46,19 @@ function AppLayout() {
           options={{ animation: "slide_from_right" }}
         />
         <Stack.Screen
-          name="profile/settings"
+          name="profile/edit"
+          options={{ animation: "slide_from_right" }}
+        />
+        <Stack.Screen
+          name="profile/change-password"
+          options={{ animation: "slide_from_right" }}
+        />
+        <Stack.Screen
+          name="profile/email-notifications"
+          options={{ animation: "slide_from_right" }}
+        />
+        <Stack.Screen
+          name="profile/language"
           options={{ animation: "slide_from_right" }}
         />
       </Stack>
@@ -60,13 +73,16 @@ function AppLayout() {
 }
 
 export default function RootLayout() {
+
   return (
-    <Provider store={store}>
-      <SafeAreaProvider>
-        <ToastProvider>
-          <AppLayout />
-        </ToastProvider>
-      </SafeAreaProvider>
-    </Provider>
+   
+      <Provider store={store}>
+        <SafeAreaProvider>
+          <ToastProvider>
+            <AppLayout />
+          </ToastProvider>
+        </SafeAreaProvider>
+      </Provider>
+   
   );
 }

@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "994450332268",
+    "project_id": "smart-axia-fleet-manager-9ece5",
+    "storage_bucket": "smart-axia-fleet-manager-9ece5.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:994450332268:android:beafcde8244a807e9fd649",
+        "android_client_info": {
+          "package_name": "com.islemboubaker.SmartAxiaFleetManager"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "994450332268-jqdeh856ilp92qom4t2kn8tumin9q0u1.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyA4HlhzpX6jFO3q4CQfXKfYCGiDYpCV2Yk"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "994450332268-jqdeh856ilp92qom4t2kn8tumin9q0u1.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
