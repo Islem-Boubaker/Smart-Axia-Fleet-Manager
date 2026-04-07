@@ -12,19 +12,19 @@ const Maintenance = sequelize.define(
     },
     vehiclePlate: {
       type: DataTypes.STRING,
-      allowNull: false,
+      allowNull: true,
     },
     scheduledDate: {
       type: DataTypes.DATE,
-      allowNull: false,
+      allowNull: true,
     },
     technician: {
       type: DataTypes.STRING,
-      allowNull: false,
+      allowNull: true,
     },
     cost: {
       type: DataTypes.FLOAT,
-      allowNull: false,
+      allowNull: true,
     },
     mileage: {
       type: DataTypes.INTEGER,

@@ -34,7 +34,7 @@ async function startServer() {
     console.log("✅ Socket.IO initialised");
 
     // 5. Start listening
-    server.listen(PORT, "0.0.0.0", () => {
+    server.listen(PORT, () => {
       console.log(`✅ Server running on port ${PORT} [${ENV}]`);
     });
 

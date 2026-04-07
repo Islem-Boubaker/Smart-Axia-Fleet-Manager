@@ -14,6 +14,14 @@ router.post('/user/refresh-token', userController.refreshToken);
 router.post('/user/logout', authMiddleware.authenticate, csrfMiddleware.verifyCsrf, userController.logout);
 
 router.get('/user/me', authMiddleware.authenticate, userController.getMe);
+router.put('/user/me', authMiddleware.authenticate, csrfMiddleware.verifyCsrf, userController.updateMe);
+
+router.patch(
+  '/user/me/avatar',
+  authMiddleware.authenticate,
+  csrfMiddleware.verifyCsrf,
+  ...userController.updateMyAvatar
+);
 
 router.patch (
   '/user/:id/avatar',

@@ -60,6 +60,8 @@ export const updateVehicle = [
       if (req.files?.length) {
         data.photos = req.files.map((f) => f.path);
       }
+      
+      console.log('[updateVehicle] data:', data);
 
       const vehicle = await vehicleService.updateVehicle(req.params.id, data);
       if (!vehicle)

@@ -73,6 +73,26 @@ const User = sequelize.define(
       allowNull: true,
       validate: { min: 0, max: 5 },
     },
+    company: {
+      type: DataTypes.STRING(100),
+      allowNull: true,
+    },
+    country: {
+      type: DataTypes.STRING(100),
+      allowNull: true,
+    },
+    city: {
+      type: DataTypes.STRING(100),
+      allowNull: true,
+    },
+    postalCode: {
+      type: DataTypes.STRING(20),
+      allowNull: true,
+    },
+    taxId: {
+      type: DataTypes.STRING(100),
+      allowNull: true,
+    },
   },
   {
     tableName: 'users',

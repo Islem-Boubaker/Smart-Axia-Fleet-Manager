@@ -28,6 +28,18 @@ export const updateUserAvatar = [
   },
 ];
 
+export const updateMyAvatar = [
+  uploadUserAvatar.single('avatar'),
+  async (req, res, next) => {
+    try {
+      const user = await userService.updateUserPhotoSvc(req.user.id, req.file);
+      res.status(StatusCodes.OK).json({ success: true, data: user });
+    } catch (error) {
+      next(error);
+    }
+  },
+];
+
 export const getAllUsers = async (req, res, next) => {
   try {
     const result = await userService.getAllUsersSvc(req.query);
@@ -52,6 +64,18 @@ export const getUserById = async (req, res, next) => {
 export const updateUser = async (req, res, next) => {
   try {
     const updatedUser = await userService.updateUserSvc(req.params.id, req.body);
+    if (!updatedUser) {
+      return res.status(StatusCodes.NOT_FOUND).json({ success: false, message: 'User not found' });
+    }
+    res.status(StatusCodes.OK).json({ success: true, data: updatedUser });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const updateMe = async (req, res, next) => {
+  try {
+    const updatedUser = await userService.updateUserSvc(req.user.id, req.body);
     if (!updatedUser) {
       return res.status(StatusCodes.NOT_FOUND).json({ success: false, message: 'User not found' });
     }
