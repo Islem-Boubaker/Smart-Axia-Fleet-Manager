@@ -19,12 +19,12 @@ interface Props {
   onClose: () => void;
   title: string;
   driver?: Driver | null;
-  onSubmit: (data: DriverFormData) => void;
+  onSubmit: (data: DriverFormData, photo: File | null) => void;
 }
 
 const DriverModal = ({ isOpen, onClose, title, driver, onSubmit }: Props) => (
   <GlobalCard isOpen={isOpen} onClose={onClose} title={title} maxWidth="2xl">
-    <DriverForm driver={driver} onSubmit={onSubmit} onCancel={onClose} />
+    <DriverForm driver={driver as any} onSubmit={onSubmit} onCancel={onClose} />
   </GlobalCard>
 );
 

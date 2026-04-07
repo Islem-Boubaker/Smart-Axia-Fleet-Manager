@@ -3,12 +3,12 @@ import { Link } from 'react-router-dom';
 import {
   FiArrowUpRight,
   FiClock,
-  FiMapPin,
   FiNavigation,
   FiTrendingUp,
 } from 'react-icons/fi';
 import { MdOutlineDirectionsCar, MdOutlineSchedule } from 'react-icons/md';
 import { ROUTES } from '../../../utils/constants';
+import { useAppSelector } from '../../../shared/hooks/useRedux';
 
 interface DashboardOverviewProps {
   dark: boolean;
@@ -66,6 +66,8 @@ const statusStyles = {
 };
 
 const DashboardOverview = ({ dark }: DashboardOverviewProps) => {
+  const user = useAppSelector((state) => state.auth.user);
+  
   const panel = dark
     ? 'border-slate-700/80 bg-slate-900/50 backdrop-blur-sm'
     : 'border-slate-200/90 bg-white/80 backdrop-blur-sm shadow-soft';
@@ -86,28 +88,8 @@ const DashboardOverview = ({ dark }: DashboardOverviewProps) => {
         <div className="max-w-2xl space-y-2 animate-fade-up" style={{ animationDelay: '40ms' }}>
           <p className={`text-xs font-semibold uppercase tracking-[0.12em] ${muted}`}>Overview</p>
           <h1 className={`text-3xl sm:text-4xl font-extrabold tracking-tight ${dark ? 'text-white' : 'text-slate-900'}`}>
-            {greeting}, Bedis
+            {greeting}, {user?.name?.split(' ')[0] || 'User'}
           </h1>
-          <p className={`text-sm sm:text-base ${sub}`}>
-            Tuesday — <span className="font-medium text-brand">2 trips</span> on the schedule today. Fleet is running
-            smoothly.
-          </p>
-        </div>
-
-        <div
-          className={`xl:mb-1 shrink-0 rounded-2xl border px-5 py-4 max-w-md w-full xl:w-auto xl:min-w-[280px] transition-transform duration-300 hover:-translate-y-0.5 ${panel}`}
-          style={{ animationDelay: '80ms' }}
-        >
-          <p className={`text-[11px] font-semibold uppercase tracking-wider ${muted}`}>Current location</p>
-          <div className="mt-1 flex items-center gap-2">
-            <span className={`inline-flex h-9 w-9 items-center justify-center rounded-xl ${dark ? 'bg-slate-800' : 'bg-brand-light'}`}>
-              <FiMapPin className={dark ? 'text-sky-400' : 'text-brand'} />
-            </span>
-            <div>
-              <p className={`font-bold ${dark ? 'text-white' : 'text-slate-900'}`}>Tunis, Tunisia</p>
-              <p className={`text-xs ${muted}`}>Last updated just now</p>
-            </div>
-          </div>
         </div>
       </div>
 

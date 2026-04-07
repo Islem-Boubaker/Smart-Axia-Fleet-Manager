@@ -7,7 +7,9 @@ import NotificationSettings from '../components/NotificationSettings';
 import SecuritySettings from '../components/SecuritySettings';
 import GeneralSettings from '../components/GeneralSettings';
 import type { GeneralPreferences, NotificationPreferences, ProfileData } from '../settings.types';
-import { useAppSelector } from '../../../shared/hooks';
+import { useAppSelector, useAppDispatch } from '../../../shared/hooks';
+import { setUser } from '../../../store/authSlice';
+import { settingsService } from '../services/settings.service';
 import { pageShellClasses } from '../../../shared/utils/pageShell';
 
 interface ThemeContext {
@@ -85,16 +87,20 @@ const ProfileOverview = ({
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6">
           <div className="flex items-center gap-5 min-w-0">
             <div
-              className={`w-20 h-20 rounded-2xl flex items-center justify-center text-white font-bold text-xl shrink-0 bg-gradient-to-br from-amber-300 to-slate-700 ${
+              className={`w-20 h-20 rounded-2xl flex items-center justify-center text-white font-bold text-xl shrink-0 bg-gradient-to-br from-amber-300 to-slate-700 overflow-hidden ${
                 dark ? 'ring-2 ring-brand/30 shadow-lg shadow-black/20' : 'shadow-md'
               }`}
             >
-              {profileData.name
-                .split(' ')
-                .filter(Boolean)
-                .slice(0, 2)
-                .map((part) => part[0])
-                .join('') || 'U'}
+              {profileData.avatar ? (
+                <img src={profileData.avatar} alt="Avatar" className="w-full h-full object-cover" />
+              ) : (
+                profileData.name
+                  .split(' ')
+                  .filter(Boolean)
+                  .slice(0, 2)
+                  .map((part) => part[0])
+                  .join('') || 'U'
+              )}
             </div>
             <div className="min-w-0 space-y-1">
               <h3 className={`text-2xl font-bold tracking-tight ${dark ? 'text-white' : 'text-slate-900'}`}>
@@ -143,10 +149,10 @@ const ProfileOverview = ({
         <ProfileFieldTiles
           dark={dark}
           items={[
-            { label: 'Country', value: 'Tunisia' },
-            { label: 'City / State', value: 'Tunis, Tunis' },
-            { label: 'Postal code', value: '1000' },
-            { label: 'TAX ID', value: 'AXIA-FT-2026' },
+            { label: 'Country', value: profileData.country || 'Tunisia' },
+            { label: 'City / State', value: profileData.city || 'Tunis, Tunis' },
+            { label: 'Postal code', value: profileData.postalCode || '1000' },
+            { label: 'TAX ID', value: profileData.taxId || 'AXIA-FT-2026' },
           ]}
         />
       </Card>
@@ -164,6 +170,7 @@ const tabTitle: Record<string, string> = {
 const SettingsPage = () => {
   const { dark } = useOutletContext<ThemeContext>();
   const { user } = useAppSelector((state) => state.auth);
+  const dispatch = useAppDispatch();
   const [activeTab, setActiveTab] = useState('profile');
   const [isEditingProfile, setIsEditingProfile] = useState(false);
 
@@ -171,9 +178,45 @@ const SettingsPage = () => {
     name: user?.name || '',
     email: user?.email || '',
     phone: (user as { phone?: string } | null)?.phone || '',
-    company: 'AXIA Fleet Manager',
+    company: (user as any)?.company || 'AXIA Fleet Manager',
     role: user?.role || '',
+    avatar: user?.avatar,
+    country: (user as any)?.country || '',
+    city: (user as any)?.city || '',
+    postalCode: (user as any)?.postalCode || '',
+    taxId: (user as any)?.taxId || '',
   });
+
+  const handleSaveProfile = async (data: ProfileData, file: File | null) => {
+    try {
+      const resp = await settingsService.updateProfile({
+        name: data.name,
+        phone: data.phone,
+        role: data.role,
+        company: data.company,
+        country: data.country,
+        city: data.city,
+        postalCode: data.postalCode,
+        taxId: data.taxId,
+      });
+      let updatedUser = { ...resp };
+
+      if (file) {
+        const avUser = await settingsService.uploadAvatar(file);
+        if (avUser?.avatar) {
+          updatedUser.avatar = avUser.avatar;
+        }
+      }
+
+      const newUser = { ...user, ...updatedUser };
+      dispatch(setUser(newUser as any));
+      setProfileData({ ...data, avatar: newUser.avatar });
+      setIsEditingProfile(false);
+    } catch (error) {
+      console.error('Failed to save profile:', error);
+      alert('Failed to save profile');
+    }
+  };
 
   const [notifications, setNotifications] = useState<NotificationPreferences>({
     emailTrips: true,
@@ -206,7 +249,7 @@ const SettingsPage = () => {
               >
                 Back to profile overview
               </Button>
-              <ProfileSettings profileData={profileData} onChange={setProfileData} dark={dark} />
+              <ProfileSettings profileData={profileData} onSave={handleSaveProfile} dark={dark} />
             </div>
           );
         }

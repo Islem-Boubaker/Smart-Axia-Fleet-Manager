@@ -43,7 +43,7 @@ const VehiclesPage = () => {
   });
 
   const handleAddVehicle = useCallback(
-    async (data: Partial<Vehicle>) => {
+    async (data: Partial<Vehicle> | FormData) => {
       const loadingId = toast.loading('Creating vehicle…');
       try {
         setFormError('');
@@ -66,7 +66,7 @@ const VehiclesPage = () => {
   }, []);
 
   const handleUpdateVehicle = useCallback(
-    async (data: Partial<Vehicle>) => {
+    async (data: Partial<Vehicle> | FormData) => {
       if (!selectedVehicle) return;
       const loadingId = toast.loading('Updating vehicle…');
       try {
@@ -145,3 +145,4 @@ const VehiclesPage = () => {
 };
 
 export default VehiclesPage;
+

@@ -1,30 +1,54 @@
-import { Schema, model } from "mongoose";
+import { DataTypes } from 'sequelize';
+import { sequelize } from '../config/connectdb.js';
 
-const maintenanceSchema = new Schema({
-    vehicle: {
-        type: Schema.Types.ObjectId,
-        ref: 'Vehicle',
-        required: true
+
+const Maintenance = sequelize.define(
+  'Maintenance',
+  {
+    id: {
+      type: DataTypes.UUID,
+      defaultValue: DataTypes.UUIDV4,
+      primaryKey: true,
     },
-    description: {
-        type: String,
-        required: true
+    vehiclePlate: {
+      type: DataTypes.STRING,
+      allowNull: false,
+    },
+    scheduledDate: {
+      type: DataTypes.DATE,
+      allowNull: false,
+    },
+    technician: {
+      type: DataTypes.STRING,
+      allowNull: false,
     },
     cost: {
-        type: Number,
-        required: true
+      type: DataTypes.FLOAT,
+      allowNull: false,
     },
-    date: {
-        type: Date,
-        default: Date.now
+    mileage: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
+    },
+    priority: {
+      type: DataTypes.ENUM('low', 'medium', 'high'),
+      allowNull: false,
+      defaultValue: 'medium',
     },
     status: {
-        type: String,
-        enum: ['pending', 'in-progress', 'completed'],
-        default: 'pending'
-    }
-}, { timestamps: true });
-
-const Maintenance = model('Maintenance', maintenanceSchema);
+      type: DataTypes.ENUM('scheduled', 'in_progress', 'completed', 'cancelled'),
+      allowNull: false,
+      defaultValue: 'scheduled',
+    },
+    type: {
+      type: DataTypes.STRING,
+      allowNull: true,
+    },
+  },
+  {
+    tableName: 'maintenances',
+    timestamps: true,
+  }
+);
 
 export default Maintenance;

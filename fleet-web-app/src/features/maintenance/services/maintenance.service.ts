@@ -55,6 +55,8 @@ function toBackendPayload(data: Partial<Maintenance>): Partial<BackendMaintenanc
   const payload: Partial<BackendMaintenance> = {};
 
   if (typeof data.vehicle === 'string') payload.vehiclePlate = data.vehicle;
+  // @ts-ignore - map vehicleId as vehiclePlate for backward compatibility with form data
+  if (typeof data.vehicleId === 'string' && data.vehicleId.length > 0) payload.vehiclePlate = data.vehicleId;
   if (typeof data.type === 'string') payload.type = data.type;
   if (typeof data.scheduledDate === 'string') payload.scheduledDate = data.scheduledDate;
   if (typeof data.technician === 'string') payload.technician = data.technician;
@@ -79,7 +81,7 @@ function toBackendPayload(data: Partial<Maintenance>): Partial<BackendMaintenanc
 export const maintenanceService = {
   getAll: async (): Promise<Maintenance[]> => {
     const res = await api.get<ApiResponse<BackendMaintenance[]> | BackendMaintenance[]>(
-      '/maintenance/getallmaintenances'
+      '/maintenances'
     );
     const data = unwrapApiResponse(res.data);
     return Array.isArray(data) ? data.map(mapBackendToUi) : [];
@@ -87,7 +89,7 @@ export const maintenanceService = {
 
   getById: async (id: string): Promise<Maintenance> => {
     const res = await api.get<ApiResponse<BackendMaintenance> | BackendMaintenance>(
-      `/maintenance/getmaintenancebyid/${id}`
+      `/maintenances/${id}`
     );
     const data = unwrapApiResponse(res.data);
     return mapBackendToUi(data as BackendMaintenance);
@@ -95,7 +97,7 @@ export const maintenanceService = {
 
   create: async (data: Partial<Maintenance>): Promise<Maintenance> => {
     const res = await api.post<ApiResponse<BackendMaintenance> | BackendMaintenance>(
-      '/maintenance/ajoutermaintenance',
+      '/maintenances',
       toBackendPayload(data)
     );
     const created = unwrapApiResponse(res.data);
@@ -104,7 +106,7 @@ export const maintenanceService = {
 
   update: async (id: string, data: Partial<Maintenance>): Promise<Maintenance> => {
     const res = await api.put<ApiResponse<BackendMaintenance> | BackendMaintenance>(
-      `/maintenance/updatemaintenance/${id}`,
+      `/maintenances/${id}`,
       toBackendPayload(data)
     );
     const updated = unwrapApiResponse(res.data);
@@ -112,11 +114,11 @@ export const maintenanceService = {
   },
 
   remove: (id: string) =>
-    api.delete(`/maintenance/deletemaintenance/${id}`), 
+    api.delete(`/maintenances/${id}`), 
     
   updateStatus: async (id: string, status: string): Promise<Maintenance> => {
     const res = await api.patch<ApiResponse<BackendMaintenance> | BackendMaintenance>(
-      `/maintenance/updatemaintenancestatus/${id}`,
+      `/maintenances/${id}/status`,
       { status: status.replace(/-/g, '_') }
     );
     const updated = unwrapApiResponse(res.data);

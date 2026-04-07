@@ -1,6 +1,6 @@
 import { useState } from "react";
 import type { FormEvent } from "react";
-import { FiUser, FiEdit2 } from "react-icons/fi";
+import { FiUser, FiEdit2, FiPlus } from "react-icons/fi";
 import { Input } from "../../../shared/components/ui/Input";
 
 interface DriverFormData {
@@ -16,8 +16,8 @@ interface DriverFormData {
 }
 
 interface DriverFormProps {
-  driver?: DriverFormData & { id?: string };
-  onSubmit: (data: DriverFormData) => void;
+  driver?: DriverFormData & { id?: string; avatar?: string };
+  onSubmit: (data: DriverFormData, photo: File | null) => void;
   onCancel: () => void;
 }
 
@@ -34,9 +34,20 @@ const DriverForm = ({ driver, onSubmit, onCancel }: DriverFormProps) => {
     rating: driver?.rating || 4.8,
   });
 
+  const [selectedPhoto, setSelectedPhoto] = useState<File | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(driver?.avatar || null);
+
+  const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setSelectedPhoto(file);
+      setPreviewUrl(URL.createObjectURL(file));
+    }
+  };
+
   const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    onSubmit(formData);
+    onSubmit(formData, selectedPhoto);
   };
 
   const handleChange = (
@@ -52,22 +63,40 @@ const DriverForm = ({ driver, onSubmit, onCancel }: DriverFormProps) => {
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
       {/* Profile Header Section */}
-      <div className="flex items-start justify-between mb-2">
-        <div className="flex flex-col gap-3">
-          <div className="w-16 h-16 rounded-full bg-brand/10 flex items-center justify-center text-brand relative overflow-hidden">
-            <FiUser className="w-8 h-8" />
+      <div className="flex items-center gap-4 mb-2">
+        <div className="relative">
+          <div className="w-20 h-20 rounded-full bg-brand/10 flex items-center justify-center text-brand relative overflow-hidden ring-[3px] ring-white dark:ring-slate-800 shadow-md">
+            {previewUrl ? (
+              <img src={previewUrl} alt="Driver avatar" className="w-full h-full object-cover" />
+            ) : (
+              <FiUser className="w-8 h-8" />
+            )}
           </div>
-          {formData.name && (
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-white">{formData.name}</h3>
-          )}
+          
+          <input
+            type="file"
+            accept="image/*"
+            id="driver-photo-upload"
+            className="hidden"
+            onChange={handlePhotoChange}
+          />
+          <label
+            htmlFor="driver-photo-upload"
+            className="absolute bottom-0 right-0 w-7 h-7 bg-brand text-white rounded-full flex items-center justify-center cursor-pointer border-2 border-white dark:border-slate-800 shadow-sm hover:bg-brand-deep transition-colors"
+            title="Upload photo"
+          >
+            <FiPlus className="w-4 h-4" />
+          </label>
         </div>
-        <button
-          type="button"
-          className="flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-gray-600 dark:text-gray-300 bg-white dark:bg-slate-800/50 border border-gray-200 dark:border-slate-700 rounded-lg hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors shadow-sm"
-        >
-          <span>Edit</span>
-          <FiEdit2 className="w-3.5 h-3.5" />
-        </button>
+        
+        <div className="flex flex-col">
+          {formData.name ? (
+            <h3 className="text-xl font-bold text-gray-900 dark:text-white leading-tight">{formData.name}</h3>
+          ) : (
+            <h3 className="text-lg font-medium text-gray-400 dark:text-slate-500 italic leading-tight">New Driver</h3>
+          )}
+          <p className="text-sm text-gray-500 dark:text-slate-400 mt-0.5">Driver Profile</p>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-5">

@@ -1,20 +1,18 @@
-﻿import { useState } from 'react';
+import { useState } from 'react';
 import type { FormEvent } from 'react';
-import { FiTruck, FiEdit2 } from 'react-icons/fi';
+import { FiTruck, FiPlus } from 'react-icons/fi';
 import { Input } from '../../../shared/components';
 import type { Vehicle } from '../../../types';
 
 interface VehicleFormProps {
   vehicle?: Partial<Vehicle>;
-  onSubmit: (data: Partial<Vehicle>) => void;
+  onSubmit: (data: Partial<Vehicle> | FormData) => void;
   onCancel: () => void;
   error?: string;
 }
 
 const numberFields = [
-  'compteur_kilometrique', 'Mileage', 'Vehicle_Age', 'Reported_Issues',
-  'Service_History', 'Accident_History', 'Fuel_Efficiency', 'Engine_Size',
-  'Days_Since_Last_Service',
+  'Mileage', 'Vehicle_Age', 'Engine_Size', 'max_load'
 ];
 
 const selectClass =
@@ -27,24 +25,33 @@ const VehicleForm = ({ vehicle, onSubmit, onCancel, error }: VehicleFormProps) =
     name: vehicle?.name || '',
     vin: vehicle?.vin || '',
     plaque_immatriculation: vehicle?.plaque_immatriculation || '',
-    type: vehicle?.type || 'voiture',
-    compteur_kilometrique: vehicle?.compteur_kilometrique ?? 0,
+    type: vehicle?.type || 'car',
     Active: vehicle?.Active ?? true,
     Vehicle_Model: vehicle?.Vehicle_Model || 'Car',
     Mileage: vehicle?.Mileage ?? 0,
     Vehicle_Age: vehicle?.Vehicle_Age ?? 0,
-    Maintenance_History: vehicle?.Maintenance_History || 'Good',
-    Reported_Issues: vehicle?.Reported_Issues ?? 0,
-    Service_History: vehicle?.Service_History ?? 0,
-    Accident_History: vehicle?.Accident_History ?? 0,
-    Fuel_Efficiency: vehicle?.Fuel_Efficiency ?? '',
-    Engine_Size: vehicle?.Engine_Size ?? '',
     Tire_Condition: vehicle?.Tire_Condition || 'New',
     Brake_Condition: vehicle?.Brake_Condition || 'New',
     Battery_Status: vehicle?.Battery_Status || 'New',
-    Days_Since_Last_Service: vehicle?.Days_Since_Last_Service ?? 0,
     Need_Maintenance: vehicle?.Need_Maintenance ?? false,
+    Engine_Size: vehicle?.Engine_Size ?? '',
+    max_load: vehicle?.max_load ?? null,
+    insurance_expiry_date: vehicle?.insurance_expiry_date || '',
+    tech_visit_expiry_date: vehicle?.tech_visit_expiry_date || '',
   });
+
+  const [selectedPhoto, setSelectedPhoto] = useState<File | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(
+    vehicle?.photos && vehicle.photos.length > 0 ? vehicle.photos[0] : null
+  );
+
+  const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setSelectedPhoto(file);
+      setPreviewUrl(URL.createObjectURL(file));
+    }
+  };
 
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
@@ -52,9 +59,23 @@ const VehicleForm = ({ vehicle, onSubmit, onCancel, error }: VehicleFormProps) =
     // Convert empty optional-unique fields to null so PostgreSQL doesn't treat '' as a duplicate
     payload.vin = payload.vin === '' ? null : payload.vin;
     payload.plaque_immatriculation = payload.plaque_immatriculation === '' ? null : payload.plaque_immatriculation;
-    payload.Fuel_Efficiency = payload.Fuel_Efficiency === '' ? null : Number(payload.Fuel_Efficiency);
     payload.Engine_Size = payload.Engine_Size === '' ? null : Number(payload.Engine_Size);
-    onSubmit(payload as Partial<Vehicle>);
+    payload.max_load = payload.max_load === '' || payload.max_load === null ? null : Number(payload.max_load);
+    payload.insurance_expiry_date = payload.insurance_expiry_date === '' ? null : payload.insurance_expiry_date;
+    payload.tech_visit_expiry_date = payload.tech_visit_expiry_date === '' ? null : payload.tech_visit_expiry_date;
+    
+    if (selectedPhoto) {
+      const form = new FormData();
+      Object.entries(payload).forEach(([key, value]) => {
+        if (value !== null && value !== undefined) {
+          form.append(key, value as string | Blob);
+        }
+      });
+      form.append('photos', selectedPhoto);
+      onSubmit(form);
+    } else {
+      onSubmit(payload as Partial<Vehicle>);
+    }
   };
 
   const handleChange = (
@@ -82,22 +103,40 @@ const VehicleForm = ({ vehicle, onSubmit, onCancel, error }: VehicleFormProps) =
       )}
 
       {/* Header Section */}
-      <div className="flex items-start justify-between mb-2">
-        <div className="flex flex-col gap-3">
-          <div className="w-16 h-16 rounded-full bg-brand/10 flex items-center justify-center text-brand relative overflow-hidden">
-            <FiTruck className="w-8 h-8" />
+      <div className="flex items-center gap-4 mb-2">
+        <div className="relative">
+          <div className="w-20 h-20 rounded-full bg-brand/10 flex items-center justify-center text-brand relative overflow-hidden ring-[3px] ring-white dark:ring-slate-800 shadow-md">
+            {previewUrl ? (
+              <img src={previewUrl} alt="Vehicle photo" className="w-full h-full object-cover" />
+            ) : (
+              <FiTruck className="w-8 h-8" />
+            )}
           </div>
-          {formData.name && (
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-white">{formData.name}</h3>
-          )}
+          
+          <input
+            type="file"
+            accept="image/*"
+            id="vehicle-photo-upload"
+            className="hidden"
+            onChange={handlePhotoChange}
+          />
+          <label
+            htmlFor="vehicle-photo-upload"
+            className="absolute bottom-0 right-0 w-7 h-7 bg-brand text-white rounded-full flex items-center justify-center cursor-pointer border-2 border-white dark:border-slate-800 shadow-sm hover:bg-brand-deep transition-colors"
+            title="Upload photo"
+          >
+            <FiPlus className="w-4 h-4" />
+          </label>
         </div>
-        <button
-          type="button"
-          className="flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-gray-600 dark:text-gray-300 bg-white dark:bg-slate-800/50 border border-gray-200 dark:border-slate-700 rounded-lg hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors shadow-sm"
-        >
-          <span>Edit</span>
-          <FiEdit2 className="w-3.5 h-3.5" />
-        </button>
+        
+        <div className="flex flex-col">
+          {formData.name ? (
+            <h3 className="text-xl font-bold text-gray-900 dark:text-white leading-tight">{formData.name}</h3>
+          ) : (
+            <h3 className="text-lg font-medium text-gray-400 dark:text-slate-500 italic leading-tight">New Vehicle</h3>
+          )}
+          <p className="text-sm text-gray-500 dark:text-slate-400 mt-0.5">Vehicle Profile</p>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-5">
@@ -111,19 +150,19 @@ const VehicleForm = ({ vehicle, onSubmit, onCancel, error }: VehicleFormProps) =
           <Input label="VIN" name="vin" value={formData.vin} onChange={handleChange} placeholder="17-char VIN" maxLength={17} />
         </div>
 
-        {/* Plaque */}
+        {/* License Plate */}
         <div>
-          <Input label="Plaque Immatriculation" name="plaque_immatriculation" value={formData.plaque_immatriculation} onChange={handleChange} placeholder="e.g., 123 TU 4567" />
+          <Input label="License Plate" name="plaque_immatriculation" value={formData.plaque_immatriculation} onChange={handleChange} placeholder="e.g., 123 TU 4567" />
         </div>
 
         {/* Type */}
         <div>
           <label className={labelClass}>Type</label>
           <select name="type" value={formData.type} onChange={handleChange} className={selectClass} required>
-            <option value="voiture">Voiture</option>
-            <option value="camion">Camion</option>
-            <option value="moto">Moto</option>
-            <option value="camionnette">Camionnette</option>
+            <option value="car">Car</option>
+            <option value="truck">Truck</option>
+            <option value="motorcycle">Motorcycle</option>
+            <option value="van">Van</option>
           </select>
         </div>
 
@@ -140,9 +179,9 @@ const VehicleForm = ({ vehicle, onSubmit, onCancel, error }: VehicleFormProps) =
           </select>
         </div>
 
-        {/* Compteur */}
+        {/* Max Load */}
         <div>
-          <Input label="Compteur Kilometrique (km)" type="number" name="compteur_kilometrique" value={formData.compteur_kilometrique} onChange={handleChange} min="0" />
+          <Input label="Max Load (kg)" type="number" name="max_load" value={formData.max_load ?? ''} onChange={handleChange} min="0" />
         </div>
 
         {/* Mileage */}
@@ -155,39 +194,19 @@ const VehicleForm = ({ vehicle, onSubmit, onCancel, error }: VehicleFormProps) =
           <Input label="Vehicle Age (years)" type="number" name="Vehicle_Age" value={formData.Vehicle_Age} onChange={handleChange} min="0" />
         </div>
 
-        {/* Maintenance History */}
-        <div>
-          <label className={labelClass}>Maintenance History</label>
-          <select name="Maintenance_History" value={formData.Maintenance_History} onChange={handleChange} className={selectClass}>
-            <option value="Good">Good</option>
-            <option value="Average">Average</option>
-            <option value="Poor">Poor</option>
-          </select>
-        </div>
-
-        {/* Reported Issues */}
-        <div>
-          <Input label="Reported Issues" type="number" name="Reported_Issues" value={formData.Reported_Issues} onChange={handleChange} min="0" />
-        </div>
-
-        {/* Service History */}
-        <div>
-          <Input label="Service History" type="number" name="Service_History" value={formData.Service_History} onChange={handleChange} min="0" />
-        </div>
-
-        {/* Accident History */}
-        <div>
-          <Input label="Accident History" type="number" name="Accident_History" value={formData.Accident_History} onChange={handleChange} min="0" />
-        </div>
-
-        {/* Fuel Efficiency */}
-        <div>
-          <Input label="Fuel Efficiency (L/100km)" type="number" name="Fuel_Efficiency" value={formData.Fuel_Efficiency} onChange={handleChange} min="0" step="0.1" />
-        </div>
-
         {/* Engine Size */}
         <div>
           <Input label="Engine Size (cc)" type="number" name="Engine_Size" value={formData.Engine_Size} onChange={handleChange} min="0" />
+        </div>
+
+        {/* Insurance Expiry Date */}
+        <div>
+          <Input label="Insurance Expiry Date" type="date" name="insurance_expiry_date" value={formData.insurance_expiry_date} onChange={handleChange} />
+        </div>
+
+        {/* Tech Visit Expiry Date */}
+        <div>
+          <Input label="Tech Visit Expiry Date" type="date" name="tech_visit_expiry_date" value={formData.tech_visit_expiry_date} onChange={handleChange} />
         </div>
 
         {/* Tire Condition */}
@@ -218,11 +237,6 @@ const VehicleForm = ({ vehicle, onSubmit, onCancel, error }: VehicleFormProps) =
             <option value="Good">Good</option>
             <option value="Weak">Weak</option>
           </select>
-        </div>
-
-        {/* Days Since Last Service */}
-        <div>
-          <Input label="Days Since Last Service" type="number" name="Days_Since_Last_Service" value={formData.Days_Since_Last_Service} onChange={handleChange} min="0" />
         </div>
 
         {/* Checkboxes */}
@@ -271,3 +285,4 @@ const VehicleForm = ({ vehicle, onSubmit, onCancel, error }: VehicleFormProps) =
 };
 
 export default VehicleForm;
+

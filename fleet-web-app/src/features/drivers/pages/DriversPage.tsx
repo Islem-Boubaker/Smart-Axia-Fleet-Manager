@@ -30,10 +30,10 @@ const DriversPage = () => {
   );
 
   const handleAddDriver = useCallback(
-    async (data: Partial<Driver> & { password: string }) => {
+    async (data: any, photo: File | null) => {
       const loadingId = toast.loading('Adding driver…');
       try {
-        await addDriver({ ...data, role: "DRIVER" });
+        await addDriver({ ...data, role: "DRIVER" }, photo);
         toast.update(loadingId, { type: 'success', title: 'Success', message: 'Driver added successfully!' });
         setIsAddModalOpen(false);
       } catch (err: any) {
@@ -49,11 +49,11 @@ const DriversPage = () => {
   }, []);
 
   const handleUpdateDriver = useCallback(
-    async (data: Partial<Driver>) => {
+    async (data: any, photo: File | null) => {
       if (!selectedDriver?.id) return;
       const loadingId = toast.loading('Updating driver…');
       try {
-        await updateDriver(selectedDriver.id, data);
+        await updateDriver(selectedDriver.id, data, photo);
         toast.update(loadingId, { type: 'success', title: 'Success', message: 'Driver updated successfully!' });
         setIsEditModalOpen(false);
         setSelectedDriver(null);

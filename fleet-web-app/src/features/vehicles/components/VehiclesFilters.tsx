@@ -59,10 +59,10 @@ const VehiclesFilters = ({
         onChange={(e) => onTypeChange(e.target.value)}
       >
         <option value="all">All types</option>
-        <option value="voiture">Voiture</option>
-        <option value="camion">Camion</option>
-        <option value="moto">Moto</option>
-        <option value="camionnette">Camionnette</option>
+        <option value="car">Car</option>
+        <option value="truck">Truck</option>
+        <option value="motorcycle">Motorcycle</option>
+        <option value="van">Van</option>
       </select>
     </div>
   </div>

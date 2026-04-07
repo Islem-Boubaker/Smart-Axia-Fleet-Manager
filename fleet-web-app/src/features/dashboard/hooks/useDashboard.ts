@@ -1,10 +1,8 @@
 import { useState, useEffect } from 'react';
 import { FiTruck, FiUsers, FiMapPin, FiTrendingUp } from 'react-icons/fi';
-import { dashboardService } from '../services/dashboard.service.ts';
-
 export const useDashboard = () => {
   const [isLoading, setIsLoading] = useState(true);
-  const [stats, setStats] = useState([
+  const [stats] = useState([
     {
       title: 'Total Vehicles',
       value: '48',
@@ -39,14 +37,14 @@ export const useDashboard = () => {
     },
   ]);
 
-  const [recentVehicles, setRecentVehicles] = useState([
+  const [recentVehicles] = useState([
     { id: '1', name: 'Toyota Camry', plate: '123 TU 4567', status: 'active', driver: 'Mohamed Ben Salah' },
     { id: '2', name: 'Honda Accord', plate: '167 TU 2389', status: 'maintenance', driver: 'N/A' },
     { id: '3', name: 'Ford F-150', plate: '234 TU 8912', status: 'active', driver: 'Fatma Chaabani' },
     { id: '4', name: 'Chevrolet Malibu', plate: '156 TU 3421', status: 'active', driver: 'Ahmed Trabelsi' },
   ]);
 
-  const [recentTrips, setRecentTrips] = useState([
+  const [recentTrips] = useState([
     { id: '1', driver: 'Mohamed Ben Salah', vehicle: '123 TU 4567', from: 'Tunis', to: 'Sfax', status: 'ongoing' },
     { id: '2', driver: 'Fatma Chaabani', vehicle: '234 TU 8912', from: 'Sousse', to: 'Kairouan', status: 'completed' },
     { id: '3', driver: 'Ahmed Trabelsi', vehicle: '156 TU 3421', from: 'Bizerte', to: 'Nabeul', status: 'ongoing' },

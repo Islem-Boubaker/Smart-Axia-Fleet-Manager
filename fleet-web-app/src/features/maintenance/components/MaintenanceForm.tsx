@@ -9,6 +9,14 @@ interface MaintenanceFormProps {
   onCancel: () => void;
 }
 
+const selectClass =
+  'w-full px-4 py-2.5 bg-white dark:bg-slate-800/50 border border-gray-200 dark:border-slate-700 text-sm text-gray-900 dark:text-white rounded-xl shadow-[0_1px_2px_rgba(0,0,0,0.02)] focus:outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand transition-all hover:border-gray-300 dark:hover:border-slate-600';
+
+const textareaClass =
+  'w-full px-4 py-2.5 bg-white dark:bg-slate-800/50 border border-gray-200 dark:border-slate-700 text-sm text-gray-900 dark:text-white rounded-xl shadow-[0_1px_2px_rgba(0,0,0,0.02)] focus:outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand transition-all hover:border-gray-300 dark:hover:border-slate-600';
+
+const labelClass = "block text-[13px] text-gray-500 dark:text-slate-400 mb-1.5";
+
 const MaintenanceForm = ({ maintenance, onSubmit, onCancel }: MaintenanceFormProps) => {
   const { vehicles, isLoading: vehiclesLoading } = useVehicles();
 
@@ -50,12 +58,12 @@ const MaintenanceForm = ({ maintenance, onSubmit, onCancel }: MaintenanceFormPro
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {/* Vehicle */}
         <div>
-          <label className="block text-sm font-medium mb-1">Vehicle *</label>
+          <label className={labelClass}>Vehicle *</label>
           <select
             name="vehicleId"
             value={formData.vehicleId}
             onChange={handleChange}
-            className="w-full border rounded-lg p-2"
+            className={selectClass}
             disabled={vehiclesLoading}
             required
           >
@@ -72,14 +80,14 @@ const MaintenanceForm = ({ maintenance, onSubmit, onCancel }: MaintenanceFormPro
 
         {/* Type */}
         <div className="md:col-span-2">
-          <label className="block text-sm font-medium text-gray-700 mb-1">
+          <label className={labelClass}>
             Maintenance Type <span className="text-red-500">*</span>
           </label>
           <select
             name="type"
             value={formData.type}
             onChange={handleChange}
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg"
+            className={selectClass}
             required
           >
             <option value="">Select type</option>
@@ -101,7 +109,7 @@ const MaintenanceForm = ({ maintenance, onSubmit, onCancel }: MaintenanceFormPro
 
         {/* Date */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
+          <label className={labelClass}>
             Scheduled Date <span className="text-red-500">*</span>
           </label>
           <Input type="date" name="scheduledDate" value={formData.scheduledDate} onChange={handleChange} required />
@@ -109,20 +117,20 @@ const MaintenanceForm = ({ maintenance, onSubmit, onCancel }: MaintenanceFormPro
 
         {/* Technician */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Technician</label>
+          <label className={labelClass}>Technician</label>
           <Input type="text" name="technician" value={formData.technician} onChange={handleChange} placeholder="Technician name" />
         </div>
 
         {/* Priority */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
+          <label className={labelClass}>
             Priority <span className="text-red-500">*</span>
           </label>
           <select
             name="priority"
             value={formData.priority}
             onChange={handleChange}
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg"
+            className={selectClass}
             required
           >
             <option value="low">Low</option>
@@ -133,14 +141,14 @@ const MaintenanceForm = ({ maintenance, onSubmit, onCancel }: MaintenanceFormPro
 
         {/* Status */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
+          <label className={labelClass}>
             Status <span className="text-red-500">*</span>
           </label>
           <select
             name="status"
             value={formData.status}
             onChange={handleChange}
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg"
+            className={selectClass}
             required
           >
             <option value="scheduled">Scheduled</option>
@@ -152,25 +160,25 @@ const MaintenanceForm = ({ maintenance, onSubmit, onCancel }: MaintenanceFormPro
 
         {/* Cost */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Estimated Cost (TND)</label>
+          <label className={labelClass}>Estimated Cost (TND)</label>
           <Input type="number" name="cost" value={formData.cost} onChange={handleChange} placeholder="e.g., 150" />
         </div>
 
         {/* Mileage */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Current Mileage (km)</label>
+          <label className={labelClass}>Current Mileage (km)</label>
           <Input type="number" name="mileage" value={formData.mileage} onChange={handleChange} placeholder="e.g., 45230" />
         </div>
 
         {/* Description */}
         <div className="md:col-span-2">
-          <label className="block text-sm font-medium text-gray-700 mb-1">Description / Notes</label>
+          <label className={labelClass}>Description / Notes</label>
           <textarea
             name="description"
             value={formData.description}
             onChange={handleChange}
             rows={3}
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg"
+            className={textareaClass}
             placeholder="Additional details about the maintenance..."
           />
         </div>

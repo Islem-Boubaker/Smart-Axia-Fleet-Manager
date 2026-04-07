@@ -4,11 +4,14 @@ import { AppTopBar } from './Header/AppTopBar';
 import { Sidebar } from './Sidebar';
 
 export const DashboardLayout = memo(() => {
-  const [dark, setDark] = useState(false);
+  const [dark, setDark] = useState(() => {
+    return localStorage.getItem('theme') === 'dark';
+  });
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   useEffect(() => {
     document.documentElement.classList.toggle('dark', dark);
+    localStorage.setItem('theme', dark ? 'dark' : 'light');
   }, [dark]);
 
   return (

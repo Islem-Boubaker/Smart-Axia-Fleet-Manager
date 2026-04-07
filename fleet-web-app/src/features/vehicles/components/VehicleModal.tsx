@@ -7,7 +7,7 @@ interface Props {
   onClose: () => void;
   title: string;
   vehicle?: Partial<Vehicle>;
-  onSubmit: (data: Partial<Vehicle>) => void;
+  onSubmit: (data: Partial<Vehicle> | FormData) => void;
   error?: string;
 }
 

@@ -1,12 +1,6 @@
 import { Card } from '../../../shared/components';
 import DriverCard from './DriverCard';
-
-interface Driver {
-  id: string;
-  name: string;
-  email: string;
-  licenseNumber: string;
-}
+import type { Driver } from '../../../types';
 
 interface Props {
   drivers: Driver[];

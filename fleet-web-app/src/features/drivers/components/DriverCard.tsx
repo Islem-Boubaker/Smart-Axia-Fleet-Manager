@@ -19,11 +19,15 @@ const DriverCard = memo(({ driver, onEdit, onDelete, dark = false }: DriverCardP
       <div className="flex items-start justify-between gap-3">
         <div className="flex items-center space-x-3 min-w-0">
           <div
-            className={`w-16 h-16 rounded-full flex items-center justify-center shrink-0 ${
+            className={`w-16 h-16 rounded-full flex items-center justify-center shrink-0 overflow-hidden ${
               dark ? 'bg-brand/25 text-brand' : 'bg-brand text-white'
             }`}
           >
-            <FiUser className={`text-2xl ${dark ? '' : 'text-white'}`} />
+            {driver.avatar ? (
+              <img src={driver.avatar} alt={driver.name} className="w-full h-full object-cover" />
+            ) : (
+              <FiUser className={`text-2xl ${dark ? '' : 'text-white'}`} />
+            )}
           </div>
           <div className="min-w-0">
             <h3 className={`text-lg font-semibold truncate ${t}`}>{driver.name}</h3>
