@@ -1,60 +1,97 @@
-import express from 'express';
-
-import * as maintenanceController from '../controllers/maintenance.controller.js';
-
-import { validateCreateMaintenance } from '../validators/maintenance.validator.js';
-import * as authMiddlewares from '../middlewares/auth.middlewares.js';
-import * as csrfMiddleware from '../middlewares/csrf.middleware.js';
-
+import express from "express";
+import * as maintenanceController from "../controllers/maintenance.controller.js";
+import { authenticate, authorizeRoles } from "../middlewares/auth.middlewares.js";
+import csrfMiddleware from "../middlewares/csrf.middleware.js";
+import {
+  validateCreateMaintenance,
+  validateUpdateMaintenance,
+  validateStatusUpdate,
+  validateListMaintenancesQuery,
+  validateUpcomingQuery,
+  validateOverdueQuery,
+} from "../validators/maintenance.validator.js";
 
 const router = express.Router();
-//  Appliquer la sécurité à TOUTES les routes de ce router:
 
-router.use(authMiddlewares.authenticate);
-router.use(authMiddlewares.authorizeRoles('ADMIN', 'MANAGER'));
-router.use(csrfMiddleware.verifyCsrf);
+router.use(authenticate);
+
+router.get(
+  "/maintenances/upcoming",
+  authorizeRoles("ADMIN", "MANAGER", "DRIVER"),
+  validateUpcomingQuery,
+  maintenanceController.getUpcomingMaintenances
+);
+
+router.get(
+  "/maintenances/overdue",
+  authorizeRoles("ADMIN", "MANAGER"),
+  validateOverdueQuery,
+  maintenanceController.getOverdueMaintenances
+);
 
 router.post(
-  '/maintenances',
+  "/maintenances",
+  authorizeRoles("ADMIN", "MANAGER"),
+  csrfMiddleware.verifyCsrf,
   validateCreateMaintenance,
   maintenanceController.createMaintenance
 );
 
-
 router.get(
-  '/maintenances',
+  "/maintenances",
+  authorizeRoles("ADMIN", "MANAGER", "DRIVER"),
+  validateListMaintenancesQuery,
   maintenanceController.getAllMaintenances
 );
 
-
 router.get(
-  '/maintenances/:id',
+  "/maintenances/:id",
+  authorizeRoles("ADMIN", "MANAGER", "DRIVER"),
   maintenanceController.getMaintenanceById
 );
 
-// PUT=Remplace toute l'objet si field not updated will be null
-router.put(
-  '/maintenances/:id',
-  validateCreateMaintenance,
+router.patch(
+  "/maintenances/:id",
+  authorizeRoles("ADMIN", "MANAGER"),
+  csrfMiddleware.verifyCsrf,
+  validateUpdateMaintenance,
   maintenanceController.updateMaintenance
 );
 
-
 router.delete(
-  '/maintenances/:id',
+  "/maintenances/:id",
+  authorizeRoles("ADMIN"),
+  csrfMiddleware.verifyCsrf,
   maintenanceController.deleteMaintenance
 );
 
-
-// PATCH=Update status only
 router.patch(
-  '/maintenances/:id/status',
-  maintenanceController.updateMaintenanceStatus
+  "/maintenances/:id/status",
+  authorizeRoles("ADMIN", "MANAGER"),
+  csrfMiddleware.verifyCsrf,
+  validateStatusUpdate,
+  maintenanceController.updateStatus
 );
 
+router.patch(
+  "/maintenances/:id/start",
+  authorizeRoles("ADMIN", "MANAGER"),
+  csrfMiddleware.verifyCsrf,
+  maintenanceController.startMaintenance
+);
+
+router.patch(
+  "/maintenances/:id/complete",
+  authorizeRoles("ADMIN", "MANAGER"),
+  csrfMiddleware.verifyCsrf,
+  maintenanceController.completeMaintenance
+);
+
+router.patch(
+  "/maintenances/:id/cancel",
+  authorizeRoles("ADMIN", "MANAGER"),
+  csrfMiddleware.verifyCsrf,
+  maintenanceController.cancelMaintenance
+);
 
 export default router;
-
-
-
-

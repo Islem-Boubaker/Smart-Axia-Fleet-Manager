@@ -1,139 +1,92 @@
 import express from "express";
 import * as tripController from "../controllers/trip.controller.js";
-import * as auth from "../middlewares/auth.middlewares.js";
-import * as tripValidator from "../validators/trip.validator.js";
+import { authenticate, authorizeRoles } from "../middlewares/auth.middlewares.js";
+import csrfMiddleware from "../middlewares/csrf.middleware.js";
 import checkOwnership from "../middlewares/ownership.middleware.js";
 import Trip from "../models/trip.model.js";
-import csrfMiddleware from "../middlewares/csrf.middleware.js";
+import {
+  validateCreateTrip,
+  validateUpdateTrip,
+  validateUpdateStatus,
+} from "../validators/trip.validator.js";
 
 const router = express.Router();
 
-router.use(auth.authenticate);
-
+router.use(authenticate);
 
 router.post(
-  "/trips",
-  auth.authorizeRoles("ADMIN", "MANAGER"),
+  "/trips/",
+  authorizeRoles("ADMIN", "MANAGER"),
   csrfMiddleware.verifyCsrf,
-  tripValidator.validateCreateTrip,
-  tripValidator.validateVehicleExists,
-  tripValidator.validateDriverExists,
-  tripValidator.validateTripTimeLogic,
-  tripValidator.validateNoOverlappingVehicleTrip,
-  tripValidator.validateNoOverlappingDriverTrip,
+  validateCreateTrip,
   tripController.createTrip
 );
 
-
-router.get(
-  "/trips",
-  auth.authorizeRoles("ADMIN", "MANAGER", "DRIVER"),
-  tripController.listTrips
-);
+router.get("/trips/", authorizeRoles("ADMIN", "MANAGER", "DRIVER"), tripController.getTrips);
 
 router.get(
   "/trips/:id",
-  auth.authorizeRoles("ADMIN", "MANAGER", "DRIVER"),
+  authorizeRoles("ADMIN", "MANAGER", "DRIVER"),
   checkOwnership(Trip, { ownerField: "userId" }),
   tripController.getTripById
 );
 
-
 router.patch(
   "/trips/:id",
-  auth.authorizeRoles("ADMIN", "MANAGER"),
+  authorizeRoles("ADMIN", "MANAGER"),
   csrfMiddleware.verifyCsrf,
-  checkOwnership(Trip, { ownerField: "userId" }),
-  tripValidator.validateUpdateTrip,
-  tripValidator.validateVehicleExists,
-  tripValidator.validateDriverExists,
-  tripValidator.validateTripTimeLogic,
-  tripValidator.validateNoOverlappingVehicleTrip,
-  tripValidator.validateNoOverlappingDriverTrip,
+  validateUpdateTrip,
   tripController.updateTrip
 );
 
-
-router.patch(
-  "/trips/:id/status",
-  auth.authorizeRoles("ADMIN", "MANAGER"),
-  csrfMiddleware.verifyCsrf,
-  checkOwnership(Trip, { ownerField: "userId" }),
-  tripValidator.validateUpdateTripStatus,
-  tripValidator.validateTripStatusTransition,
-  tripController.updateTripStatus
-);
-
-
 router.delete(
   "/trips/:id",
-  auth.authorizeRoles("ADMIN", "MANAGER"),
+  authorizeRoles("ADMIN", "MANAGER"),
   csrfMiddleware.verifyCsrf,
-  checkOwnership(Trip, { ownerField: "userId" }),
   tripController.deleteTrip
 );
 
-
-router.post(
-  "/trips/:id/assign-driver",
-  auth.authorizeRoles("ADMIN", "MANAGER"),
+router.patch(
+  "/trips/:id/status",
+  authorizeRoles("ADMIN", "MANAGER"),
   csrfMiddleware.verifyCsrf,
-  tripValidator.validateDriverExists,
-  tripController.assignDriverToTrip
-);
-
-router.post(
-  "/trips/:id/unassign-driver",
-  auth.authorizeRoles("ADMIN", "MANAGER"),
-  csrfMiddleware.verifyCsrf,
-  tripController.unassignDriverFromTrip
+  validateUpdateStatus,
+  tripController.updateTripStatus
 );
 
 router.patch(
   "/trips/:id/start",
-  auth.authorizeRoles("DRIVER", "ADMIN", "MANAGER"),
+  authorizeRoles("ADMIN", "MANAGER", "DRIVER"),
   csrfMiddleware.verifyCsrf,
-  checkOwnership(Trip, { ownerField: "userId" }),
   tripController.startTrip
 );
 
 router.patch(
   "/trips/:id/complete",
-  auth.authorizeRoles("DRIVER", "ADMIN", "MANAGER"),
+  authorizeRoles("ADMIN", "MANAGER", "DRIVER"),
   csrfMiddleware.verifyCsrf,
-  checkOwnership(Trip, { ownerField: "userId" }),
   tripController.completeTrip
 );
 
 router.patch(
   "/trips/:id/cancel",
-  auth.authorizeRoles("DRIVER", "ADMIN", "MANAGER"),
+  authorizeRoles("ADMIN", "MANAGER", "DRIVER"),
   csrfMiddleware.verifyCsrf,
-  checkOwnership(Trip, { ownerField: "userId" }),
   tripController.cancelTrip
 );
 
-
-router.get(
-  "/trips/:id/live-location",
-  auth.authorizeRoles("ADMIN", "MANAGER", "DRIVER"),
-  checkOwnership(Trip, { ownerField: "userId" }),
-  tripController.getLiveLocation
+router.post(
+  "/trips/:id/assign-driver",
+  authorizeRoles("ADMIN", "MANAGER"),
+  csrfMiddleware.verifyCsrf,
+  tripController.assignDriver
 );
 
 router.post(
-  "/trips/:id/location-pings",
-  auth.authorizeRoles("DRIVER"),
+  "/trips/:id/unassign-driver",
+  authorizeRoles("ADMIN", "MANAGER"),
   csrfMiddleware.verifyCsrf,
-  checkOwnership(Trip, { ownerField: "userId" }),
-  tripController.recordLocationPing
-);
-
-router.get(
-  "/trips/:id/history",
-  auth.authorizeRoles("ADMIN", "MANAGER", "DRIVER"),
-  checkOwnership(Trip, { ownerField: "userId" }),
-  tripController.getTripHistory
+  tripController.unassignDriver
 );
 
 export default router;

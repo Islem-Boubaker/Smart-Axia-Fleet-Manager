@@ -1,30 +1,85 @@
-import { Schema, model } from "mongoose";
+import { DataTypes } from 'sequelize';
+import { sequelize } from '../config/connectdb.js';
 
-const maintenanceSchema = new Schema({
-    vehicle: {
-        type: Schema.Types.ObjectId,
-        ref: 'Vehicle',
-        required: true
+
+const Maintenance = sequelize.define(
+  'Maintenance',
+  {
+    id: {
+      type: DataTypes.UUID,
+      defaultValue: DataTypes.UUIDV4,
+      primaryKey: true,
     },
-    description: {
-        type: String,
-        required: true
+    vehicleId: {
+      type: DataTypes.UUID,
+      allowNull: true,
+      references: { model: 'vehicles', key: 'id' },
+      onDelete: 'RESTRICT',
+    },
+    vehiclePlate: {
+      type: DataTypes.STRING,
+      allowNull: false,
+    },
+    scheduledDate: {
+      type: DataTypes.DATE,
+      allowNull: false,
+    },
+    completedAt: {
+      type: DataTypes.DATE,
+      allowNull: true,
+    },
+    technician: {
+      type: DataTypes.STRING,
+      allowNull: false,
     },
     cost: {
-        type: Number,
-        required: true
+      type: DataTypes.FLOAT,
+      allowNull: false,
     },
-    date: {
-        type: Date,
-        default: Date.now
+    mileage: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
+    },
+    priority: {
+      type: DataTypes.ENUM('low', 'medium', 'high'),
+      allowNull: false,
+      defaultValue: 'medium',
     },
     status: {
-        type: String,
-        enum: ['pending', 'in-progress', 'completed'],
-        default: 'pending'
-    }
-}, { timestamps: true });
-
-const Maintenance = model('Maintenance', maintenanceSchema);
+      type: DataTypes.ENUM('scheduled', 'in_progress', 'completed', 'cancelled'),
+      allowNull: false,
+      defaultValue: 'scheduled',
+    },
+    type: {
+      type: DataTypes.STRING,
+      allowNull: true,
+    },
+    description: {
+      type: DataTypes.TEXT,
+      allowNull: true,
+    },
+    attachments: {
+      type: DataTypes.JSONB,
+      allowNull: false,
+      defaultValue: [],
+    },
+    createdBy: {
+      type: DataTypes.UUID,
+      allowNull: true,
+      references: { model: 'users', key: 'id' },
+      onDelete: 'SET NULL',
+    },
+    updatedBy: {
+      type: DataTypes.UUID,
+      allowNull: true,
+      references: { model: 'users', key: 'id' },
+      onDelete: 'SET NULL',
+    },
+  },
+  {
+    tableName: 'maintenances',
+    timestamps: true,
+  }
+);
 
 export default Maintenance;

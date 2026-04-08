@@ -13,7 +13,7 @@ const Trip = sequelize.define(
     // 🔗 Foreign Key → User (Driver)
     userId: {
       type: DataTypes.UUID,
-      allowNull: false,
+      allowNull: true,
       references: {
         model: "users",
         key: "id",

@@ -13,6 +13,7 @@ import { errorHandler } from './middlewares/error.middleware.js';
 import maintenanceRoutes from './routes/maintenance.routes.js';
 import notificationRoutes from './routes/notification.routes.js';
 import tripRoutes from './routes/trip.routes.js';
+import tripStopRoutes from './routes/tripStop.routes.js';
 dotenv.config();
 
 const app = express();
@@ -24,7 +25,8 @@ app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
 app.disable('x-powered-by');
 app.set("trust proxy", 1);
-app.use('/', [userRoutes, vehicleRoutes, reclamationRoutes, maintenanceRoutes, notificationRoutes, tripRoutes]);
+app.use('/', [userRoutes, vehicleRoutes, reclamationRoutes, maintenanceRoutes, notificationRoutes,tripRoutes,tripStopRoutes]);
+
 app.use(errorHandler);
 export default app;
 
