@@ -1,378 +1,180 @@
+import { Op } from "sequelize";
 import { eventBus, FLEET_EVENTS } from "./eventBus.js";
 import { NOTIFICATION_TYPES } from "../constants/notification.constants.js";
-import NotificationService from "../services/notification.service.js";
+import Notification from "../models/notification.model.js";
+import Trip from "../models/trip.model.js";
+import User from "../models/user.model.js";
+import { getIO } from "../config/socket.js";
 
-async function notify(userId, type, title, message, extra = {}) {
-  if (!userId) return null;
+const emitSocketNotification = (userId, notification) => {
+  try {
+    const io = getIO();
+    io.to(String(userId)).emit("notification:new", notification);
+    io.to(`user:${userId}`).emit("notification:new", notification);
+  } catch {
+    // Socket server may not be initialised yet during startup tests.
+  }
+};
 
-  return NotificationService.createNotification({
-    userId,
-    type,
-    title,
-    message,
-    metadata: extra.metadata ?? {},
-    entityType: extra.entityType ?? null,
-    entityId: extra.entityId ?? null,
-    actionUrl: extra.actionUrl ?? null,
-    expiresAt: extra.expiresAt ?? null,
-    sendPush: extra.sendPush ?? true,
+const createNotification = async (payload) => {
+  const notification = await Notification.create(payload);
+  emitSocketNotification(payload.userId, notification.toJSON());
+  return notification;
+};
+
+const getManagerAndAdminIds = async () => {
+  const users = await User.findAll({
+    where: {
+      role: {
+        [Op.in]: ["ADMIN", "MANAGER"],
+      },
+    },
+    attributes: ["id"],
   });
-}
 
-async function notifyMany(userIds, type, title, message, extra = {}) {
-  if (!Array.isArray(userIds) || userIds.length === 0) return [];
-
-  return NotificationService.createBulkNotifications(userIds, {
-    type,
-    title,
-    message,
-    metadata: extra.metadata ?? {},
-    entityType: extra.entityType ?? null,
-    entityId: extra.entityId ?? null,
-    actionUrl: extra.actionUrl ?? null,
-    expiresAt: extra.expiresAt ?? null,
-    sendPush: extra.sendPush ?? true,
-  });
-}
+  return users.map((user) => user.id);
+};
 
 eventBus.subscribe(FLEET_EVENTS.TRIP_ASSIGNED, async ({ payload }) => {
-  const { trip, driverId, managerId, vehicleId } = payload;
+  const trip = await Trip.findByPk(payload.tripId);
+  if (!trip) return;
 
-  await notify(
-    driverId,
-    NOTIFICATION_TYPES.TRIP_ASSIGNED,
-    "New Trip Assigned",
-    `You have been assigned trip #${trip.reference ?? trip.id}.`,
-    {
-      entityType: "trip",
-      entityId: trip.id,
-      metadata: { tripId: trip.id, vehicleId },
-    }
-  );
+  const notification = await createNotification({
+    userId: payload.userId,
+    type: NOTIFICATION_TYPES.TRIP_ASSIGNED,
+    title: "New Trip Assigned",
+    message: `You have been assigned to trip from ${trip.startLocation} to ${trip.endLocation}.`,
+    entityId: payload.tripId,
+    entityType: "trip",
+    metadata: {
+      referenceId: payload.tripId,
+      referenceType: "trip",
+    },
+  });
 
-  if (managerId) {
-    await notify(
-      managerId,
-      NOTIFICATION_TYPES.TRIP_ASSIGNED,
-      "Trip Assigned",
-      `Trip #${trip.reference ?? trip.id} has been assigned to a driver.`,
-      {
-        entityType: "trip",
-        entityId: trip.id,
-        metadata: { tripId: trip.id, driverId },
-      }
-    );
-  }
+  emitSocketNotification(payload.userId, notification.toJSON());
 });
 
 eventBus.subscribe(FLEET_EVENTS.TRIP_STARTED, async ({ payload }) => {
-  const { trip, driverId, managerId } = payload;
+  const recipientIds = await getManagerAndAdminIds();
+  if (!recipientIds.length) return;
 
-  await notifyMany(
-    [managerId].filter(Boolean),
-    NOTIFICATION_TYPES.TRIP_STARTED,
-    "Trip Started",
-    `Trip #${trip.reference ?? trip.id} is now underway.`,
-    {
+  await Notification.bulkCreate(
+    recipientIds.map((userId) => ({
+      userId,
+      type: NOTIFICATION_TYPES.TRIP_STARTED,
+      title: "Trip Started",
+      message: `Trip ${payload.tripId} has started.`,
+      entityId: payload.tripId,
       entityType: "trip",
-      entityId: trip.id,
-      metadata: { tripId: trip.id, driverId, startedAt: trip.startedAt ?? trip.started_at },
-    }
+      metadata: { referenceId: payload.tripId, referenceType: "trip" },
+    }))
   );
 });
 
 eventBus.subscribe(FLEET_EVENTS.TRIP_COMPLETED, async ({ payload }) => {
-  const { trip, driverId, managerId } = payload;
+  const recipientIds = await getManagerAndAdminIds();
+  if (!recipientIds.length) return;
 
-  await notifyMany(
-    [driverId, managerId].filter(Boolean),
-    NOTIFICATION_TYPES.TRIP_COMPLETED,
-    "Trip Completed",
-    `Trip #${trip.reference ?? trip.id} has been completed successfully.`,
-    {
+  await Notification.bulkCreate(
+    recipientIds.map((userId) => ({
+      userId,
+      type: NOTIFICATION_TYPES.TRIP_COMPLETED,
+      title: "Trip Completed",
+      message: `Trip ${payload.tripId} has been completed.`,
+      entityId: payload.tripId,
       entityType: "trip",
-      entityId: trip.id,
-      metadata: { tripId: trip.id, duration: trip.durationMinutes ?? trip.duration_minutes },
-    }
+      metadata: { referenceId: payload.tripId, referenceType: "trip" },
+    }))
   );
 });
 
 eventBus.subscribe(FLEET_EVENTS.TRIP_CANCELLED, async ({ payload }) => {
-  const { trip, driverId, managerId, reason } = payload;
+  const trip = await Trip.findByPk(payload.tripId);
+  if (!trip) return;
 
-  await notifyMany(
-    [driverId, managerId].filter(Boolean),
-    NOTIFICATION_TYPES.TRIP_CANCELLED,
-    "Trip Cancelled",
-    `Trip #${trip.reference ?? trip.id} has been cancelled.${reason ? ` Reason: ${reason}` : ""}`,
-    {
+  const managerIds = await getManagerAndAdminIds();
+  const recipients = [...new Set([trip.userId, ...managerIds].filter(Boolean))];
+
+  if (!recipients.length) return;
+
+  await Notification.bulkCreate(
+    recipients.map((userId) => ({
+      userId,
+      type: NOTIFICATION_TYPES.TRIP_CANCELLED,
+      title: "Trip Cancelled",
+      message: `Trip ${payload.tripId} has been cancelled.`,
+      entityId: payload.tripId,
       entityType: "trip",
-      entityId: trip.id,
-      metadata: { tripId: trip.id, reason },
-    }
+      metadata: { referenceId: payload.tripId, referenceType: "trip" },
+    }))
   );
 });
 
-eventBus.subscribe(FLEET_EVENTS.TRIP_DELAYED, async ({ payload }) => {
-  const { trip, driverId, managerId, delayMinutes } = payload;
+eventBus.on("maintenance:created", async ({ maintenance, vehicle }) => {
+  const recipients = await getManagerAndAdminIds();
+  if (!recipients.length) return;
 
-  await notifyMany(
-    [driverId, managerId].filter(Boolean),
-    NOTIFICATION_TYPES.TRIP_DELAYED,
-    "Trip Delayed",
-    `Trip #${trip.reference ?? trip.id} is delayed by ${delayMinutes} minutes.`,
-    {
-      entityType: "trip",
-      entityId: trip.id,
-      metadata: { tripId: trip.id, delayMinutes },
-    }
+  await Notification.bulkCreate(
+    recipients.map((userId) => ({
+      userId,
+      type: NOTIFICATION_TYPES.MAINTENANCE_SCHEDULED,
+      title: "Maintenance Scheduled",
+      message: `Vehicle ${vehicle?.plaque_immatriculation ?? maintenance?.vehiclePlate ?? maintenance?.vehicleId} has maintenance scheduled for ${new Date(maintenance.scheduledDate).toLocaleDateString()}.`,
+      entityId: maintenance.id,
+      entityType: "maintenance",
+      metadata: { referenceId: maintenance.id, referenceType: "Maintenance" },
+    }))
   );
 });
 
-eventBus.subscribe(FLEET_EVENTS.MAINTENANCE_OVERDUE, async ({ payload }) => {
-  const { vehicle, managerId, overdueBy, maintenanceId } = payload;
+eventBus.on("maintenance:started", async ({ maintenance, vehicle }) => {
+  const recipients = await getManagerAndAdminIds();
+  if (!recipients.length) return;
 
-  await notify(
-    managerId,
-    NOTIFICATION_TYPES.MAINTENANCE_OVERDUE,
-    "Maintenance Overdue",
-    `Vehicle ${vehicle.plate ?? vehicle.id} maintenance is overdue by ${overdueBy} days.`,
-    {
-      entityType: "vehicle",
-      entityId: vehicle.id,
-      metadata: { vehicleId: vehicle.id, maintenanceId, overdueBy },
-    }
+  await Notification.bulkCreate(
+    recipients.map((userId) => ({
+      userId,
+      type: NOTIFICATION_TYPES.MAINTENANCE_STARTED,
+      title: "Maintenance In Progress",
+      message: `Maintenance has started on vehicle ${vehicle?.plaque_immatriculation ?? maintenance?.vehiclePlate ?? maintenance?.vehicleId}. Vehicle is temporarily unavailable.`,
+      entityId: maintenance.id,
+      entityType: "maintenance",
+      metadata: { referenceId: maintenance.id, referenceType: "Maintenance" },
+    }))
   );
 });
 
-eventBus.subscribe(FLEET_EVENTS.MAINTENANCE_SCHEDULED, async ({ payload }) => {
-  const { vehicle, managerId, scheduledAt, maintenanceId } = payload;
+eventBus.on("maintenance:completed", async ({ maintenance, vehicle }) => {
+  const recipients = await getManagerAndAdminIds();
+  if (!recipients.length) return;
 
-  await notify(
-    managerId,
-    NOTIFICATION_TYPES.MAINTENANCE_SCHEDULED,
-    "Maintenance Scheduled",
-    `Maintenance for vehicle ${vehicle.plate ?? vehicle.id} is scheduled for ${new Date(scheduledAt).toLocaleDateString()}.`,
-    {
-      entityType: "vehicle",
-      entityId: vehicle.id,
-      metadata: { vehicleId: vehicle.id, maintenanceId, scheduledAt },
-    }
+  await Notification.bulkCreate(
+    recipients.map((userId) => ({
+      userId,
+      type: NOTIFICATION_TYPES.MAINTENANCE_COMPLETED,
+      title: "Maintenance Completed",
+      message: `Vehicle ${vehicle?.plaque_immatriculation ?? maintenance?.vehiclePlate ?? maintenance?.vehicleId} maintenance is complete and the vehicle is now available.`,
+      entityId: maintenance.id,
+      entityType: "maintenance",
+      metadata: { referenceId: maintenance.id, referenceType: "Maintenance" },
+    }))
   );
 });
 
-eventBus.subscribe(FLEET_EVENTS.MAINTENANCE_COMPLETED, async ({ payload }) => {
-  const { vehicle, managerId, maintenanceId } = payload;
+eventBus.on("maintenance:cancelled", async ({ maintenance, vehicle }) => {
+  const recipients = await getManagerAndAdminIds();
+  if (!recipients.length) return;
 
-  await notify(
-    managerId,
-    NOTIFICATION_TYPES.MAINTENANCE_COMPLETED,
-    "Maintenance Completed",
-    `Vehicle ${vehicle.plate ?? vehicle.id} maintenance has been completed.`,
-    {
-      entityType: "vehicle",
-      entityId: vehicle.id,
-      metadata: { vehicleId: vehicle.id, maintenanceId },
-    }
-  );
-});
-
-eventBus.subscribe(FLEET_EVENTS.VEHICLE_BREAKDOWN, async ({ payload }) => {
-  const { vehicle, driverId, managerId, location } = payload;
-
-  await notifyMany(
-    [driverId, managerId].filter(Boolean),
-    NOTIFICATION_TYPES.VEHICLE_BREAKDOWN,
-    "Vehicle Breakdown",
-    `Vehicle ${vehicle.plate ?? vehicle.id} has reported a breakdown.`,
-    {
-      entityType: "vehicle",
-      entityId: vehicle.id,
-      metadata: { vehicleId: vehicle.id, driverId, location },
-    }
-  );
-});
-
-eventBus.subscribe(FLEET_EVENTS.VEHICLE_IDLE, async ({ payload }) => {
-  const { vehicle, managerId, durationMinutes } = payload;
-
-  await notify(
-    managerId,
-    NOTIFICATION_TYPES.VEHICLE_IDLE,
-    "Vehicle Idle",
-    `Vehicle ${vehicle.plate ?? vehicle.id} has been idle for ${durationMinutes} minutes.`,
-    {
-      entityType: "vehicle",
-      entityId: vehicle.id,
-      metadata: { vehicleId: vehicle.id, durationMinutes },
-    }
-  );
-});
-
-eventBus.subscribe(FLEET_EVENTS.AI_ANOMALY_DETECTED, async ({ payload }) => {
-  const { managerId, vehicle, anomalyType, anomalyScore, description } = payload;
-
-  await notify(
-    managerId,
-    NOTIFICATION_TYPES.AI_ANOMALY_DETECTED,
-    "AI Anomaly Detected",
-    `Anomaly detected on vehicle ${vehicle?.plate ?? vehicle?.id ?? "unknown"}: ${description ?? anomalyType}`,
-    {
-      entityType: "vehicle",
-      entityId: vehicle?.id,
-      metadata: { vehicleId: vehicle?.id, anomalyType, anomalyScore, description },
-    }
-  );
-});
-
-eventBus.subscribe(FLEET_EVENTS.AI_FUEL_ANOMALY, async ({ payload }) => {
-  const { managerId, vehicle, expectedLiters, actualLiters, tripId } = payload;
-
-  await notify(
-    managerId,
-    NOTIFICATION_TYPES.AI_FUEL_ANOMALY,
-    "Fuel Anomaly Detected",
-    `Abnormal fuel consumption on vehicle ${vehicle?.plate ?? vehicle?.id}. Expected: ${expectedLiters}L, Actual: ${actualLiters}L`,
-    {
-      entityType: "vehicle",
-      entityId: vehicle?.id,
-      metadata: { vehicleId: vehicle?.id, tripId, expectedLiters, actualLiters },
-    }
-  );
-});
-
-eventBus.subscribe(FLEET_EVENTS.AI_ROUTE_DEVIATION, async ({ payload }) => {
-  const { managerId, driverId, vehicle, tripId, deviationKm } = payload;
-
-  await notifyMany(
-    [managerId, driverId].filter(Boolean),
-    NOTIFICATION_TYPES.AI_ROUTE_DEVIATION,
-    "Route Deviation Detected",
-    `Vehicle ${vehicle?.plate ?? vehicle?.id} has deviated ${deviationKm} km from the planned route.`,
-    {
-      entityType: "trip",
-      entityId: tripId,
-      metadata: { vehicleId: vehicle?.id, tripId, deviationKm },
-    }
-  );
-});
-
-eventBus.subscribe(FLEET_EVENTS.AI_SPEED_VIOLATION, async ({ payload }) => {
-  const { managerId, driverId, vehicle, speedKmh, limitKmh, location } = payload;
-
-  await notifyMany(
-    [managerId, driverId].filter(Boolean),
-    NOTIFICATION_TYPES.AI_SPEED_VIOLATION,
-    "Speed Violation",
-    `Vehicle ${vehicle?.plate ?? vehicle?.id} exceeded speed limit: ${speedKmh} km/h (limit: ${limitKmh} km/h).`,
-    {
-      entityType: "vehicle",
-      entityId: vehicle?.id,
-      metadata: { vehicleId: vehicle?.id, driverId, speedKmh, limitKmh, location },
-    }
-  );
-});
-
-eventBus.subscribe(FLEET_EVENTS.AI_PREDICTIVE_ALERT, async ({ payload }) => {
-  const { managerId, vehicle, alertType, message, confidence } = payload;
-
-  await notify(
-    managerId,
-    NOTIFICATION_TYPES.AI_PREDICTIVE_ALERT,
-    "Predictive Alert",
-    message ?? `Predictive maintenance alert for vehicle ${vehicle?.plate ?? vehicle?.id}.`,
-    {
-      entityType: "vehicle",
-      entityId: vehicle?.id,
-      metadata: { vehicleId: vehicle?.id, alertType, confidence },
-    }
-  );
-});
-
-eventBus.subscribe(FLEET_EVENTS.DRIVER_ASSIGNED, async ({ payload }) => {
-  const { driverId, vehicle, tripId } = payload;
-
-  await notify(
-    driverId,
-    NOTIFICATION_TYPES.DRIVER_ASSIGNED,
-    "Vehicle Assigned",
-    `You have been assigned vehicle ${vehicle?.plate ?? vehicle?.id}.`,
-    {
-      entityType: "vehicle",
-      entityId: vehicle?.id,
-      metadata: { vehicleId: vehicle?.id, tripId },
-    }
-  );
-});
-
-eventBus.subscribe(FLEET_EVENTS.DRIVER_UNASSIGNED, async ({ payload }) => {
-  const { driverId, vehicle, tripId } = payload;
-
-  await notify(
-    driverId,
-    NOTIFICATION_TYPES.SYSTEM_UPDATE,
-    "Vehicle Unassigned",
-    `You have been unassigned from vehicle ${vehicle?.plate ?? vehicle?.id}.`,
-    {
-      entityType: "vehicle",
-      entityId: vehicle?.id,
-      metadata: { vehicleId: vehicle?.id, tripId },
-    }
-  );
-});
-
-eventBus.subscribe(FLEET_EVENTS.DRIVER_LICENSE_EXPIRY, async ({ payload }) => {
-  const { driverId, managerId, expiryDate, daysUntilExpiry } = payload;
-
-  await notifyMany(
-    [driverId, managerId].filter(Boolean),
-    NOTIFICATION_TYPES.DRIVER_LICENSE_EXPIRY,
-    "License Expiring Soon",
-    `Driver license expires in ${daysUntilExpiry} days (${new Date(expiryDate).toLocaleDateString()}).`,
-    {
-      entityType: "driver",
-      entityId: driverId,
-      metadata: { driverId, expiryDate, daysUntilExpiry },
-    }
-  );
-});
-
-eventBus.subscribe(FLEET_EVENTS.DRIVER_BEHAVIOR_ALERT, async ({ payload }) => {
-  const { driverId, managerId, behaviorType, description, tripId } = payload;
-
-  await notifyMany(
-    [driverId, managerId].filter(Boolean),
-    NOTIFICATION_TYPES.DRIVER_BEHAVIOR_ALERT,
-    "Driver Behavior Alert",
-    description ?? `Unsafe driving behavior detected: ${behaviorType}`,
-    {
-      entityType: "driver",
-      entityId: driverId,
-      metadata: { driverId, behaviorType, tripId },
-    }
-  );
-});
-
-eventBus.subscribe(FLEET_EVENTS.SYSTEM_ALERT, async ({ payload }) => {
-  const { recipientIds, title, message, metadata } = payload;
-
-  await notifyMany(
-    recipientIds ?? [],
-    NOTIFICATION_TYPES.SYSTEM_ALERT,
-    title ?? "System Alert",
-    message,
-    { metadata: metadata ?? {} }
-  );
-});
-
-eventBus.subscribe(FLEET_EVENTS.SYSTEM_UPDATE, async ({ payload }) => {
-  const { recipientIds, title, message, metadata } = payload;
-
-  await notifyMany(
-    recipientIds ?? [],
-    NOTIFICATION_TYPES.SYSTEM_UPDATE,
-    title ?? "System Update",
-    message,
-    { metadata: metadata ?? {} }
+  await Notification.bulkCreate(
+    recipients.map((userId) => ({
+      userId,
+      type: NOTIFICATION_TYPES.MAINTENANCE_CANCELLED,
+      title: "Maintenance Cancelled",
+      message: `Maintenance for vehicle ${vehicle?.plaque_immatriculation ?? maintenance?.vehiclePlate ?? maintenance?.vehicleId} has been cancelled.`,
+      entityId: maintenance.id,
+      entityType: "maintenance",
+      metadata: { referenceId: maintenance.id, referenceType: "Maintenance" },
+    }))
   );
 });

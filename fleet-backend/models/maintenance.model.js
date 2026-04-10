@@ -10,21 +10,31 @@ const Maintenance = sequelize.define(
       defaultValue: DataTypes.UUIDV4,
       primaryKey: true,
     },
+    vehicleId: {
+      type: DataTypes.UUID,
+      allowNull: true,
+      references: { model: 'vehicles', key: 'id' },
+      onDelete: 'RESTRICT',
+    },
     vehiclePlate: {
       type: DataTypes.STRING,
-      allowNull: true,
+      allowNull: false,
     },
     scheduledDate: {
+      type: DataTypes.DATE,
+      allowNull: false,
+    },
+    completedAt: {
       type: DataTypes.DATE,
       allowNull: true,
     },
     technician: {
       type: DataTypes.STRING,
-      allowNull: true,
+      allowNull: false,
     },
     cost: {
       type: DataTypes.FLOAT,
-      allowNull: true,
+      allowNull: false,
     },
     mileage: {
       type: DataTypes.INTEGER,
@@ -43,6 +53,27 @@ const Maintenance = sequelize.define(
     type: {
       type: DataTypes.STRING,
       allowNull: true,
+    },
+    description: {
+      type: DataTypes.TEXT,
+      allowNull: true,
+    },
+    attachments: {
+      type: DataTypes.JSONB,
+      allowNull: false,
+      defaultValue: [],
+    },
+    createdBy: {
+      type: DataTypes.UUID,
+      allowNull: true,
+      references: { model: 'users', key: 'id' },
+      onDelete: 'SET NULL',
+    },
+    updatedBy: {
+      type: DataTypes.UUID,
+      allowNull: true,
+      references: { model: 'users', key: 'id' },
+      onDelete: 'SET NULL',
     },
   },
   {
