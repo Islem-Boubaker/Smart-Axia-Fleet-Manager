@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useOutletContext } from 'react-router-dom';
 import { FiBell, FiEdit2, FiGlobe, FiLock, FiUser } from 'react-icons/fi';
 import { Card, Button } from '../../../shared/components';
@@ -186,6 +186,23 @@ const SettingsPage = () => {
     postalCode: (user as any)?.postalCode || '',
     taxId: (user as any)?.taxId || '',
   });
+
+  useEffect(() => {
+    if (user) {
+      setProfileData({
+        name: user.name || '',
+        email: user.email || '',
+        phone: (user as any)?.phone || '',
+        company: (user as any)?.company || 'AXIA Fleet Manager',
+        role: user.role || '',
+        avatar: user.avatar,
+        country: (user as any)?.country || '',
+        city: (user as any)?.city || '',
+        postalCode: (user as any)?.postalCode || '',
+        taxId: (user as any)?.taxId || '',
+      });
+    }
+  }, [user]);
 
   const handleSaveProfile = async (data: ProfileData, file: File | null) => {
     try {

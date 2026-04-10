@@ -65,6 +65,10 @@ api.interceptors.request.use(
       }
     }
 
+    if (config.data instanceof FormData) {
+      delete config.headers["Content-Type"];
+    }
+
     return config;
   },
   (error: AxiosError) => Promise.reject(error)

@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { FiMail, FiPhone, FiSave, FiUpload, FiTrash2 } from 'react-icons/fi';
 import { Card, Button, Input } from '../../../shared/components';
 import type { ProfileData } from '../settings.types';
@@ -20,6 +20,13 @@ const ProfileSettings = ({ profileData, onSave, dark = false }: Props) => {
   const [previewUrl, setPreviewUrl] = useState<string | null>(profileData.avatar || null);
   const [isSaving, setIsSaving] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    setFormData(profileData);
+    if (!selectedFile) {
+      setPreviewUrl(profileData.avatar || null);
+    }
+  }, [profileData]);
 
   const updateField = (field: keyof ProfileData, value: string) => {
     setFormData((prev) => ({ ...prev, [field]: value }));

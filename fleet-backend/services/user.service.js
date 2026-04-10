@@ -129,16 +129,12 @@ export const loginUserSvc = async (email, password) => {
   const accessToken = Token.generateAccessToken(payload);
   const refreshToken = Token.generateRefreshToken(payload);
 
+  const { password: _, ...userWithoutPassword } = user.toJSON();
+
   return {
     accessToken,
     refreshToken,
-    user: {
-      id: user.id,
-      name: user.name,
-      email: user.email,
-      role: user.role,
-      phone: user.phone
-    }
+    user: userWithoutPassword
   };
 };
 

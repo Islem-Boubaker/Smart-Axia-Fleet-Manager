@@ -75,6 +75,7 @@ export const updateUser = async (req, res, next) => {
 
 export const updateMe = async (req, res, next) => {
   try {
+    console.log('[updateMe] req.body:', req.body);
     const updatedUser = await userService.updateUserSvc(req.user.id, req.body);
     if (!updatedUser) {
       return res.status(StatusCodes.NOT_FOUND).json({ success: false, message: 'User not found' });
