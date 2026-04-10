@@ -14,8 +14,10 @@ export const createVehicle = [
       const data = { ...req.body };
 
       // Map uploaded files to Cloudinary URLs
-      if (req.files?.length) {
+      if (req.files && req.files.length > 0) {
         data.photos = req.files.map((f) => f.path);
+      } else {
+        delete data.photos;
       }
 
       const vehicle = await vehicleService.createVehicle(data);
@@ -57,8 +59,10 @@ export const updateVehicle = [
     try {
       const data = { ...req.body };
 
-      if (req.files?.length) {
+      if (req.files && req.files.length > 0) {
         data.photos = req.files.map((f) => f.path);
+      } else {
+        delete data.photos;
       }
       
       console.log('[updateVehicle] data:', data);
