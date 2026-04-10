@@ -15,19 +15,14 @@ export const vehiclesService = {
   },
 
   createVehicle: async (data: Partial<Vehicle> | FormData): Promise<Vehicle> => {
-    const response = await api.post<ApiResponse<Vehicle>>('/vehicle/addvehicle', data, {
-      headers: data instanceof FormData ? { 'Content-Type': 'multipart/form-data' } : {},
-    });
+    const response = await api.post<ApiResponse<Vehicle>>('/vehicle/addvehicle', data);
     return response.data.data;
   },
 
   updateVehicle: async (id: string, data: Partial<Vehicle> | FormData): Promise<Vehicle> => {
     const response = await api.put<ApiResponse<Vehicle>>(
       `/vehicle/updatevehicle/${id}`,
-      data,
-      {
-        headers: data instanceof FormData ? { 'Content-Type': 'multipart/form-data' } : {},
-      }
+      data
     );
     return response.data.data;
   },

@@ -34,11 +34,7 @@ export const driversService = {
   uploadDriverAvatar: async (id: string, file: File): Promise<Driver> => {
     const formData = new FormData();
     formData.append('avatar', file);
-    const response = await api.patch<ApiResponse<Driver>>(`/user/${id}/avatar`, formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data',
-      },
-    });
+    const response = await api.patch<ApiResponse<Driver>>(`/user/${id}/avatar`, formData);
     return response.data.data;
   },
 
