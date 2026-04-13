@@ -6,9 +6,6 @@ export const subscribeToAuthState = (
 ): (() => void) => {
   const auth = getFirebaseAuth();
   if (!auth) {
-    console.warn(
-      "Firebase native auth is unavailable. Skipping auth state subscription.",
-    );
     return () => undefined;
   }
 
@@ -18,7 +15,6 @@ export const subscribeToAuthState = (
 export const signOutFirebase = async (): Promise<void> => {
   const auth = getFirebaseAuth();
   if (!auth) {
-    console.warn("Firebase native auth is unavailable. Skipping sign out.");
     return;
   }
 

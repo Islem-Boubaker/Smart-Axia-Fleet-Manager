@@ -49,15 +49,42 @@
 //   dateFrom?: string;
 //   dateTo?: string;
 // }
-export type ReclamationStatus = "pending" | "in_progress" | "resolved";
+export type ReclamationStatus =
+  | "pending"
+  | "in_progress"
+  | "resolved"
+  | "rejected";
 export type ReclamationType = "damage" | "delay" | "technical" | "other";
 export type FilterOption = "all" | ReclamationStatus;
 
 export interface Reclamation {
   id: string;
-  title: string;
-  description: string;
+  subject: string;
+  message: string;
   status: ReclamationStatus;
   type: ReclamationType;
-  date: string;
+  createdAt: string;
+  updatedAt?: string;
+  vehicleId?: string;
+  images?: string[];
+}
+
+export interface ReclamationDetails extends Reclamation {
+  comments?: Array<{
+    id: string;
+    message: string;
+    createdAt: string;
+  }>;
+}
+
+export interface CreateReclamationData {
+  subject: string;
+  message: string;
+  vehicleId?: string;
+  images?: File[];
+}
+
+export interface UpdateReclamationData {
+  subject?: string;
+  message?: string;
 }

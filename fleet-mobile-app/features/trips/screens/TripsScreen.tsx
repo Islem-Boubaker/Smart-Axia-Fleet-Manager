@@ -1,26 +1,26 @@
-import React, { useState, useCallback } from "react";
-import {
-  View,
-  Text,
-  FlatList,
-  TouchableOpacity,
-  RefreshControl,
-  StatusBar,
-} from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import { useFocusEffect } from "@react-navigation/native";
 import { useRouter } from "expo-router";
-import MaterialIcons from "@expo/vector-icons/MaterialIcons";
+import React, { useCallback, useState } from "react";
+import {
+  FlatList,
+  RefreshControl,
+  StatusBar,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 
-import { tripsApi } from "../services/trips.api";
+import { LoadingSpinner } from "@/shared/components/ui/LoadingSpinner";
 import { TripCard } from "../components/TripCard";
+import { TripEmptyState } from "../components/TripEmptyState";
 import { TripFilterChips } from "../components/TripFilterChips";
 import { TripStatsRow } from "../components/TripStatsRow";
-import { TripEmptyState } from "../components/TripEmptyState";
-import { LoadingSpinner } from "@/shared/components/ui/LoadingSpinner";
-import type { Trip } from "../types/trip.types";
 import type { FilterOption } from "../config/trips.config";
 import { data } from "../data/data";
+import { tripsApi } from "../services/trips.api";
+import type { Trip } from "../types/trip.types";
 
 // ─── Types ────────────────────────────────────────────────────────
 type TripLike = Partial<Trip> & {
@@ -47,6 +47,8 @@ const normalizeTrip = (raw: TripLike, index: number): Trip => ({
     raw?.status === "pending"
       ? raw.status
       : "pending",
+  pickupLocation: (typeof raw?.pickupLocation === 'string' ? { address: raw.pickupLocation } : raw?.pickupLocation) ?? { address: raw?.from ?? "" },
+  destinationLocation: (typeof raw?.destinationLocation === 'string' ? { address: raw.destinationLocation } : raw?.destinationLocation) ?? { address: raw?.to ?? "" },
 });
 
 // ✅ Guard against data itself being undefined/null
@@ -183,7 +185,7 @@ export function TripsScreen() {
               onPress={() => {
                 // ✅ Safe navigation — only push if id exists
                 if (!item.id) return;
-                router.replace("/maps");
+                router.replace(`/trips/${item.id}`);
               }}
             />
           );

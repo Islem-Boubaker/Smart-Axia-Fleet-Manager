@@ -1,8 +1,8 @@
-import { useState, useEffect, useCallback } from 'react';
-import { driverApi } from '../services/driver.api';
-import { tripsApi } from '@/features/trips/services/trips.api';
-import type { Vehicle, DashboardStats } from '../types/driver.types';
-import type { Trip } from '@/features/trips/types/trip.types';
+import { tripsApi } from "@/features/trips/services/trips.api";
+import type { Trip } from "@/features/trips/types/trip.types";
+import { useCallback, useEffect, useState } from "react";
+import { driverApi } from "../services/Dashboard.api";
+import type { DashboardStats, Vehicle } from "../types/driver.types";
 
 interface DashboardData {
   activeTrip: Trip | null;
@@ -41,7 +41,7 @@ export function useDashboard(): DashboardData {
       setVehicle(vehicleData);
       setStats(statsData);
     } catch (error) {
-      console.error('Failed to load dashboard:', error);
+      console.error("Failed to load dashboard:", error);
       // Silently fail - components will show default state
     } finally {
       setIsLoading(false);

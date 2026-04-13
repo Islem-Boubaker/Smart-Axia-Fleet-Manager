@@ -1,35 +1,51 @@
-import { useEffect } from 'react';
+import { useCallback, useEffect, useState } from "react";
+import { tripsApi } from "../services/trips.api";
+import type { Trip, TripFilters } from "../types/trip.types";
 
-import { useSelector } from 'react-redux';
-import { useRouter, useSegments, useRootNavigationState } from 'expo-router';
-import type { RootState } from '@/store';
+interface UseTripsState {
+  trips: Trip[];
+  isLoading: boolean;
+  isRefreshing: boolean;
+  error: string | null;
+  refresh: () => Promise<void>;
+}
 
-export function useAuthGuard() {
-  const isAuthenticated = useSelector((state: RootState) => state.auth.isAuthenticated);
-  const isLoading = useSelector((state: RootState) => state.auth.isLoading);
-  const router   = useRouter();
-  const segments = useSegments(); // ['(tabs)', 'home'] for example
-  const navigationState = useRootNavigationState();
+export function useTrips(filters?: TripFilters): UseTripsState {
+  const [trips, setTrips] = useState<Trip[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const fetchTrips = useCallback(async () => {
+    try {
+      setError(null);
+      const data = await tripsApi.getAllTrips(filters);
+      setTrips(data);
+    } catch (err) {
+      const message =
+        err instanceof Error ? err.message : "Failed to load trips";
+      setError(message);
+    } finally {
+      setIsLoading(false);
+      setIsRefreshing(false);
+    }
+  }, [filters]);
 
   useEffect(() => {
-    if (isLoading) return; // wait until we know auth state
-    if (!navigationState?.key) return;
-    if (segments.length === 0) return;
+    setIsLoading(true);
+    fetchTrips();
+  }, [fetchTrips]);
 
-    const inAuthGroup = segments[0] === '(auth)';
+  const refresh = useCallback(async () => {
+    setIsRefreshing(true);
+    await fetchTrips();
+  }, [fetchTrips]);
 
-    const target = !isAuthenticated && !inAuthGroup
-      ? '/(auth)/login'
-      : isAuthenticated && inAuthGroup
-        ? '/(tabs)/home'
-        : null;
-
-    if (!target) return;
-
-    const timeout = setTimeout(() => {
-      router.replace(target);
-    }, 0);
-
-    return () => clearTimeout(timeout);
-  }, [isAuthenticated, isLoading, segments, router, navigationState?.key]);
+  return {
+    trips,
+    isLoading,
+    isRefreshing,
+    error,
+    refresh,
+  };
 }

@@ -1,17 +1,8 @@
-import { View, Text } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
-import { useLocalSearchParams } from "expo-router";
+import { TripDetailsScreen } from '@/features/trips/screens/TripDetailsScreen'
+import React from 'react'
 
-export default function TripDetailsRoute() {
-  const { id } = useLocalSearchParams();
-
+export default function tripdetails() {
   return (
-    <SafeAreaView className="flex-1 bg-white">
-      <View className="flex-1 items-center justify-center">
-        <Text className="text-lg font-bold">Trip {id}</Text>
-      </View>
-    </SafeAreaView>
-  );
+    <TripDetailsScreen/>
+  )
 }
-
-TripDetailsRoute.displayName = 'TripDetailsRoute';

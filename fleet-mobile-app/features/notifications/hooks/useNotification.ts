@@ -1,14 +1,14 @@
-import { useState, useEffect, useCallback, useRef, useMemo } from "react";
+import { buildCookieHeader } from "@/shared/services/cookieJar";
+import { resolveApiBaseUrl } from "@/shared/utils/apiBase";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { io, Socket } from "socket.io-client";
 import { notificationApi } from "../services/notification.api";
 import type {
-  NotificationGroup,
-  NotificationItem,
-  NotificationType,
-  RawNotification,
+    NotificationGroup,
+    NotificationItem,
+    NotificationType,
+    RawNotification,
 } from "../types/notification.types";
-import { buildCookieHeader } from "@/shared/services/cookieJar";
-import { resolveApiBaseUrl } from "@/shared/utils/apiBase";
 
 const SOCKET_URL = resolveApiBaseUrl(process.env.EXPO_PUBLIC_API_URL);
 
@@ -91,7 +91,13 @@ export function useNotification() {
     setError(null);
     try {
       const data = await notificationApi.getAll({ limit: 50 });
-      const list = data.notifications || [];
+      const list = Array.isArray(data)
+        ? data
+        : Array.isArray(
+              (data as { notifications?: RawNotification[] })?.notifications,
+            )
+          ? (data as { notifications: RawNotification[] }).notifications
+          : [];
       setFlatNotifications(list);
       setUnreadCount(
         list.filter((n: RawNotification) => !n.read && !n.readAt).length,

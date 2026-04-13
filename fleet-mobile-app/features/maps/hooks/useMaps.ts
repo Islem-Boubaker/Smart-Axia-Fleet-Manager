@@ -99,38 +99,37 @@
 //   };
 // }
 
-
-
 // hooks/useMaps.ts
 import { useEffect, useRef, useState } from "react";
 import { Animated } from "react-native";
-import type { TripRoute } from "../types/maps.types";
 import type MapView from "react-native-maps";
+import type { TripRoute } from "../types/maps.types";
 
 export function useMapScreen(trip: TripRoute) {
   const mapRef = useRef<MapView>(null);
   const sheetHeight = useRef(new Animated.Value(200)).current;
-  const [routeCoords, setRouteCoords] = useState(trip.routeCoords);
-  const [driverLocation, setDriverLocation] = useState(trip.stops[0].coordinate);
+  const [routeCoords, setRouteCoords] = useState(trip.polyline);
+  const [driverLocation] = useState(trip.origin.coordinate);
+  const [isSheetExpanded, setIsSheetExpanded] = useState(false);
 
   // ── Fetch real road route from OSRM ──
   useEffect(() => {
     const fetchRoute = async () => {
-      const stops = trip.stops;
-      
+      const stops = [trip.origin, ...trip.waypoints, trip.destination];
+
       // Build waypoints string: lng,lat;lng,lat;...
       const waypoints = stops
-        .map(s => `${s.coordinate.longitude},${s.coordinate.latitude}`)
+        .map((s) => `${s.coordinate.longitude},${s.coordinate.latitude}`)
         .join(";");
 
       const res = await fetch(
-        `https://router.project-osrm.org/route/v1/driving/${waypoints}?overview=full&geometries=geojson`
+        `https://router.project-osrm.org/route/v1/driving/${waypoints}?overview=full&geometries=geojson`,
       );
       const data = await res.json();
 
       if (data.routes?.[0]) {
         const coords = data.routes[0].geometry.coordinates.map(
-          ([lng, lat]: [number, number]) => ({ latitude: lat, longitude: lng })
+          ([lng, lat]: [number, number]) => ({ latitude: lat, longitude: lng }),
         );
         setRouteCoords(coords);
       }
@@ -142,35 +141,47 @@ export function useMapScreen(trip: TripRoute) {
   // ── Fit all stops in view ──
   const fitRoute = () => {
     mapRef.current?.fitToCoordinates(
-      trip.stops.map(s => s.coordinate),
-      { edgePadding: { top: 100, right: 50, bottom: 300, left: 50 }, animated: true }
+      [trip.origin, ...trip.waypoints, trip.destination].map(
+        (s) => s.coordinate,
+      ),
+      {
+        edgePadding: { top: 100, right: 50, bottom: 300, left: 50 },
+        animated: true,
+      },
     );
   };
 
   // ── Center on driver ──
   const centerOnDriver = () => {
-    mapRef.current?.animateToRegion({
-      ...driverLocation,
-      latitudeDelta: 0.05,
-      longitudeDelta: 0.05,
-    }, 500);
+    mapRef.current?.animateToRegion(
+      {
+        ...driverLocation,
+        latitudeDelta: 0.05,
+        longitudeDelta: 0.05,
+      },
+      500,
+    );
   };
 
   // ── Toggle bottom sheet ──
   const toggleSheet = () => {
+    const toExpanded = !isSheetExpanded;
     Animated.spring(sheetHeight, {
-      toValue: sheetHeight._value > 200 ? 200 : 400,
+      toValue: toExpanded ? 400 : 200,
       useNativeDriver: false,
     }).start();
+    setIsSheetExpanded(toExpanded);
   };
 
-  const completedStops = trip.stops.filter(s => s.completed).length;
-  const totalStops = trip.stops.length;
+  const completedStops = [trip.origin, ...trip.waypoints].filter(
+    (s) => s.reached,
+  ).length;
+  const totalStops = [trip.origin, ...trip.waypoints, trip.destination].length;
 
   return {
     mapRef,
     driverLocation,
-    routeCoords,   // ← pass this to TripRouteLayer
+    routeCoords, // ← pass this to TripRouteLayer
     sheetHeight,
     toggleSheet,
     centerOnDriver,

@@ -15,10 +15,7 @@ const Vehicle = sequelize.define(
       unique: true,
       allowNull: true,
     },
-    images:{
-      type: DataTypes.ARRAY(DataTypes.STRING),
-      allowNull: true,
-    },
+
     name: {
       type: DataTypes.STRING(100),
       allowNull: false,

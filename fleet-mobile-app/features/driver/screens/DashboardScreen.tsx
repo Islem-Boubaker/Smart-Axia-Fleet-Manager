@@ -11,8 +11,16 @@ import {
   UPCOMING_TASK,
   RECENT_TRIPS,
 } from "../data/dashboard";
+import { useDashboard } from "../hooks/useDashboard";
+import { LoadingSpinner } from "@/shared/components/ui/LoadingSpinner";
 
 function DashboardScreen() {
+  const { activeTrip, completedCount, pendingCount, isLoading } = useDashboard();
+
+  if (isLoading) {
+    return <LoadingSpinner fullScreen />;
+  }
+
   return (
     <SafeAreaView className="flex-1 bg-gray-100">
       <StatusBar barStyle="dark-content" />
@@ -39,7 +47,7 @@ function DashboardScreen() {
           Good morning, Islem 
         </Text>
         <Text className="text-xs text-gray-400">
-          Tuesday — 2 trips today
+          {`Pending ${pendingCount} - Completed ${completedCount}`}
         </Text>
       </View>
 
@@ -59,6 +67,13 @@ function DashboardScreen() {
         {RECENT_TRIPS.map((trip) => (
           <TripCard key={trip.id} trip={trip} />
         ))}
+
+        {activeTrip && (
+          <View className="mt-4 mb-8 rounded-xl bg-emerald-50 px-4 py-3">
+            <Text className="text-xs text-emerald-700">Active trip</Text>
+            <Text className="text-sm font-semibold text-emerald-900">{activeTrip.from} -> {activeTrip.to}</Text>
+          </View>
+        )}
 
       </ScrollView>
     </SafeAreaView>

@@ -1,27 +1,28 @@
-import React, { useState, useCallback } from "react";
+import MaterialIcons from "@expo/vector-icons/MaterialIcons";
+import { useFocusEffect } from "@react-navigation/native";
+import { useRouter } from "expo-router";
+import React, { useCallback, useState } from "react";
 import {
-  View,
-  Text,
-  ScrollView,
-  TouchableOpacity,
-  StatusBar,
-  RefreshControl,
+    RefreshControl,
+    ScrollView,
+    StatusBar,
+    Text,
+    TouchableOpacity,
+    View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useRouter } from "expo-router";
-import { useFocusEffect } from "@react-navigation/native";
-import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 
+import { LoadingSpinner } from "@/shared/components/ui/LoadingSpinner";
 import FilterChips from "../components/FilterChips";
 import ReclamationCard from "../components/ReclamationCard";
 import ReclamationStats from "../components/ReclamationStats";
 import SectionHeader from "../components/SectionHeader";
-import { LoadingSpinner } from "@/shared/components/ui/LoadingSpinner";
+import { useReclamation } from "../hooks/useReclamation";
 
 // ─── Types ────────────────────────────────────────────────────────
 type ReclamationStatus = "pending" | "in_progress" | "resolved";
-type ReclamationType   = "damage" | "delay" | "technical" | "other";
-type FilterOption      = "all" | ReclamationStatus;
+type ReclamationType = "damage" | "delay" | "technical" | "other";
+type FilterOption = "all" | ReclamationStatus;
 
 interface Reclamation {
   id: string;
@@ -32,57 +33,79 @@ interface Reclamation {
   date: string;
 }
 
-// ─── Mock data (replace with API hook) ───────────────────────────
-const MOCK_RECLAMATIONS: Reclamation[] = [
-  { id: "1", title: "Vehicle damage", description: "Minor scratch on right door", status: "pending",     type: "damage",    date: "2026-03-15" },
-  { id: "2", title: "Late arrival",   description: "Trip delayed 30 minutes",     status: "in_progress", type: "delay",     date: "2026-03-14" },
-  { id: "3", title: "Fuel issue",     description: "Fuel gauge malfunction",       status: "resolved",    type: "technical", date: "2026-03-10" },
-];
+const toScreenReclamation = (item: any): Reclamation => ({
+  id: String(item.id),
+  title: item.subject ?? "Untitled",
+  description: item.message ?? "",
+  status:
+    item.status === "resolved" ||
+    item.status === "in_progress" ||
+    item.status === "pending"
+      ? item.status
+      : "pending",
+  type:
+    item.type === "damage" ||
+    item.type === "delay" ||
+    item.type === "technical" ||
+    item.type === "other"
+      ? item.type
+      : "other",
+  date: item.createdAt ?? new Date().toISOString(),
+});
 
 // ─── Config ───────────────────────────────────────────────────────
 const STATUS_CONFIG = {
-  pending:     { label: "Pending",     badgeClass: "bg-amber-100",   textClass: "text-amber-700",   borderColor: "#F59E0B" },
-  in_progress: { label: "In Progress", badgeClass: "bg-blue-100",    textClass: "text-blue-700",    borderColor: "#3B82F6" },
-  resolved:    { label: "Resolved",    badgeClass: "bg-emerald-100", textClass: "text-emerald-700", borderColor: "#10B981" },
+  pending: {
+    label: "Pending",
+    badgeClass: "bg-amber-100",
+    textClass: "text-amber-700",
+    borderColor: "#F59E0B",
+  },
+  in_progress: {
+    label: "In Progress",
+    badgeClass: "bg-blue-100",
+    textClass: "text-blue-700",
+    borderColor: "#3B82F6",
+  },
+  resolved: {
+    label: "Resolved",
+    badgeClass: "bg-emerald-100",
+    textClass: "text-emerald-700",
+    borderColor: "#10B981",
+  },
 };
 
 const TYPE_CONFIG = {
-  damage:    { label: "Damage",    icon: "directions-car" },
-  delay:     { label: "Delay",     icon: "schedule"       },
-  technical: { label: "Technical", icon: "build"          },
-  other:     { label: "Other",     icon: "report-problem" },
+  damage: { label: "Damage", icon: "directions-car" },
+  delay: { label: "Delay", icon: "schedule" },
+  technical: { label: "Technical", icon: "build" },
+  other: { label: "Other", icon: "report-problem" },
 };
 
 const FILTERS = [
-  { key: "all",         label: "All"         },
-  { key: "pending",     label: "Pending"     },
+  { key: "all", label: "All" },
+  { key: "pending", label: "Pending" },
   { key: "in_progress", label: "In Progress" },
-  { key: "resolved",    label: "Resolved"    },
+  { key: "resolved", label: "Resolved" },
 ];
 
 // ─── Screen ───────────────────────────────────────────────────────
 export default function ReclamationsScreen() {
   const router = useRouter();
+  const { getAllReclamations } = useReclamation();
 
   const [reclamations, setReclamations] = useState<Reclamation[]>([]);
   const [activeFilter, setActiveFilter] = useState<FilterOption>("all");
-  const [isLoading, setIsLoading]       = useState(true);
+  const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
-  const [error, setError]               = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   // ── Fetch ──────────────────────────────────────────────────────
   const fetchReclamations = async () => {
     try {
       setError(null);
-
-      // ── MOCK: simulate network delay ──
-      await new Promise((r) => setTimeout(r, 400));
-      setReclamations(MOCK_RECLAMATIONS);
-
-      // ── REAL API (uncomment when ready) ──
-      // const data = await reclamationsApi.getAll();
-      // setReclamations(data ?? []);
-
+      const data = await getAllReclamations();
+      setReclamations((data ?? []).map(toScreenReclamation));
     } catch (err: any) {
       setError(err?.message ?? "Failed to load reclamations");
     } finally {
@@ -97,7 +120,7 @@ export default function ReclamationsScreen() {
     useCallback(() => {
       setIsLoading(true);
       fetchReclamations();
-    }, [])
+    }, []),
   );
 
   // Pull-to-refresh — does NOT show full-screen spinner
@@ -125,14 +148,21 @@ export default function ReclamationsScreen() {
       {/* ── Header ── */}
       <View className="flex-row justify-between items-center px-5 pt-10 pb-2">
         <View>
-          <Text className="text-2xl font-extrabold text-slate-900">Reports</Text>
+          <Text className="text-2xl font-extrabold text-slate-900">
+            Reports
+          </Text>
           <Text className="text-xs text-gray-400 mt-0.5">
             {reclamations.length} total reclamations
           </Text>
         </View>
         <TouchableOpacity
           className="w-9 h-9 rounded-xl bg-white items-center justify-center"
-          style={{ elevation: 1, shadowColor: "#000", shadowOpacity: 0.06, shadowRadius: 4 }}
+          style={{
+            elevation: 1,
+            shadowColor: "#000",
+            shadowOpacity: 0.06,
+            shadowRadius: 4,
+          }}
           onPress={handleRefresh}
         >
           <MaterialIcons name="refresh" size={20} color="#2D9B6F" />
@@ -181,7 +211,9 @@ export default function ReclamationsScreen() {
         {filtered.length === 0 ? (
           <View className="items-center py-16">
             <MaterialIcons name="inbox" size={52} color="#D1D5DB" />
-            <Text className="text-sm text-gray-400 mt-3">No reclamations found</Text>
+            <Text className="text-sm text-gray-400 mt-3">
+              No reclamations found
+            </Text>
           </View>
         ) : (
           filtered.map((item) => (
@@ -199,7 +231,12 @@ export default function ReclamationsScreen() {
       {/* ── FAB ── */}
       <TouchableOpacity
         className="absolute bottom-5 right-5 w-14 h-14 rounded-full bg-emerald-500 items-center justify-center"
-        style={{ elevation: 6, shadowColor: "#10B981", shadowOpacity: 0.4, shadowRadius: 12 }}
+        style={{
+          elevation: 6,
+          shadowColor: "#10B981",
+          shadowOpacity: 0.4,
+          shadowRadius: 12,
+        }}
         onPress={() => router.push("/reclamations/create")}
         activeOpacity={0.85}
       >

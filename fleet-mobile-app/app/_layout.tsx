@@ -1,12 +1,11 @@
-import "../index.css";
-import "@/FirebaseConfig";
-import { SafeAreaProvider } from "react-native-safe-area-context";
 import { Stack } from "expo-router";
+import { ActivityIndicator, View } from "react-native";
+import { SafeAreaProvider } from "react-native-safe-area-context";
 import { Provider, useSelector } from "react-redux";
-import { View, ActivityIndicator } from "react-native";
+import "../index.css";
 
-import { store } from "../store/index";
 import type { RootState } from "../store";
+import { store } from "../store/index";
 
 import { useAuthBootstrap, useAuthGuard } from "../features/auth/hooks/useAuth";
 import { useRealtimeNotificationToasts } from "../features/notifications/hooks/useRealtimeNotificationToasts";
@@ -73,16 +72,13 @@ function AppLayout() {
 }
 
 export default function RootLayout() {
-
   return (
-   
-      <Provider store={store}>
-        <SafeAreaProvider>
-          <ToastProvider>
-            <AppLayout />
-          </ToastProvider>
-        </SafeAreaProvider>
-      </Provider>
-   
+    <Provider store={store}>
+      <SafeAreaProvider>
+        <ToastProvider>
+          <AppLayout />
+        </ToastProvider>
+      </SafeAreaProvider>
+    </Provider>
   );
 }
