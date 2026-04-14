@@ -125,6 +125,11 @@ const Vehicle = sequelize.define(
       allowNull: false,
       defaultValue: 'AVAILABLE',
     },
+    photos: {
+      type: DataTypes.ARRAY(DataTypes.STRING),
+      allowNull: true,
+      defaultValue: [],
+    },
   },
   {
     tableName: 'vehicles',

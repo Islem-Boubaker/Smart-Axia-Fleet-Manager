@@ -1,9 +1,28 @@
+import type { AxiosInstance } from "axios";
+import { tokenStorage } from "./tokenStorage";
+
 /**
- * Legacy auth interceptor entrypoint.
- *
- * Request auth, cookie sync, CSRF headers, and bearer token injection are now
- * centralized in shared/services/api.ts to keep all features consistent.
+ * Optional per-client auth interceptor.
+ * Use for secondary Axios instances created outside shared/services/api.ts.
  */
-export const setupAuthInterceptors = (): void => {
-  // Intentionally left blank.
+export const setupAuthInterceptors = (client: AxiosInstance): void => {
+  client.interceptors.request.use(async (config) => {
+    const headers = config.headers ?? {};
+    const accessToken = await tokenStorage.getAccessToken();
+
+    if (accessToken) {
+      headers.Authorization = `Bearer ${accessToken}`;
+    }
+
+    config.headers = headers;
+    return config;
+  });
+
+  client.interceptors.response.use(
+    (response) => response,
+    async (error) => {
+      // Refresh token flow can be added here when backend contract is ready.
+      return Promise.reject(error);
+    },
+  );
 };

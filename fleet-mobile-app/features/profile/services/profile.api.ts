@@ -1,4 +1,4 @@
-import type { User } from "@/features/auth/auth.types";
+import type { User } from "@/features/auth/types/auth.types";
 import { tripsApi } from "@/features/trips/services/trips.api";
 import { api } from "@/shared/services/api";
 import { clearCookies } from "@/shared/services/cookieJar";

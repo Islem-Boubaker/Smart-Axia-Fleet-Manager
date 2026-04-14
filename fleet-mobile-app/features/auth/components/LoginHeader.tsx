@@ -1,31 +1,35 @@
 import React from "react";
-import { View, Text } from "react-native";
-import { MaterialCommunityIcons } from "@expo/vector-icons";
+import { View, Text, TouchableOpacity, Platform } from "react-native";
+import Svg, { G, Path } from "react-native-svg";
 
-export function LoginHeader() {
+function LoginHeader({
+  handleGoogle,
+  handleApple,
+  isLoading,
+}: {
+  handleGoogle?: () => void;
+  handleApple?: () => void;
+  isLoading?: boolean;
+}) {
   return (
-    <View className="items-center mt-10 mb-12">
+    <View>
+      {/* Title */}
+      <View className="mb-10 justify-center items-center">
+        <Text
+          className="text-[28px] font-extrabold text-[#1A1233] tracking-tight mb-3"
+          style={{ fontFamily: Platform.OS === "ios" ? "Georgia" : "serif" }}
+        >
+          Sign In
+        </Text>
 
-      <View className="w-20 h-20 rounded-full bg-blue-100 items-center justify-center mb-6">
-        <MaterialCommunityIcons
-          name="truck-fast"
-          size={48}
-          color="#2563EB"
-        />
+        <Text className="text-[13.5px] text-[#8E8BA8] mt-1.5">
+          Hi! Welcome back. Please sign in to continue.
+        </Text>
       </View>
-
-      <Text className="text-[28px] font-bold text-gray-900 tracking-wide">
-        SMART AXIA
-      </Text>
-
-      <Text className="text-base font-semibold text-blue-600 mt-2">
-        Fleet Manager
-      </Text>
-
-      <Text className="text-xs text-gray-500 mt-1">
-        Driver Mobile Application
-      </Text>
-
     </View>
   );
 }
+
+LoginHeader.displayName = "LoginHeader";
+
+export default LoginHeader;

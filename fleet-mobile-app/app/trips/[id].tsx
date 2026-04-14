@@ -1,8 +1,4 @@
-import { TripDetailsScreen } from '@/features/trips/screens/TripDetailsScreen'
-import React from 'react'
-
+import TripDetailsScreen from "@/features/trips/screens/TripDetailsScreen";
 export default function tripdetails() {
-  return (
-    <TripDetailsScreen/>
-  )
+  return <TripDetailsScreen />;
 }

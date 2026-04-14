@@ -1,28 +1,41 @@
-import { useCallback, useEffect } from "react";
+import { useCallback, useEffect, useMemo } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useRouter, useSegments, useRootNavigationState } from "expo-router";
 import * as Linking from "expo-linking";
 
 import type { AppDispatch, RootState } from "@/store";
-import { setLoading, setUser, clearUser } from "@/store/slices/authSlice";
+import {
+  clearError,
+  clearUser,
+  setError,
+  setLoading,
+  setProvider,
+  setUser,
+} from "@/store/slices/authSlice";
 import { clearCookies } from "@/shared/services/cookieJar";
 import { clearCsrfToken, setCsrfToken } from "@/shared/services/csrf";
-
+import { tokenStorage } from "../services/tokenStorage";
 import {
-  login as loginApi,
-  logout as logoutApi,
-  signInWithApple as appleApi,
-  signInWithGoogle as googleApi,
-  verifyOtpLink as verifyOtpApi,
-  requestPasswordReset,
-  signUp as signUpApi,
-} from "../services/auth.api";
-import {
-  saveUserToStorage,
-  loadUserFromStorage,
   clearUserStorage,
+  loadUserFromStorage,
+  saveUserToStorage,
 } from "../services/auth.session";
 
+import {
+  createDriver,
+  deleteUserById,
+  extractErrorMessage,
+  getCurrentUser,
+  getUserById,
+  getUsers,
+  isUnauthorizedError,
+  login as loginApi,
+  logout as logoutApi,
+  requestPasswordReset,
+  refreshSession,
+  updateUser as updateUserApi,
+  updateUserAvatar as updateUserAvatarApi,
+} from "../services/auth.api";
 import { useGoogleAuth } from "@/lib/auth/googleAuth";
 import { signInWithApple } from "@/lib/auth/appleAuth";
 import {
@@ -31,15 +44,55 @@ import {
   isEmailSignInLink,
 } from "@/lib/auth/emailOtp";
 import { signOutFirebase, subscribeToAuthState } from "@/lib/auth/firebaseAuth";
-import type { AuthResponse, User } from "../auth.types";
+import type { AuthResponse, CreateDriverInput, GetUsersQuery, UploadAvatarInput, User, UserRole } from "../types/auth.types";
 
 const persistAuthSession = async (
   dispatch: AppDispatch,
   payload: AuthResponse,
 ): Promise<void> => {
-  await saveUserToStorage(payload.user);
   setCsrfToken(payload.csrfToken);
+  await saveUserToStorage(payload.user);
   dispatch(setUser(payload.user));
+};
+
+const clearSession = async (dispatch: AppDispatch): Promise<void> => {
+  await tokenStorage.clearTokens();
+  await clearCookies();
+  await clearUserStorage();
+  clearCsrfToken();
+  dispatch(clearUser());
+};
+
+const bootstrapSession = async (dispatch: AppDispatch): Promise<void> => {
+  dispatch(setLoading(true));
+
+  const cachedUser = await loadUserFromStorage();
+  if (cachedUser) {
+    dispatch(setUser(cachedUser));
+    dispatch(setLoading(true));
+  }
+
+  try {
+    const currentUser = await getCurrentUser();
+    dispatch(setUser(currentUser));
+    await saveUserToStorage(currentUser);
+  } catch (error) {
+    if (!isUnauthorizedError(error)) {
+      dispatch(setLoading(false));
+      return;
+    }
+
+    try {
+      await refreshSession();
+      const currentUser = await getCurrentUser();
+      dispatch(setUser(currentUser));
+      await saveUserToStorage(currentUser);
+    } catch {
+      await clearSession(dispatch);
+    }
+  } finally {
+    dispatch(setLoading(false));
+  }
 };
 
 export function useAuthGuard() {
@@ -83,16 +136,18 @@ export function useAuthBootstrap() {
 
   const handleEmailOtpLink = useCallback(
     async (url: string) => {
-      const isOtpLink = await isEmailSignInLink(url);
-      if (!isOtpLink) return;
-
-      dispatch(setLoading(true));
       try {
+        const isOtpLink = await isEmailSignInLink(url);
+        if (!isOtpLink) return;
+
+        dispatch(setLoading(true));
         console.log("📧 Magic link detected:", url);
-        const { firebaseToken, email } = await completeEmailLinkSignIn(url);
-        const payload = await verifyOtpApi(firebaseToken, email);
-        await persistAuthSession(dispatch, payload);
-        router.replace("/(tabs)/home");
+        await completeEmailLinkSignIn(url);
+
+        // Backend currently exposes /user/login + cookie refresh flow.
+        // Email-link verification does not establish backend auth session directly.
+        dispatch(setError("Magic link verified with Firebase. Please sign in to start your backend session."));
+        router.replace("/(auth)/login");
       } catch (err) {
         console.error("📧 Magic link sign-in failed:", err);
       } finally {
@@ -103,19 +158,7 @@ export function useAuthBootstrap() {
   );
 
   useEffect(() => {
-    const restore = async () => {
-      dispatch(setLoading(true));
-      try {
-        const storedUser = await loadUserFromStorage();
-        if (storedUser) {
-          dispatch(setUser(storedUser));
-        }
-      } finally {
-        dispatch(setLoading(false));
-      }
-    };
-
-    restore();
+    void bootstrapSession(dispatch);
   }, [dispatch]);
 
   useEffect(() => {
@@ -152,16 +195,23 @@ export function useAuthBootstrap() {
 export function useAuthActions() {
   const dispatch = useDispatch<AppDispatch>();
   const { signInWithGoogle: signInWithGoogleSdk } = useGoogleAuth();
+  const user = useSelector((state: RootState) => state.auth.user);
   const isLoading = useSelector((state: RootState) => state.auth.isLoading);
 
   const loginWithEmailPassword = useCallback(
     async (email: string, password: string): Promise<User> => {
+      dispatch(clearError());
+      dispatch(setProvider("email"));
       dispatch(setLoading(true));
       try {
         console.log("🔐 Logging in with email/password...");
         const payload = await loginApi(email, password);
         await persistAuthSession(dispatch, payload);
         return payload.user;
+      } catch (error: unknown) {
+        const message = extractErrorMessage(error, "Login failed. Please try again.");
+        dispatch(setError(message));
+        throw error;
       } finally {
         dispatch(setLoading(false));
       }
@@ -170,28 +220,32 @@ export function useAuthActions() {
   );
 
   const loginWithApple = useCallback(async (): Promise<User> => {
+    dispatch(clearError());
+    dispatch(setProvider("apple"));
     dispatch(setLoading(true));
     try {
-      const appleResult = await signInWithApple();
-      const payload = await appleApi({
-        firebaseToken: appleResult.firebaseToken,
-        email: appleResult.email,
-        displayName: appleResult.displayName,
-      });
-      await persistAuthSession(dispatch, payload);
-      return payload.user;
+      await signInWithApple();
+      throw new Error("Apple sign-in is not configured on this backend. Use email/password login.");
+    } catch (error: unknown) {
+      const message = extractErrorMessage(error, "Apple sign-in failed.");
+      dispatch(setError(message));
+      throw error;
     } finally {
       dispatch(setLoading(false));
     }
   }, [dispatch]);
 
   const loginWithGoogle = useCallback(async (): Promise<User> => {
+    dispatch(clearError());
+    dispatch(setProvider("google"));
     dispatch(setLoading(true));
     try {
-      const googleResult = await signInWithGoogleSdk();
-      const payload = await googleApi({ firebaseToken: googleResult.firebaseToken });
-      await persistAuthSession(dispatch, payload);
-      return payload.user;
+      await signInWithGoogleSdk();
+      throw new Error("Google sign-in is not configured on this backend. Use email/password login.");
+    } catch (error: unknown) {
+      const message = extractErrorMessage(error, "Google sign-in failed.");
+      dispatch(setError(message));
+      throw error;
     } finally {
       dispatch(setLoading(false));
     }
@@ -205,19 +259,9 @@ export function useAuthActions() {
     [],
   );
 
-  const signUp = useCallback(
-    async (name: string, email: string, password: string): Promise<User> => {
-      dispatch(setLoading(true));
-      try {
-        const payload = await signUpApi(name, email, password);
-        await persistAuthSession(dispatch, payload);
-        return payload.user;
-      } finally {
-        dispatch(setLoading(false));
-      }
-    },
-    [dispatch],
-  );
+  const signUp = useCallback(async (): Promise<User> => {
+    throw new Error("Public sign-up is not available. Use createDriver as ADMIN/MANAGER.");
+  }, []);
 
   const resetPassword = useCallback(
     async (email: string): Promise<void> => {
@@ -228,21 +272,148 @@ export function useAuthActions() {
   );
 
   const logout = useCallback(async (): Promise<void> => {
+    dispatch(clearError());
+    dispatch(setProvider(null));
     dispatch(setLoading(true));
     try {
       await logoutApi();
       await signOutFirebase();
-      await clearUserStorage();
-      await clearCookies();
-      clearCsrfToken();
-      dispatch(clearUser());
+      await clearSession(dispatch);
     } finally {
       dispatch(setLoading(false));
     }
   }, [dispatch]);
 
+  const refreshAuth = useCallback(async (): Promise<void> => {
+    dispatch(clearError());
+    try {
+      await refreshSession();
+      const me = await getCurrentUser();
+      dispatch(setUser(me));
+      await saveUserToStorage(me);
+    } catch (error: unknown) {
+      const message = extractErrorMessage(error, "Session refresh failed.");
+      dispatch(setError(message));
+      throw error;
+    }
+  }, [dispatch]);
+
+  const getMe = useCallback(async (): Promise<User> => {
+    try {
+      const me = await getCurrentUser();
+      dispatch(setUser(me));
+      await saveUserToStorage(me);
+      return me;
+    } catch (error: unknown) {
+      const message = extractErrorMessage(error, "Unable to fetch user profile.");
+      dispatch(setError(message));
+      throw error;
+    }
+  }, [dispatch]);
+
+  const updateUserById = useCallback(
+    async (
+      userId: string,
+      updates: Partial<Pick<User, "name" | "email" | "phone" | "role">>,
+    ): Promise<User> => {
+      try {
+        const updated = await updateUserApi(userId, updates);
+        if (user?.id === updated.id) {
+          dispatch(setUser(updated));
+          await saveUserToStorage(updated);
+        }
+        return updated;
+      } catch (error: unknown) {
+        const message = extractErrorMessage(error, "Failed to update user.");
+        dispatch(setError(message));
+        throw error;
+      }
+    },
+    [dispatch, user?.id],
+  );
+
+  const updateAvatar = useCallback(
+    async (userId: string, payload: UploadAvatarInput): Promise<User> => {
+      try {
+        const updated = await updateUserAvatarApi(userId, payload);
+        if (user?.id === updated.id) {
+          dispatch(setUser(updated));
+          await saveUserToStorage(updated);
+        }
+        return updated;
+      } catch (error: unknown) {
+        const message = extractErrorMessage(error, "Failed to update avatar.");
+        dispatch(setError(message));
+        throw error;
+      }
+    },
+    [dispatch, user?.id],
+  );
+
+  const createDriverUser = useCallback(
+    async (payload: CreateDriverInput): Promise<User> => {
+      try {
+        return await createDriver(payload);
+      } catch (error: unknown) {
+        const message = extractErrorMessage(error, "Failed to create driver.");
+        dispatch(setError(message));
+        throw error;
+      }
+    },
+    [dispatch],
+  );
+
+  const listUsers = useCallback(async (query?: GetUsersQuery) => {
+    try {
+      return await getUsers(query);
+    } catch (error: unknown) {
+      const message = extractErrorMessage(error, "Failed to fetch users.");
+      dispatch(setError(message));
+      throw error;
+    }
+  }, [dispatch]);
+
+  const getUser = useCallback(async (userId: string): Promise<User> => {
+    try {
+      return await getUserById(userId);
+    } catch (error: unknown) {
+      const message = extractErrorMessage(error, "Failed to fetch user.");
+      dispatch(setError(message));
+      throw error;
+    }
+  }, [dispatch]);
+
+  const removeUser = useCallback(async (userId: string): Promise<void> => {
+    try {
+      await deleteUserById(userId);
+    } catch (error: unknown) {
+      const message = extractErrorMessage(error, "Failed to delete user.");
+      dispatch(setError(message));
+      throw error;
+    }
+  }, [dispatch]);
+
+  const hasRole = useCallback(
+    (roles: UserRole | UserRole[]): boolean => {
+      if (!user?.role) return false;
+      const acceptedRoles = Array.isArray(roles) ? roles : [roles];
+      return acceptedRoles.includes(user.role);
+    },
+    [user?.role],
+  );
+
+  const roleFlags = useMemo(
+    () => ({
+      isAdmin: user?.role === "ADMIN",
+      isManager: user?.role === "MANAGER",
+      isDriver: user?.role === "DRIVER",
+    }),
+    [user?.role],
+  );
+
   return {
     isLoading,
+    user,
     loginWithEmailPassword,
     loginWithApple,
     loginWithGoogle,
@@ -250,5 +421,15 @@ export function useAuthActions() {
     resetPassword,
     signUp,
     logout,
+    refreshAuth,
+    getMe,
+    updateUserById,
+    updateAvatar,
+    createDriverUser,
+    listUsers,
+    getUser,
+    removeUser,
+    hasRole,
+    ...roleFlags,
   };
 }

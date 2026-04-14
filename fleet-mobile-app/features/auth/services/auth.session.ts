@@ -1,7 +1,7 @@
 import * as SecureStore from "expo-secure-store";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Platform } from "react-native";
-import type { User } from "../auth.types";
+import type { User } from "../types/auth.types";
 
 const USER_KEY = "user";
 
@@ -28,13 +28,11 @@ export const saveUserToStorage = async (user: User): Promise<void> => {
 };
 
 export const loadUserFromStorage = async (): Promise<User | null> => {
-  const userJson = await getItem(USER_KEY);
-  if (!userJson) return null;
-
   try {
-    return JSON.parse(userJson) as User;
+    const raw = await getItem(USER_KEY);
+    if (!raw) return null;
+    return JSON.parse(raw) as User;
   } catch {
-    await deleteItem(USER_KEY);
     return null;
   }
 };
