@@ -46,6 +46,7 @@ const Vehicle = sequelize.define(
     Vehicle_Model: {
       type: DataTypes.ENUM('Car', 'SUV', 'Van', 'Truck', 'Bus', 'Motorcycle'),
       allowNull: false,
+      defaultValue: 'Car',
     },
 
     Mileage: {
@@ -57,11 +58,13 @@ const Vehicle = sequelize.define(
     Vehicle_Age: {
       type: DataTypes.INTEGER,
       allowNull: false,
+      defaultValue: 0,
     },
 
     Maintenance_History: {
       type: DataTypes.ENUM('Good', 'Average', 'Poor'),
       allowNull: false,
+      defaultValue: 'Average',
     },
 
     Reported_Issues: {
@@ -92,16 +95,19 @@ const Vehicle = sequelize.define(
     Tire_Condition: {
       type: DataTypes.ENUM('New', 'Good', 'Worn Out'),
       allowNull: false,
+      defaultValue: 'Good',
     },
 
     Brake_Condition: {
       type: DataTypes.ENUM('New', 'Good', 'Worn Out'),
       allowNull: false,
+      defaultValue: 'Good',
     },
 
     Battery_Status: {
       type: DataTypes.ENUM('New', 'Good', 'Weak'),
       allowNull: false,
+      defaultValue: 'Good',
     },
 
     Days_Since_Last_Service: {
