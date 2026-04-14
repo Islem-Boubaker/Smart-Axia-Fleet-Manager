@@ -1,5 +1,5 @@
 import { Op } from "sequelize";
-import Maintenance from "../models/Maintenance.model.js";
+import Maintenance from "../models/maintenance.model.js";
 import Vehicle from "../models/vehicle.model.js";
 import { getPagination, getPagingData } from "../utils/pagination.js";
 import { eventBus } from "../events/eventBus.js";
