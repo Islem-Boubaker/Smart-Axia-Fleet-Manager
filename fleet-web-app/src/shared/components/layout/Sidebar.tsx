@@ -40,7 +40,7 @@ export const Sidebar = memo(({ isOpen, setIsOpen, dark = false }: SidebarProps) 
       {/* Mobile Overlay */}
       {isOpen && (
         <div
-          className="fixed inset-0 bg-black bg-opacity-50 z-20 lg:hidden"
+          className={`fixed inset-0 z-20 lg:hidden ${dark ? "bg-slate-950/70" : "bg-black/50"}`}
           onClick={() => setIsOpen(false)}
         />
       )}
@@ -51,9 +51,9 @@ export const Sidebar = memo(({ isOpen, setIsOpen, dark = false }: SidebarProps) 
           isOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
         } ${
           dark
-            ? "lg:border-r lg:border-slate-700/80 lg:bg-slate-900/40 lg:backdrop-blur-xl"
-            : "lg:border-r lg:border-white/40 lg:bg-white/55 lg:backdrop-blur-xl lg:shadow-glass"
-        } bg-white/95 backdrop-blur-xl border-r border-slate-200/80 shadow-soft lg:shadow-none`}
+            ? "border-r border-slate-700/80 bg-slate-900/95 text-slate-100 backdrop-blur-xl shadow-soft lg:bg-slate-900/40 lg:shadow-none"
+            : "border-r border-slate-200/80 bg-white/95 text-slate-900 backdrop-blur-xl shadow-soft lg:border-white/40 lg:bg-white/55 lg:shadow-glass lg:shadow-none"
+        }`}
       >
         <div className="flex flex-col h-full min-h-0">
           {/* Logo */}

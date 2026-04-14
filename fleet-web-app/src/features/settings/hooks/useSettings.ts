@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { settingsService, UserProfile, NotificationSettings, GeneralSettings } from '../services/settings.service';
+import { settingsService, type UserProfile, type NotificationSettings } from '../services/settings.service';
 
 export const useSettings = () => {
   const [isLoading, setIsLoading] = useState(false);
@@ -29,18 +29,6 @@ export const useSettings = () => {
     }
   };
 
-  const updateGeneralSettings = async (data: Partial<GeneralSettings>) => {
-    try {
-      setIsLoading(true);
-      await settingsService.updateGeneralSettings(data);
-    } catch (err: any) {
-      setError(err.message || 'Failed to update settings');
-      throw err;
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
   const changePassword = async (currentPassword: string, newPassword: string) => {
     try {
       setIsLoading(true);
@@ -53,5 +41,5 @@ export const useSettings = () => {
     }
   };
 
-  return { isLoading, error, updateProfile, updateNotifications, updateGeneralSettings, changePassword };
+  return { isLoading, error, updateProfile, updateNotifications, changePassword };
 };

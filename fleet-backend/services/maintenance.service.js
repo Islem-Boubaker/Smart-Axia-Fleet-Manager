@@ -2,9 +2,17 @@ import { Op } from "sequelize";
 import Maintenance from "../models/maintenance.model.js";
 import Vehicle from "../models/vehicle.model.js";
 import { getPagination, getPagingData } from "../utils/pagination.js";
-import { eventBus } from "../events/eventBus.js";
+import { eventBus, FLEET_EVENTS } from "../events/eventBus.js";
 
-const ACTIVE_MAINTENANCE_STATUSES = ["scheduled", "in_progress"];
+const IN_PROGRESS_STATUS = "in progress";
+
+const normalizeStatus = (status) => {
+  if (status === null || status === undefined) return "pending";
+  const normalized = String(status).trim().toLowerCase();
+  return normalized === "in_progress" ? IN_PROGRESS_STATUS : normalized;
+};
+
+const ACTIVE_MAINTENANCE_STATUSES = ["scheduled", "pending", IN_PROGRESS_STATUS, "in_progress"];
 
 const createError = (message, status = 400, code = "BAD_REQUEST", errors = []) => {
   const error = new Error(message);
@@ -16,14 +24,28 @@ const createError = (message, status = 400, code = "BAD_REQUEST", errors = []) =
 };
 
 const STATUS_TRANSITIONS = {
-  scheduled: ["in_progress", "cancelled"],
-  in_progress: ["completed"],
+  pending: [IN_PROGRESS_STATUS, "cancelled", "scheduled"],
+  scheduled: [IN_PROGRESS_STATUS, "cancelled"],
+  [IN_PROGRESS_STATUS]: ["completed"],
   completed: [],
   cancelled: [],
 };
 
-const ensureVehicleExists = async (vehicleId) => {
-  const vehicle = await Vehicle.findByPk(vehicleId);
+const ensureVehicleExists = async ({ vehicleId, vehiclePlate }) => {
+  let vehicle = null;
+
+  if (vehicleId) {
+    vehicle = await Vehicle.findByPk(vehicleId);
+  }
+
+  if (!vehicle && vehiclePlate) {
+    vehicle = await Vehicle.findOne({
+      where: {
+        plaque_immatriculation: vehiclePlate,
+      },
+    });
+  }
+
   if (!vehicle) {
     throw createError("Vehicle not found", 404, "NOT_FOUND");
   }
@@ -45,10 +67,18 @@ const ensureMaintenanceExists = async (id) => {
 };
 
 const ensureNoScheduleConflict = async (vehicleId, scheduledDate, excludeId = null) => {
+  const scheduled = new Date(scheduledDate);
+  const startOfDay = new Date(scheduled);
+  startOfDay.setHours(0, 0, 0, 0);
+  const endOfDay = new Date(scheduled);
+  endOfDay.setHours(23, 59, 59, 999);
+
   const where = {
     vehicleId,
     status: { [Op.in]: ACTIVE_MAINTENANCE_STATUSES },
-    scheduledDate: new Date(scheduledDate),
+    scheduledDate: {
+      [Op.between]: [startOfDay, endOfDay],
+    },
   };
 
   if (excludeId) {
@@ -69,7 +99,7 @@ const setVehicleAvailabilityFromMaintenance = async (vehicleId, status) => {
   const vehicle = await Vehicle.findByPk(vehicleId);
   if (!vehicle) return;
 
-  if (status === "in_progress") {
+  if (normalizeStatus(status) === IN_PROGRESS_STATUS) {
     await vehicle.update({ status: "IN_MAINTENANCE" });
     return;
   }
@@ -88,18 +118,22 @@ const emitMaintenanceEvent = (event, payload) => {
 };
 
 export const createMaintenance = async (payload, userId) => {
-  const vehicle = await ensureVehicleExists(payload.vehicleId);
-  await ensureNoScheduleConflict(payload.vehicleId, payload.scheduledDate);
+  const vehicle = await ensureVehicleExists({
+    vehicleId: payload.vehicleId,
+    vehiclePlate: payload.vehiclePlate,
+  });
+  await ensureNoScheduleConflict(vehicle.id, payload.scheduledDate);
 
   const maintenance = await Maintenance.create({
     ...payload,
+    vehicleId: vehicle.id,
     vehiclePlate: vehicle.plaque_immatriculation || payload.vehiclePlate || "N/A",
-    status: "scheduled",
+    status: "pending",
     createdBy: userId,
     updatedBy: userId,
   });
 
-  emitMaintenanceEvent("maintenance:created", { maintenance, vehicle });
+  emitMaintenanceEvent(FLEET_EVENTS.MAINTENANCE_CREATED, { maintenance, vehicle });
 
   return Maintenance.findByPk(maintenance.id, {
     include: [{ model: Vehicle, as: "vehicle" }],
@@ -110,7 +144,7 @@ export const getAllMaintenances = async (query = {}, callerRole = null, callerId
   const { page, limit, offset } = getPagination(query);
   const where = {};
 
-  if (query.status) where.status = query.status;
+  if (query.status) where.status = normalizeStatus(query.status);
   if (query.priority) where.priority = query.priority;
   if (query.vehicleId) where.vehicleId = query.vehicleId;
   if (query.technician) where.technician = { [Op.iLike]: `%${query.technician}%` };
@@ -182,7 +216,7 @@ export const deleteMaintenance = async (id) => {
     throw createError("Cannot delete completed maintenance", 409, "CONFLICT");
   }
 
-  if (maintenance.status === "in_progress") {
+  if (normalizeStatus(maintenance.status) === IN_PROGRESS_STATUS) {
     throw createError("Cannot delete in-progress maintenance", 409, "CONFLICT");
   }
 
@@ -192,34 +226,36 @@ export const deleteMaintenance = async (id) => {
 
 export const updateStatus = async (id, targetStatus, userId) => {
   const maintenance = await ensureMaintenanceExists(id);
-  const allowed = STATUS_TRANSITIONS[maintenance.status] || [];
+  const currentStatus = normalizeStatus(maintenance.status);
+  const normalizedTargetStatus = normalizeStatus(targetStatus);
+  const allowed = STATUS_TRANSITIONS[currentStatus] || [];
 
-  if (!allowed.includes(targetStatus)) {
+  if (!allowed.includes(normalizedTargetStatus)) {
     throw createError(
-      `Cannot transition from '${maintenance.status}' to '${targetStatus}'`,
+      `Cannot transition from '${currentStatus}' to '${normalizedTargetStatus}'`,
       409,
       "CONFLICT"
     );
   }
 
   const updateData = {
-    status: targetStatus,
+    status: normalizedTargetStatus,
     updatedBy: userId,
   };
 
-  if (targetStatus === "completed") {
+  if (normalizedTargetStatus === "completed") {
     updateData.completedAt = new Date();
   }
 
   await maintenance.update(updateData);
-  await setVehicleAvailabilityFromMaintenance(maintenance.vehicleId, targetStatus);
+  await setVehicleAvailabilityFromMaintenance(maintenance.vehicleId, normalizedTargetStatus);
 
-  if (targetStatus === "in_progress") {
-    emitMaintenanceEvent("maintenance:started", { maintenance, vehicle: maintenance.vehicle });
-  } else if (targetStatus === "completed") {
-    emitMaintenanceEvent("maintenance:completed", { maintenance, vehicle: maintenance.vehicle });
-  } else if (targetStatus === "cancelled") {
-    emitMaintenanceEvent("maintenance:cancelled", { maintenance, vehicle: maintenance.vehicle });
+  if (normalizedTargetStatus === IN_PROGRESS_STATUS) {
+    emitMaintenanceEvent(FLEET_EVENTS.MAINTENANCE_STARTED, { maintenance, vehicle: maintenance.vehicle });
+  } else if (normalizedTargetStatus === "completed") {
+    emitMaintenanceEvent(FLEET_EVENTS.MAINTENANCE_COMPLETED, { maintenance, vehicle: maintenance.vehicle });
+  } else if (normalizedTargetStatus === "cancelled") {
+    emitMaintenanceEvent(FLEET_EVENTS.MAINTENANCE_CANCELLED, { maintenance, vehicle: maintenance.vehicle });
   }
 
   return maintenance;
@@ -227,21 +263,22 @@ export const updateStatus = async (id, targetStatus, userId) => {
 
 export const startMaintenance = async (id, userId) => {
   const maintenance = await ensureMaintenanceExists(id);
-  if (maintenance.status !== "scheduled") {
+  const currentStatus = normalizeStatus(maintenance.status);
+  if (!["scheduled", "pending"].includes(currentStatus)) {
     throw createError(
-      `Maintenance can only be started from 'scheduled' status. Current status: ${maintenance.status}`,
+      `Maintenance can only be started from 'scheduled' or 'pending' status. Current status: ${currentStatus}`,
       409,
       "CONFLICT"
     );
   }
 
-  return updateStatus(id, "in_progress", userId);
+  return updateStatus(id, IN_PROGRESS_STATUS, userId);
 };
 
 export const completeMaintenance = async (id, userId, updates = {}) => {
   const maintenance = await ensureMaintenanceExists(id);
 
-  if (maintenance.status !== "in_progress") {
+  if (normalizeStatus(maintenance.status) !== IN_PROGRESS_STATUS) {
     throw createError("Cannot complete maintenance unless it is in_progress", 409, "CONFLICT");
   }
 
@@ -260,9 +297,10 @@ export const completeMaintenance = async (id, userId, updates = {}) => {
 
 export const cancelMaintenance = async (id, userId) => {
   const maintenance = await ensureMaintenanceExists(id);
+  const currentStatus = normalizeStatus(maintenance.status);
 
-  if (maintenance.status !== "scheduled") {
-    throw createError("Only scheduled maintenance can be cancelled", 409, "CONFLICT");
+  if (!["scheduled", "pending"].includes(currentStatus)) {
+    throw createError("Only scheduled or pending maintenance can be cancelled", 409, "CONFLICT");
   }
 
   return updateStatus(id, "cancelled", userId);
@@ -276,7 +314,7 @@ export const getUpcomingMaintenances = async (query = {}) => {
   const windowEnd = new Date(Date.now() + days * 24 * 60 * 60 * 1000);
 
   const where = {
-    status: "scheduled",
+    status: { [Op.in]: ["scheduled", "pending"] },
     scheduledDate: {
       [Op.between]: [now, windowEnd],
     },
@@ -304,7 +342,7 @@ export const getOverdueMaintenances = async (query = {}) => {
   const { page, limit, offset } = getPagination(query);
 
   const where = {
-    status: "scheduled",
+    status: { [Op.in]: ["scheduled", "pending"] },
     scheduledDate: {
       [Op.lt]: now,
     },
@@ -354,7 +392,7 @@ export const checkVehicleAvailableForTrip = async (vehicleId, tripStartDate, tri
   const overlappingMaintenance = await Maintenance.findOne({
     where: {
       vehicleId,
-      status: { [Op.in]: ["scheduled", "in_progress"] },
+      status: { [Op.in]: ["scheduled", "pending", IN_PROGRESS_STATUS, "in_progress"] },
       scheduledDate: {
         [Op.between]: [new Date(tripStartDate), new Date(tripEndDate)],
       },

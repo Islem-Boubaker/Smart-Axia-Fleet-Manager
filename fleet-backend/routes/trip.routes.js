@@ -8,6 +8,7 @@ import {
   validateCreateTrip,
   validateUpdateTrip,
   validateUpdateStatus,
+  validateCompleteTrip,
 } from "../validators/trip.validator.js";
 
 const router = express.Router();
@@ -65,6 +66,7 @@ router.patch(
   "/trips/:id/complete",
   authorizeRoles("ADMIN", "MANAGER", "DRIVER"),
   csrfMiddleware.verifyCsrf,
+  validateCompleteTrip,
   tripController.completeTrip
 );
 

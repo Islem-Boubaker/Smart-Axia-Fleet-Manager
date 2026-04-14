@@ -6,6 +6,11 @@ export interface UserProfile {
   phone: string;
   company: string;
   role: string;
+  avatar?: string;
+  country?: string;
+  city?: string;
+  postalCode?: string;
+  taxId?: string;
 }
 
 export interface NotificationSettings {
@@ -28,23 +33,31 @@ export interface GeneralSettings {
 
 export const settingsService = {
   getProfile: async () => {
-    const response = await api.get<UserProfile>('/settings/profile');
-    return response.data;
+    const response = await api.get<{ success: boolean; data: UserProfile }>('/user/me');
+    return response.data.data;
   },
 
   updateProfile: async (data: Partial<UserProfile>) => {
-    const response = await api.put<UserProfile>('/settings/profile', data);
-    return response.data;
+    // We send data to /user/me which maps to updateMe
+    const response = await api.put<{ success: boolean; data: UserProfile }>('/user/me', data);
+    return response.data.data;
+  },
+
+  uploadAvatar: async (file: File) => {
+    const formData = new FormData();
+    formData.append('avatar', file);
+    const response = await api.patch<{ success: boolean; data: UserProfile }>('/user/me/avatar', formData);
+    return response.data.data;
   },
 
   getNotifications: async () => {
-    const response = await api.get<NotificationSettings>('/settings/notifications');
-    return response.data;
+    const response = await api.get<{ success: boolean; data: NotificationSettings }>('/user/me/notifications');
+    return response.data.data;
   },
 
   updateNotifications: async (data: Partial<NotificationSettings>) => {
-    const response = await api.put<NotificationSettings>('/settings/notifications', data);
-    return response.data;
+    const response = await api.put<{ success: boolean; data: NotificationSettings }>('/user/me/notifications', data);
+    return response.data.data;
   },
 
   getGeneralSettings: async () => {
@@ -58,6 +71,6 @@ export const settingsService = {
   },
 
   changePassword: async (currentPassword: string, newPassword: string) => {
-    await api.post('/settings/change-password', { currentPassword, newPassword });
+    await api.post('/user/change-password', { currentPassword, newPassword });
   },
 };

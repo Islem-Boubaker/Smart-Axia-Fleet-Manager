@@ -1,0 +1,22 @@
+
+> fleet-backend@1.0.0 start
+> node server.js
+
+[dotenv@17.3.1] injecting env (11) from .env -- tip: ÔÜÖ´©Å  load multiple .env files with { path: ['.env.local', '.env'] }
+[dotenv@17.3.1] injecting env (0) from .env -- tip: ­ƒöÉ encrypt with Dotenvx: https://dotenvx.com
+[dotenv@17.3.1] injecting env (0) from .env -- tip: ­ƒöÉ prevent building .env in docker: https://dotenvx.com/prebuild
+[dotenv@17.3.1] injecting env (0) from .env -- tip: ÔÜÖ´©Å  load multiple .env files with { path: ['.env.local', '.env'] }
+Ô£à Supabase connected successfully!
+Ô£à Models synced (development)
+Ô£à Socket.IO initialised
+Ô£à Server running on port 3000 [development]
+[updateMe] req.body: {
+  name: 'Bedis Ghodbane ',
+  phone: '94345700',
+  role: 'ADMIN',
+  company: 'AXIA Fleet Manager',
+  country: 'Tunisia',
+  city: 'Bekalta, Monastir',
+  postalCode: '5090',
+  taxId: ''
+}

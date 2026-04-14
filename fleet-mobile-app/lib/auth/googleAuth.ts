@@ -1,4 +1,5 @@
 import { useMemo } from "react";
+import { Platform } from "react-native";
 import * as Google from "expo-auth-session/providers/google";
 import * as WebBrowser from "expo-web-browser";
 import { requireFirebaseAuth } from "./firebaseNative";
@@ -10,23 +11,33 @@ type GoogleAuthResult = {
 };
 
 type GoogleClientIds = {
-  webClientId: string;
-  iosClientId: string;
-  androidClientId: string;
+  webClientId?: string;
+  iosClientId?: string;
+  androidClientId?: string;
 };
 
 const getGoogleClientIds = (): GoogleClientIds => {
   const webClientId = process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID;
   const iosClientId = process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID;
   const androidClientId = process.env.EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID;
+  return { webClientId, iosClientId, androidClientId };
+};
 
-  if (!webClientId || !iosClientId || !androidClientId) {
-    throw new Error(
-      "Missing Google client IDs. Set EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID, EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID, and EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID.",
-    );
+const ensureGoogleClientIds = (ids: GoogleClientIds): void => {
+  const missing: string[] = [];
+  if (!ids.webClientId) missing.push("EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID");
+  if (Platform.OS === "ios" && !ids.iosClientId) {
+    missing.push("EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID");
+  }
+  if (Platform.OS === "android" && !ids.androidClientId) {
+    missing.push("EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID");
   }
 
-  return { webClientId, iosClientId, androidClientId };
+  if (missing.length > 0) {
+    throw new Error(
+      `Missing Google client IDs: ${missing.join(", ")}. Set them in .env and restart Expo with --clear.`,
+    );
+  }
 };
 
 export function useGoogleAuth() {
@@ -34,12 +45,13 @@ export function useGoogleAuth() {
 
   const [request, , promptAsync] = Google.useIdTokenAuthRequest({
     clientId: clientIds.webClientId,
-    iosClientId: clientIds.iosClientId,
-    androidClientId: clientIds.androidClientId,
+    iosClientId: clientIds.iosClientId ?? clientIds.webClientId,
+    androidClientId: clientIds.androidClientId ?? clientIds.webClientId,
   });
 
   const signInWithGoogle = async (): Promise<GoogleAuthResult> => {
     console.log("🔵 Starting Google sign-in...");
+    ensureGoogleClientIds(clientIds);
     const result = await promptAsync();
 
     if (result?.type !== "success") {

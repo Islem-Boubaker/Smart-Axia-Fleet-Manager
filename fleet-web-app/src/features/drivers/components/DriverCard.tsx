@@ -13,17 +13,25 @@ const DriverCard = memo(({ driver, onEdit, onDelete, dark = false }: DriverCardP
   const t = dark ? 'text-slate-100' : 'text-gray-900';
   const sub = dark ? 'text-slate-400' : 'text-gray-600';
   const border = dark ? 'border-slate-700' : 'border-gray-200';
+  const assignedVehicle = String(driver.assignedVehicle || '').trim();
+  const assignedMatch = assignedVehicle.match(/^(.+?)\s*\(([^)]+)\)\s*$/);
+  const assignedName = assignedMatch ? assignedMatch[1] : assignedVehicle || 'N/A';
+  const assignedPlate = assignedMatch ? assignedMatch[2] : '';
 
   return (
     <div className="space-y-4">
       <div className="flex items-start justify-between gap-3">
         <div className="flex items-center space-x-3 min-w-0">
           <div
-            className={`w-16 h-16 rounded-full flex items-center justify-center shrink-0 ${
+            className={`w-16 h-16 rounded-full flex items-center justify-center shrink-0 overflow-hidden ${
               dark ? 'bg-brand/25 text-brand' : 'bg-brand text-white'
             }`}
           >
-            <FiUser className={`text-2xl ${dark ? '' : 'text-white'}`} />
+            {driver.avatar ? (
+              <img src={driver.avatar} alt={driver.name} className="w-full h-full object-cover" />
+            ) : (
+              <FiUser className={`text-2xl ${dark ? '' : 'text-white'}`} />
+            )}
           </div>
           <div className="min-w-0">
             <h3 className={`text-lg font-semibold truncate ${t}`}>{driver.name}</h3>
@@ -54,21 +62,26 @@ const DriverCard = memo(({ driver, onEdit, onDelete, dark = false }: DriverCardP
 
       <div className={`pt-4 border-t ${border}`}>
         <div className="grid grid-cols-2 gap-3 text-sm">
-          <div>
+          <div className="min-w-0">
             <span className={`block ${dark ? 'text-slate-500' : 'text-gray-500'}`}>License</span>
-            <span className={`font-medium ${t}`}>{driver.licenseNumber}</span>
+            <span className={`block font-medium truncate ${t}`}>{driver.licenseNumber}</span>
           </div>
-          <div>
+          <div className="min-w-0">
             <span className={`block ${dark ? 'text-slate-500' : 'text-gray-500'}`}>Expires</span>
-            <span className={`font-medium ${t}`}>{driver.licenseExpiry || '2026-12-31'}</span>
+            <span className={`block font-medium truncate ${t}`}>{driver.licenseExpiry || '2026-12-31'}</span>
           </div>
-          <div>
+          <div className="min-w-0">
             <span className={`block ${dark ? 'text-slate-500' : 'text-gray-500'}`}>Total trips</span>
-            <span className={`font-medium ${t}`}>{driver.totalTrips || '142'}</span>
+            <span className={`block font-medium truncate ${t}`}>{driver.totalTrips || '142'}</span>
           </div>
-          <div>
+          <div className="min-w-0">
             <span className={`block ${dark ? 'text-slate-500' : 'text-gray-500'}`}>Vehicle</span>
-            <span className={`font-medium truncate ${t}`}>{driver.assignedVehicle || 'N/A'}</span>
+            <span className={`block font-medium leading-snug break-words ${t}`}>{assignedName}</span>
+            {assignedPlate && (
+              <span className={`block text-xs mt-0.5 leading-snug break-words ${dark ? 'text-slate-400' : 'text-slate-600'}`}>
+                {assignedPlate}
+              </span>
+            )}
           </div>
         </div>
       </div>

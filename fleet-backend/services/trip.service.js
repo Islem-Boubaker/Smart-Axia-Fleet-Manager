@@ -30,9 +30,16 @@ const createError = (message, status = 400, code = "BAD_REQUEST") => {
   return error;
 };
 
+const tripRelationInclude = [
+  { model: User, as: "driver", attributes: ["id", "name"] },
+  { model: Vehicle, as: "vehicle", attributes: ["id", "name", "plaque_immatriculation"] },
+];
+
 const ensureTripExists = async (tripId, includeStops = false) => {
   const trip = await Trip.findByPk(tripId, {
-    include: includeStops ? [{ model: TripStop, as: "stops" }] : [],
+    include: includeStops
+      ? [{ model: TripStop, as: "stops" }, ...tripRelationInclude]
+      : [...tripRelationInclude],
     order: includeStops ? [[{ model: TripStop, as: "stops" }, "stopOrder", "ASC"]] : [],
   });
 
@@ -160,7 +167,7 @@ const emitTripEvent = (event, payload) => {
 
 const fetchTripWithStops = async (tripId) => {
   return Trip.findByPk(tripId, {
-    include: [{ model: TripStop, as: "stops" }],
+    include: [{ model: TripStop, as: "stops" }, ...tripRelationInclude],
     order: [[{ model: TripStop, as: "stops" }, "stopOrder", "ASC"]],
   });
 };
@@ -228,10 +235,12 @@ export const getTrips = async (filters = {}, pagination = {}, callerRole, caller
     limit,
     offset,
     order: [["startTime", "DESC"]],
+    include: [...tripRelationInclude],
   };
 
   if (includeStops) {
-    query.include = [{ model: TripStop, as: "stops" }];
+    query.include = [{ model: TripStop, as: "stops" }, ...tripRelationInclude];
+    query.distinct = true;
   }
 
   const { count, rows } = await Trip.findAndCountAll(query);

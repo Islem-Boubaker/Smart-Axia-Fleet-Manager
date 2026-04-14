@@ -40,7 +40,6 @@ export async function isEmailSignInLink(url: string): Promise<boolean> {
 
   const auth = getFirebaseAuth();
   if (!auth) {
-    // In Expo Go, native Firebase auth is unavailable.
     return false;
   }
 

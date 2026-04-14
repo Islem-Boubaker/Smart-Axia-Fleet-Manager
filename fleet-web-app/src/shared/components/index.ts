@@ -6,6 +6,7 @@ export { GlobalCard } from './GlobalCard';
 export { Header } from './layout/Header/Header';
 export { AppTopBar } from './layout/Header/AppTopBar';
 export { Input } from './ui/Input';
+export { Select } from './ui/Select';
 export { NotificationPopup } from './NotificationPopup';
 export { Sidebar } from './layout/Sidebar';
 export { ToastProvider, useToast, toast } from './toast';

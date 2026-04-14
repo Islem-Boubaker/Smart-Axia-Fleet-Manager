@@ -11,10 +11,12 @@ const cardExtra = (dark: boolean) =>
 interface Props {
   notifications: NotificationPreferences;
   onChange: (data: NotificationPreferences) => void;
+  onSave: () => Promise<void>;
+  isSaving?: boolean;
   dark?: boolean;
 }
 
-const NotificationSettings = ({ notifications, onChange, dark = false }: Props) => {
+const NotificationSettings = ({ notifications, onChange, onSave, isSaving = false, dark = false }: Props) => {
   const handleToggle = (key: string, checked: boolean) => {
     onChange({ ...notifications, [key]: checked });
   };
@@ -51,7 +53,7 @@ const NotificationSettings = ({ notifications, onChange, dark = false }: Props) 
           dark={dark}
         />
         <div className="flex justify-end">
-          <Button className="rounded-xl">
+          <Button className="rounded-xl" onClick={onSave} isLoading={isSaving}>
             <FiSave className="mr-2" />
             Save changes
           </Button>

@@ -6,6 +6,11 @@ export interface ProfileData {
   phone: string;
   company: string;
   role: string;
+  avatar?: string;
+  country?: string;
+  city?: string;
+  postalCode?: string;
+  taxId?: string;
 }
 
 export interface NotificationPreferences {

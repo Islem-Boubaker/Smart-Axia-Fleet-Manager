@@ -2,6 +2,12 @@ import { StatusCodes } from 'http-status-codes';
 import * as vehicleService from '../services/vehicle.service.js';
 import { uploadVehiclePhotos } from '../middlewares/upload.js';
 
+const extractPhotoUrls = (files = []) => {
+  return files
+    .map((file) => file?.path || file?.secure_url || file?.url || null)
+    .filter(Boolean);
+};
+
 // ─────────────────────────────────────────────
 // CRUD
 // ─────────────────────────────────────────────
@@ -14,8 +20,10 @@ export const createVehicle = [
       const data = { ...req.body };
 
       // Map uploaded files to Cloudinary URLs
-      if (req.files?.length) {
-        data.photos = req.files.map((f) => f.path);
+      if (req.files && req.files.length > 0) {
+        data.photos = extractPhotoUrls(req.files);
+      } else {
+        delete data.photos;
       }
 
       const vehicle = await vehicleService.createVehicle(data);
@@ -57,9 +65,13 @@ export const updateVehicle = [
     try {
       const data = { ...req.body };
 
-      if (req.files?.length) {
-        data.photos = req.files.map((f) => f.path);
+      if (req.files && req.files.length > 0) {
+        data.photos = extractPhotoUrls(req.files);
+      } else {
+        delete data.photos;
       }
+      
+      console.log('[updateVehicle] data:', data);
 
       const vehicle = await vehicleService.updateVehicle(req.params.id, data);
       if (!vehicle)

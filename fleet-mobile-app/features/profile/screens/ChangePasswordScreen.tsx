@@ -1,5 +1,6 @@
 import React, { useState } from "react";
-import { SafeAreaView, Text, View, TouchableOpacity } from "react-native";
+import { Text, View, TouchableOpacity } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { ChevronLeft } from "lucide-react-native";
 import { useRouter } from "expo-router";
 import { InputField } from "../components/ui/InputField";

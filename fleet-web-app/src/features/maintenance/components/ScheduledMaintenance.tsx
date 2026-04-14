@@ -1,46 +1,12 @@
 import { FiCalendar, FiClock, FiTruck } from 'react-icons/fi';
-
-export interface ScheduledItem {
-  id: string;
-  vehicle: string;
-  plate: string;
-  type: string;
-  scheduledFor: string;
-  window: string;
-}
-
-const UPCOMING: ScheduledItem[] = [
-  {
-    id: '1',
-    vehicle: 'Toyota Camry',
-    plate: '123 TU 4567',
-    type: 'Oil & filter',
-    scheduledFor: '2026-04-02',
-    window: '09:00 – 11:00',
-  },
-  {
-    id: '2',
-    vehicle: 'Ford Transit',
-    plate: '234 TU 8912',
-    type: 'Brake inspection',
-    scheduledFor: '2026-04-04',
-    window: '14:00 – 16:00',
-  },
-  {
-    id: '3',
-    vehicle: 'Tesla Model 3',
-    plate: '189 TU 6754',
-    type: 'Tire rotation',
-    scheduledFor: '2026-04-08',
-    window: '10:30 – 12:00',
-  },
-];
+import type { Maintenance } from '../../../types';
 
 interface Props {
   dark?: boolean;
+  items?: Maintenance[];
 }
 
-export function ScheduledMaintenance({ dark = false }: Props) {
+export function ScheduledMaintenance({ dark = false, items = [] }: Props) {
   return (
     <section className="space-y-4">
       <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-2">
@@ -55,8 +21,14 @@ export function ScheduledMaintenance({ dark = false }: Props) {
         </div>
       </div>
 
+      {items.length === 0 && (
+        <div className={`rounded-xl border px-4 py-8 text-sm text-center ${dark ? 'border-slate-700 text-slate-400' : 'border-slate-200 text-slate-500'}`}>
+          No upcoming maintenances.
+        </div>
+      )}
+
       <ul className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 md:gap-5">
-        {UPCOMING.map((item, i) => (
+        {items.map((item, i) => (
           <li
             key={item.id}
             className={`rounded-2xl border p-5 transition duration-200 hover:-translate-y-0.5 hover:shadow-soft ${
@@ -81,17 +53,17 @@ export function ScheduledMaintenance({ dark = false }: Props) {
                 Scheduled
               </span>
             </div>
-            <h3 className={`font-bold ${dark ? 'text-white' : 'text-slate-900'}`}>{item.vehicle}</h3>
-            <p className={`text-sm ${dark ? 'text-slate-400' : 'text-slate-500'}`}>{item.plate}</p>
-            <p className={`text-sm font-medium mt-3 ${dark ? 'text-slate-200' : 'text-slate-800'}`}>{item.type}</p>
+            <h3 className={`font-bold ${dark ? 'text-white' : 'text-slate-900'}`}>{item.vehiclePlate || 'Vehicle'}</h3>
+            <p className={`text-sm ${dark ? 'text-slate-400' : 'text-slate-500'}`}>{item.vehiclePlate}</p>
+            <p className={`text-sm font-medium mt-3 ${dark ? 'text-slate-200' : 'text-slate-800'}`}>{item.type || 'Maintenance'}</p>
             <div className={`mt-4 flex flex-wrap gap-4 text-sm ${dark ? 'text-slate-400' : 'text-slate-600'}`}>
               <span className="inline-flex items-center gap-1.5">
                 <FiCalendar className="w-4 h-4 opacity-80" />
-                {item.scheduledFor}
+                {item.scheduledDate}
               </span>
               <span className="inline-flex items-center gap-1.5">
                 <FiClock className="w-4 h-4 opacity-80" />
-                {item.window}
+                {item.status}
               </span>
             </div>
           </li>

@@ -8,12 +8,34 @@ import { RATE_LIMIT } from '../config/security.js';
 
 const router = Router();
 router.post('/user/login', rateLimit(RATE_LIMIT.login), userController.login);
+router.post('/user/forgot-password', rateLimit(RATE_LIMIT.login), userController.forgotPassword);
 
 router.post('/user/refresh-token', userController.refreshToken);
 
 router.post('/user/logout', authMiddleware.authenticate, csrfMiddleware.verifyCsrf, userController.logout);
+router.post(
+  '/user/change-password',
+  authMiddleware.authenticate,
+  csrfMiddleware.verifyCsrf,
+  userController.changePassword
+);
 
 router.get('/user/me', authMiddleware.authenticate, userController.getMe);
+router.put('/user/me', authMiddleware.authenticate, csrfMiddleware.verifyCsrf, userController.updateMe);
+router.get('/user/me/notifications', authMiddleware.authenticate, userController.getMyNotificationSettings);
+router.put(
+  '/user/me/notifications',
+  authMiddleware.authenticate,
+  csrfMiddleware.verifyCsrf,
+  userController.updateMyNotificationSettings
+);
+
+router.patch(
+  '/user/me/avatar',
+  authMiddleware.authenticate,
+  csrfMiddleware.verifyCsrf,
+  ...userController.updateMyAvatar
+);
 
 router.patch (
   '/user/:id/avatar',

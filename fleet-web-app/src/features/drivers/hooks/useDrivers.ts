@@ -25,9 +25,12 @@ export const useDrivers = () => {
     fetchDrivers();
   }, [fetchDrivers]);
 
-  const addDriver = useCallback(async (driverData: Partial<Driver> & { password: string }) => {
+  const addDriver = useCallback(async (driverData: Partial<Driver> & { password: string }, photo?: File | null) => {
     try {
-      const newDriver = await driversService.createDriver(driverData);
+      let newDriver = await driversService.createDriver(driverData);
+      if (photo && newDriver.id) {
+        newDriver = await driversService.uploadDriverAvatar(newDriver.id, photo);
+      }
       setDrivers(prev => [...prev, newDriver]);
       return newDriver;
     } catch (err: any) {
@@ -37,9 +40,12 @@ export const useDrivers = () => {
     }
   }, []);
 
-  const updateDriver = useCallback(async (id: string, driverData: Partial<Driver>) => {
+  const updateDriver = useCallback(async (id: string, driverData: Partial<Driver>, photo?: File | null) => {
     try {
-      const updated = await driversService.updateDriver(id, driverData);
+      let updated = await driversService.updateDriver(id, driverData);
+      if (photo) {
+        updated = await driversService.uploadDriverAvatar(id, photo);
+      }
       setDrivers(prev => prev.map(d => (d.id === id ? updated : d)));
       return updated;
     } catch (err: any) {

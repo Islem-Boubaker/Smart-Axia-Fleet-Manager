@@ -73,6 +73,61 @@ const User = sequelize.define(
       allowNull: true,
       validate: { min: 0, max: 5 },
     },
+    company: {
+      type: DataTypes.STRING(100),
+      allowNull: true,
+    },
+    country: {
+      type: DataTypes.STRING(100),
+      allowNull: true,
+    },
+    city: {
+      type: DataTypes.STRING(100),
+      allowNull: true,
+    },
+    postalCode: {
+      type: DataTypes.STRING(20),
+      allowNull: true,
+    },
+    taxId: {
+      type: DataTypes.STRING(100),
+      allowNull: true,
+    },
+    emailTrips: {
+      type: DataTypes.BOOLEAN,
+      allowNull: false,
+      defaultValue: true,
+    },
+    emailMaintenance: {
+      type: DataTypes.BOOLEAN,
+      allowNull: false,
+      defaultValue: true,
+    },
+    emailDrivers: {
+      type: DataTypes.BOOLEAN,
+      allowNull: false,
+      defaultValue: false,
+    },
+    pushTrips: {
+      type: DataTypes.BOOLEAN,
+      allowNull: false,
+      defaultValue: true,
+    },
+    pushMaintenance: {
+      type: DataTypes.BOOLEAN,
+      allowNull: false,
+      defaultValue: true,
+    },
+    pushAlerts: {
+      type: DataTypes.BOOLEAN,
+      allowNull: false,
+      defaultValue: true,
+    },
+    smsAlerts: {
+      type: DataTypes.BOOLEAN,
+      allowNull: false,
+      defaultValue: false,
+    },
   },
   {
     tableName: 'users',
