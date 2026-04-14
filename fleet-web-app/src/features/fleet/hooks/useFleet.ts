@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
-import { fleetService } from '../services/fleet.service';
+import { fleetService, type Fleet } from '../services/fleet.service';
 
 export const useFleet = () => {
-  const [fleets, setFleets] = useState([]);
+  const [fleets, setFleets] = useState<Fleet[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 

@@ -1,5 +1,5 @@
 import { FiSearch } from 'react-icons/fi';
-import { Input } from '../../../shared/components';
+import { Input, Select } from '../../../shared/components';
 
 interface Props {
   searchQuery: string;
@@ -35,21 +35,19 @@ const TripsFilters = ({
         }`}
       />
     </div>
-    <select
+    <Select
+      className="min-w-[160px]"
       value={statusFilter}
-      onChange={(e) => onStatusChange(e.target.value)}
-      className={`min-w-[160px] rounded-xl px-4 py-2.5 text-sm font-medium outline-none transition focus:ring-2 focus:ring-brand ${
-        dark
-          ? 'border border-slate-600 bg-slate-800/80 text-slate-200'
-          : 'border border-slate-200 bg-white/90 text-slate-800'
-      }`}
-    >
-      <option value="all">All statuses</option>
-      <option value="scheduled">Scheduled</option>
-      <option value="ongoing">Ongoing</option>
-      <option value="completed">Completed</option>
-      <option value="cancelled">Cancelled</option>
-    </select>
+      onChange={onStatusChange}
+      dark={dark}
+      options={[
+        { value: 'all', label: 'All statuses' },
+        { value: 'scheduled', label: 'Scheduled' },
+        { value: 'ongoing', label: 'Ongoing' },
+        { value: 'completed', label: 'Completed' },
+        { value: 'cancelled', label: 'Cancelled' },
+      ]}
+    />
   </div>
 );
 

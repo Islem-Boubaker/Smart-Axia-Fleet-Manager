@@ -10,6 +10,11 @@ const User = sequelize.define(
       defaultValue: DataTypes.UUIDV4,
       primaryKey: true,
     },
+    avatar:{
+        type: DataTypes.STRING, // URL of the avatar image
+        allowNull: true,
+      defaultValue: null,
+    },
     name: {
       type: DataTypes.STRING(100),
       allowNull: false,
@@ -67,6 +72,61 @@ const User = sequelize.define(
       type: DataTypes.FLOAT,
       allowNull: true,
       validate: { min: 0, max: 5 },
+    },
+    company: {
+      type: DataTypes.STRING(100),
+      allowNull: true,
+    },
+    country: {
+      type: DataTypes.STRING(100),
+      allowNull: true,
+    },
+    city: {
+      type: DataTypes.STRING(100),
+      allowNull: true,
+    },
+    postalCode: {
+      type: DataTypes.STRING(20),
+      allowNull: true,
+    },
+    taxId: {
+      type: DataTypes.STRING(100),
+      allowNull: true,
+    },
+    emailTrips: {
+      type: DataTypes.BOOLEAN,
+      allowNull: false,
+      defaultValue: true,
+    },
+    emailMaintenance: {
+      type: DataTypes.BOOLEAN,
+      allowNull: false,
+      defaultValue: true,
+    },
+    emailDrivers: {
+      type: DataTypes.BOOLEAN,
+      allowNull: false,
+      defaultValue: false,
+    },
+    pushTrips: {
+      type: DataTypes.BOOLEAN,
+      allowNull: false,
+      defaultValue: true,
+    },
+    pushMaintenance: {
+      type: DataTypes.BOOLEAN,
+      allowNull: false,
+      defaultValue: true,
+    },
+    pushAlerts: {
+      type: DataTypes.BOOLEAN,
+      allowNull: false,
+      defaultValue: true,
+    },
+    smsAlerts: {
+      type: DataTypes.BOOLEAN,
+      allowNull: false,
+      defaultValue: false,
     },
   },
   {

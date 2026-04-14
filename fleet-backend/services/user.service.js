@@ -2,10 +2,80 @@ import User from '../models/user.model.js';
 import Reclamation from '../models/reclamation.model.js';
 import * as Token from '../utils/jwt.js';
 import { getPagination, getPagingData } from '../utils/pagination.js';
+import cloudinary from '../config/cloudinary.js';
+import nodemailer from 'nodemailer';
+import crypto from 'crypto';
 
+const NOTIFICATION_KEYS = [
+  'emailTrips',
+  'emailMaintenance',
+  'emailDrivers',
+  'pushTrips',
+  'pushMaintenance',
+  'pushAlerts',
+  'smsAlerts',
+];
 
+const extractCloudinaryPublicIdFromUrl = (url) => {
+  try {
+    const cleanUrl = url.split('?')[0];
+    const segments = cleanUrl.split('/').filter(Boolean);
+    const lastTwoSegments = segments.slice(-2);
+    if (lastTwoSegments.length < 2) return null;
+    return lastTwoSegments.join('/').replace(/\.[^.]+$/, '');
+  } catch {
+    return null;
+  }
+};
 
-export const createUserSvc = async (userData) => {
+const extractUploadedFileUrl = (file) => {
+  if (!file || typeof file !== 'object') return null;
+
+  return (
+    file.path ||
+    file.secure_url ||
+    file.url ||
+    (file.filename && typeof file.filename === 'string' && file.filename.startsWith('http')
+      ? file.filename
+      : null)
+  );
+};
+
+export const updateUserPhotoSvc = async (id, file) => {
+  if (!file) throw Object.assign(new Error('No file uploaded'), { statusCode: 400 });
+
+  const avatarUrl = extractUploadedFileUrl(file);
+  if (!avatarUrl) {
+    throw Object.assign(new Error('Uploaded avatar URL is missing'), { statusCode: 500 });
+  }
+
+  const user = await User.findByPk(id);
+  if (!user) throw Object.assign(new Error('User not found'), { statusCode: 404 });
+
+  // Delete old Cloudinary image if exists
+  if (user.avatar) {
+    try {
+      const publicId = extractCloudinaryPublicIdFromUrl(user.avatar);
+      if (publicId) {
+        await cloudinary.uploader.destroy(publicId);
+      }
+    } catch (e) {
+      console.warn('[Cloudinary] Failed to delete old photo:', e.message);
+    }
+  }
+
+  await user.update({ avatar: avatarUrl });
+
+  const { password, ...safeUser } = user.toJSON();
+  return safeUser;
+};
+export const createUserSvc = async (userData, file = null) => {
+  // If a file was uploaded, attach the Cloudinary URL
+  const avatarUrl = extractUploadedFileUrl(file);
+  if (avatarUrl) {
+    userData.avatar = avatarUrl;
+  }
+
   const user = await User.create(userData);
   const { password, ...safeUser } = user.toJSON();
   return safeUser;
@@ -60,6 +130,91 @@ export const deleteUserSvc = async (id) => {
   return await User.destroy({ where: { id } });
 };
 
+export const getMyNotificationSettingsSvc = async (userId) => {
+  const user = await User.findByPk(userId, { attributes: NOTIFICATION_KEYS });
+  if (!user) return null;
+  return user.toJSON();
+};
+
+export const updateMyNotificationSettingsSvc = async (userId, payload = {}) => {
+  const user = await User.findByPk(userId);
+  if (!user) return null;
+
+  const sanitized = {};
+  for (const key of NOTIFICATION_KEYS) {
+    if (Object.prototype.hasOwnProperty.call(payload, key)) {
+      sanitized[key] = Boolean(payload[key]);
+    }
+  }
+
+  if (Object.keys(sanitized).length === 0) {
+    return await getMyNotificationSettingsSvc(userId);
+  }
+
+  await user.update(sanitized);
+  return await getMyNotificationSettingsSvc(userId);
+};
+
+export const forgotPasswordSvc = async (email) => {
+  const user = await User.findOne({ where: { email } });
+  if (!user) {
+    // Return quietly so we don't expose if email exists or not
+    return;
+  }
+
+  // Generate a random plain text password
+  const randomPlainPassword = crypto.randomBytes(6).toString('hex'); // 12 character hex string
+
+  // We set it like this, the Sequelize `beforeUpdate` hook (in user.model.js) will hash it for us!
+  await user.update({ password: randomPlainPassword });
+
+  // Send email to the user
+  const transporter = nodemailer.createTransport({
+    service: 'gmail', // you can change this
+    auth: {
+      user: process.env.EMAIL_USER, 
+      pass: process.env.EMAIL_PASS, 
+    },
+  });
+
+  const mailOptions = {
+    from: `"AXIA Fleet Manager" <${process.env.EMAIL_USER}>`,
+    to: user.email,
+    subject: 'Your new password for AXIA Fleet Manager',
+    text: `Hello ${user.name},\n\nYour new randomly generated password is: ${randomPlainPassword}\n\nPlease log in and change this temporarily auto-generated password in your account settings.\n\nBest regards,\nAXIA Fleet Team`,
+  };
+
+  try {
+    await transporter.sendMail(mailOptions);
+  } catch (error) {
+    console.error('Failed to send mail in forgotPasswordSvc', error);
+  }
+};
+
+export const changePasswordSvc = async (userId, currentPassword, newPassword) => {
+  const user = await User.findByPk(userId);
+  if (!user) {
+    const err = new Error('User not found');
+    err.statusCode = 404;
+    throw err;
+  }
+
+  const isCurrentPasswordValid = await user.comparePassword(currentPassword);
+  if (!isCurrentPasswordValid) {
+    const err = new Error('Current password is incorrect');
+    err.statusCode = 400;
+    throw err;
+  }
+
+  if (newPassword.length < 8) {
+    const err = new Error('New password must be at least 8 characters long');
+    err.statusCode = 400;
+    throw err;
+  }
+
+  await user.update({ password: newPassword });
+};
+
 
 
 
@@ -90,16 +245,12 @@ export const loginUserSvc = async (email, password) => {
   const accessToken = Token.generateAccessToken(payload);
   const refreshToken = Token.generateRefreshToken(payload);
 
+  const { password: _, ...userWithoutPassword } = user.toJSON();
+
   return {
     accessToken,
     refreshToken,
-    user: {
-      id: user.id,
-      name: user.name,
-      email: user.email,
-      role: user.role,
-      phone: user.phone
-    }
+    user: userWithoutPassword
   };
 };
 

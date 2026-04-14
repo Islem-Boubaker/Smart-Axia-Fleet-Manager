@@ -1,7 +1,7 @@
-import { LoginScreen } from "@/features/auth/screens/LoginScreen";
+import SignInScreen from "@/features/auth/screens/LoginScreen";
 
 export default function LoginRoute() {
-  return <LoginScreen />;
+  return <SignInScreen />;
 }
 
 LoginRoute.displayName = 'LoginRoute';

@@ -1,25 +1,16 @@
 import TripCard from '../components/TripCard';
-
-interface Trip {
-  id: string;
-  driver: string;
-  vehicle: string;
-  startLocation: string;
-  endLocation: string;
-  startTime: string;
-  endTime: string | null;
-  distance: string;
-  status: string;
-  fuel: string;
-  cost: string;
-}
+import type { Trip } from '../../../types';
 
 interface Props {
   trips: Trip[];
   dark?: boolean;
+  actionTripId?: string | null;
+  onStart?: (tripId: string) => void;
+  onComplete?: (tripId: string) => void;
+  onCancel?: (tripId: string) => void;
 }
 
-const TripsList = ({ trips, dark = false }: Props) => {
+const TripsList = ({ trips, dark = false, actionTripId = null, onStart, onComplete, onCancel }: Props) => {
   if (trips.length === 0)
     return (
       <div
@@ -34,7 +25,16 @@ const TripsList = ({ trips, dark = false }: Props) => {
   return (
     <div className="space-y-5">
       {trips.map((trip, index) => (
-        <TripCard key={trip.id} trip={trip} dark={dark} index={index} />
+        <TripCard
+          key={trip.id}
+          trip={trip}
+          dark={dark}
+          index={index}
+          onStart={onStart}
+          onComplete={onComplete}
+          onCancel={onCancel}
+          isBusy={actionTripId === trip.id}
+        />
       ))}
     </div>
   );

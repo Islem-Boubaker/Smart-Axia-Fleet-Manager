@@ -65,6 +65,10 @@ api.interceptors.request.use(
       }
     }
 
+    if (config.data instanceof FormData) {
+      delete config.headers["Content-Type"];
+    }
+
     return config;
   },
   (error: AxiosError) => Promise.reject(error)
@@ -141,8 +145,9 @@ api.interceptors.response.use(
       } catch (refreshError) {
         processQueue(refreshError);
 
-     
-        window.location.href = "/signin";
+        if (window.location.pathname !== "/signin") {
+          window.location.href = "/signin";
+        }
 
         return Promise.reject(refreshError);
       } finally {

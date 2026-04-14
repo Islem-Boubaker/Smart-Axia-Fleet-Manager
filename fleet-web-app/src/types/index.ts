@@ -10,23 +10,20 @@ export interface Vehicle {
   id: string;
   vin?: string;
   name: string;
+  photos?: string[];
   plaque_immatriculation?: string;
-  type: 'voiture' | 'camion' | 'moto' | 'camionnette';
-  compteur_kilometrique: number;
+  type: 'car' | 'suv' | 'truck' | 'motorcycle' | 'van';
   Active: boolean;
   Vehicle_Model: 'Car' | 'SUV' | 'Van' | 'Truck' | 'Bus' | 'Motorcycle';
+  max_load?: number | null;
+  insurance_expiry_date?: string | null;
+  tech_visit_expiry_date?: string | null;
   Mileage: number;
   Vehicle_Age: number;
-  Maintenance_History: 'Good' | 'Average' | 'Poor';
-  Reported_Issues: number;
-  Service_History: number;
-  Accident_History: number;
-  Fuel_Efficiency?: number | null;
   Engine_Size?: number | null;
   Tire_Condition: 'New' | 'Good' | 'Worn Out';
   Brake_Condition: 'New' | 'Good' | 'Worn Out';
   Battery_Status: 'New' | 'Good' | 'Weak';
-  Days_Since_Last_Service: number;
   Need_Maintenance: boolean;
   createdAt?: string;
   updatedAt?: string;
@@ -52,32 +49,67 @@ export interface Driver {
   role?: string;
 }
 
+export interface TripStop {
+  id: string;
+  tripId: string;
+  stopOrder: number;
+  locationName: string;
+  latitude?: number;
+  longitude?: number;
+  status: 'pending' | 'reached' | 'skipped';
+  arrivalTime?: string;
+  estimatedArrival?: string;
+  notes?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface Trip {
   id: string;
-  vehicle: string;
-  driver: string;
+  userId?: string;
+  vehicleId: string;
+  region?: string;
   startLocation: string;
   endLocation: string;
   startTime: string;
-  endTime: string | null;
-  distance: string;
-  status: 'ongoing' | 'completed' | 'cancelled' | 'scheduled';
-  fuel: string;
-  cost: string;
+  endTime?: string;
+  distance: number;
+  fuel?: string;
+  cost?: number;
+  status: 'scheduled' | 'ongoing' | 'completed' | 'cancelled';
+  createdAt: string;
+  updatedAt: string;
+  stops?: TripStop[]; // Array of stops when included
+  driver?: {
+    id: string;
+    name: string;
+  };
+  vehicle?: {
+    id: string;
+    name: string;
+    plaque_immatriculation?: string;
+  };
 }
 
 export interface Maintenance {
   id: string;
-  vehicle: string;
-  type: string;
-  description: string;
+  vehicleId?: string;
+  vehicleName?: string;
+  vehiclePlate: string;
   scheduledDate: string;
-  completedDate: string | null;
-  status: string;
-  mileage: number;
-  cost: string;
+  completedAt?: string;
   technician: string;
-  priority: string;
+  cost: number;
+  mileage?: number;
+  priority: 'low' | 'medium' | 'high';
+  status: 'scheduled' | 'pending' | 'in_progress' | 'completed' | 'cancelled';
+  type?: string;
+  description?: string;
+  attachments: string[];
+  createdBy?: string;
+  updatedBy?: string;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface AuthState {

@@ -1,6 +1,5 @@
-import { DataTypes } from sequelize;
-import sequelize from '../config/connectdb.js';
-
+import { DataTypes } from 'sequelize';
+import { sequelize } from '../config/connectdb.js';
 
 const Maintenance = sequelize.define(
   'Maintenance',
@@ -10,6 +9,12 @@ const Maintenance = sequelize.define(
       defaultValue: DataTypes.UUIDV4,
       primaryKey: true,
     },
+    vehicleId: {
+      type: DataTypes.UUID,
+      allowNull: true,
+      references: { model: 'vehicles', key: 'id' },
+      onDelete: 'RESTRICT',
+    },
     vehiclePlate: {
       type: DataTypes.STRING,
       allowNull: false,
@@ -17,6 +22,10 @@ const Maintenance = sequelize.define(
     scheduledDate: {
       type: DataTypes.DATE,
       allowNull: false,
+    },
+    completedAt: {
+      type: DataTypes.DATE,
+      allowNull: true,
     },
     technician: {
       type: DataTypes.STRING,
@@ -36,13 +45,34 @@ const Maintenance = sequelize.define(
       defaultValue: 'medium',
     },
     status: {
-      type: DataTypes.ENUM('scheduled', 'in_progress', 'completed', 'cancelled'),
+      type: DataTypes.ENUM('scheduled', 'pending', 'in_progress', 'in progress', 'completed', 'cancelled'),
       allowNull: false,
-      defaultValue: 'scheduled',
+      defaultValue: 'pending',
     },
     type: {
       type: DataTypes.STRING,
       allowNull: true,
+    },
+    description: {
+      type: DataTypes.TEXT,
+      allowNull: true,
+    },
+    attachments: {
+      type: DataTypes.JSONB,
+      allowNull: false,
+      defaultValue: [],
+    },
+    createdBy: {
+      type: DataTypes.UUID,
+      allowNull: true,
+      references: { model: 'users', key: 'id' },
+      onDelete: 'SET NULL',
+    },
+    updatedBy: {
+      type: DataTypes.UUID,
+      allowNull: true,
+      references: { model: 'users', key: 'id' },
+      onDelete: 'SET NULL',
     },
   },
   {

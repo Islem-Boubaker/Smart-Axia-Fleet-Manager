@@ -8,13 +8,8 @@ import VehiclePerformanceTable from "../components/VehiclePerformanceTable";
 import FuelAnalysis from "../components/FuelAnalysis";
 import MaintenanceSummary from "../components/MaintenanceSummary";
 import MonthlyTrends from "../components/MonthlyTrends";
-import {
-  overviewStats,
-  vehiclePerformance,
-  fuelAnalysis,
-  monthlyTrends,
-  maintenanceSummary,
-} from "../../../data/mockData";
+import DriverInsights from "../components/DriverInsights";
+import { useReports } from "../hooks/useReports";
 
 interface ThemeContext {
   dark: boolean;
@@ -25,6 +20,17 @@ const ReportsPage = () => {
   const pdfRef = useRef<HTMLDivElement>(null);
   const [reportType, setReportType] = useState("overview");
   const [dateRange, setDateRange] = useState("month");
+  const {
+    isLoading,
+    error,
+    overviewStats,
+    vehiclePerformance,
+    fuelAnalysis,
+    maintenanceSummary,
+    monthlyTrends,
+    driverInsights,
+    driverPerformance,
+  } = useReports(reportType, dateRange);
 
   return (
     <div
@@ -42,14 +48,28 @@ const ReportsPage = () => {
         onDateRangeChange={setDateRange}
         dark={dark}
       />
-      <div ref={pdfRef} id="pdf-content" className="space-y-8 lg:space-y-10">
-        <OverviewStats stats={overviewStats} dark={dark} />
-        <VehiclePerformanceTable vehicles={vehiclePerformance} dark={dark} />
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-10">
-          <FuelAnalysis fuelData={fuelAnalysis} dark={dark} />
-          <MaintenanceSummary maintenanceData={maintenanceSummary} dark={dark} />
+      {error && (
+        <div className={`rounded-xl border px-4 py-3 text-sm ${dark ? 'border-red-900/50 bg-red-950/30 text-red-200' : 'border-red-200 bg-red-50 text-red-700'}`}>
+          {error}
         </div>
-        <MonthlyTrends trends={monthlyTrends} dark={dark} />
+      )}
+      <div ref={pdfRef} id="pdf-content" className="space-y-8 lg:space-y-10">
+        {isLoading ? (
+          <div className={`text-center py-16 rounded-2xl border ${dark ? 'border-slate-700 text-slate-400' : 'border-slate-200 text-slate-500'}`}>
+            Loading reports...
+          </div>
+        ) : (
+          <>
+            <OverviewStats stats={overviewStats} dark={dark} />
+            <DriverInsights summary={driverInsights} rows={driverPerformance} dark={dark} />
+            <VehiclePerformanceTable vehicles={vehiclePerformance} dark={dark} />
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-10">
+              <FuelAnalysis fuelData={fuelAnalysis} dark={dark} />
+              <MaintenanceSummary maintenanceData={maintenanceSummary} dark={dark} />
+            </div>
+            <MonthlyTrends trends={monthlyTrends} dark={dark} />
+          </>
+        )}
       </div>
     </div>
   );

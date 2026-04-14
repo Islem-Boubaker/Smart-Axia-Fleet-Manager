@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { FiMail, FiLock, FiTruck } from 'react-icons/fi';
 import { Button, Input, toast } from '../../../shared/components';
@@ -19,11 +19,33 @@ export default function Signin() {
   const navigate = useNavigate();
   const dispatch = useDispatch();
   const [isLoading, setIsLoading] = useState(false);
+  const [isForgotMode, setIsForgotMode] = useState(false);
   const [count,setcount]=useState(0)
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const { register, handleSubmit, formState: { errors } } = useForm<SignInForm>();
   
   const onSubmit = async (data: SignInForm) => {
+    if (isForgotMode) {
+      if (!data.email) {
+        setErrorMsg('Please enter your email code.');
+        return;
+      }
+      setIsLoading(true);
+      setErrorMsg(null);
+      try {
+        await authAPI.forgotPassword(data.email);
+        toast.success('If the email exists, a new password has been sent to your inbox.');
+        setIsForgotMode(false);
+      } catch (error: any) {
+        const msg = error.response?.data?.message || error.message || 'Failed to request new password';
+        toast.error(msg);
+        setErrorMsg(msg);
+      } finally {
+        setIsLoading(false);
+      }
+      return;
+    }
+
     setcount(count + 1); 
    
     setIsLoading(true); 
@@ -32,6 +54,7 @@ export default function Signin() {
       const credentials: SignInCredentials = {
         email: data.email,
         password: data.password,
+        rememberMe: data.rememberMe || false,
       };
 
       // Backend sets httpOnly cookies automatically.
@@ -60,8 +83,12 @@ export default function Signin() {
           <div className="inline-flex items-center justify-center w-16 h-16 bg-blue-600 rounded-2xl mb-4">
             <FiTruck className="text-white text-3xl" />
           </div>
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Welcome Back</h1>
-          <p className="text-gray-600">Sign in to access your fleet dashboard</p>
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">
+            {isForgotMode ? 'Reset Password' : 'Welcome Back'}
+          </h1>
+          <p className="text-gray-600">
+            {isForgotMode ? 'Enter your email to receive a new password' : 'Sign in to access your fleet dashboard'}
+          </p>
         </div>
 
         {/* Sign In Form */}
@@ -93,54 +120,65 @@ export default function Signin() {
               />
             </div>
 
-            {/* Password */}
-            <div className="relative">
-              <FiLock className="absolute left-3 top-10 text-gray-400" />
-              <Input
-                label="Password"
-                type="password"
-                placeholder="Enter your password"
-                className="pl-10"
-                error={errors.password?.message}
-                {...register('password', {
-                  required: 'Password is required',
-                  minLength: { value: 6, message: 'Password must be at least 6 characters' },
-                })}
-              />
-            </div>
+            {!isForgotMode && (
+              <>
+                {/* Password */}
+                <div className="relative">
+                  <FiLock className="absolute left-3 top-10 text-gray-400" />
+                  <Input
+                    label="Password"
+                    type="password"
+                    placeholder="Enter your password"
+                    className="pl-10"
+                    error={errors.password?.message}
+                    {...register('password', {
+                      required: isForgotMode ? false : 'Password is required',
+                      minLength: { value: 6, message: 'Password must be at least 6 characters' },
+                    })}
+                  />
+                </div>
 
-            {/* Remember me */}
-            <div className="flex items-center justify-between">
-              <label className="flex items-center">
-                <input
-                  type="checkbox"
-                  className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                  {...register('rememberMe')}
-                />
-                <span className="ml-2 text-sm text-gray-600">Remember me</span>
-              </label>
-              <Link
-                to="#"
-                className="text-sm text-blue-600 hover:text-blue-700 font-medium"
-              >
-                Forgot password?
-              </Link>
-            </div>
+                {/* Remember me */}
+                <div className="flex items-center justify-between">
+                  <label className="flex items-center cursor-pointer">
+                    <input
+                      type="checkbox"
+                      className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                      {...register('rememberMe')}
+                    />
+                    <span className="ml-2 text-sm text-gray-600">Remember me</span>
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsForgotMode(true);
+                      setErrorMsg(null);
+                    }}
+                    className="text-sm text-blue-600 hover:text-blue-700 font-medium"
+                  >
+                    Forgot password?
+                  </button>
+                </div>
+              </>
+            )}
 
             {/* Submit */}
             <Button type="submit" fullWidth isLoading={isLoading} size="lg">
-              Sign In
+              {isForgotMode ? 'Send new password' : 'Sign In'}
             </Button>
+            
+            {isForgotMode && (
+              <div className="mt-4 text-center">
+                <button
+                  type="button"
+                  onClick={() => setIsForgotMode(false)}
+                  className="text-sm text-gray-500 hover:text-gray-700 font-medium"
+                >
+                  Back to Sign In
+                </button>
+              </div>
+            )}
           </form>
-
-          <div className="mt-6 text-center">
-            <p className="text-sm text-gray-600">
-              Don't have an account?{' '}
-              <Link to={ROUTES.SIGN_UP} className="text-blue-600 hover:text-blue-700 font-medium">
-                Sign up
-              </Link>
-            </p>
-          </div>
         </div>
 
         {/* Footer */}

@@ -6,7 +6,7 @@ import { useNotificationSocket } from '../../../hooks/useNotificationSocket';
 export const HeaderNotifications = memo(() => {
   const [isOpen, setIsOpen] = useState(false);
   const { notifications, unreadCount, markAsRead, markAllAsRead } = useNotificationSocket();
-  const bellRef = useRef<HTMLElement>(null) as React.MutableRefObject<HTMLElement>;
+  const bellRef = useRef<HTMLButtonElement>(null);
 
   return (
     <div className="relative">
@@ -30,7 +30,7 @@ export const HeaderNotifications = memo(() => {
         notifications={notifications}
         onMarkAsRead={markAsRead}
         onMarkAllAsRead={markAllAsRead}
-        triggerRef={bellRef}
+        triggerRef={bellRef as any}
       />
     </div>
   );

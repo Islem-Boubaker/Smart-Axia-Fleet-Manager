@@ -2,16 +2,16 @@ import http from "http";
 import app from "./app.js";
 import { sequelize } from "./config/connectdb.js";
 import "./models/index.js";
-import { initSocket } from "./config/socket.js";
+import { closeIO, initSocket } from "./config/socket.js";
 import "./events/notification.handlers.js";
 
 const PORT = process.env.PORT || 5000;
 const ENV = process.env.NODE_ENV || "development";
 
 // ─── Sequelize sync strategy ──────────────────────────────────────────────────
-// development  → alter: true   (auto-patch columns, safe for iteration)
+// development  → alter (without drops) to avoid accidental column loss
 // production   → never sync    (use migrations only — never alter a live DB)
-const SYNC_OPTIONS = ENV === "development" ? { alter: true } : null;
+const SYNC_OPTIONS = ENV === "development" ? { alter: { drop: false } } : null;
 
 // ─── Boot ─────────────────────────────────────────────────────────────────────
 async function startServer() {
@@ -34,32 +34,53 @@ async function startServer() {
     console.log("✅ Socket.IO initialised");
 
     // 5. Start listening
-    server.listen(PORT, "0.0.0.0", () => {
+    server.listen(PORT, () => {
       console.log(`✅ Server running on port ${PORT} [${ENV}]`);
     });
 
     // 6. Graceful shutdown ────────────────────────────────────────────────────
+    let isShuttingDown = false;
+
     const shutdown = async (signal) => {
+      if (isShuttingDown) return;
+      isShuttingDown = true;
+
       console.log(`\n⚠️  ${signal} received — shutting down gracefully...`);
 
-      // Stop accepting new connections
-      server.close(async () => {
-        try {
-          await sequelize.close();
-          console.log("✅ DB connection closed");
-          console.log("👋 Server shut down cleanly");
-          process.exit(0);
-        } catch (err) {
-          console.error("❌ Error during shutdown:", err.message);
-          process.exit(1);
-        }
-      });
-
-      // Force-kill after 10 s if something hangs
-      setTimeout(() => {
+      const forceTimer = setTimeout(() => {
         console.error("⚠️  Forced shutdown after timeout");
+        if (typeof server.closeAllConnections === "function") {
+          server.closeAllConnections();
+        }
         process.exit(1);
       }, 10_000);
+
+      try {
+        // Close Socket.IO first so long-lived websocket connections do not block HTTP server close.
+        await closeIO();
+
+        await new Promise((resolve, reject) => {
+          server.close((err) => {
+            if (err) {
+              if (String(err.message || '').includes('Server is not running')) {
+                return resolve();
+              }
+              return reject(err);
+            }
+            return resolve();
+          });
+        });
+
+        await sequelize.close();
+        clearTimeout(forceTimer);
+        console.log("✅ DB connection closed");
+        console.log("👋 Server shut down cleanly");
+        process.exit(0);
+      } catch (err) {
+        clearTimeout(forceTimer);
+        console.error("❌ Error during shutdown:", err.message);
+        process.exit(1);
+      }
     };
 
     process.on("SIGTERM", () => shutdown("SIGTERM"));

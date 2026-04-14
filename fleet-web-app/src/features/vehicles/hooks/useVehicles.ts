@@ -29,13 +29,13 @@ export const useVehicles = () => {
     return () => controller.abort(); // prevents StrictMode double-fetch side effects
   }, [fetchVehicles]);
 
-  const createVehicle = useCallback(async (data: Partial<Vehicle>) => {
+  const createVehicle = useCallback(async (data: Partial<Vehicle> | FormData) => {
     const created = await vehiclesService.createVehicle(data);
     setVehicles((prev) => [...prev, created]);
     return created;
   }, []);
 
-  const updateVehicle = useCallback(async (id: string, data: Partial<Vehicle>) => {
+  const updateVehicle = useCallback(async (id: string, data: Partial<Vehicle> | FormData) => {
     const updated = await vehiclesService.updateVehicle(id, data);
     setVehicles((prev) => prev.map((v) => (v.id === id ? updated : v)));
     return updated;

@@ -1,6 +1,6 @@
 import { GlobalCard } from '../../../shared/components';
 import DriverForm from './DriverForm';
-import type { Driver } from '../../../types';
+import type { Driver, Vehicle } from '../../../types';
 
 interface DriverFormData {
   name: string;
@@ -18,13 +18,15 @@ interface Props {
   isOpen: boolean;
   onClose: () => void;
   title: string;
+  dark?: boolean;
   driver?: Driver | null;
-  onSubmit: (data: DriverFormData) => void;
+  vehicles?: Vehicle[];
+  onSubmit: (data: DriverFormData, photo: File | null) => void;
 }
 
-const DriverModal = ({ isOpen, onClose, title, driver, onSubmit }: Props) => (
+const DriverModal = ({ isOpen, onClose, title, dark = false, driver, vehicles = [], onSubmit }: Props) => (
   <GlobalCard isOpen={isOpen} onClose={onClose} title={title} maxWidth="2xl">
-    <DriverForm driver={driver} onSubmit={onSubmit} onCancel={onClose} />
+    <DriverForm driver={driver as any} vehicles={vehicles} dark={dark} onSubmit={onSubmit} onCancel={onClose} />
   </GlobalCard>
 );
 

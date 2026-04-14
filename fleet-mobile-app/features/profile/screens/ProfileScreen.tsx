@@ -1,78 +1,54 @@
 import React, { useState } from "react";
-import { StatusBar, ScrollView, View, Text, TouchableOpacity, Alert } from "react-native";
+import { ScrollView, Text, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
-import { useSelector, useDispatch } from "react-redux";
-import MaterialIcons from "@expo/vector-icons/MaterialIcons";
+import { useSelector } from "react-redux";
+import { ChevronLeft } from "lucide-react-native";
 
-import { useProfile } from "../hooks/useProfile";
-import { clearUser } from "@/store/slices/authSlice";
-import { logout as logoutApi } from "../services/profile.api";
+import ProfileCard from "../components/ProfileCard";
+import AccountSection from "../components/AccountSection";
+import NotificationsSection from "../components/NotificationsSection";
+import PreferenceSection from "../components/PreferenceSection";
+import PrivacySecuritySection from "../components/PrivacySecuritySection";
+import SupportSection from "../components/SupportSection";
+import AboutSection from "../components/AboutSection";
+import LogoutButton from "../components/LogoutButton";
 import type { RootState } from "@/store";
-import { LoadingSpinner } from "@/shared/components/ui/LoadingSpinner";
-
-import ProfileHeader from "../components/ProfileHeader";
-import DriverInfoCard from "../components/DriverInfoCard";
-import VehicleCard from "../components/VehicleCard";
-import ProfileActions from "../components/ProfileActions";
-import LogoutSection from "../components/LogoutSection";
 
 export default function ProfileScreen() {
   const router = useRouter();
-  const dispatch = useDispatch();
-
   const user = useSelector((state: RootState) => state.auth.user);
-  const { vehicle, isLoading } = useProfile();
 
-  const [notifEnabled, setNotifEnabled] = useState(true);
-
-  const handleLogout = async () => {
-    Alert.alert("Logout", "Are you sure you want to logout?", [
-      { text: "Cancel", style: "cancel" },
-      {
-        text: "Logout",
-        style: "destructive",
-        onPress: async () => {
-          try {
-            await logoutApi();
-          } catch {
-            dispatch(clearUser());
-          } finally {
-            router.replace("/(auth)/login");
-          }
-        },
-      },
-    ]);
-  };
-
-  if (isLoading) return <LoadingSpinner fullScreen />;
+  const [pushNotif, setPushNotif] = useState(true);
+  const [emailUpdates, setEmailUpdates] = useState(true);
+  const [darkMode, setDarkMode] = useState(false);
+  const [twoFA, setTwoFA] = useState(false);
 
   return (
-    <SafeAreaView className="flex-1 bg-[#F0F5F0]">
-      <StatusBar barStyle="dark-content" backgroundColor="#F0F5F0" />
-
-      <View className="flex-row items-center justify-between px-5 py-12">
+    <SafeAreaView className="flex-1 bg-[#F5F7FA]">
+      <View className="flex-row items-center mt-10 px-4 pb-4">
         <TouchableOpacity onPress={() => router.back()}>
-          <MaterialIcons name="arrow-back" size={20} />
+          <ChevronLeft size={22} color="#111827" />
         </TouchableOpacity>
-
-        <Text className="text-[17px] font-bold">Profile</Text>
-
-        <TouchableOpacity onPress={() => router.push("/profile/settings")}>
-          <MaterialIcons name="settings" size={20} />
-        </TouchableOpacity>
+        <Text className="flex-1 text-center text-lg font-bold text-gray-900">
+          Profile
+        </Text>
       </View>
 
-      <ScrollView>
-        <ProfileHeader />
-        <DriverInfoCard user={user} />
-        <VehicleCard vehicle={vehicle} />
-        <ProfileActions
-          user={user}
-          notifEnabled={notifEnabled}
-          setNotifEnabled={setNotifEnabled}
+      <ScrollView className="pb-8" showsVerticalScrollIndicator={false}>
+        <ProfileCard user={user} />
+        <AccountSection />
+        <NotificationsSection
+          pushNotif={pushNotif}
+          setPushNotif={setPushNotif}
+          emailUpdates={emailUpdates}
+          setEmailUpdates={setEmailUpdates}
         />
-        <LogoutSection onLogout={handleLogout} />
+        <PreferenceSection darkMode={darkMode} setDarkMode={setDarkMode} />
+        <PrivacySecuritySection twoFA={twoFA} setTwoFA={setTwoFA} />
+        <SupportSection />
+        <AboutSection />
+        <LogoutButton />
       </ScrollView>
     </SafeAreaView>
   );

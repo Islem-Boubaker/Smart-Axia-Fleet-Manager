@@ -1,12 +1,6 @@
 import { Card } from '../../../shared/components';
 import DriverCard from './DriverCard';
-
-interface Driver {
-  id: string;
-  name: string;
-  email: string;
-  licenseNumber: string;
-}
+import type { Driver } from '../../../types';
 
 interface Props {
   drivers: Driver[];
@@ -41,6 +35,7 @@ const DriversGrid = ({ drivers, isLoading, onEdit, onDelete, dark = false }: Pro
         <Card
           key={driver.id}
           padding="lg"
+          dark={dark}
           className={
             dark
               ? 'border-slate-700/80 bg-slate-800/35 backdrop-blur-sm shadow-none'

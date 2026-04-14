@@ -1,23 +1,13 @@
-import { useEffect, useMemo, useState } from 'react';
 import { FiCalendar, FiChevronDown, FiExternalLink, FiFilter } from 'react-icons/fi';
-import { buildWeeklyTrips, formatWeekRange } from '../services/dashboardUiData';
+import type { DashboardWeekDay } from '../hooks/useDashboard';
 
 interface PlannedTripsCalendarProps {
   dark: boolean;
+  weekRange: string;
+  weekDays: DashboardWeekDay[];
 }
 
-const PlannedTripsCalendar = ({ dark }: PlannedTripsCalendarProps) => {
-  const [currentDate, setCurrentDate] = useState(new Date());
-  const weekDays = useMemo(() => buildWeeklyTrips(currentDate), [currentDate]);
-  const weekRange = useMemo(() => formatWeekRange(currentDate), [currentDate]);
-
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setCurrentDate(new Date());
-    }, 60 * 60 * 1000);
-
-    return () => clearInterval(interval);
-  }, []);
+const PlannedTripsCalendar = ({ dark, weekRange, weekDays }: PlannedTripsCalendarProps) => {
 
   const panel = dark ? 'bg-slate-900 border-slate-700' : 'bg-white border-gray-200';
   const muted = dark ? 'text-slate-300' : 'text-gray-700';

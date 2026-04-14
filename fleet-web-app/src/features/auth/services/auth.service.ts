@@ -7,6 +7,7 @@ import type { User } from '../../../types';
 export interface SignInCredentials {
   email: string;
   password: string;
+  rememberMe?: boolean;
 }
 
 export interface SignUpData {
@@ -66,6 +67,10 @@ export const authAPI = {
     const response = await api.get('/user/me');
 
     return response.data.data;
+  },
+
+  async forgotPassword(email: string): Promise<void> {
+    await api.post('/user/forgot-password', { email });
   },
 
 };

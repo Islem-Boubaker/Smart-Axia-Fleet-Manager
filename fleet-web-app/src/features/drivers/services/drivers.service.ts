@@ -31,6 +31,13 @@ export const driversService = {
     return response.data.data;
   },
 
+  uploadDriverAvatar: async (id: string, file: File): Promise<Driver> => {
+    const formData = new FormData();
+    formData.append('avatar', file);
+    const response = await api.patch<ApiResponse<Driver>>(`/user/${id}/avatar`, formData);
+    return response.data.data;
+  },
+
   deleteDriver: async (id: string): Promise<void> => {
     await api.delete(`/user/deleteuser/${id}`);
   },

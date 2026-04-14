@@ -42,6 +42,8 @@ export const AppTopBar = memo(({ dark, setDark, onMenuClick }: AppTopBarProps) =
           <FiSearch className={`shrink-0 w-4 h-4 ${dark ? 'text-slate-500' : 'text-slate-400'}`} />
           <input
             type="search"
+            name="search-query"
+            autoComplete="off"
             placeholder="Search fleet, trips, drivers…"
             className={`w-full bg-transparent text-sm outline-none placeholder:text-slate-400 ${
               dark ? 'text-slate-100' : 'text-slate-800'

@@ -35,6 +35,7 @@ const VehiclesGrid = ({ vehicles, isLoading, onEdit, onDelete, dark = false }: P
         <Card
           key={vehicle.id}
           padding="lg"
+          dark={dark}
           className={
             dark
               ? 'border-slate-700/80 bg-slate-800/35 backdrop-blur-sm shadow-none'

@@ -103,9 +103,9 @@
 
 // hooks/useMaps.ts
 import { useEffect, useRef, useState } from "react";
-import MapView from "react-native-maps";
 import { Animated } from "react-native";
 import type { TripRoute } from "../types/maps.types";
+import type MapView from "react-native-maps";
 
 export function useMapScreen(trip: TripRoute) {
   const mapRef = useRef<MapView>(null);
