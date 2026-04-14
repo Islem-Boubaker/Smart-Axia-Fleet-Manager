@@ -96,4 +96,14 @@ function getIO() {
   return io;
 }
 
-export { initSocket, getIO };
+async function closeIO() {
+  if (!io) return;
+
+  await new Promise((resolve) => {
+    io.close(() => resolve());
+  });
+
+  io = null;
+}
+
+export { initSocket, getIO, closeIO };

@@ -1,27 +1,26 @@
 import { useState, useMemo } from "react";
 import type { FormEvent, ChangeEvent } from "react";
-import { Input, Button } from "../../../shared/components";
+import { Input, Button, Select } from "../../../shared/components";
 import { useVehicles } from "../../vehicles/hooks/useVehicles";
 
 interface MaintenanceFormProps {
   maintenance?: any;
+  dark?: boolean;
   onSubmit: (data: any) => void;
   onCancel: () => void;
 }
-
-const selectClass =
-  'w-full px-4 py-2.5 bg-white dark:bg-slate-800/50 border border-gray-200 dark:border-slate-700 text-sm text-gray-900 dark:text-white rounded-xl shadow-[0_1px_2px_rgba(0,0,0,0.02)] focus:outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand transition-all hover:border-gray-300 dark:hover:border-slate-600';
 
 const textareaClass =
   'w-full px-4 py-2.5 bg-white dark:bg-slate-800/50 border border-gray-200 dark:border-slate-700 text-sm text-gray-900 dark:text-white rounded-xl shadow-[0_1px_2px_rgba(0,0,0,0.02)] focus:outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand transition-all hover:border-gray-300 dark:hover:border-slate-600';
 
 const labelClass = "block text-[13px] text-gray-500 dark:text-slate-400 mb-1.5";
 
-const MaintenanceForm = ({ maintenance, onSubmit, onCancel }: MaintenanceFormProps) => {
+const MaintenanceForm = ({ maintenance, dark = false, onSubmit, onCancel }: MaintenanceFormProps) => {
   const { vehicles, isLoading: vehiclesLoading } = useVehicles();
 
   const [formData, setFormData] = useState({
     vehicleId: maintenance?.vehicleId || "",
+    vehiclePlate: maintenance?.vehiclePlate || "",
     type: maintenance?.type || "",
     scheduledDate: maintenance?.scheduledDate || "",
     technician: maintenance?.technician || "",
@@ -36,12 +35,44 @@ const MaintenanceForm = ({ maintenance, onSubmit, onCancel }: MaintenanceFormPro
     e: ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>
   ) => {
     const { name, value } = e.target;
+
+    if (name === 'vehicleId') {
+      const selectedVehicle = vehicles.find((v: any) => v.id === value);
+      const selectedPlate = selectedVehicle?.plaque_immatriculation || '';
+      setFormData((p) => ({ ...p, vehicleId: value, vehiclePlate: selectedPlate }));
+      return;
+    }
+
     setFormData((p) => ({ ...p, [name]: value }));
   };
 
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
+    if (maintenance) {
+      onSubmit({
+        type: formData.type,
+        scheduledDate: formData.scheduledDate,
+        technician: formData.technician,
+        priority: formData.priority,
+        cost: formData.cost,
+        mileage: formData.mileage,
+        description: formData.description,
+      });
+      return;
+    }
+
     onSubmit(formData);
+  };
+
+  const handleSelectChange = (name: string, value: string) => {
+    if (name === 'vehicleId') {
+      const selectedVehicle = vehicles.find((v: any) => v.id === value);
+      const selectedPlate = selectedVehicle?.plaque_immatriculation || '';
+      setFormData((p) => ({ ...p, vehicleId: value, vehiclePlate: selectedPlate }));
+      return;
+    }
+
+    setFormData((p) => ({ ...p, [name]: value }));
   };
 
   const vehicleLabel = useMemo(
@@ -59,23 +90,17 @@ const MaintenanceForm = ({ maintenance, onSubmit, onCancel }: MaintenanceFormPro
         {/* Vehicle */}
         <div>
           <label className={labelClass}>Vehicle *</label>
-          <select
-            name="vehicleId"
+          <Select
             value={formData.vehicleId}
-            onChange={handleChange}
-            className={selectClass}
+            onChange={(value) => handleSelectChange('vehicleId', value)}
+            dark={dark}
             disabled={vehiclesLoading}
-            required
-          >
-            <option value="">
-              {vehiclesLoading ? "Loading vehicles..." : "Select vehicle"}
-            </option>
-            {vehicles.map((v: any) => (
-              <option key={v.id} value={v.id}>
-                {vehicleLabel(v)}
-              </option>
-            ))}
-          </select>
+            placeholder={vehiclesLoading ? "Loading vehicles..." : "Select vehicle"}
+            options={vehicles.map((v: any) => ({
+              value: v.id,
+              label: vehicleLabel(v),
+            }))}
+          />
         </div>
 
         {/* Type */}
@@ -83,15 +108,12 @@ const MaintenanceForm = ({ maintenance, onSubmit, onCancel }: MaintenanceFormPro
           <label className={labelClass}>
             Maintenance Type <span className="text-red-500">*</span>
           </label>
-          <select
-            name="type"
+          <Select
             value={formData.type}
-            onChange={handleChange}
-            className={selectClass}
-            required
-          >
-            <option value="">Select type</option>
-            {[
+            onChange={(value) => handleSelectChange('type', value)}
+            dark={dark}
+            placeholder="Select type"
+            options={[
               "Oil Change",
               "Tire Rotation",
               "Brake Inspection",
@@ -99,12 +121,8 @@ const MaintenanceForm = ({ maintenance, onSubmit, onCancel }: MaintenanceFormPro
               "Battery Replacement",
               "General Inspection",
               "Other",
-            ].map((t) => (
-              <option key={t} value={t}>
-                {t}
-              </option>
-            ))}
-          </select>
+            ].map((t) => ({ value: t, label: t }))}
+          />
         </div>
 
         {/* Date */}
@@ -117,8 +135,8 @@ const MaintenanceForm = ({ maintenance, onSubmit, onCancel }: MaintenanceFormPro
 
         {/* Technician */}
         <div>
-          <label className={labelClass}>Technician</label>
-          <Input type="text" name="technician" value={formData.technician} onChange={handleChange} placeholder="Technician name" />
+          <label className={labelClass}>Technician *</label>
+          <Input type="text" name="technician" value={formData.technician} onChange={handleChange} placeholder="Technician name" required />
         </div>
 
         {/* Priority */}
@@ -126,42 +144,22 @@ const MaintenanceForm = ({ maintenance, onSubmit, onCancel }: MaintenanceFormPro
           <label className={labelClass}>
             Priority <span className="text-red-500">*</span>
           </label>
-          <select
-            name="priority"
+          <Select
             value={formData.priority}
-            onChange={handleChange}
-            className={selectClass}
-            required
-          >
-            <option value="low">Low</option>
-            <option value="medium">Medium</option>
-            <option value="high">High</option>
-          </select>
-        </div>
-
-        {/* Status */}
-        <div>
-          <label className={labelClass}>
-            Status <span className="text-red-500">*</span>
-          </label>
-          <select
-            name="status"
-            value={formData.status}
-            onChange={handleChange}
-            className={selectClass}
-            required
-          >
-            <option value="scheduled">Scheduled</option>
-            <option value="in_progress">In Progress</option>
-            <option value="completed">Completed</option>
-            <option value="cancelled">Cancelled</option>
-          </select>
+            onChange={(value) => handleSelectChange('priority', value)}
+            dark={dark}
+            options={[
+              { value: 'low', label: 'Low' },
+              { value: 'medium', label: 'Medium' },
+              { value: 'high', label: 'High' },
+            ]}
+          />
         </div>
 
         {/* Cost */}
         <div>
-          <label className={labelClass}>Estimated Cost (TND)</label>
-          <Input type="number" name="cost" value={formData.cost} onChange={handleChange} placeholder="e.g., 150" />
+          <label className={labelClass}>Estimated Cost (TND) *</label>
+          <Input type="number" name="cost" value={formData.cost} onChange={handleChange} placeholder="e.g., 150" required min={0} />
         </div>
 
         {/* Mileage */}

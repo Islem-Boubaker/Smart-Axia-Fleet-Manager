@@ -2,14 +2,17 @@ import { memo } from 'react';
 import { FiTruck, FiCalendar, FiTool, FiDollarSign } from 'react-icons/fi';
 import { Badge } from '../../../shared/components';
 import type { Maintenance } from '../../../types';
-import { maintenanceService } from '../services/maintenance.service';
 
 interface MaintenanceTableProps {
   data: Maintenance[];
   dark?: boolean;
+  onUpdate?: () => void;
+  onTransition?: (record: Maintenance) => Promise<void> | void;
+  onEdit?: (record: Maintenance) => void;
+  onRemove?: (record: Maintenance) => Promise<void> | void;
 }
 
-const MaintenanceTable = memo(({ data, dark = false }: MaintenanceTableProps) => {
+const MaintenanceTable = memo(({ data, dark = false, onUpdate, onTransition, onEdit, onRemove }: MaintenanceTableProps) => {
   const records = data ?? [];
 
   type BadgeVariant = 'success' | 'warning' | 'error' | 'info' | 'default';
@@ -21,6 +24,7 @@ const MaintenanceTable = memo(({ data, dark = false }: MaintenanceTableProps) =>
         return 'success';
       case 'in-progress':
         return 'info';
+      case 'pending':
       case 'scheduled':
         return 'warning';
       default:
@@ -41,13 +45,16 @@ const MaintenanceTable = memo(({ data, dark = false }: MaintenanceTableProps) =>
     }
   };
 
-  const handleUpdateStatus = async (id: string) => {
-    try {
-      const updatedRecord = await maintenanceService.updateStatus(id, 'completed');
-      console.log('Status updated:', updatedRecord);
-    } catch (error) {
-      console.error('Failed to update status:', error);
-    }
+  const getActionLabel = (status: Maintenance['status']) => {
+    if (status === 'scheduled' || status === 'pending') return 'Start maintenance';
+    if (status === 'in_progress') return 'Complete maintenance';
+    return 'No action';
+  };
+
+  const handleTransition = async (record: Maintenance) => {
+    if (!onTransition) return;
+    await onTransition(record);
+    if (onUpdate) onUpdate();
   };
 
   const cardBase = dark
@@ -78,25 +85,39 @@ const MaintenanceTable = memo(({ data, dark = false }: MaintenanceTableProps) =>
               <div className="flex flex-wrap gap-2 shrink-0">
                 <button
                   type="button"
+                  onClick={() => onEdit?.(record)}
                   className={`px-4 py-2 text-sm font-medium rounded-xl transition-colors ${
                     dark
                       ? 'text-brand bg-brand/15 hover:bg-brand/25'
                       : 'text-brand-deep bg-brand-light hover:bg-brand-light/80'
                   }`}
                 >
-                  View details
+                  Edit
                 </button>
                 <button
                   type="button"
-                  onClick={() => handleUpdateStatus(record.id)}
+                  onClick={() => onRemove?.(record)}
                   className={`px-4 py-2 text-sm font-medium rounded-xl transition-colors ${
                     dark
-                      ? 'text-emerald-300 bg-emerald-500/15 hover:bg-emerald-500/25'
-                      : 'text-emerald-700 bg-emerald-50 hover:bg-emerald-100'
+                      ? 'text-rose-300 bg-rose-500/15 hover:bg-rose-500/25'
+                      : 'text-rose-700 bg-rose-50 hover:bg-rose-100'
                   }`}
                 >
-                  Update status
+                  Remove
                 </button>
+                {(record.status === 'scheduled' || record.status === 'pending' || record.status === 'in_progress') && (
+                  <button
+                    type="button"
+                    onClick={() => handleTransition(record)}
+                    className={`px-4 py-2 text-sm font-medium rounded-xl transition-colors ${
+                      dark
+                        ? 'text-emerald-300 bg-emerald-500/15 hover:bg-emerald-500/25'
+                        : 'text-emerald-700 bg-emerald-50 hover:bg-emerald-100'
+                    }`}
+                  >
+                    {getActionLabel(record.status)}
+                  </button>
+                )}
               </div>
             </div>
 
@@ -105,7 +126,11 @@ const MaintenanceTable = memo(({ data, dark = false }: MaintenanceTableProps) =>
                 <FiTruck className={`shrink-0 ${icon}`} />
                 <div className="min-w-0">
                   <p className={`text-xs ${label}`}>Vehicle</p>
-                  <p className={`text-sm font-medium truncate ${value}`}>{record.vehicle || '—'}</p>
+                  <p className={`text-sm font-medium truncate ${value}`}>
+                    {record.vehicleName
+                      ? `${record.vehicleName}${record.vehiclePlate ? ` (${record.vehiclePlate})` : ''}`
+                      : record.vehiclePlate || '—'}
+                  </p>
                 </div>
               </div>
               <div className="flex items-center gap-3 min-w-0">
@@ -133,7 +158,7 @@ const MaintenanceTable = memo(({ data, dark = false }: MaintenanceTableProps) =>
 
             <div className={`flex flex-wrap gap-4 text-xs pt-3 border-t ${dark ? 'border-slate-700 text-slate-500' : 'border-slate-200 text-slate-500'}`}>
               <span>Mileage: {record.mileage || 'N/A'}</span>
-              {record.completedDate && <span>Completed: {record.completedDate}</span>}
+              {record.completedAt && <span>Completed: {record.completedAt}</span>}
             </div>
           </div>
         ))}

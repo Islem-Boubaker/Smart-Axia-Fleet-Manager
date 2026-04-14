@@ -1,6 +1,5 @@
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import SignIn from "../features/auth/pages/Signin";
-import SignUp from "../features/auth/pages/Signup";
 import DashboardPage from "../features/dashboard/pages/DashboardPage";
 import VehiclesPage from "../features/vehicles/pages/VehiclesPage";
 import VehicleDetailsPage from "../features/fleet/pages/VehicleDetailsPage";
@@ -18,7 +17,6 @@ export default function AppRouter() {
         {/* Public Routes — "/" and /signin both show sign in */}
         <Route path={ROUTES.HOME} element={<SignIn />} />
         <Route path={ROUTES.SIGN_IN} element={<SignIn />} />
-        <Route path={ROUTES.SIGN_UP} element={<SignUp />} />
 
         {/* Protected Routes */}
         <Route element={<DashboardLayout />}>

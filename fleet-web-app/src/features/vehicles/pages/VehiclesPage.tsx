@@ -124,6 +124,7 @@ const VehiclesPage = () => {
         isOpen={isAddModalOpen}
         onClose={() => { setIsAddModalOpen(false); setFormError(''); }}
         title="Add New Vehicle"
+        dark={dark}
         onSubmit={handleAddVehicle}
         error={formError}
       />
@@ -136,6 +137,7 @@ const VehiclesPage = () => {
           setFormError('');
         }}
         title="Edit Vehicle"
+        dark={dark}
         vehicle={selectedVehicle ?? undefined}
         onSubmit={handleUpdateVehicle}
         error={formError}

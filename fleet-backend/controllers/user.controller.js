@@ -100,7 +100,7 @@ export const deleteUser = async (req, res, next) => {
 
 export const login = async (req, res, next) => {
   try {
-    const { email, password } = req.body;
+    const { email, password, rememberMe } = req.body;
 
     if (!email || !password) {
       return res.status(StatusCodes.BAD_REQUEST).json({
@@ -111,8 +111,13 @@ export const login = async (req, res, next) => {
 
     const { accessToken, refreshToken, user } = await userService.loginUserSvc(email, password);
 
+    // If rememberMe is false, we omit the maxAge for the refresh token
+    const refreshCookieOptions = rememberMe 
+      ? COOKIE_OPTIONS.refreshToken 
+      : { ...COOKIE_OPTIONS.refreshToken, maxAge: undefined };
+
     res.cookie('accessToken', accessToken, COOKIE_OPTIONS.accessToken);
-    res.cookie('refreshToken', refreshToken, COOKIE_OPTIONS.refreshToken);
+    res.cookie('refreshToken', refreshToken, refreshCookieOptions);
 
     const csrfToken = generateCsrfToken();
     res.cookie('csrf-token', csrfToken, COOKIE_OPTIONS.csrfToken);
@@ -120,6 +125,49 @@ export const login = async (req, res, next) => {
     res.status(StatusCodes.OK).json({
       success: true,
       data: { user, csrfToken },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const forgotPassword = async (req, res, next) => {
+  try {
+    const { email } = req.body;
+    if (!email) {
+      return res.status(StatusCodes.BAD_REQUEST).json({
+        success: false,
+        message: 'Email is required',
+      });
+    }
+
+    await userService.forgotPasswordSvc(email);
+
+    res.status(StatusCodes.OK).json({
+      success: true,
+      message: 'If that email exists, the new password has been sent.',
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const changePassword = async (req, res, next) => {
+  try {
+    const { currentPassword, newPassword } = req.body;
+
+    if (!currentPassword || !newPassword) {
+      return res.status(StatusCodes.BAD_REQUEST).json({
+        success: false,
+        message: 'Current password and new password are required',
+      });
+    }
+
+    await userService.changePasswordSvc(req.user.id, currentPassword, newPassword);
+
+    res.status(StatusCodes.OK).json({
+      success: true,
+      message: 'Password changed successfully',
     });
   } catch (error) {
     next(error);
@@ -168,6 +216,32 @@ export const getMe = async (req, res, next) => {
       return res.status(StatusCodes.NOT_FOUND).json({ success: false, message: 'User not found' });
     }
     res.status(StatusCodes.OK).json({ success: true, data: user });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const getMyNotificationSettings = async (req, res, next) => {
+  try {
+    const settings = await userService.getMyNotificationSettingsSvc(req.user.id);
+    if (!settings) {
+      return res.status(StatusCodes.NOT_FOUND).json({ success: false, message: 'User not found' });
+    }
+
+    res.status(StatusCodes.OK).json({ success: true, data: settings });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const updateMyNotificationSettings = async (req, res, next) => {
+  try {
+    const settings = await userService.updateMyNotificationSettingsSvc(req.user.id, req.body);
+    if (!settings) {
+      return res.status(StatusCodes.NOT_FOUND).json({ success: false, message: 'User not found' });
+    }
+
+    res.status(StatusCodes.OK).json({ success: true, data: settings });
   } catch (error) {
     next(error);
   }

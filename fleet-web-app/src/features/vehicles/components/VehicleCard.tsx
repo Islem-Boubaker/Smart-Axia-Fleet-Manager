@@ -17,7 +17,13 @@ const VehicleCard = memo(({ vehicle, onEdit, onDelete, dark = false }: VehicleCa
   const border = dark ? 'border-slate-700' : 'border-gray-200';
 
   const getCarImage = (vehicle: Vehicle) => {
-    if (vehicle.photos && vehicle.photos.length > 0) return vehicle.photos[0];
+    const normalizedPhotos = Array.isArray(vehicle.photos)
+      ? vehicle.photos
+      : typeof (vehicle as unknown as { photos?: unknown }).photos === 'string'
+      ? [(vehicle as unknown as { photos: string }).photos]
+      : [];
+
+    if (normalizedPhotos.length > 0) return normalizedPhotos[0];
     
     switch (vehicle.type?.toLowerCase()) {
       case 'truck':

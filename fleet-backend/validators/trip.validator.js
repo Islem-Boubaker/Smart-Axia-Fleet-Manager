@@ -25,7 +25,7 @@ const stopUpdateSchema = z.object({
 const createTripSchema = z.object({
   vehicleId: uuid,
   userId: uuid,
-  region: z.string().min(2),
+  region: z.string().min(2).optional(),
   startLocation: z.string().min(2),
   endLocation: z.string().min(2),
   startTime: isoDate,
@@ -55,6 +55,14 @@ const updateTripSchema = z
 const updateStatusSchema = z.object({
   status: z.enum(["scheduled", "ongoing", "completed", "cancelled"]),
 });
+
+const completeTripSchema = z
+  .object({
+    endTime: isoDate.optional(),
+    cost: z.number().nonnegative().optional(),
+    fuel: z.string().optional().nullable(),
+  })
+  .strict();
 
 const addStopsSchema = z.union([
   stopSchema,
@@ -105,6 +113,10 @@ export const validateUpdateTrip = (req, res, next) => {
 
 export const validateUpdateStatus = (req, res, next) => {
   return parseBody(updateStatusSchema, req, res, next);
+};
+
+export const validateCompleteTrip = (req, res, next) => {
+  return parseBody(completeTripSchema, req, res, next);
 };
 
 export const validateAddStops = (req, res, next) => {

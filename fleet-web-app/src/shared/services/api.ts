@@ -145,8 +145,9 @@ api.interceptors.response.use(
       } catch (refreshError) {
         processQueue(refreshError);
 
-     
-        window.location.href = "/signin";
+        if (window.location.pathname !== "/signin") {
+          window.location.href = "/signin";
+        }
 
         return Promise.reject(refreshError);
       } finally {

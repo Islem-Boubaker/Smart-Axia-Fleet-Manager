@@ -51,13 +51,13 @@ export const settingsService = {
   },
 
   getNotifications: async () => {
-    const response = await api.get<NotificationSettings>('/settings/notifications');
-    return response.data;
+    const response = await api.get<{ success: boolean; data: NotificationSettings }>('/user/me/notifications');
+    return response.data.data;
   },
 
   updateNotifications: async (data: Partial<NotificationSettings>) => {
-    const response = await api.put<NotificationSettings>('/settings/notifications', data);
-    return response.data;
+    const response = await api.put<{ success: boolean; data: NotificationSettings }>('/user/me/notifications', data);
+    return response.data.data;
   },
 
   getGeneralSettings: async () => {
@@ -71,6 +71,6 @@ export const settingsService = {
   },
 
   changePassword: async (currentPassword: string, newPassword: string) => {
-    await api.post('/settings/change-password', { currentPassword, newPassword });
+    await api.post('/user/change-password', { currentPassword, newPassword });
   },
 };

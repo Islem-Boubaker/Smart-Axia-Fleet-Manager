@@ -9,46 +9,21 @@ import {
 import { MdOutlineDirectionsCar, MdOutlineSchedule } from 'react-icons/md';
 import { ROUTES } from '../../../utils/constants';
 import { useAppSelector } from '../../../shared/hooks/useRedux';
+import type { DashboardRecentTrip, DashboardTask } from '../hooks/useDashboard';
 
 interface DashboardOverviewProps {
   dark: boolean;
+  isLoading: boolean;
+  totalVehicles: number;
+  activeVehicles: number;
+  activeDrivers: number;
+  completionRate: number;
+  openMaintenanceCount: number;
+  currentTask: DashboardTask;
+  upcomingTask: DashboardTask;
+  recentTrips: DashboardRecentTrip[];
+  topDrivers: { name: string; trips: number }[];
 }
-
-const CURRENT_TASK = {
-  vehicle: 'Toyota Camry',
-  plate: '123 TU 4567',
-  timeLeft: '2h 15m remaining',
-};
-
-const UPCOMING_TASK = {
-  vehicle: 'Ford Transit',
-  plate: '234 TU 8912',
-  timeLeft: 'Starts 14:30',
-};
-
-const RECENT_TRIPS = [
-  {
-    id: '1',
-    vehicle: 'Toyota Camry',
-    route: 'TUN → SFX',
-    meta: 'TR-2048 · 270 km',
-    status: 'completed' as const,
-  },
-  {
-    id: '2',
-    vehicle: 'Tesla Model 3',
-    route: 'NAB → MON',
-    meta: 'TR-2049 · 85 km',
-    status: 'active' as const,
-  },
-  {
-    id: '3',
-    vehicle: 'Chevrolet Malibu',
-    route: 'BIZ → TUN',
-    meta: 'TR-2050 · 95 km',
-    status: 'pending' as const,
-  },
-];
 
 const statusStyles = {
   completed: {
@@ -63,9 +38,25 @@ const statusStyles = {
     label: 'Pending',
     pill: 'bg-amber-50 text-amber-700 ring-amber-500/15',
   },
+  cancelled: {
+    label: 'Cancelled',
+    pill: 'bg-red-50 text-red-700 ring-red-500/15',
+  },
 };
 
-const DashboardOverview = ({ dark }: DashboardOverviewProps) => {
+const DashboardOverview = ({
+  dark,
+  isLoading,
+  totalVehicles,
+  activeVehicles,
+  activeDrivers,
+  completionRate,
+  openMaintenanceCount,
+  currentTask,
+  upcomingTask,
+  recentTrips,
+  topDrivers,
+}: DashboardOverviewProps) => {
   const user = useAppSelector((state) => state.auth.user);
   
   const panel = dark
@@ -100,11 +91,11 @@ const DashboardOverview = ({ dark }: DashboardOverviewProps) => {
           style={{ animationDelay: '120ms' }}
         >
           <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-white/75">Current task</p>
-          <p className="mt-3 text-xl font-bold">{CURRENT_TASK.vehicle}</p>
-          <p className="text-sm text-white/80">{CURRENT_TASK.plate}</p>
+          <p className="mt-3 text-xl font-bold">{currentTask.vehicle}</p>
+          <p className="text-sm text-white/80">{currentTask.plate}</p>
           <div className="mt-4 flex items-center gap-2 text-sm text-white/85">
             <FiClock className="shrink-0 opacity-90" />
-            <span>{CURRENT_TASK.timeLeft}</span>
+            <span>{currentTask.timeLeft}</span>
           </div>
           <button
             type="button"
@@ -121,11 +112,11 @@ const DashboardOverview = ({ dark }: DashboardOverviewProps) => {
           <p className={`text-[10px] font-bold uppercase tracking-[0.14em] ${dark ? 'text-emerald-400' : 'text-emerald-600'}`}>
             Upcoming task
           </p>
-          <p className={`mt-3 text-xl font-bold ${dark ? 'text-white' : 'text-slate-900'}`}>{UPCOMING_TASK.vehicle}</p>
-          <p className={`text-sm ${muted}`}>{UPCOMING_TASK.plate}</p>
+          <p className={`mt-3 text-xl font-bold ${dark ? 'text-white' : 'text-slate-900'}`}>{upcomingTask.vehicle}</p>
+          <p className={`text-sm ${muted}`}>{upcomingTask.plate}</p>
           <div className={`mt-4 flex items-center gap-2 text-sm ${sub}`}>
             <MdOutlineSchedule className="shrink-0 text-lg opacity-80" />
-            <span>{UPCOMING_TASK.timeLeft}</span>
+            <span>{upcomingTask.timeLeft}</span>
           </div>
           <button
             type="button"
@@ -143,9 +134,9 @@ const DashboardOverview = ({ dark }: DashboardOverviewProps) => {
       {/* Floating stat chips — non-uniform sizes */}
       <div className="flex flex-wrap gap-3 lg:gap-4">
         {[
-          { label: 'Active vehicles', value: '24', icon: MdOutlineDirectionsCar, wide: true },
-          { label: 'On-time %', value: '96', suffix: '%', icon: FiTrendingUp, wide: false },
-          { label: 'Open maintenance', value: '3', icon: FiNavigation, wide: false },
+          { label: 'Active vehicles', value: String(activeVehicles), extra: `/ ${totalVehicles}`, icon: MdOutlineDirectionsCar, wide: true },
+          { label: 'Trip completion', value: String(completionRate), suffix: '%', icon: FiTrendingUp, wide: false },
+          { label: 'Open maintenance', value: String(openMaintenanceCount), icon: FiNavigation, wide: false },
         ].map((s, i) => (
           <div
             key={s.label}
@@ -166,10 +157,30 @@ const DashboardOverview = ({ dark }: DashboardOverviewProps) => {
               <p className={`text-2xl font-extrabold tabular-nums ${dark ? 'text-white' : 'text-slate-900'}`}>
                 {s.value}
                 {s.suffix && <span className="text-lg font-bold">{s.suffix}</span>}
+                {s.extra && <span className={`text-sm font-semibold ml-1 ${muted}`}>{s.extra}</span>}
               </p>
             </div>
           </div>
         ))}
+      </div>
+
+      <div className={`rounded-[24px] border p-5 sm:p-6 ${panel}`}>
+        <div className="flex items-center justify-between gap-4 mb-4">
+          <h3 className={`text-base font-bold ${dark ? 'text-white' : 'text-slate-900'}`}>Top drivers</h3>
+          <span className={`text-sm ${muted}`}>{activeDrivers} active</span>
+        </div>
+        {topDrivers.length === 0 ? (
+          <p className={`text-sm ${muted}`}>No driver trip activity yet.</p>
+        ) : (
+          <ul className="space-y-2.5">
+            {topDrivers.map((driver) => (
+              <li key={driver.name} className={`flex items-center justify-between rounded-xl px-3 py-2 ${dark ? 'bg-slate-800/50' : 'bg-slate-50'}`}>
+                <span className={`text-sm font-medium ${dark ? 'text-slate-100' : 'text-slate-900'}`}>{driver.name}</span>
+                <span className={`text-sm ${muted}`}>{driver.trips} trips</span>
+              </li>
+            ))}
+          </ul>
+        )}
       </div>
 
       {/* Recent trips — staggered widths */}
@@ -191,7 +202,15 @@ const DashboardOverview = ({ dark }: DashboardOverviewProps) => {
         </div>
 
         <ul className="space-y-3">
-          {RECENT_TRIPS.map((trip, index) => {
+          {isLoading ? (
+            <li className={`rounded-2xl border p-4 sm:p-5 ${dark ? 'border-slate-700/80 bg-slate-800/40 text-slate-400' : 'border-slate-200/90 bg-white/60 text-slate-500'}`}>
+              Loading recent trips...
+            </li>
+          ) : recentTrips.length === 0 ? (
+            <li className={`rounded-2xl border p-4 sm:p-5 ${dark ? 'border-slate-700/80 bg-slate-800/40 text-slate-400' : 'border-slate-200/90 bg-white/60 text-slate-500'}`}>
+              No trips available yet.
+            </li>
+          ) : recentTrips.map((trip, index) => {
             const st = statusStyles[trip.status];
             const stagger = index % 2 === 1 ? 'lg:ml-10' : '';
             return (

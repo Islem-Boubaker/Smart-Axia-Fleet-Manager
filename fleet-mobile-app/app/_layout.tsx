@@ -1,5 +1,4 @@
 import "../index.css";
-import "@/FirebaseConfig";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { Stack } from "expo-router";
 import { Provider, useSelector } from "react-redux";

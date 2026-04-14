@@ -32,11 +32,6 @@ const Vehicle = sequelize.define(
       defaultValue: 'voiture',
     },
 
-    compteur_kilometrique: {
-      type: DataTypes.INTEGER,
-      defaultValue: 0,
-    },
-
     Active: {
       type: DataTypes.BOOLEAN,
       defaultValue: true,
@@ -124,6 +119,12 @@ const Vehicle = sequelize.define(
       type: DataTypes.ENUM('AVAILABLE', 'IN_MAINTENANCE', 'OUT_OF_SERVICE', 'ON_TRIP'),
       allowNull: false,
       defaultValue: 'AVAILABLE',
+    },
+
+    photos: {
+      type: DataTypes.ARRAY(DataTypes.TEXT),
+      allowNull: false,
+      defaultValue: [],
     },
   },
   {

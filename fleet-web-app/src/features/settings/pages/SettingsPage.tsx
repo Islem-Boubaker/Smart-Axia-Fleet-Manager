@@ -1,15 +1,16 @@
 import { useState, useEffect } from 'react';
 import { useOutletContext } from 'react-router-dom';
-import { FiBell, FiEdit2, FiGlobe, FiLock, FiUser } from 'react-icons/fi';
+import { FiBell, FiEdit2, FiLock, FiUser } from 'react-icons/fi';
 import { Card, Button } from '../../../shared/components';
 import ProfileSettings from '../components/ProfileSettings';
 import NotificationSettings from '../components/NotificationSettings';
 import SecuritySettings from '../components/SecuritySettings';
-import GeneralSettings from '../components/GeneralSettings';
-import type { GeneralPreferences, NotificationPreferences, ProfileData } from '../settings.types';
+import type { NotificationPreferences, ProfileData } from '../settings.types';
 import { useAppSelector, useAppDispatch } from '../../../shared/hooks';
 import { setUser } from '../../../store/authSlice';
+import { useSettings } from '../hooks/useSettings';
 import { settingsService } from '../services/settings.service';
+import { toast } from '../../../shared/components';
 import { pageShellClasses } from '../../../shared/utils/pageShell';
 
 interface ThemeContext {
@@ -20,7 +21,6 @@ const MENU_ITEMS = [
   { id: 'profile', label: 'My Profile', icon: FiUser },
   { id: 'security', label: 'Password & Security', icon: FiLock },
   { id: 'notifications', label: 'Notifications', icon: FiBell },
-  { id: 'general', label: 'General', icon: FiGlobe },
 ];
 
 const editBtnClass = (dark: boolean) =>
@@ -149,10 +149,10 @@ const ProfileOverview = ({
         <ProfileFieldTiles
           dark={dark}
           items={[
-            { label: 'Country', value: profileData.country || 'Tunisia' },
-            { label: 'City / State', value: profileData.city || 'Tunis, Tunis' },
-            { label: 'Postal code', value: profileData.postalCode || '1000' },
-            { label: 'TAX ID', value: profileData.taxId || 'AXIA-FT-2026' },
+            { label: 'Country', value: profileData.country || '' },
+            { label: 'City / State', value: profileData.city || '' },
+            { label: 'Postal code', value: profileData.postalCode || '' },
+            { label: 'TAX ID', value: profileData.taxId || '' },
           ]}
         />
       </Card>
@@ -164,13 +164,13 @@ const tabTitle: Record<string, string> = {
   profile: 'My profile',
   security: 'Password & security',
   notifications: 'Notifications',
-  general: 'General',
 };
 
 const SettingsPage = () => {
   const { dark } = useOutletContext<ThemeContext>();
   const { user } = useAppSelector((state) => state.auth);
   const dispatch = useAppDispatch();
+  const { changePassword, updateNotifications, isLoading: isSettingsLoading } = useSettings();
   const [activeTab, setActiveTab] = useState('profile');
   const [isEditingProfile, setIsEditingProfile] = useState(false);
 
@@ -245,13 +245,66 @@ const SettingsPage = () => {
     smsAlerts: false,
   });
 
-  const [generalSettings, setGeneralSettings] = useState<GeneralPreferences>({
-    language: 'fr',
-    timezone: 'Africa/Tunis',
-    dateFormat: 'DD/MM/YYYY',
-    distanceUnit: 'km',
-    currency: 'TND',
-  });
+  useEffect(() => {
+    const loadNotificationSettings = async () => {
+      try {
+        const remote = await settingsService.getNotifications();
+        setNotifications((prev) => ({ ...prev, ...remote }));
+      } catch (error) {
+        console.error('Failed to load notification settings:', error);
+      }
+    };
+
+    loadNotificationSettings();
+  }, []);
+
+  const handleChangePassword = async (currentPassword: string, newPassword: string) => {
+    const loadingId = toast.loading('Updating password...');
+
+    try {
+      await changePassword(currentPassword, newPassword);
+      toast.update(loadingId, {
+        type: 'success',
+        title: 'Success',
+        message: 'Password changed successfully.',
+      });
+    } catch (err) {
+      const message =
+        (err as { response?: { data?: { message?: string } }; message?: string })?.response?.data?.message ||
+        (err as { message?: string })?.message ||
+        'Failed to change password';
+
+      toast.update(loadingId, {
+        type: 'error',
+        title: 'Error',
+        message,
+      });
+
+      throw err;
+    }
+  };
+
+  const handleSaveNotifications = async () => {
+    const loadingId = toast.loading('Saving notification settings...');
+    try {
+      await updateNotifications(notifications);
+      toast.update(loadingId, {
+        type: 'success',
+        title: 'Success',
+        message: 'Notification settings saved.',
+      });
+    } catch (err) {
+      const message =
+        (err as { response?: { data?: { message?: string } }; message?: string })?.response?.data?.message ||
+        (err as { message?: string })?.message ||
+        'Failed to save notification settings';
+      toast.update(loadingId, {
+        type: 'error',
+        title: 'Error',
+        message,
+      });
+    }
+  };
 
   const renderTabContent = () => {
     switch (activeTab) {
@@ -272,11 +325,23 @@ const SettingsPage = () => {
         }
         return <ProfileOverview profileData={profileData} dark={dark} onEdit={() => setIsEditingProfile(true)} />;
       case 'notifications':
-        return <NotificationSettings notifications={notifications} onChange={setNotifications} dark={dark} />;
+        return (
+          <NotificationSettings
+            notifications={notifications}
+            onChange={setNotifications}
+            onSave={handleSaveNotifications}
+            isSaving={isSettingsLoading}
+            dark={dark}
+          />
+        );
       case 'security':
-        return <SecuritySettings dark={dark} />;
-      case 'general':
-        return <GeneralSettings settings={generalSettings} onChange={setGeneralSettings} dark={dark} />;
+        return (
+          <SecuritySettings
+            dark={dark}
+            isLoading={isSettingsLoading}
+            onChangePassword={handleChangePassword}
+          />
+        );
       default:
         return null;
     }

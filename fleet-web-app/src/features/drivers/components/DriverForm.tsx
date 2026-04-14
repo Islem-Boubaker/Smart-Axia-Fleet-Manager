@@ -1,7 +1,9 @@
 import { useState } from "react";
 import type { FormEvent } from "react";
-import { FiUser, FiEdit2, FiPlus } from "react-icons/fi";
+import { FiUser, FiPlus } from "react-icons/fi";
+import { Select } from "../../../shared/components";
 import { Input } from "../../../shared/components/ui/Input";
+import type { Vehicle } from "../../../types";
 
 interface DriverFormData {
   name: string;
@@ -17,11 +19,13 @@ interface DriverFormData {
 
 interface DriverFormProps {
   driver?: DriverFormData & { id?: string; avatar?: string };
+  vehicles?: Vehicle[];
+  dark?: boolean;
   onSubmit: (data: DriverFormData, photo: File | null) => void;
   onCancel: () => void;
 }
 
-const DriverForm = ({ driver, onSubmit, onCancel }: DriverFormProps) => {
+const DriverForm = ({ driver, vehicles = [], dark = false, onSubmit, onCancel }: DriverFormProps) => {
   const [formData, setFormData] = useState<DriverFormData>({
     name: driver?.name || "",
     email: driver?.email || "",
@@ -51,7 +55,7 @@ const DriverForm = ({ driver, onSubmit, onCancel }: DriverFormProps) => {
   };
 
   const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
+    e: React.ChangeEvent<HTMLInputElement>,
   ) => {
     const { name, value } = e.target;
     setFormData((prev) => ({
@@ -59,6 +63,35 @@ const DriverForm = ({ driver, onSubmit, onCancel }: DriverFormProps) => {
       [name]: name === "rating" ? Number(value) : value,
     }));
   };
+
+  const handleSelectChange = (name: string, value: string) => {
+    setFormData((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
+  };
+
+  const assignedVehicleOptions = [
+    { value: '', label: 'Unassigned' },
+    ...vehicles.map((vehicle) => {
+      const vehicleLabel = vehicle.plaque_immatriculation
+        ? `${vehicle.name} (${vehicle.plaque_immatriculation})`
+        : vehicle.name;
+      return {
+        value: vehicleLabel,
+        label: vehicleLabel,
+      };
+    }),
+  ];
+
+  const hasAssignedVehicleOption = assignedVehicleOptions.some(
+    (option) => option.value === formData.assignedVehicle
+  );
+
+  const assignedVehicleOptionsWithLegacy =
+    formData.assignedVehicle && !hasAssignedVehicleOption
+      ? [{ value: formData.assignedVehicle, label: formData.assignedVehicle }, ...assignedVehicleOptions]
+      : assignedVehicleOptions;
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
@@ -175,28 +208,27 @@ const DriverForm = ({ driver, onSubmit, onCancel }: DriverFormProps) => {
         <div>
           <div className="w-full">
             <label className="block text-[13px] text-gray-500 dark:text-slate-400 mb-1.5">Status</label>
-            <select
-              name="status"
+            <Select
               value={formData.status}
-              onChange={handleChange}
-              className="w-full px-4 py-2.5 bg-white dark:bg-slate-800/50 border border-gray-200 dark:border-slate-700 text-sm text-gray-900 dark:text-white rounded-xl shadow-[0_1px_2px_rgba(0,0,0,0.02)] focus:outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand transition-all hover:border-gray-300 dark:hover:border-slate-600"
-              required
-            >
-              <option value="active">Active</option>
-              <option value="inactive">Inactive</option>
-              <option value="on-leave">On Leave</option>
-            </select>
+              onChange={(value) => handleSelectChange('status', value)}
+              dark={dark}
+              options={[
+                { value: 'active', label: 'Active' },
+                { value: 'inactive', label: 'Inactive' },
+                { value: 'on-leave', label: 'On Leave' },
+              ]}
+            />
           </div>
         </div>
 
         <div>
-          <Input
-            label="Assigned Vehicle (ID)"
-            type="text"
-            name="assignedVehicle"
+          <label className="block text-[13px] text-gray-500 dark:text-slate-400 mb-1.5">Assigned Vehicle</label>
+          <Select
             value={formData.assignedVehicle}
-            onChange={handleChange}
-            placeholder="Vehicle license plate (optional)"
+            onChange={(value) => handleSelectChange('assignedVehicle', value)}
+            dark={dark}
+            placeholder="Select vehicle"
+            options={assignedVehicleOptionsWithLegacy}
           />
         </div>
 

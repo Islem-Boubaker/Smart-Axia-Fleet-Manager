@@ -7,6 +7,7 @@ import DriversHeader from "../components/DriversHeader";
 import DriversSearch from "../components/DriversSearch";
 import DriversGrid from "../components/DriversGrid";
 import DriverModal from "../components/DriverModal";
+import { useVehicles } from "../../vehicles/hooks/useVehicles";
 import type { Driver } from "../../../types";
 import { pageShellClasses, pageShellInnerSpacing } from "../../../shared/utils/pageShell";
 
@@ -22,6 +23,7 @@ const DriversPage = () => {
   const [selectedDriver, setSelectedDriver] = useState<Driver | null>(null);
 
   const { drivers, isLoading, addDriver, updateDriver, deleteDriver } = useDrivers();
+  const { vehicles } = useVehicles();
 
   const filteredDrivers = drivers.filter((driver) =>
     `${driver.name} ${driver.email} ${driver.licenseNumber ?? ""}`
@@ -96,6 +98,8 @@ const DriversPage = () => {
         isOpen={isAddModalOpen}
         onClose={() => setIsAddModalOpen(false)}
         title="Add New Driver"
+        dark={dark}
+        vehicles={vehicles}
         onSubmit={handleAddDriver}
       />
       <DriverModal
@@ -105,7 +109,9 @@ const DriversPage = () => {
           setSelectedDriver(null);
         }}
         title="Edit Driver"
+        dark={dark}
         driver={selectedDriver}
+        vehicles={vehicles}
         onSubmit={handleUpdateDriver}
       />
     </>

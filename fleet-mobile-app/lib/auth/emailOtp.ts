@@ -1,6 +1,6 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Platform } from "react-native";
-import { requireFirebaseAuth } from "./firebaseNative";
+import { getFirebaseAuth, requireFirebaseAuth } from "./firebaseNative";
 
 const OTP_EMAIL_KEY = "axia_otp_email";
 
@@ -38,7 +38,11 @@ export async function isEmailSignInLink(url: string): Promise<boolean> {
     return false;
   }
 
-  const auth = requireFirebaseAuth();
+  const auth = getFirebaseAuth();
+  if (!auth) {
+    return false;
+  }
+
   return auth().isSignInWithEmailLink(url);
 }
 

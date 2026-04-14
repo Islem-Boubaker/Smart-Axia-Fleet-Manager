@@ -46,9 +46,9 @@ const Maintenance = sequelize.define(
       defaultValue: 'medium',
     },
     status: {
-      type: DataTypes.ENUM('scheduled', 'in_progress', 'completed', 'cancelled'),
-      allowNull: false,
-      defaultValue: 'scheduled',
+      type: DataTypes.ENUM('scheduled', 'pending', 'in_progress', 'in progress', 'completed', 'cancelled'),
+      allowNull: true,
+      defaultValue: 'pending',
     },
     type: {
       type: DataTypes.STRING,

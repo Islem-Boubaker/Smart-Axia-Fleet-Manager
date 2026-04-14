@@ -1,5 +1,5 @@
 import { FiSearch } from 'react-icons/fi';
-import { Input } from '../../../shared/components';
+import { Input, Select } from '../../../shared/components';
 
 interface Props {
   searchQuery: string;
@@ -40,30 +40,31 @@ const VehiclesFilters = ({
       />
     </div>
     <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 shrink-0">
-      <select
-        className={`min-w-[140px] px-4 py-3 rounded-xl text-sm font-medium outline-none border transition focus:ring-2 focus:ring-brand ${
-          dark ? 'border-slate-600 bg-slate-800/80 text-slate-200' : 'border-slate-200 bg-white/90 text-slate-800'
-        }`}
+      <Select
+        className="min-w-[140px]"
         value={activeFilter}
-        onChange={(e) => onActiveChange(e.target.value)}
-      >
-        <option value="all">All status</option>
-        <option value="true">Active</option>
-        <option value="false">Inactive</option>
-      </select>
-      <select
-        className={`min-w-[140px] px-4 py-3 rounded-xl text-sm font-medium outline-none border transition focus:ring-2 focus:ring-brand ${
-          dark ? 'border-slate-600 bg-slate-800/80 text-slate-200' : 'border-slate-200 bg-white/90 text-slate-800'
-        }`}
+        onChange={onActiveChange}
+        dark={dark}
+        options={[
+          { value: 'all', label: 'All status' },
+          { value: 'true', label: 'Active' },
+          { value: 'false', label: 'Inactive' },
+        ]}
+      />
+      <Select
+        className="min-w-[140px]"
         value={typeFilter}
-        onChange={(e) => onTypeChange(e.target.value)}
-      >
-        <option value="all">All types</option>
-        <option value="car">Car</option>
-        <option value="truck">Truck</option>
-        <option value="motorcycle">Motorcycle</option>
-        <option value="van">Van</option>
-      </select>
+        onChange={onTypeChange}
+        dark={dark}
+        options={[
+          { value: 'all', label: 'All types' },
+          { value: 'car', label: 'Car' },
+          { value: 'suv', label: 'SUV' },
+          { value: 'truck', label: 'Truck' },
+          { value: 'motorcycle', label: 'Motorcycle' },
+          { value: 'van', label: 'Van' },
+        ]}
+      />
     </div>
   </div>
 );

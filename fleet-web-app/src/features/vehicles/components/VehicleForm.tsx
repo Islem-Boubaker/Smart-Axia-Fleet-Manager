@@ -1,11 +1,12 @@
 import { useState } from 'react';
 import type { FormEvent } from 'react';
 import { FiTruck, FiPlus } from 'react-icons/fi';
-import { Input } from '../../../shared/components';
+import { Input, Select } from '../../../shared/components';
 import type { Vehicle } from '../../../types';
 
 interface VehicleFormProps {
   vehicle?: Partial<Vehicle>;
+  dark?: boolean;
   onSubmit: (data: Partial<Vehicle> | FormData) => void;
   onCancel: () => void;
   error?: string;
@@ -15,19 +16,36 @@ const numberFields = [
   'Mileage', 'Vehicle_Age', 'Engine_Size', 'max_load'
 ];
 
-const selectClass =
-  'w-full px-4 py-2.5 bg-white dark:bg-slate-800/50 border border-gray-200 dark:border-slate-700 text-sm text-gray-900 dark:text-white rounded-xl shadow-[0_1px_2px_rgba(0,0,0,0.02)] focus:outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand transition-all hover:border-gray-300 dark:hover:border-slate-600';
-
 const labelClass = "block text-[13px] text-gray-500 dark:text-slate-400 mb-1.5";
 
-const VehicleForm = ({ vehicle, onSubmit, onCancel, error }: VehicleFormProps) => {
+const typeToVehicleModel: Record<string, Vehicle['Vehicle_Model']> = {
+  car: 'Car',
+  suv: 'SUV',
+  van: 'Van',
+  truck: 'Truck',
+  motorcycle: 'Motorcycle',
+};
+
+const firstPhoto = (photos: unknown): string | null => {
+  if (Array.isArray(photos) && photos.length > 0 && typeof photos[0] === 'string') {
+    return photos[0];
+  }
+
+  if (typeof photos === 'string' && photos.trim().length > 0) {
+    return photos;
+  }
+
+  return null;
+};
+
+const VehicleForm = ({ vehicle, dark = false, onSubmit, onCancel, error }: VehicleFormProps) => {
   const [formData, setFormData] = useState({
     name: vehicle?.name || '',
     vin: vehicle?.vin || '',
     plaque_immatriculation: vehicle?.plaque_immatriculation || '',
     type: vehicle?.type || 'car',
     Active: vehicle?.Active ?? true,
-    Vehicle_Model: vehicle?.Vehicle_Model || 'Car',
+    Vehicle_Model: vehicle?.Vehicle_Model || typeToVehicleModel[vehicle?.type || 'car'] || 'Car',
     Mileage: vehicle?.Mileage ?? 0,
     Vehicle_Age: vehicle?.Vehicle_Age ?? 0,
     Tire_Condition: vehicle?.Tire_Condition || 'New',
@@ -41,9 +59,7 @@ const VehicleForm = ({ vehicle, onSubmit, onCancel, error }: VehicleFormProps) =
   });
 
   const [selectedPhoto, setSelectedPhoto] = useState<File | null>(null);
-  const [previewUrl, setPreviewUrl] = useState<string | null>(
-    vehicle?.photos && vehicle.photos.length > 0 ? vehicle.photos[0] : null
-  );
+  const [previewUrl, setPreviewUrl] = useState<string | null>(firstPhoto(vehicle?.photos));
 
   const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -60,6 +76,7 @@ const VehicleForm = ({ vehicle, onSubmit, onCancel, error }: VehicleFormProps) =
     payload.vin = payload.vin === '' ? null : payload.vin;
     payload.plaque_immatriculation = payload.plaque_immatriculation === '' ? null : payload.plaque_immatriculation;
     payload.Engine_Size = payload.Engine_Size === '' ? null : Number(payload.Engine_Size);
+    payload.Vehicle_Model = typeToVehicleModel[String(payload.type || 'car')] || 'Car';
     payload.max_load = payload.max_load === '' || payload.max_load === null ? null : Number(payload.max_load);
     payload.insurance_expiry_date = payload.insurance_expiry_date === '' ? null : payload.insurance_expiry_date;
     payload.tech_visit_expiry_date = payload.tech_visit_expiry_date === '' ? null : payload.tech_visit_expiry_date;
@@ -79,7 +96,7 @@ const VehicleForm = ({ vehicle, onSubmit, onCancel, error }: VehicleFormProps) =
   };
 
   const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
+    e: React.ChangeEvent<HTMLInputElement>
   ) => {
     const { name, value, type } = e.target;
     const checked = (e.target as HTMLInputElement).checked;
@@ -91,6 +108,23 @@ const VehicleForm = ({ vehicle, onSubmit, onCancel, error }: VehicleFormProps) =
           : numberFields.includes(name)
           ? value === '' ? '' : Number(value)
           : value,
+    }));
+  };
+
+  const handleSelectChange = (name: string, value: string) => {
+    if (name === 'type') {
+      const nextType = value as Vehicle['type'];
+      setFormData((prev) => ({
+        ...prev,
+        type: nextType,
+        Vehicle_Model: typeToVehicleModel[nextType] || 'Car',
+      }));
+      return;
+    }
+
+    setFormData((prev) => ({
+      ...prev,
+      [name]: value,
     }));
   };
 
@@ -158,25 +192,18 @@ const VehicleForm = ({ vehicle, onSubmit, onCancel, error }: VehicleFormProps) =
         {/* Type */}
         <div>
           <label className={labelClass}>Type</label>
-          <select name="type" value={formData.type} onChange={handleChange} className={selectClass} required>
-            <option value="car">Car</option>
-            <option value="truck">Truck</option>
-            <option value="motorcycle">Motorcycle</option>
-            <option value="van">Van</option>
-          </select>
-        </div>
-
-        {/* Vehicle Model */}
-        <div>
-          <label className={labelClass}>Vehicle Model</label>
-          <select name="Vehicle_Model" value={formData.Vehicle_Model} onChange={handleChange} className={selectClass} required>
-            <option value="Car">Car</option>
-            <option value="SUV">SUV</option>
-            <option value="Van">Van</option>
-            <option value="Truck">Truck</option>
-            <option value="Bus">Bus</option>
-            <option value="Motorcycle">Motorcycle</option>
-          </select>
+          <Select
+            value={formData.type}
+            onChange={(value) => handleSelectChange('type', value)}
+            dark={dark}
+            options={[
+              { value: 'car', label: 'Car' },
+              { value: 'suv', label: 'SUV' },
+              { value: 'truck', label: 'Truck' },
+              { value: 'motorcycle', label: 'Motorcycle' },
+              { value: 'van', label: 'Van' },
+            ]}
+          />
         </div>
 
         {/* Max Load */}
@@ -212,31 +239,46 @@ const VehicleForm = ({ vehicle, onSubmit, onCancel, error }: VehicleFormProps) =
         {/* Tire Condition */}
         <div>
           <label className={labelClass}>Tire Condition</label>
-          <select name="Tire_Condition" value={formData.Tire_Condition} onChange={handleChange} className={selectClass}>
-            <option value="New">New</option>
-            <option value="Good">Good</option>
-            <option value="Worn Out">Worn Out</option>
-          </select>
+          <Select
+            value={formData.Tire_Condition}
+            onChange={(value) => handleSelectChange('Tire_Condition', value)}
+            dark={dark}
+            options={[
+              { value: 'New', label: 'New' },
+              { value: 'Good', label: 'Good' },
+              { value: 'Worn Out', label: 'Worn Out' },
+            ]}
+          />
         </div>
 
         {/* Brake Condition */}
         <div>
           <label className={labelClass}>Brake Condition</label>
-          <select name="Brake_Condition" value={formData.Brake_Condition} onChange={handleChange} className={selectClass}>
-            <option value="New">New</option>
-            <option value="Good">Good</option>
-            <option value="Worn Out">Worn Out</option>
-          </select>
+          <Select
+            value={formData.Brake_Condition}
+            onChange={(value) => handleSelectChange('Brake_Condition', value)}
+            dark={dark}
+            options={[
+              { value: 'New', label: 'New' },
+              { value: 'Good', label: 'Good' },
+              { value: 'Worn Out', label: 'Worn Out' },
+            ]}
+          />
         </div>
 
         {/* Battery Status */}
         <div>
           <label className={labelClass}>Battery Status</label>
-          <select name="Battery_Status" value={formData.Battery_Status} onChange={handleChange} className={selectClass}>
-            <option value="New">New</option>
-            <option value="Good">Good</option>
-            <option value="Weak">Weak</option>
-          </select>
+          <Select
+            value={formData.Battery_Status}
+            onChange={(value) => handleSelectChange('Battery_Status', value)}
+            dark={dark}
+            options={[
+              { value: 'New', label: 'New' },
+              { value: 'Good', label: 'Good' },
+              { value: 'Weak', label: 'Weak' },
+            ]}
+          />
         </div>
 
         {/* Checkboxes */}

@@ -118,11 +118,7 @@
 // export default LoginScreen;
 
 import { Ionicons } from "@expo/vector-icons";
-import React, { useState, useEffect } from "react";
-import * as Google from "expo-auth-session/providers/google";
-import * as WebBrowser from "expo-web-browser";
-import { GoogleAuthProvider, signInWithCredential } from "firebase/auth";
-import { auth } from "@/FirebaseConfig";
+import React, { useState } from "react";
 import {
   View,
   Text,
@@ -138,20 +134,8 @@ import { LinearGradient } from "expo-linear-gradient";
 import Svg, { Path, G } from "react-native-svg";
 import { useRouter } from "expo-router";
 import { useAuthActions } from "../hooks/useAuth";
-import * as AuthSession from 'expo-auth-session';
-WebBrowser.maybeCompleteAuthSession();
 
 export default function SignInScreen() {
-  const [request, response, promptAsync] = Google.useAuthRequest({
-    webClientId: process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID,  });
-
-  useEffect(() => {
-    if (response?.type === "success") {
-      const { id_token } = response.params;
-      const credential = GoogleAuthProvider.credential(id_token);
-      signInWithCredential(auth, credential);
-    }
-  }, [response]);
   const router = useRouter();
   const {
     isLoading,
@@ -252,10 +236,8 @@ export default function SignInScreen() {
         <View className="flex-row justify-center gap-3.5">
           {/* Google */}
           <TouchableOpacity
-            // onPress={handleGoogle}
-            // disabled={isLoading}
-            disabled={!request}
-            onPress={() => promptAsync()}
+            onPress={handleGoogle}
+            disabled={isLoading}
             className="w-auto h-[54px] rounded-full flex-row border border-[#E4E2F0] bg-white items-center justify-center px-4"
             style={{
               shadowColor: "#000",
