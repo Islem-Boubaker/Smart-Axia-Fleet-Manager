@@ -2,9 +2,7 @@ import "../index.css";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { Stack } from "expo-router";
 import { ActivityIndicator, View } from "react-native";
-import { SafeAreaProvider } from "react-native-safe-area-context";
 import { Provider, useSelector } from "react-redux";
-import "../index.css";
 
 import type { RootState } from "../store";
 import { store } from "../store/index";

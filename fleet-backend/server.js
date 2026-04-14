@@ -39,8 +39,6 @@ async function startServer() {
       console.log(`✅ Server running on port ${PORT} [${ENV}]`);
     });
 
-    listen();
-
     // 6. Graceful shutdown ────────────────────────────────────────────────────
     let isShuttingDown = false;
 
