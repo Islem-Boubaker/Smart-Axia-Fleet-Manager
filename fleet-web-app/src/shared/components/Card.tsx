@@ -28,10 +28,10 @@ export const Card = ({
   };
 
   const shell = dark
-    ? 'bg-slate-800/40 border-slate-700/80 shadow-none backdrop-blur-sm'
-    : 'bg-white border-gray-200 shadow-sm';
+    ? 'bg-slate-900/45 border-slate-700/80 shadow-none backdrop-blur-md ring-1 ring-white/[0.04]'
+    : 'bg-white/85 border-slate-200/90 shadow-glass backdrop-blur-sm';
 
-  const headerRule = dark ? 'border-slate-700' : 'border-gray-200';
+  const headerRule = dark ? 'border-slate-700/80' : 'border-slate-200/80';
 
   return (
     <div className={`rounded-xl border ${shell} ${className}`}>

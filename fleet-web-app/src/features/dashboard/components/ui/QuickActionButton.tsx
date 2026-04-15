@@ -1,20 +1,17 @@
-import type { IconType } from 'react-icons';
 interface QuickActionButtonProps {
-  icon: IconType;
   label: string;
-  color: 'blue' | 'green' | 'purple' | 'orange';
+  onClick: () => void;
 }
 
-const colorClasses = {
-  blue: 'bg-blue-50 hover:bg-blue-100 text-blue-600',
-  green: 'bg-green-50 hover:bg-green-100 text-green-600',
-  purple: 'bg-purple-50 hover:bg-purple-100 text-purple-600',
-  orange: 'bg-orange-50 hover:bg-orange-100 text-orange-600',
-};
-
-export const QuickActionButton = ({ icon: Icon, label, color }: QuickActionButtonProps) => (
-  <button className={`p-4 text-center rounded-lg transition-colors ${colorClasses[color]}`}>
-    <Icon className="mx-auto text-2xl mb-2" />
-    <p className="text-sm font-medium text-gray-900 dark:text-slate-100">{label}</p>
+export const QuickActionButton = ({ label, onClick }: QuickActionButtonProps) => (
+  <button
+    type="button"
+    onClick={onClick}
+    className="group w-full text-left text-sm px-4 py-2.5 rounded-xl border border-gray-200/80 dark:border-gray-700/80 bg-white/70 dark:bg-gray-800/40 hover:bg-white dark:hover:bg-gray-800 transition-all duration-200 flex items-center justify-between hover:-translate-y-0.5"
+  >
+    <span className="font-medium text-gray-700 dark:text-gray-200">{label}</span>
+    <span className="text-blue-500 dark:text-blue-300 transition-transform duration-200 group-hover:translate-x-0.5">→</span>
   </button>
 );
+
+export default QuickActionButton;

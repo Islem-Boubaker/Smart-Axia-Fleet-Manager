@@ -105,84 +105,80 @@ export default function VehicleDetailsPage() {
           </div>
           <div className="p-6 space-y-4">
             <div>
-              <p className={`text-sm ${sub}`}>Model</p>
-              <p className={`font-semibold ${t} text-lg`}>{vehicle.Vehicle_Model || 'N/A'}</p>
+              <p className={`text-sm ${sub}`}>Name</p>
+              <p className={`font-semibold ${t}`}>{vehicle.name || 'N/A'}</p>
             </div>
             <div>
               <p className={`text-sm ${sub}`}>Type</p>
               <p className={`font-semibold capitalize ${t}`}>{vehicle.type || 'N/A'}</p>
             </div>
-            <div>
-              <p className={`text-sm ${sub}`}>Name</p>
-              <p className={`font-semibold ${t}`}>{vehicle.name || 'N/A'}</p>
-            </div>
           </div>
         </div>
 
         {/* Detailed Stats */}
-        <div className={`lg:col-span-2 rounded-[20px] p-6 shadow-soft ${panel}`}>
-          <h3 className={`text-lg font-bold mb-6 ${t}`}>Technical Details</h3>
+        <div className={`lg:col-span-2 rounded-[20px] p-5 shadow-soft ${panel}`}>
+          <h3 className={`text-base font-bold mb-4 ${t}`}>Technical Details</h3>
           
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
               
-              <div className={`p-4 rounded-2xl ${card}`}>
-                <p className={`text-sm ${sub}`}>Mileage</p>
-                <p className={`text-2xl font-bold ${t} mt-1`}>{vehicle.Mileage?.toLocaleString() || 0} km</p>
+              <div className={`p-3 rounded-2xl ${card}`}>
+                <p className={`text-xs ${sub}`}>Mileage</p>
+                <p className={`text-lg font-bold ${t} mt-1`}>{vehicle.Mileage?.toLocaleString() || 0} km</p>
               </div>
 
-              <div className={`p-4 rounded-2xl ${card}`}>
-                <p className={`text-sm ${sub}`}>Vehicle Age</p>
-                <p className={`text-2xl font-bold ${t} mt-1`}>{vehicle.Vehicle_Age || 0} Years</p>
+              <div className={`p-3 rounded-2xl ${card}`}>
+                <p className={`text-xs ${sub}`}>Vehicle Age</p>
+                <p className={`text-lg font-bold ${t} mt-1`}>{vehicle.Vehicle_Age || 0} Years</p>
               </div>
               
-              <div className={`p-4 rounded-2xl ${card}`}>
-                <p className={`text-sm ${sub}`}>Max Load</p>
-                <p className={`text-2xl font-bold ${t} mt-1`}>{vehicle.max_load ? `${vehicle.max_load} kg` : 'N/A'}</p>
+              <div className={`p-3 rounded-2xl ${card}`}>
+                <p className={`text-xs ${sub}`}>Max Load</p>
+                <p className={`text-lg font-bold ${t} mt-1`}>{vehicle.max_load ? `${vehicle.max_load} kg` : 'N/A'}</p>
               </div>
 
-              <div className={`p-4 rounded-2xl ${card}`}>
-                <p className={`text-sm ${sub}`}>Engine Size</p>
-                <p className={`text-2xl font-bold ${t} mt-1`}>{vehicle.Engine_Size ? `${vehicle.Engine_Size} cc` : 'N/A'}</p>
+              <div className={`p-3 rounded-2xl ${card}`}>
+                <p className={`text-xs ${sub}`}>Engine Size</p>
+                <p className={`text-lg font-bold ${t} mt-1`}>{vehicle.Engine_Size ? `${vehicle.Engine_Size} cc` : 'N/A'}</p>
               </div>
 
-              <div className={`p-4 rounded-2xl ${card}`}>
-                <p className={`text-sm ${sub}`}>Battery Status</p>
-                <p className={`text-lg font-medium ${t} mt-1`}>{vehicle.Battery_Status || 'N/A'}</p>
+              <div className={`p-3 rounded-2xl ${card}`}>
+                <p className={`text-xs ${sub}`}>Battery Status</p>
+                <p className={`text-sm font-medium ${t} mt-1`}>{vehicle.Battery_Status || 'N/A'}</p>
               </div>
 
-              <div className={`p-4 rounded-2xl ${card}`}>
-                <p className={`text-sm ${sub}`}>Tire Condition</p>
-                <p className={`text-lg font-medium ${t} mt-1`}>{vehicle.Tire_Condition || 'N/A'}</p>
+              <div className={`p-3 rounded-2xl ${card}`}>
+                <p className={`text-xs ${sub}`}>Tire Condition</p>
+                <p className={`text-sm font-medium ${t} mt-1`}>{vehicle.Tire_Condition || 'N/A'}</p>
               </div>
 
-              <div className={`p-4 rounded-2xl ${card}`}>
-                <p className={`text-sm ${sub}`}>Brake Condition</p>
-                <p className={`text-lg font-medium ${t} mt-1`}>{vehicle.Brake_Condition || 'N/A'}</p>
+              <div className={`p-3 rounded-2xl ${card}`}>
+                <p className={`text-xs ${sub}`}>Brake Condition</p>
+                <p className={`text-sm font-medium ${t} mt-1`}>{vehicle.Brake_Condition || 'N/A'}</p>
               </div>
 
-              <div className={`p-4 rounded-2xl flex flex-col justify-center ${card}`}>
-                <p className={`text-sm ${sub}`}>Insurance Expiry Date</p>
-                <p className={`text-lg font-medium ${t} mt-1`}>{vehicle.insurance_expiry_date ? new Date(vehicle.insurance_expiry_date).toLocaleDateString() : 'N/A'}</p>
+              <div className={`p-3 rounded-2xl flex flex-col justify-center ${card}`}>
+                <p className={`text-xs ${sub}`}>Insurance Expiry Date</p>
+                <p className={`text-sm font-medium ${t} mt-1`}>{vehicle.insurance_expiry_date ? new Date(vehicle.insurance_expiry_date).toLocaleDateString() : 'N/A'}</p>
               </div>
 
-              <div className={`p-4 rounded-2xl flex gap-3 ${card} ${vehicle.Need_Maintenance ? '!border-red-500/50' : ''}`}>
+              <div className={`p-3 rounded-2xl flex gap-2.5 ${card} ${vehicle.Need_Maintenance ? '!border-red-500/50' : ''}`}>
                 {vehicle.Need_Maintenance && <FiAlertCircle className="text-red-500 mt-1 flex-shrink-0" size={20} />}
                 <div>
-                  <p className={`text-sm ${sub}`}>Tech Visit Expiry Date</p>
-                  <p className={`text-lg font-medium ${t} mt-1`}>{vehicle.tech_visit_expiry_date ? new Date(vehicle.tech_visit_expiry_date).toLocaleDateString() : 'N/A'}</p>
+                  <p className={`text-xs ${sub}`}>Tech Visit Expiry Date</p>
+                  <p className={`text-sm font-medium ${t} mt-1`}>{vehicle.tech_visit_expiry_date ? new Date(vehicle.tech_visit_expiry_date).toLocaleDateString() : 'N/A'}</p>
                 </div>
               </div>
             
             {(vehicle as any).last_maintenance && (
-              <div className={`p-4 rounded-2xl ${card}`}>
-                <p className={`text-sm ${sub}`}>Last Maintenance</p>
-                <p className={`text-lg font-medium ${t} mt-1`}>{new Date((vehicle as any).last_maintenance).toLocaleDateString()}</p>
+              <div className={`p-3 rounded-2xl ${card}`}>
+                <p className={`text-xs ${sub}`}>Last Maintenance</p>
+                <p className={`text-sm font-medium ${t} mt-1`}>{new Date((vehicle as any).last_maintenance).toLocaleDateString()}</p>
               </div>
             )}
             
-            <div className={`p-4 rounded-2xl ${card}`}>
-               <p className={`text-sm ${sub}`}>Status</p>
-               <p className={`text-lg font-medium mt-1 ${vehicle.Active ? 'text-emerald-500' : 'text-slate-500'}`}>
+            <div className={`p-3 rounded-2xl ${card}`}>
+               <p className={`text-xs ${sub}`}>Status</p>
+               <p className={`text-sm font-medium mt-1 ${vehicle.Active ? 'text-emerald-500' : 'text-slate-500'}`}>
                  {vehicle.Active ? 'In Service' : 'Out of Service'}
                </p>
             </div>

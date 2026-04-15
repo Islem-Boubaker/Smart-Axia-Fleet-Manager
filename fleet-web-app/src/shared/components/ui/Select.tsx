@@ -58,8 +58,8 @@ export const Select = ({
         onClick={() => setOpen((prev) => !prev)}
         className={`w-full px-4 py-2.5 rounded-xl border text-left text-sm font-medium transition-all flex items-center justify-between gap-3 disabled:opacity-60 disabled:cursor-not-allowed ${themed(
           dark,
-          'border-slate-200 bg-white text-slate-800 hover:border-slate-300',
-          'border-slate-600 bg-slate-800/80 text-slate-100 hover:border-slate-500'
+          'border-slate-200 bg-white/90 text-slate-800 hover:border-slate-300',
+          'border-slate-600 bg-slate-800/70 text-slate-100 hover:border-slate-500'
         )}`}
       >
         <span className="min-w-0 flex items-center gap-2">
@@ -71,7 +71,7 @@ export const Select = ({
 
       {open && !disabled && (
         <div
-          className={`absolute z-50 mt-2 w-full rounded-2xl border p-2 shadow-xl backdrop-blur-lg ${themed(
+          className={`absolute z-[80] mt-2 w-full rounded-2xl border p-2 shadow-xl backdrop-blur-lg ${themed(
             dark,
             'border-slate-200 bg-white/95',
             'border-slate-700 bg-slate-900/95'
@@ -92,7 +92,7 @@ export const Select = ({
                     }}
                     className={`w-full px-3 py-2.5 rounded-xl text-left text-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 ${
                       isSelected
-                        ? themed(dark, 'bg-orange-50 text-orange-600', 'bg-orange-500/15 text-orange-300')
+                        ? themed(dark, 'bg-blue-50 text-blue-700', 'bg-blue-500/15 text-blue-300')
                         : themed(dark, 'text-slate-600 hover:bg-slate-100', 'text-slate-300 hover:bg-slate-800')
                     }`}
                   >

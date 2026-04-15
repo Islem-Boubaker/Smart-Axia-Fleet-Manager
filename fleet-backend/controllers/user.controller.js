@@ -247,6 +247,19 @@ export const updateMyNotificationSettings = async (req, res, next) => {
   }
 };
 
+export const updateMyPushToken = async (req, res, next) => {
+  try {
+    const payload = await userService.updateMyPushTokenSvc(req.user.id, req.body?.expoPushToken);
+    if (!payload) {
+      return res.status(StatusCodes.NOT_FOUND).json({ success: false, message: 'User not found' });
+    }
+
+    res.status(StatusCodes.OK).json({ success: true, data: payload });
+  } catch (error) {
+    next(error);
+  }
+};
+
 // // Backward-compatible aliases
 // export const createUser = createUser;
 // export const updateUserAvatar = updateUserAvatar;

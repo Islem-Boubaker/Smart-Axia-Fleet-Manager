@@ -15,7 +15,11 @@ const ReportsFilters = ({
   onDateRangeChange,
   dark = false,
 }: Props) => (
-  <Card padding="lg" dark={dark} className={dark ? 'border-slate-700/80 shadow-none' : 'border-slate-200/90 shadow-glass'}>
+  <Card
+    padding="lg"
+    dark={dark}
+    className={dark ? 'border-slate-700/80 shadow-none ring-1 ring-white/[0.04]' : 'border-slate-200/90 shadow-glass bg-white/85'}
+  >
     <div className="flex flex-col sm:flex-row sm:items-center gap-5 sm:gap-6">
       <Select
         className="w-full sm:flex-1 min-w-0"

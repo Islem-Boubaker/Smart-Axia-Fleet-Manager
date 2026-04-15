@@ -2,6 +2,7 @@ import { Op } from "sequelize";
 import { sequelize } from "../config/connectdb.js";
 import Trip from "../models/trip.model.js";
 import TripStop from "../models/TripStop.js";
+import { eventBus, FLEET_EVENTS } from "../events/eventBus.js";
 
 const createError = (message, status = 400, code = "BAD_REQUEST") => {
   const error = new Error(message);
@@ -159,10 +160,35 @@ export const reachStop = async (tripId, stopId, callerRole, callerId, arrivalTim
     throw createError("Only pending stops can be marked as reached", 409, "CONFLICT");
   }
 
+  const reachedAt = arrivalTime ? new Date(arrivalTime) : new Date();
+
   await stop.update({
     status: "reached",
-    arrivalTime: arrivalTime ? new Date(arrivalTime) : new Date(),
+    arrivalTime: reachedAt,
   });
+
+  const pendingStops = await TripStop.count({
+    where: {
+      tripId,
+      status: "pending",
+    },
+  });
+
+  if (pendingStops === 0) {
+    await trip.update({
+      status: "completed",
+      endTime: reachedAt,
+    });
+
+    try {
+      eventBus.emitEvent(FLEET_EVENTS.TRIP_COMPLETED, {
+        tripId: trip.id,
+        userId: trip.userId,
+      });
+    } catch (error) {
+      console.error("[EventBus] Failed to emit trip completion event:", error.message);
+    }
+  }
 
   return stop;
 };

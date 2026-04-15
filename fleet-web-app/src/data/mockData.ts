@@ -77,7 +77,7 @@ export const mockTrips: Trip[] = [
     startTime: '2024-03-15T08:00:00',
     distance: 270,
     status: 'ongoing',
-    cost: 85,
+    revenue: 85,
     stops: [],
     createdAt: '2024-03-10T00:00:00',
     updatedAt: '2024-03-10T00:00:00',
@@ -92,7 +92,7 @@ export const mockTrips: Trip[] = [
     endTime: '2024-03-14T11:30:00',
     distance: 155,
     status: 'completed',
-    cost: 55,
+    revenue: 55,
     stops: [],
     createdAt: '2024-03-10T00:00:00',
     updatedAt: '2024-03-10T00:00:00',
@@ -106,7 +106,7 @@ export const mockTrips: Trip[] = [
     startTime: '2024-03-15T10:00:00',
     distance: 98,
     status: 'ongoing',
-    cost: 42,
+    revenue: 42,
     stops: [],
     createdAt: '2024-03-10T00:00:00',
     updatedAt: '2024-03-10T00:00:00',
@@ -282,10 +282,10 @@ export const vehiclePerformance = [
 ];
 
 export const fuelAnalysis = [
-  { type: 'Essence', vehicles: 22, consumption: '9,467 L', cost: '20,354 TND', percentage: 45 },
-  { type: 'Diesel', vehicles: 17, consumption: '7,363 L', cost: '15,831 TND', percentage: 35 },
-  { type: 'Hybride', vehicles: 7, consumption: '3,156 L', cost: '6,785 TND', percentage: 15 },
-  { type: 'Électrique', vehicles: 2, consumption: '1,048 kWh', cost: '2,260 TND', percentage: 5 },
+  { type: 'Essence', vehicles: 22, consumption: '9,467 L', fuel: '20,354 L', percentage: 45 },
+  { type: 'Diesel', vehicles: 17, consumption: '7,363 L', fuel: '15,831 L', percentage: 35 },
+  { type: 'Hybride', vehicles: 7, consumption: '3,156 L', fuel: '6,785 L', percentage: 15 },
+  { type: 'Électrique', vehicles: 2, consumption: '1,048 kWh', fuel: '2,260 kWh', percentage: 5 },
 ];
 
 export const maintenanceSummary = [

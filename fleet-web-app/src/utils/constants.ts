@@ -1,4 +1,5 @@
 export const API_BASE_URL = import.meta.env.VITE_API_URL;
+export const FUEL_PRICE_TND = 2.395;
 
 export const ROUTES = {
   HOME: '/',

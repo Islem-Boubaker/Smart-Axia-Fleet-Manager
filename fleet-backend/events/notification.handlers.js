@@ -4,8 +4,10 @@ import { NOTIFICATION_TYPES } from "../constants/notification.constants.js";
 import Notification from "../models/notification.model.js";
 import Trip from "../models/trip.model.js";
 import User from "../models/user.model.js";
+import Vehicle from "../models/vehicle.model.js";
 import { getIO } from "../config/socket.js";
 import nodemailer from "nodemailer";
+import NotificationService from "../services/notification.service.js";
 
 const EMAIL_FROM = process.env.EMAIL_USER;
 const EMAIL_PASS = process.env.EMAIL_PASS;
@@ -96,6 +98,195 @@ const getManagerAndAdminIds = async () => {
 
   return users.map((user) => user.id);
 };
+
+const getAlertRecipients = async () => {
+  return User.findAll({
+    where: {
+      role: {
+        [Op.in]: ["ADMIN", "MANAGER"],
+      },
+      isActive: true,
+    },
+    attributes: ["id", "name", "email", "emailMaintenance", "pushAlerts", "expoPushToken"],
+  });
+};
+
+const startOfToday = () => {
+  const now = new Date();
+  const start = new Date(now);
+  start.setHours(0, 0, 0, 0);
+  return start;
+};
+
+const daysUntil = (value) => {
+  if (!value) return null;
+  const target = new Date(value);
+  if (Number.isNaN(target.getTime())) return null;
+  target.setHours(0, 0, 0, 0);
+  const diffMs = target.getTime() - startOfToday().getTime();
+  return Math.floor(diffMs / (24 * 60 * 60 * 1000));
+};
+
+const formatDate = (value) => {
+  const d = new Date(value);
+  if (Number.isNaN(d.getTime())) return String(value);
+  return d.toLocaleDateString("en-GB");
+};
+
+const vehicleLabel = (vehicle) => {
+  return vehicle?.plaque_immatriculation
+    ? `${vehicle?.name ?? "Vehicle"} - ${vehicle.plaque_immatriculation}`
+    : vehicle?.name ?? "Vehicle";
+};
+
+const findExistingAlertRecipients = async ({ recipientIds, type, entityId }) => {
+  if (!recipientIds.length) return new Set();
+
+  const existing = await Notification.findAll({
+    where: {
+      userId: { [Op.in]: recipientIds },
+      type,
+      entityType: "vehicle",
+      entityId,
+      isArchived: false,
+      readAt: null,
+      [Op.or]: [{ expiresAt: null }, { expiresAt: { [Op.gt]: new Date() } }],
+    },
+    attributes: ["userId"],
+    raw: true,
+  });
+
+  return new Set(existing.map((row) => String(row.userId)));
+};
+
+const dispatchVehicleDocumentExpiryAlert = async ({
+  vehicle,
+  type,
+  title,
+  message,
+  expiresAt,
+  overdue,
+}) => {
+  const recipients = await getAlertRecipients();
+  if (!recipients.length) return;
+
+  const recipientIds = recipients.map((user) => user.id);
+  const alreadyAlerted = await findExistingAlertRecipients({
+    recipientIds,
+    type,
+    entityId: vehicle.id,
+  });
+
+  const targetRecipients = recipients.filter((user) => !alreadyAlerted.has(String(user.id)));
+  if (!targetRecipients.length) return;
+
+  const notifications = await Notification.bulkCreate(
+    targetRecipients.map((user) => ({
+      userId: user.id,
+      type,
+      title,
+      message,
+      entityType: "vehicle",
+      entityId: vehicle.id,
+      metadata: {
+        referenceId: vehicle.id,
+        referenceType: "vehicle",
+        plate: vehicle.plaque_immatriculation ?? null,
+        name: vehicle.name,
+        expiresAt,
+      },
+      expiresAt,
+      priority: overdue ? "critical" : "high",
+      group: "maintenance",
+    }))
+  );
+
+  emitBulkSocketNotifications(notifications);
+
+  const emailRecipients = targetRecipients.filter((user) => user.email && user.emailMaintenance);
+  await sendEmailToUsers(emailRecipients, {
+    subject: title,
+    message,
+  });
+
+  const notificationByUserId = new Map(notifications.map((item) => [String(item.userId), item]));
+  const pushRecipients = targetRecipients.filter((user) => user.pushAlerts && user.expoPushToken);
+
+  await Promise.allSettled(
+    pushRecipients.map((user) => {
+      const notification = notificationByUserId.get(String(user.id));
+      if (!notification || !user.expoPushToken) return Promise.resolve();
+      return NotificationService.sendExpoPush(user.expoPushToken, notification);
+    })
+  );
+};
+
+export const runVehicleDocumentExpiryNotifications = async () => {
+  const vehicles = await Vehicle.findAll({
+    where: {
+      Active: true,
+    },
+    attributes: [
+      "id",
+      "name",
+      "plaque_immatriculation",
+      "insurance_expiry_date",
+      "tech_visit_expiry_date",
+    ],
+  });
+
+  for (const vehicle of vehicles) {
+    const insuranceDays = daysUntil(vehicle.insurance_expiry_date);
+    if (insuranceDays !== null && insuranceDays <= 7) {
+      const overdue = insuranceDays < 0;
+      const when = overdue ? `${Math.abs(insuranceDays)} day(s) overdue` : `due in ${insuranceDays} day(s)`;
+      const expiresOn = formatDate(vehicle.insurance_expiry_date);
+
+      await dispatchVehicleDocumentExpiryAlert({
+        vehicle,
+        type: NOTIFICATION_TYPES.VEHICLE_INSURANCE_EXPIRY,
+        title: overdue
+          ? `Insurance overdue - ${vehicleLabel(vehicle)}`
+          : `Insurance due soon - ${vehicleLabel(vehicle)}`,
+        message: `${vehicleLabel(vehicle)} insurance expires on ${expiresOn} (${when}).`,
+        expiresAt: vehicle.insurance_expiry_date,
+        overdue,
+      });
+    }
+
+    const techVisitDays = daysUntil(vehicle.tech_visit_expiry_date);
+    if (techVisitDays !== null && techVisitDays <= 7) {
+      const overdue = techVisitDays < 0;
+      const when = overdue ? `${Math.abs(techVisitDays)} day(s) overdue` : `due in ${techVisitDays} day(s)`;
+      const expiresOn = formatDate(vehicle.tech_visit_expiry_date);
+
+      await dispatchVehicleDocumentExpiryAlert({
+        vehicle,
+        type: NOTIFICATION_TYPES.VEHICLE_TECH_VISIT_EXPIRY,
+        title: overdue
+          ? `Tech visit overdue - ${vehicleLabel(vehicle)}`
+          : `Tech visit due soon - ${vehicleLabel(vehicle)}`,
+        message: `${vehicleLabel(vehicle)} technical visit expires on ${expiresOn} (${when}).`,
+        expiresAt: vehicle.tech_visit_expiry_date,
+        overdue,
+      });
+    }
+  }
+};
+
+if (process.env.NODE_ENV !== "test") {
+  setTimeout(() => {
+    runVehicleDocumentExpiryNotifications().catch((error) => {
+      console.error("[NotificationHandlers] Vehicle document expiry scan failed:", error.message);
+    });
+  }, 5_000);
+
+  setInterval(() => {
+    runVehicleDocumentExpiryNotifications().catch((error) => {
+      console.error("[NotificationHandlers] Vehicle document expiry scan failed:", error.message);
+    });
+  }, 6 * 60 * 60 * 1000);
+}
 
 eventBus.subscribe(FLEET_EVENTS.TRIP_ASSIGNED, async ({ payload }) => {
   const trip = await Trip.findByPk(payload.tripId);

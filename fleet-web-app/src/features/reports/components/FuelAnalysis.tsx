@@ -4,7 +4,7 @@ interface Fuel {
   type: string;
   vehicles: number;
   consumption: string;
-  cost: string;
+  fuel: string;
   percentage: number;
 }
 
@@ -29,7 +29,7 @@ const FuelAnalysis = ({ fuelData, dark = false }: Props) => (
               <span className={`font-semibold ${dark ? 'text-white' : 'text-gray-900'}`}>{fuel.type}</span>
               <span className={`text-sm ${dark ? 'text-slate-400' : 'text-gray-500'}`}>({fuel.vehicles} vehicles)</span>
             </div>
-            <span className={`text-sm font-semibold shrink-0 ${dark ? 'text-slate-100' : 'text-gray-900'}`}>{fuel.cost}</span>
+            <span className={`text-sm font-semibold shrink-0 ${dark ? 'text-slate-100' : 'text-gray-900'}`}>{fuel.fuel}</span>
           </div>
           <div className="flex items-center gap-3">
             <div className={`flex-1 rounded-full h-2.5 min-w-0 ${dark ? 'bg-slate-700' : 'bg-gray-200'}`}>
