@@ -37,6 +37,16 @@ const Vehicle = sequelize.define(
       defaultValue: true,
     },
 
+    insurance_expiry_date: {
+      type: DataTypes.DATEONLY,
+      allowNull: true,
+    },
+
+    tech_visit_expiry_date: {
+      type: DataTypes.DATEONLY,
+      allowNull: true,
+    },
+
 
     Vehicle_Model: {
       type: DataTypes.ENUM('Car', 'SUV', 'Van', 'Truck', 'Bus', 'Motorcycle'),
@@ -79,6 +89,11 @@ const Vehicle = sequelize.define(
 
     Fuel_Efficiency: {
       type: DataTypes.FLOAT, // km/l
+      allowNull: true,
+    },
+
+    consumption: {
+      type: DataTypes.FLOAT, // liters / 100km
       allowNull: true,
     },
 

@@ -18,6 +18,7 @@ export interface Vehicle {
   max_load?: number | null;
   insurance_expiry_date?: string | null;
   tech_visit_expiry_date?: string | null;
+  consumption?: number | null;
   Mileage: number;
   Vehicle_Age: number;
   Engine_Size?: number | null;
@@ -69,13 +70,14 @@ export interface Trip {
   userId?: string;
   vehicleId: string;
   region?: string;
+  notes?: string;
   startLocation: string;
   endLocation: string;
   startTime: string;
   endTime?: string;
   distance: number;
-  fuel?: string;
-  cost?: number;
+  fuel?: number;
+  revenue?: number;
   status: 'scheduled' | 'ongoing' | 'completed' | 'cancelled';
   createdAt: string;
   updatedAt: string;
@@ -88,6 +90,7 @@ export interface Trip {
     id: string;
     name: string;
     plaque_immatriculation?: string;
+    consumption?: number | null;
   };
 }
 

@@ -76,23 +76,27 @@ export default function Signin() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-blue-50 flex items-center justify-center p-4">
-      <div className="w-full max-w-md">
+    <div className="relative min-h-screen overflow-hidden bg-gradient-to-br from-slate-100 via-blue-50/80 to-cyan-100/70 flex items-center justify-center p-4">
+      <div aria-hidden="true" className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_top,_rgba(59,130,246,0.18),_transparent_55%)]" />
+      <div aria-hidden="true" className="pointer-events-none absolute -top-20 right-16 h-56 w-56 rounded-full bg-cyan-200/60 blur-3xl" />
+      <div aria-hidden="true" className="pointer-events-none absolute -bottom-20 left-10 h-56 w-56 rounded-full bg-blue-200/60 blur-3xl" />
+
+      <div className="relative w-full max-w-md animate-fade-up">
         {/* Logo and Title */}
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 bg-blue-600 rounded-2xl mb-4">
+          <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-blue-600 to-blue-500 rounded-2xl mb-4 shadow-lg shadow-blue-500/30">
             <FiTruck className="text-white text-3xl" />
           </div>
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">
+          <h1 className="text-3xl font-bold tracking-tight text-slate-900 mb-2">
             {isForgotMode ? 'Reset Password' : 'Welcome Back'}
           </h1>
-          <p className="text-gray-600">
+          <p className="text-slate-600">
             {isForgotMode ? 'Enter your email to receive a new password' : 'Sign in to access your fleet dashboard'}
           </p>
         </div>
 
         {/* Sign In Form */}
-        <div className="bg-white rounded-2xl shadow-xl border border-gray-100 p-8">
+        <div className="bg-white/85 backdrop-blur-md rounded-2xl shadow-soft border border-white/70 p-8">
           {/* Error banner */}
           {errorMsg && (
             <div className="mb-4 p-3 rounded-lg bg-red-50 border border-red-200 text-red-700 text-sm">
@@ -154,7 +158,7 @@ export default function Signin() {
                       setIsForgotMode(true);
                       setErrorMsg(null);
                     }}
-                    className="text-sm text-blue-600 hover:text-blue-700 font-medium"
+                    className="text-sm text-blue-600 hover:text-blue-700 font-medium transition-colors"
                   >
                     Forgot password?
                   </button>
@@ -172,7 +176,7 @@ export default function Signin() {
                 <button
                   type="button"
                   onClick={() => setIsForgotMode(false)}
-                  className="text-sm text-gray-500 hover:text-gray-700 font-medium"
+                  className="text-sm text-slate-500 hover:text-slate-700 font-medium transition-colors"
                 >
                   Back to Sign In
                 </button>
@@ -182,7 +186,7 @@ export default function Signin() {
         </div>
 
         {/* Footer */}
-        <p className="text-center text-sm text-gray-500 mt-8">
+        <p className="text-center text-sm text-slate-500 mt-8">
           © 2026 Smart AXIA Fleet Manager. All rights reserved.
         </p>
       </div>

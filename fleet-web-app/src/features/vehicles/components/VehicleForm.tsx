@@ -13,7 +13,7 @@ interface VehicleFormProps {
 }
 
 const numberFields = [
-  'Mileage', 'Vehicle_Age', 'Engine_Size', 'max_load'
+  'Mileage', 'Vehicle_Age', 'Engine_Size', 'max_load', 'consumption'
 ];
 
 const labelClass = "block text-[13px] text-gray-500 dark:text-slate-400 mb-1.5";
@@ -53,6 +53,7 @@ const VehicleForm = ({ vehicle, dark = false, onSubmit, onCancel, error }: Vehic
     Battery_Status: vehicle?.Battery_Status || 'New',
     Need_Maintenance: vehicle?.Need_Maintenance ?? false,
     Engine_Size: vehicle?.Engine_Size ?? '',
+    consumption: vehicle?.consumption ?? '',
     max_load: vehicle?.max_load ?? null,
     insurance_expiry_date: vehicle?.insurance_expiry_date || '',
     tech_visit_expiry_date: vehicle?.tech_visit_expiry_date || '',
@@ -76,6 +77,7 @@ const VehicleForm = ({ vehicle, dark = false, onSubmit, onCancel, error }: Vehic
     payload.vin = payload.vin === '' ? null : payload.vin;
     payload.plaque_immatriculation = payload.plaque_immatriculation === '' ? null : payload.plaque_immatriculation;
     payload.Engine_Size = payload.Engine_Size === '' ? null : Number(payload.Engine_Size);
+    payload.consumption = payload.consumption === '' ? null : Number(payload.consumption);
     payload.Vehicle_Model = typeToVehicleModel[String(payload.type || 'car')] || 'Car';
     payload.max_load = payload.max_load === '' || payload.max_load === null ? null : Number(payload.max_load);
     payload.insurance_expiry_date = payload.insurance_expiry_date === '' ? null : payload.insurance_expiry_date;
@@ -224,6 +226,20 @@ const VehicleForm = ({ vehicle, dark = false, onSubmit, onCancel, error }: Vehic
         {/* Engine Size */}
         <div>
           <Input label="Engine Size (cc)" type="number" name="Engine_Size" value={formData.Engine_Size} onChange={handleChange} min="0" />
+        </div>
+
+        {/* Consumption */}
+        <div>
+          <Input
+            label="Consumption (L/100km)"
+            type="number"
+            name="consumption"
+            value={formData.consumption}
+            onChange={handleChange}
+            min="0"
+            step="0.1"
+            placeholder="e.g. 7.5"
+          />
         </div>
 
         {/* Insurance Expiry Date */}

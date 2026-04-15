@@ -13,6 +13,42 @@ const ENV = process.env.NODE_ENV || "development";
 // production   → never sync    (use migrations only — never alter a live DB)
 const SYNC_OPTIONS = ENV === "development" ? { alter: { drop: false } } : null;
 
+const listenWithFallback = (server, startPort, maxAttempts = 10) =>
+  new Promise((resolve, reject) => {
+    const numericStartPort = Number.parseInt(String(startPort), 10);
+
+    if (!Number.isInteger(numericStartPort) || numericStartPort < 1 || numericStartPort > 65535) {
+      reject(new Error(`Invalid PORT value: ${startPort}`));
+      return;
+    }
+
+    const tryListen = (port, attemptsLeft) => {
+      const onError = (err) => {
+        server.removeListener("listening", onListening);
+
+        if (err?.code === "EADDRINUSE" && attemptsLeft > 0) {
+          const nextPort = port + 1;
+          console.warn(`⚠️  Port ${port} is in use, retrying on ${nextPort}...`);
+          tryListen(nextPort, attemptsLeft - 1);
+          return;
+        }
+
+        reject(err);
+      };
+
+      const onListening = () => {
+        server.removeListener("error", onError);
+        resolve(port);
+      };
+
+      server.once("error", onError);
+      server.once("listening", onListening);
+      server.listen(port);
+    };
+
+    tryListen(numericStartPort, maxAttempts);
+  });
+
 // ─── Boot ─────────────────────────────────────────────────────────────────────
 async function startServer() {
   try {
@@ -34,9 +70,8 @@ async function startServer() {
     console.log("✅ Socket.IO initialised");
 
     // 5. Start listening
-    server.listen(PORT, () => {
-      console.log(`✅ Server running on port ${PORT} [${ENV}]`);
-    });
+    const activePort = await listenWithFallback(server, PORT);
+    console.log(`✅ Server running on port ${activePort} [${ENV}]`);
 
     // 6. Graceful shutdown ────────────────────────────────────────────────────
     let isShuttingDown = false;

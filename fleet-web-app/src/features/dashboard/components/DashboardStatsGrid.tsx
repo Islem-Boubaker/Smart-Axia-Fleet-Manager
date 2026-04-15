@@ -1,25 +1,43 @@
-import type { IconType } from 'react-icons';
+import { FiActivity, FiCalendar, FiDroplet, FiTool } from 'react-icons/fi';
 import DashboardCard from './DashboardCard';
+import type { DashboardStats } from '../hooks/useDashboard';
 
-export interface StatType {
-  title: string;
-  value: string;
-  change: string;
-  changeType: 'increase' | 'decrease';
-  icon: IconType;
-  color: 'blue' | 'green' | 'purple' | 'orange';
+interface DashboardStatsGridProps {
+  stats: DashboardStats;
 }
 
-interface Props {
-  stats: StatType[];
-}
+const formatTnd = (value: number) => `${Math.round(value).toLocaleString('en-TN')} TND`;
 
-const DashboardStatsGrid = ({ stats }: Props) => (
-  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-    {stats.map((stat) => (
-      <DashboardCard key={stat.title} {...stat} />
-    ))}
-  </div>
-);
+const DashboardStatsGrid = ({ stats }: DashboardStatsGridProps) => {
+  return (
+    <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+      <DashboardCard
+        label="Active vehicles"
+        value={stats.activeVehicles.toLocaleString('en-TN')}
+        icon={<FiActivity className="h-4 w-4" />}
+        accentClassName="bg-gradient-to-r from-emerald-500 to-teal-500"
+      />
+      <DashboardCard
+        label="Trips today"
+        value={stats.tripsToday.toLocaleString('en-TN')}
+        icon={<FiCalendar className="h-4 w-4" />}
+        accentClassName="bg-gradient-to-r from-blue-500 to-cyan-500"
+      />
+      <DashboardCard
+        label="Maintenance due"
+        value={stats.maintenanceDue.toLocaleString('en-TN')}
+        valueClassName={stats.maintenanceDue > 0 ? 'text-amber-500' : ''}
+        icon={<FiTool className="h-4 w-4" />}
+        accentClassName="bg-gradient-to-r from-amber-500 to-orange-500"
+      />
+      <DashboardCard
+        label="Fuel cost this month"
+        value={formatTnd(stats.fuelCostMonth)}
+        icon={<FiDroplet className="h-4 w-4" />}
+        accentClassName="bg-gradient-to-r from-indigo-500 to-blue-600"
+      />
+    </div>
+  );
+};
 
 export default DashboardStatsGrid;

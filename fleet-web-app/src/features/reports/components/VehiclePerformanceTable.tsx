@@ -37,7 +37,7 @@ const VehiclePerformanceTable = ({ vehicles, dark = false }: Props) => {
               <th className={`text-left py-4 px-5 text-sm font-semibold ${th} first:rounded-tl-lg`}>Vehicle</th>
               <th className={`text-right py-4 px-5 text-sm font-semibold ${th}`}>Trips</th>
               <th className={`text-right py-4 px-5 text-sm font-semibold ${th}`}>Distance</th>
-              <th className={`text-right py-4 px-5 text-sm font-semibold ${th}`}>Fuel Cost</th>
+              <th className={`text-right py-4 px-5 text-sm font-semibold ${th}`}>Fuel Used</th>
               <th className={`text-right py-4 px-5 text-sm font-semibold ${th}`}>Efficiency</th>
               <th className={`text-right py-4 px-5 text-sm font-semibold ${th} last:rounded-tr-lg`}>Revenue</th>
             </tr>

@@ -1,42 +1,38 @@
-import { memo } from 'react';
-import type { IconType } from 'react-icons';
-import { Card } from '../../../shared/components';
+import type { ReactNode } from 'react';
 
 interface DashboardCardProps {
-  title: string;
+  label: string;
   value: string;
-  change: string;
-  changeType: 'increase' | 'decrease';
-  icon: IconType;
-  color: 'blue' | 'green' | 'purple' | 'orange';
+  valueClassName?: string;
+  icon?: ReactNode;
+  accentClassName?: string;
 }
 
-const DashboardCard = memo(({ title, value, change, changeType, icon: Icon, color }: DashboardCardProps) => {
-  const colorClasses = {
-    blue: 'bg-blue-100 text-blue-600',
-    green: 'bg-green-100 text-green-600',
-    purple: 'bg-purple-100 text-purple-600',
-    orange: 'bg-orange-100 text-orange-600',
-  };
-
+const DashboardCard = ({
+  label,
+  value,
+  valueClassName,
+  icon,
+  accentClassName,
+}: DashboardCardProps) => {
   return (
-    <Card padding="md">
-      <div className="flex items-center justify-between">
-        <div>
-          <p className="text-sm text-gray-600 dark:text-slate-400 mb-1">{title}</p>
-          <p className="text-2xl font-bold text-gray-900 dark:text-slate-100">{value}</p>
-          <p className={`text-sm mt-2 ${changeType === 'increase' ? 'text-green-600' : 'text-red-600'}`}>
-            {change} from last month
-          </p>
-        </div>
-        <div className={`w-12 h-12 rounded-lg flex items-center justify-center ${colorClasses[color]}`}>
-          <Icon className="text-2xl" />
-        </div>
+    <div className="group relative overflow-hidden rounded-xl border border-gray-200/70 dark:border-gray-700/60 bg-white/90 dark:bg-gray-900/70 p-4 shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:shadow-soft">
+      <div
+        className={`pointer-events-none absolute inset-x-0 top-0 h-1 ${
+          accentClassName || 'bg-gradient-to-r from-blue-500 to-cyan-500'
+        }`}
+      />
+      <div className="mb-3 flex items-start justify-between gap-3">
+        <p className="text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">{label}</p>
+        {icon ? (
+          <span className="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-blue-50 text-blue-600 dark:bg-blue-900/30 dark:text-blue-300">
+            {icon}
+          </span>
+        ) : null}
       </div>
-    </Card>
+      <p className={`text-2xl font-semibold tracking-tight text-gray-900 dark:text-white ${valueClassName || ''}`}>{value}</p>
+    </div>
   );
-});
-
-DashboardCard.displayName = 'DashboardCard';
+};
 
 export default DashboardCard;

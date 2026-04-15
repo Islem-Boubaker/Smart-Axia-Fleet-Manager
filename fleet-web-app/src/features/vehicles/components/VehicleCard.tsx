@@ -51,8 +51,24 @@ const VehicleCard = memo(({ vehicle, onEdit, onDelete, dark = false }: VehicleCa
           }}
         />
         <div className="absolute top-3 right-3 flex flex-col gap-1 items-end">
-          <Badge variant={vehicle.Active ? 'success' : 'default'}>{vehicle.Active ? 'Active' : 'Inactive'}</Badge>
-          {vehicle.Need_Maintenance && <Badge variant="warning">Maintenance</Badge>}
+          <Badge
+            variant={vehicle.Active ? 'success' : 'default'}
+            className={
+              vehicle.Active
+                ? 'backdrop-blur-sm shadow-sm ring-1 ring-black/10 dark:ring-white/20'
+                : 'bg-slate-900/85 text-white dark:bg-slate-100 dark:text-slate-900 backdrop-blur-sm shadow-sm ring-1 ring-black/20 dark:ring-white/20'
+            }
+          >
+            {vehicle.Active ? 'Active' : 'Inactive'}
+          </Badge>
+          {vehicle.Need_Maintenance && (
+            <Badge
+              variant="warning"
+              className="backdrop-blur-sm shadow-sm ring-1 ring-black/10 dark:bg-amber-400/90 dark:text-slate-900 dark:ring-amber-200/30"
+            >
+              Maintenance
+            </Badge>
+          )}
         </div>
       </div>
 

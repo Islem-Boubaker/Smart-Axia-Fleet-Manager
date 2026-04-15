@@ -1,27 +1,32 @@
+import { useOutletContext } from 'react-router-dom';
 import { Card } from '../../../shared/components';
 import FleetTable from '../components/FleetTable';
 import { useFleet } from '../hooks/useFleet';
+import { pageShellClasses, pageShellInnerSpacing } from '../../../shared/utils/pageShell';
+
+interface ThemeContext {
+  dark: boolean;
+}
 
 const FleetPage = () => {
+  const { dark } = useOutletContext<ThemeContext>();
   const { fleets, isLoading } = useFleet();
 
   return (
-    <>
-      <div className="space-y-6">
+      <div className={`${pageShellClasses(dark)} ${pageShellInnerSpacing} animate-fade-in`}>
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Fleet Management</h1>
-          <p className="text-gray-600 mt-1">Manage your fleet operations</p>
+          <h1 className={`text-3xl font-bold tracking-tight ${dark ? 'text-white' : 'text-slate-900'}`}>Fleet Management</h1>
+          <p className={`mt-1 ${dark ? 'text-slate-400' : 'text-slate-600'}`}>Manage your fleet operations</p>
         </div>
 
-        <Card>
+        <Card dark={dark} className={dark ? '!bg-slate-900/40 !border-slate-700/80' : '!bg-white/80 !border-slate-200/90'}>
           {isLoading ? (
-            <div className="text-center py-8">Loading...</div>
+            <div className={`text-center py-8 ${dark ? 'text-slate-400' : 'text-slate-500'}`}>Loading...</div>
           ) : (
-            <FleetTable data={fleets} />
+            <FleetTable data={fleets} dark={dark} />
           )}
         </Card>
       </div>
-    </>
   );
 };
 

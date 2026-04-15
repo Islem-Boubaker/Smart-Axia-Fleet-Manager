@@ -1,30 +1,49 @@
-import { FiMapPin } from 'react-icons/fi';
 import { Badge } from '../../../shared/components';
-export interface TripType {
-  id: string;
-  driver: string;
-  vehicle: string;
-  from: string;
-  to: string;
-  status: string;
-}
+import type { Trip } from '../../../types';
 
 interface TripItemProps {
-  trip: TripType;
+  trip: Trip;
+  onClick?: (trip: Trip) => void;
 }
 
-export const TripItem = ({ trip }: TripItemProps) => (
-  <div className="p-3 bg-gray-50 dark:bg-slate-800 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors">
-    <div className="flex items-center justify-between mb-2">
-      <p className="font-medium text-gray-900 dark:text-slate-100">{trip.driver}</p>
-      <Badge variant={trip.status === 'ongoing' ? 'info' : 'success'}>
-        {trip.status}
-      </Badge>
-    </div>
-    <div className="flex items-center text-sm text-gray-600 dark:text-slate-300">
-      <FiMapPin className="mr-1" />
-      <span>{trip.from} → {trip.to}</span>
-    </div>
-    <p className="text-xs text-gray-500 dark:text-slate-400 mt-1">Vehicle: {trip.vehicle}</p>
-  </div>
-);
+const toBadgeVariant = (status: Trip['status']) => {
+  if (status === 'completed') return 'success' as const;
+  if (status === 'ongoing') return 'info' as const;
+  if (status === 'cancelled') return 'error' as const;
+  if (status === 'scheduled') return 'warning' as const;
+  return 'default' as const;
+};
+
+const TripItem = ({ trip, onClick }: TripItemProps) => {
+  const plate = trip.vehicle?.plaque_immatriculation || 'No plate';
+  const driverName = trip.driver?.name || 'Unassigned';
+
+  return (
+    <li
+      role={onClick ? 'button' : undefined}
+      tabIndex={onClick ? 0 : undefined}
+      onClick={onClick ? () => onClick(trip) : undefined}
+      onKeyDown={
+        onClick
+          ? (event) => {
+              if (event.key === 'Enter' || event.key === ' ') {
+                event.preventDefault();
+                onClick(trip);
+              }
+            }
+          : undefined
+      }
+      className={`flex items-center justify-between py-2.5 px-2 rounded-lg border border-transparent hover:border-gray-200/80 dark:hover:border-gray-700/80 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-all ${
+        onClick ? 'cursor-pointer focus:outline-none focus:ring-2 focus:ring-brand/30' : ''
+      }`}
+    >
+      <div>
+        <p className="text-sm text-gray-800 dark:text-gray-200 font-medium">{trip.startLocation} → {trip.endLocation}</p>
+        <p className="text-xs text-gray-400">{plate} · {driverName}</p>
+      </div>
+      <Badge variant={toBadgeVariant(trip.status)}>{trip.status}</Badge>
+    </li>
+  );
+};
+
+export default TripItem;

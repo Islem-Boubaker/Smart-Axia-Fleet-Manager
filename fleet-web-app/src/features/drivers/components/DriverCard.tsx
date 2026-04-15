@@ -13,10 +13,22 @@ const DriverCard = memo(({ driver, onEdit, onDelete, dark = false }: DriverCardP
   const t = dark ? 'text-slate-100' : 'text-gray-900';
   const sub = dark ? 'text-slate-400' : 'text-gray-600';
   const border = dark ? 'border-slate-700' : 'border-gray-200';
+  const normalizedStatus = String(driver.status || '').toLowerCase();
   const assignedVehicle = String(driver.assignedVehicle || '').trim();
   const assignedMatch = assignedVehicle.match(/^(.+?)\s*\(([^)]+)\)\s*$/);
   const assignedName = assignedMatch ? assignedMatch[1] : assignedVehicle || 'N/A';
   const assignedPlate = assignedMatch ? assignedMatch[2] : '';
+
+  const statusVariant =
+    normalizedStatus === 'active' ? 'success' : normalizedStatus === 'on-leave' ? 'warning' : 'default';
+
+  const statusClass = dark
+    ? normalizedStatus === 'active'
+      ? 'bg-emerald-500/25 text-emerald-200 ring-1 ring-emerald-300/40'
+      : normalizedStatus === 'on-leave'
+        ? 'bg-amber-500/25 text-amber-200 ring-1 ring-amber-300/40'
+        : 'bg-rose-500/20 text-rose-200 ring-1 ring-rose-300/35'
+    : '';
 
   return (
     <div className="space-y-4">
@@ -46,7 +58,9 @@ const DriverCard = memo(({ driver, onEdit, onDelete, dark = false }: DriverCardP
             </div>
           </div>
         </div>
-        <Badge variant={driver.status === 'active' ? 'success' : 'default'}>{driver.status}</Badge>
+        <Badge variant={statusVariant} className={statusClass}>
+          {normalizedStatus || 'unknown'}
+        </Badge>
       </div>
 
       <div className="space-y-2">
