@@ -22,17 +22,35 @@ const stopUpdateSchema = z.object({
   notes: z.string().optional().nullable(),
 });
 
+const mapLegacyCostToRevenue = (payload = {}) => {
+  if (!payload || typeof payload !== "object") return payload;
+
+  if (
+    payload.revenue === undefined &&
+    Object.prototype.hasOwnProperty.call(payload, "cost")
+  ) {
+    payload.revenue = payload.cost;
+  }
+
+  if (Object.prototype.hasOwnProperty.call(payload, "cost")) {
+    delete payload.cost;
+  }
+
+  return payload;
+};
+
 const createTripSchema = z.object({
   vehicleId: uuid,
   userId: uuid,
   region: z.string().min(2).optional(),
+  notes: z.string().optional().nullable(),
   startLocation: z.string().min(2),
   endLocation: z.string().min(2),
   startTime: isoDate,
   endTime: isoDate.optional().nullable(),
   distance: z.number().positive(),
-  fuel: z.string().optional().nullable(),
-  cost: z.number().nonnegative().optional().nullable(),
+  fuel: z.number().nonnegative().optional().nullable(),
+  revenue: z.number().nonnegative().optional().nullable(),
   stops: z.array(stopSchema).optional(),
 });
 
@@ -41,13 +59,14 @@ const updateTripSchema = z
     vehicleId: uuid.optional(),
     userId: uuid.optional().nullable(),
     region: z.string().min(2).optional(),
+    notes: z.string().optional().nullable(),
     startLocation: z.string().min(2).optional(),
     endLocation: z.string().min(2).optional(),
     startTime: isoDate.optional(),
     endTime: isoDate.optional().nullable(),
     distance: z.number().positive().optional(),
-    fuel: z.string().optional().nullable(),
-    cost: z.number().nonnegative().optional().nullable(),
+    fuel: z.number().nonnegative().optional().nullable(),
+    revenue: z.number().nonnegative().optional().nullable(),
     stops: z.array(stopSchema).optional(),
   })
   .strict();
@@ -59,8 +78,8 @@ const updateStatusSchema = z.object({
 const completeTripSchema = z
   .object({
     endTime: isoDate.optional(),
-    cost: z.number().nonnegative().optional(),
-    fuel: z.string().optional().nullable(),
+    revenue: z.number().nonnegative().optional(),
+    fuel: z.number().nonnegative().optional().nullable(),
   })
   .strict();
 
@@ -101,10 +120,12 @@ const parseBody = (schema, req, res, next) => {
 };
 
 export const validateCreateTrip = (req, res, next) => {
+  req.body = mapLegacyCostToRevenue(req.body);
   return parseBody(createTripSchema, req, res, next);
 };
 
 export const validateUpdateTrip = (req, res, next) => {
+  req.body = mapLegacyCostToRevenue(req.body);
   if (Object.prototype.hasOwnProperty.call(req.body, "status")) {
     return sendValidationError(res, ["status: status cannot be updated from this endpoint"]);
   }
@@ -116,6 +137,7 @@ export const validateUpdateStatus = (req, res, next) => {
 };
 
 export const validateCompleteTrip = (req, res, next) => {
+  req.body = mapLegacyCostToRevenue(req.body);
   return parseBody(completeTripSchema, req, res, next);
 };
 

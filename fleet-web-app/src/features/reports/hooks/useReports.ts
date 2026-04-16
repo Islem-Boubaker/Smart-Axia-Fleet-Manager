@@ -29,7 +29,7 @@ type FuelAnalysisRow = {
   type: string;
   vehicles: number;
   consumption: string;
-  cost: string;
+  fuel: string;
   percentage: number;
 };
 
@@ -94,11 +94,34 @@ const rangeDaysMap: Record<string, number> = {
   week: 7,
   month: 30,
   quarter: 90,
+  halfyear: 180,
   year: 365,
 };
 
-const inDateRange = (date: Date | null, dateRange: string): boolean => {
+const inDateRange = (
+  date: Date | null,
+  dateRange: string,
+  customRange?: { startDate?: string; endDate?: string }
+): boolean => {
   if (!date) return false;
+
+  if (dateRange === 'custom') {
+    const start = customRange?.startDate ? new Date(customRange.startDate) : null;
+    const end = customRange?.endDate ? new Date(customRange.endDate) : null;
+
+    if (start && !Number.isNaN(start.getTime())) {
+      start.setHours(0, 0, 0, 0);
+      if (date < start) return false;
+    }
+
+    if (end && !Number.isNaN(end.getTime())) {
+      end.setHours(23, 59, 59, 999);
+      if (date > end) return false;
+    }
+
+    return true;
+  }
+
   const days = rangeDaysMap[dateRange] ?? 30;
   const threshold = new Date();
   threshold.setHours(0, 0, 0, 0);
@@ -109,11 +132,17 @@ const inDateRange = (date: Date | null, dateRange: string): boolean => {
 const trendLabel = (dateRange: string) => {
   if (dateRange === 'week') return 'Last 7 days';
   if (dateRange === 'quarter') return 'Last 3 months';
+  if (dateRange === 'halfyear') return 'Last 6 months';
   if (dateRange === 'year') return 'Last 12 months';
+  if (dateRange === 'custom') return 'Custom range';
   return 'Last 30 days';
 };
 
-export const useReports = (_reportType: string, dateRange: string) => {
+export const useReports = (
+  _reportType: string,
+  dateRange: string,
+  customRange?: { startDate?: string; endDate?: string }
+) => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [drivers, setDrivers] = useState<Driver[]>([]);
@@ -153,17 +182,32 @@ export const useReports = (_reportType: string, dateRange: string) => {
   }, [fetchReportData]);
 
   const filteredTrips = useMemo(() => {
-    return trips.filter((trip) => inDateRange(toDate(trip.startTime), dateRange));
-  }, [trips, dateRange]);
+    return trips.filter((trip) => inDateRange(toDate(trip.startTime), dateRange, customRange));
+  }, [trips, dateRange, customRange]);
 
   const filteredMaintenances = useMemo(() => {
-    return maintenances.filter((item) => inDateRange(toDate(item.scheduledDate), dateRange));
-  }, [maintenances, dateRange]);
+    return maintenances.filter((item) => inDateRange(toDate(item.scheduledDate), dateRange, customRange));
+  }, [maintenances, dateRange, customRange]);
+
+  const effectiveRangeDays = useMemo(() => {
+    if (dateRange !== 'custom') return rangeDaysMap[dateRange] ?? 30;
+
+    const start = customRange?.startDate ? new Date(customRange.startDate) : null;
+    const end = customRange?.endDate ? new Date(customRange.endDate) : null;
+
+    if (!start || !end || Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) return 30;
+
+    start.setHours(0, 0, 0, 0);
+    end.setHours(23, 59, 59, 999);
+    const ms = end.getTime() - start.getTime();
+    if (ms < 0) return 1;
+    return Math.max(1, Math.ceil(ms / (24 * 60 * 60 * 1000)));
+  }, [dateRange, customRange]);
 
   const overviewStats = useMemo<OverviewStat[]>(() => {
     const activeVehicles = vehicles.filter((v) => v.Active).length;
     const totalDistance = filteredTrips.reduce((sum, trip) => sum + parseNumberish(trip.distance), 0);
-    const totalFuelCost = filteredTrips.reduce((sum, trip) => sum + parseNumberish(trip.cost), 0);
+    const totalRevenue = filteredTrips.reduce((sum, trip) => sum + parseNumberish(trip.revenue), 0);
 
     return [
       {
@@ -191,8 +235,8 @@ export const useReports = (_reportType: string, dateRange: string) => {
         color: 'purple',
       },
       {
-        title: 'Total Fuel Cost',
-        value: formatCurrency(totalFuelCost),
+        title: 'Total Revenue',
+        value: formatCurrency(totalRevenue),
         change: trendLabel(dateRange),
         trend: 'down',
         icon: 'FiDollarSign',
@@ -217,7 +261,7 @@ export const useReports = (_reportType: string, dateRange: string) => {
       current.trips += 1;
       current.distance += parseNumberish(trip.distance);
       current.fuel += parseNumberish(trip.fuel);
-      current.revenue += parseNumberish(trip.cost);
+      current.revenue += parseNumberish(trip.revenue);
       map.set(key, current);
     });
 
@@ -238,27 +282,27 @@ export const useReports = (_reportType: string, dateRange: string) => {
   }, [filteredTrips, vehicles]);
 
   const fuelAnalysis = useMemo<FuelAnalysisRow[]>(() => {
-    const byType = new Map<string, { vehicles: Set<string>; consumption: number; cost: number }>();
+    const byType = new Map<string, { vehicles: Set<string>; consumption: number; fuel: number }>();
 
     filteredTrips.forEach((trip) => {
       const vehicle = vehicles.find((v) => v.id === trip.vehicleId);
       const type = vehicle?.type ? vehicle.type.charAt(0).toUpperCase() + vehicle.type.slice(1) : 'Other';
-      const current = byType.get(type) || { vehicles: new Set<string>(), consumption: 0, cost: 0 };
+      const current = byType.get(type) || { vehicles: new Set<string>(), consumption: 0, fuel: 0 };
       current.vehicles.add(trip.vehicleId);
       current.consumption += parseNumberish(trip.fuel);
-      current.cost += parseNumberish(trip.cost);
+      current.fuel += parseNumberish(trip.fuel);
       byType.set(type, current);
     });
 
-    const totalCost = Array.from(byType.values()).reduce((sum, item) => sum + item.cost, 0);
+    const totalFuel = Array.from(byType.values()).reduce((sum, item) => sum + item.fuel, 0);
 
     return Array.from(byType.entries())
       .map(([type, data]) => ({
         type,
         vehicles: data.vehicles.size,
         consumption: `${formatNumber(data.consumption)} L`,
-        cost: formatCurrency(data.cost),
-        percentage: totalCost > 0 ? Math.round((data.cost / totalCost) * 100) : 0,
+        fuel: `${formatNumber(data.fuel)} L`,
+        percentage: totalFuel > 0 ? Math.round((data.fuel / totalFuel) * 100) : 0,
       }))
       .sort((a, b) => b.percentage - a.percentage);
   }, [filteredTrips, vehicles]);
@@ -285,11 +329,24 @@ export const useReports = (_reportType: string, dateRange: string) => {
   }, [filteredMaintenances]);
 
   const monthlyTrends = useMemo<MonthlyTrendRow[]>(() => {
+    const customMonthsToShow = (() => {
+      const start = customRange?.startDate ? new Date(customRange.startDate) : null;
+      const end = customRange?.endDate ? new Date(customRange.endDate) : null;
+      if (!start || !end || Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) return 1;
+      const months =
+        (end.getFullYear() - start.getFullYear()) * 12 +
+        (end.getMonth() - start.getMonth()) +
+        1;
+      return Math.max(1, Math.min(24, months));
+    })();
+
     const rangeMonthsMap: Record<string, number> = {
       week: 1,
       month: 1,
       quarter: 3,
+      halfyear: 6,
       year: 12,
+      custom: customMonthsToShow,
     };
 
     const monthsToShow = rangeMonthsMap[dateRange] ?? 6;
@@ -311,7 +368,7 @@ export const useReports = (_reportType: string, dateRange: string) => {
       if (!bucket) return;
       bucket.trips += 1;
       bucket.distance += parseNumberish(trip.distance);
-      bucket.revenue += parseNumberish(trip.cost);
+      bucket.revenue += parseNumberish(trip.revenue);
     });
 
     return months.map((month) => ({
@@ -320,7 +377,7 @@ export const useReports = (_reportType: string, dateRange: string) => {
       distance: Math.round(month.distance),
       revenue: Math.round(month.revenue),
     }));
-  }, [filteredTrips, dateRange]);
+  }, [filteredTrips, dateRange, customRange]);
 
   const driverInsights = useMemo<DriverInsightSummary>(() => {
     const activeDrivers = drivers.filter((d) => String(d.status || '').toLowerCase() === 'active').length;
@@ -380,7 +437,7 @@ export const useReports = (_reportType: string, dateRange: string) => {
 
       current.trips += 1;
       current.distance += parseNumberish(trip.distance);
-      current.revenue += parseNumberish(trip.cost);
+      current.revenue += parseNumberish(trip.revenue);
 
       const start = toDate(trip.startTime);
       const end = toDate(trip.endTime);
@@ -419,6 +476,11 @@ export const useReports = (_reportType: string, dateRange: string) => {
     error,
     exportReport,
     refetch: fetchReportData,
+    rangeDays: effectiveRangeDays,
+    vehiclesRaw: vehicles,
+    driversRaw: drivers,
+    filteredTripsRaw: filteredTrips,
+    filteredMaintenancesRaw: filteredMaintenances,
     overviewStats,
     vehiclePerformance,
     fuelAnalysis,

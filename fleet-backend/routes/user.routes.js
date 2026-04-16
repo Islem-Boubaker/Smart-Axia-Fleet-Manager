@@ -29,6 +29,12 @@ router.put(
   csrfMiddleware.verifyCsrf,
   userController.updateMyNotificationSettings
 );
+router.put(
+  '/user/me/push-token',
+  authMiddleware.authenticate,
+  csrfMiddleware.verifyCsrf,
+  userController.updateMyPushToken
+);
 
 router.patch(
   '/user/me/avatar',

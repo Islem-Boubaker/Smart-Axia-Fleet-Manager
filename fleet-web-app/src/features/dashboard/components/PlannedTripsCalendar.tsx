@@ -1,13 +1,39 @@
 import { FiCalendar, FiChevronDown, FiExternalLink, FiFilter } from 'react-icons/fi';
-import type { DashboardWeekDay } from '../hooks/useDashboard';
+
+interface DashboardWeekDay {
+  date: Date;
+  dayLabel: string;
+  dayNumber: string;
+  isToday: boolean;
+  tripsCount: number;
+}
+
+type CalendarTripItem = {
+  id: string;
+  vehicle: string;
+  route: string;
+  startTime: string;
+};
 
 interface PlannedTripsCalendarProps {
   dark: boolean;
   weekRange: string;
   weekDays: DashboardWeekDay[];
+  selectedDayKey: string;
+  selectedDayTrips: CalendarTripItem[];
+  onSelectDay: (dayKey: string) => void;
+  onOpenTrip: (tripId: string) => void;
 }
 
-const PlannedTripsCalendar = ({ dark, weekRange, weekDays }: PlannedTripsCalendarProps) => {
+const PlannedTripsCalendar = ({
+  dark,
+  weekRange,
+  weekDays,
+  selectedDayKey,
+  selectedDayTrips,
+  onSelectDay,
+  onOpenTrip,
+}: PlannedTripsCalendarProps) => {
 
   const panel = dark ? 'bg-slate-900 border-slate-700' : 'bg-white border-gray-200';
   const muted = dark ? 'text-slate-300' : 'text-gray-700';
@@ -43,15 +69,21 @@ const PlannedTripsCalendar = ({ dark, weekRange, weekDays }: PlannedTripsCalenda
         <div className="min-w-[920px] px-4">
           <div className={`grid grid-cols-7 gap-2 border-b ${rowBorder} pb-4`}>
             {weekDays.map((day) => (
-              <div
+              <button
+                type="button"
                 key={day.date.toISOString()}
+                onClick={() => onSelectDay(day.date.toISOString().slice(0, 10))}
                 className={`rounded-xl px-3 py-2 text-center ${
-                  day.isToday ? 'bg-blue-500 text-white' : dayChipBase
+                  day.date.toISOString().slice(0, 10) === selectedDayKey
+                    ? 'bg-brand text-white'
+                    : day.isToday
+                      ? 'bg-blue-500 text-white'
+                      : dayChipBase
                 }`}
               >
                 <div className="text-xs font-medium">{day.dayLabel}</div>
                 <div className="text-lg font-bold leading-tight">{day.dayNumber}</div>
-              </div>
+              </button>
             ))}
           </div>
 
@@ -69,6 +101,46 @@ const PlannedTripsCalendar = ({ dark, weekRange, weekDays }: PlannedTripsCalenda
                 </div>
               </div>
             ))}
+          </div>
+
+          <div className={`mt-4 rounded-2xl border p-4 ${tripsCard}`}>
+            <div className="flex items-center justify-between gap-3">
+              <h3 className="text-sm font-bold">Scheduled trips on selected day</h3>
+              <span className={`text-xs ${muted}`}>{selectedDayTrips.length} trips</span>
+            </div>
+
+            {selectedDayTrips.length === 0 ? (
+              <p className={`mt-3 text-sm ${muted}`}>No scheduled trips for this day.</p>
+            ) : (
+              <ul className="mt-3 space-y-2">
+                {selectedDayTrips.map((trip) => (
+                  <li key={trip.id} className={`rounded-xl border px-3 py-2 ${dark ? 'border-slate-700 bg-slate-800/60' : 'border-gray-200 bg-white'}`}>
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                      <div>
+                        <p className="text-sm font-semibold">{trip.vehicle}</p>
+                        <p className={`text-xs ${muted}`}>{trip.route}</p>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className={`text-xs ${muted}`}>
+                          {new Date(trip.startTime).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => onOpenTrip(trip.id)}
+                          className={`rounded-lg border px-2.5 py-1 text-xs font-semibold transition ${
+                            dark
+                              ? 'border-slate-600 text-slate-200 hover:bg-slate-700'
+                              : 'border-gray-200 text-gray-700 hover:bg-gray-50'
+                          }`}
+                        >
+                          Open
+                        </button>
+                      </div>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            )}
           </div>
         </div>
       </div>

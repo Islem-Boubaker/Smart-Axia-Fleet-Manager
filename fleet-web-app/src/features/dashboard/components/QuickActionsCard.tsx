@@ -1,34 +1,21 @@
-import { FiTruck, FiUsers, FiMapPin, FiTrendingUp } from 'react-icons/fi';
-import { Card } from '../../../shared/components';
+import { useNavigate } from 'react-router-dom';
+import { ROUTES } from '../../../utils/constants';
 import { QuickActionButton } from './ui/QuickActionButton';
-import type { IconType } from 'react-icons';
 
-interface QuickAction {
-  label: string;
-  icon: IconType;
-  color: 'blue' | 'green' | 'purple' | 'orange';
-}
+const QuickActionsCard = () => {
+  const navigate = useNavigate();
 
-const actions: QuickAction[] = [
-  { label: 'Add Vehicle', icon: FiTruck, color: 'blue' },
-  { label: 'Add Driver', icon: FiUsers, color: 'green' },
-  { label: 'New Trip', icon: FiMapPin, color: 'purple' },
-  { label: 'View Reports', icon: FiTrendingUp, color: 'orange' },
-];
-
-const QuickActionsCard = () => (
-  <Card title="Quick Actions">
-    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-      {actions.map((action) => (
-        <QuickActionButton
-          key={action.label}
-          icon={action.icon}
-          label={action.label}
-          color={action.color}
-        />
-      ))}
+  return (
+    <div className="bg-white/90 dark:bg-gray-900/70 rounded-2xl border border-gray-200/70 dark:border-gray-700/60 shadow-sm p-5">
+      <h2 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">Quick actions</h2>
+      <div className="space-y-2">
+        <QuickActionButton label="+ New Trip" onClick={() => navigate(`${ROUTES.TRIPS}?action=new`)} />
+        <QuickActionButton label="+ Add Vehicle" onClick={() => navigate(`${ROUTES.VEHICLES}?action=new`)} />
+        <QuickActionButton label="+ Schedule Maintenance" onClick={() => navigate(`${ROUTES.MAINTENANCE}?action=new`)} />
+        <QuickActionButton label="Generate Report" onClick={() => navigate(ROUTES.REPORTS)} />
+      </div>
     </div>
-  </Card>
-);
+  );
+};
 
 export default QuickActionsCard;

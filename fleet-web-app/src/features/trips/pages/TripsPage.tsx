@@ -1,14 +1,16 @@
 import { useCallback, useEffect, useState } from 'react';
-import { useOutletContext } from 'react-router-dom';
+import { useOutletContext, useSearchParams } from 'react-router-dom';
 import TripsHeader from '../components/TripsHeader';
 import TripsFilters from '../components/TripsFilters';
 import TripsList from '../components/TripsList';
 import TripForm from '../components/TripForm';
+import TripDetailsView from '../components/TripDetailsView';
 import { useTrips } from '../hooks/useTrips';
 import { GlobalCard } from '../../../shared/components';
 import { vehiclesService } from '../../vehicles/services/vehicles.service';
 import { driversService } from '../../drivers/services/drivers.service';
-import type { Driver, Vehicle } from '../../../types';
+import type { Driver, Trip, Vehicle } from '../../../types';
+import { pageShellClasses, pageShellInnerSpacing } from '../../../shared/utils/pageShell';
 
 interface ThemeContext {
   dark: boolean;
@@ -16,12 +18,18 @@ interface ThemeContext {
 
 const TripsPage = () => {
   const { dark } = useOutletContext<ThemeContext>();
+  const [searchParams] = useSearchParams();
+  const initialStatusParam = searchParams.get('status');
+  const initialStatus = ['all', 'scheduled', 'ongoing', 'completed', 'cancelled'].includes(initialStatusParam || '')
+    ? (initialStatusParam as string)
+    : 'all';
   const [searchQuery, setSearchQuery] = useState('');
-  const [statusFilter, setStatusFilter] = useState('all');
+  const [statusFilter, setStatusFilter] = useState(initialStatus);
   const [actionTripId, setActionTripId] = useState<string | null>(null);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
+  const [selectedTrip, setSelectedTrip] = useState<Trip | null>(null);
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
   const [drivers, setDrivers] = useState<Driver[]>([]);
 
@@ -32,12 +40,14 @@ const TripsPage = () => {
     error,
     createTrip,
     startTrip,
+    reachStop,
     completeTrip,
     cancelTrip,
   } = useTrips({
     status: statusFilter === 'all' ? undefined : statusFilter,
     page: 1,
     limit: 50,
+    includeStops: true,
   });
 
   const filteredTrips = trips.filter(trip => {
@@ -82,6 +92,15 @@ const TripsPage = () => {
     }
   };
 
+  const handleReachStop = async (tripId: string, stopId: string) => {
+    setActionTripId(tripId);
+    try {
+      await reachStop(tripId, stopId, new Date().toISOString());
+    } finally {
+      setActionTripId(null);
+    }
+  };
+
   const handleCancel = async (tripId: string) => {
     setActionTripId(tripId);
     try {
@@ -98,7 +117,15 @@ const TripsPage = () => {
     endLocation: string;
     startTime: string;
     distance: number;
-    region?: string;
+    fuel?: number;
+    revenue?: number;
+    notes?: string;
+    stops?: Array<{
+      locationName: string;
+      stopOrder: number;
+      latitude?: number;
+      longitude?: number;
+    }>;
   }) => {
     try {
       setSubmitError(null);
@@ -117,12 +144,7 @@ const TripsPage = () => {
 
   return (
     <>
-      <div className="space-y-8 lg:space-y-10 animate-fade-in">
-        <div
-          className={`rounded-[24px] border p-6 sm:p-8 lg:p-10 space-y-8 ${
-            dark ? 'border-slate-700/80 bg-slate-900/35 backdrop-blur-sm' : 'border-slate-200/90 bg-white/70 backdrop-blur-md shadow-soft'
-          }`}
-        >
+      <div className={`${pageShellClasses(dark)} ${pageShellInnerSpacing} animate-fade-in`}>
           <TripsHeader
             dark={dark}
             tripCount={meta.totalItems || filteredTrips.length}
@@ -151,13 +173,14 @@ const TripsPage = () => {
             <TripsList
               trips={filteredTrips}
               dark={dark}
+              onViewDetails={setSelectedTrip}
               onStart={handleStart}
+              onReachStop={handleReachStop}
               onComplete={handleComplete}
               onCancel={handleCancel}
               actionTripId={actionTripId}
             />
           )}
-        </div>
       </div>
 
       <GlobalCard
@@ -187,6 +210,15 @@ const TripsPage = () => {
             setSubmitError(null);
           }}
         />
+      </GlobalCard>
+
+      <GlobalCard
+        isOpen={Boolean(selectedTrip)}
+        onClose={() => setSelectedTrip(null)}
+        title={selectedTrip ? `Trip details #${selectedTrip.id}` : 'Trip details'}
+        maxWidth="2xl"
+      >
+        {selectedTrip ? <TripDetailsView trip={selectedTrip} dark={dark} /> : null}
       </GlobalCard>
     </>
   );

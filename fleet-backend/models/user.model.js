@@ -128,6 +128,10 @@ const User = sequelize.define(
       allowNull: false,
       defaultValue: false,
     },
+    expoPushToken: {
+      type: DataTypes.STRING(255),
+      allowNull: true,
+    },
   },
   {
     tableName: 'users',

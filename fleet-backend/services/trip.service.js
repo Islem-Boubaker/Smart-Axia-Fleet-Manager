@@ -32,7 +32,7 @@ const createError = (message, status = 400, code = "BAD_REQUEST") => {
 
 const tripRelationInclude = [
   { model: User, as: "driver", attributes: ["id", "name"] },
-  { model: Vehicle, as: "vehicle", attributes: ["id", "name", "plaque_immatriculation"] },
+  { model: Vehicle, as: "vehicle", attributes: ["id", "name", "plaque_immatriculation", "consumption"] },
 ];
 
 const ensureTripExists = async (tripId, includeStops = false) => {
@@ -157,6 +157,18 @@ const ensureNoDriverOverlap = async ({ userId, start, end, excludeTripId = null 
   }
 };
 
+const toFiniteNumberOrNull = (value) => {
+  if (value === null || value === undefined || value === '') return null;
+  if (typeof value === 'number') {
+    return Number.isFinite(value) ? value : null;
+  }
+  if (typeof value === 'string') {
+    const parsed = Number.parseFloat(value.replace(/[^\d.-]/g, ''));
+    return Number.isFinite(parsed) ? parsed : null;
+  }
+  return null;
+};
+
 const emitTripEvent = (event, payload) => {
   try {
     eventBus.emitEvent(event, payload);
@@ -165,17 +177,37 @@ const emitTripEvent = (event, payload) => {
   }
 };
 
+const enrichTripWithEstimatedFuel = (trip) => {
+  if (!trip) return trip;
+
+  const currentFuel = toFiniteNumberOrNull(trip.fuel);
+  if (currentFuel !== null) return trip;
+
+  const distance = toFiniteNumberOrNull(trip.distance);
+  const consumption = toFiniteNumberOrNull(trip.vehicle?.consumption);
+
+  if (distance === null || consumption === null || distance <= 0 || consumption <= 0) {
+    return trip;
+  }
+
+  const estimatedFuel = Number(((distance * consumption) / 100).toFixed(2));
+  trip.setDataValue("fuel", estimatedFuel);
+  return trip;
+};
+
 const fetchTripWithStops = async (tripId) => {
-  return Trip.findByPk(tripId, {
+  const trip = await Trip.findByPk(tripId, {
     include: [{ model: TripStop, as: "stops" }, ...tripRelationInclude],
     order: [[{ model: TripStop, as: "stops" }, "stopOrder", "ASC"]],
   });
+
+  return enrichTripWithEstimatedFuel(trip);
 };
 
 export const createTrip = async (data) => {
   const { start, end } = normalizeWindow(data.startTime, data.endTime);
 
-  await validateVehicle(data.vehicleId);
+  const vehicle = await validateVehicle(data.vehicleId);
   await checkVehicleAvailableForTrip(data.vehicleId, start, end);
   if (data.userId) {
     await validateDriver(data.userId);
@@ -184,12 +216,23 @@ export const createTrip = async (data) => {
   await ensureNoVehicleOverlap({ vehicleId: data.vehicleId, start, end });
   await ensureNoDriverOverlap({ userId: data.userId, start, end });
 
+  const distance = toFiniteNumberOrNull(data.distance);
+  const explicitFuel = toFiniteNumberOrNull(data.fuel);
+  const consumption = toFiniteNumberOrNull(vehicle?.consumption);
+  const estimatedFuel =
+    explicitFuel !== null
+      ? explicitFuel
+      : distance !== null && consumption !== null && distance > 0 && consumption > 0
+        ? (distance * consumption) / 100
+        : null;
+
   const result = await sequelize.transaction(async (transaction) => {
     const { stops = [], ...tripInput } = data;
 
     const trip = await Trip.create(
       {
         ...tripInput,
+        fuel: estimatedFuel,
         status: TRIP_STATUS.SCHEDULED,
       },
       { transaction }
@@ -247,9 +290,14 @@ export const getTrips = async (filters = {}, pagination = {}, callerRole, caller
 
   if (includeStops) {
     for (const trip of rows) {
+      enrichTripWithEstimatedFuel(trip);
       if (Array.isArray(trip.stops)) {
         trip.stops.sort((a, b) => a.stopOrder - b.stopOrder);
       }
+    }
+  } else {
+    for (const trip of rows) {
+      enrichTripWithEstimatedFuel(trip);
     }
   }
 
@@ -259,6 +307,7 @@ export const getTrips = async (filters = {}, pagination = {}, callerRole, caller
 export const getTripById = async (tripId, callerRole, callerId) => {
   const trip = await ensureTripExists(tripId, true);
   ensureDriverOwnership(trip, callerRole, callerId);
+  enrichTripWithEstimatedFuel(trip);
 
   if (Array.isArray(trip.stops)) {
     trip.stops.sort((a, b) => a.stopOrder - b.stopOrder);
@@ -365,7 +414,7 @@ export const completeTrip = async (tripId, callerRole, callerId, settlement = {}
 
   const updates = { status: TRIP_STATUS.COMPLETED };
   if (settlement.endTime) updates.endTime = settlement.endTime;
-  if (settlement.cost !== undefined) updates.cost = settlement.cost;
+  if (settlement.revenue !== undefined) updates.revenue = settlement.revenue;
   if (settlement.fuel !== undefined) updates.fuel = settlement.fuel;
 
   await trip.update(updates);

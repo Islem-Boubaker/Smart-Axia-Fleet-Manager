@@ -23,6 +23,28 @@ export interface TripFilters {
   includeStops?: boolean;
 }
 
+export interface CreateTripRequest {
+  vehicleId: string;
+  userId: string;
+  startLocation: string;
+  endLocation: string;
+  startTime: string;
+  distance: number;
+  region?: string;
+  notes?: string;
+  endTime?: string;
+  fuel?: number;
+  revenue?: number;
+  stops?: Array<{
+    locationName: string;
+    stopOrder: number;
+    latitude?: number;
+    longitude?: number;
+    estimatedArrival?: string;
+    notes?: string;
+  }>;
+}
+
 export const tripsService = {
   // Trips Core
   getTrips: async (filters?: TripFilters): Promise<TripListResponse> => {
@@ -57,7 +79,7 @@ export const tripsService = {
     return response.data.data;
   },
 
-  createTrip: async (data: Partial<Trip> & { stops?: Partial<TripStop>[] }) => {
+  createTrip: async (data: CreateTripRequest) => {
     const response = await api.post<{ success: boolean; data: Trip }>('/trips', data);
     return response.data.data;
   },
@@ -82,7 +104,7 @@ export const tripsService = {
     return response.data.data;
   },
 
-  completeTrip: async (id: string, data?: { endTime?: string; fuel?: string; cost?: number }) => {
+  completeTrip: async (id: string, data?: { endTime?: string; fuel?: number; revenue?: number }) => {
     const response = await api.patch<{ success: boolean; data: Trip }>(`/trips/${id}/complete`, data);
     return response.data.data;
   },

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { tripsService, type PaginationMeta, type TripFilters } from '../services/trips.service';
+import { tripsService, type CreateTripRequest, type PaginationMeta, type TripFilters } from '../services/trips.service';
 import type { Trip } from '../../../types';
 
 const buildApiErrorMessage = (err: unknown, fallback: string): string => {
@@ -66,7 +66,7 @@ export const useTrips = (filters: TripFilters = {}) => {
   ]);
 
   const startTrip = async (id: string) => runAction(() => tripsService.startTrip(id));
-  const createTrip = async (data: Partial<Trip>) => {
+  const createTrip = async (data: CreateTripRequest) => {
     try {
       setError(null);
       await tripsService.createTrip(data);
@@ -76,7 +76,7 @@ export const useTrips = (filters: TripFilters = {}) => {
       throw err;
     }
   };
-  const completeTrip = async (id: string, data?: { endTime?: string; fuel?: string; cost?: number }) =>
+  const completeTrip = async (id: string, data?: { endTime?: string; fuel?: number; revenue?: number }) =>
     runAction(() => tripsService.completeTrip(id, data));
   const cancelTrip = async (id: string) => runAction(() => tripsService.cancelTrip(id));
   const assignDriver = async (id: string, userId: string) =>

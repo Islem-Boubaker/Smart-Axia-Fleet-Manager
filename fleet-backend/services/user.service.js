@@ -155,6 +155,18 @@ export const updateMyNotificationSettingsSvc = async (userId, payload = {}) => {
   return await getMyNotificationSettingsSvc(userId);
 };
 
+export const updateMyPushTokenSvc = async (userId, pushToken) => {
+  const user = await User.findByPk(userId);
+  if (!user) return null;
+
+  const normalized = typeof pushToken === 'string' ? pushToken.trim() : '';
+  await user.update({ expoPushToken: normalized || null });
+
+  return {
+    expoPushToken: user.expoPushToken,
+  };
+};
+
 export const forgotPasswordSvc = async (email) => {
   const user = await User.findOne({ where: { email } });
   if (!user) {

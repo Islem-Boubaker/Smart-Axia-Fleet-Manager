@@ -38,6 +38,11 @@ const Trip = sequelize.define(
       allowNull: true, // changed to allow null to avoid migration error with existing records
     },
 
+    notes: {
+      type: DataTypes.TEXT,
+      allowNull: true,
+    },
+
     startLocation: {
       type: DataTypes.STRING,
       allowNull: false,
@@ -64,11 +69,11 @@ const Trip = sequelize.define(
     },
 
     fuel: {
-      type: DataTypes.STRING,
+      type: DataTypes.FLOAT,
       allowNull: true,
     },
 
-    cost: {
+    revenue: {
       type: DataTypes.FLOAT,
       allowNull: true,
     },

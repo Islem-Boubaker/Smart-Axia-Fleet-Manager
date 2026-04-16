@@ -1,33 +1,48 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { driversService } from '../../drivers/services/drivers.service';
 import { maintenanceService } from '../../maintenance/services/maintenance.service';
+import notificationApi, { type NotificationRecord } from '../../notifications/services/notification.api';
 import { tripsService } from '../../trips/services/trips.service';
 import { vehiclesService } from '../../vehicles/services/vehicles.service';
 import type { Driver, Maintenance, Trip, Vehicle } from '../../../types';
-import { formatWeekRange, startOfWeekMonday } from '../services/dashboardUiData';
+import { FUEL_PRICE_TND } from '../../../utils/constants';
 
-type CardTripStatus = 'completed' | 'active' | 'pending' | 'cancelled';
-
-export interface DashboardRecentTrip {
-  id: string;
-  vehicle: string;
-  route: string;
-  meta: string;
-  status: CardTripStatus;
+export interface DashboardStats {
+  activeVehicles: number;
+  tripsToday: number;
+  maintenanceDue: number;
+  fuelCostMonth: number;
+  tripsTodayDelta: number;
+  fuelCostMonthDeltaPercent: number;
 }
 
-export interface DashboardTask {
-  vehicle: string;
-  plate: string;
-  timeLeft: string;
+export interface DashboardFleetStatus {
+  onTrip: number;
+  available: number;
+  inMaintenance: number;
+  outOfService: number;
+  total: number;
 }
 
-export interface DashboardWeekDay {
-  date: Date;
-  dayLabel: string;
-  dayNumber: number;
-  isToday: boolean;
-  tripsCount: number;
+export interface DashboardTopDriver {
+  driver: Driver;
+  km: number;
+  onTimeRate: number;
+}
+
+export interface DashboardFuelDay {
+  day: string;
+  liters: number;
+}
+
+interface DashboardData {
+  stats: DashboardStats;
+  fleetStatus: DashboardFleetStatus;
+  alerts: NotificationRecord[];
+  recentTrips: Trip[];
+  topDrivers: DashboardTopDriver[];
+  fuelByDay: DashboardFuelDay[];
+  upcomingMaintenance: Maintenance[];
 }
 
 const numberFrom = (value: unknown): number => {
@@ -39,232 +54,482 @@ const numberFrom = (value: unknown): number => {
   return 0;
 };
 
-const shortDuration = (minutes: number) => {
-  const safe = Math.max(0, Math.round(minutes));
-  const h = Math.floor(safe / 60);
-  const m = safe % 60;
-  if (h <= 0) return `${m}m`;
-  return `${h}h ${m}m`;
-};
-
 const toDate = (value?: string): Date | null => {
   if (!value) return null;
-  const d = new Date(value);
-  return Number.isNaN(d.getTime()) ? null : d;
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? null : date;
 };
 
-const isSameDay = (a: Date, b: Date) =>
-  a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
+const inRange = (value: Date, start: Date, end: Date) => value >= start && value <= end;
 
-const toCardStatus = (status: Trip['status']): CardTripStatus => {
-  if (status === 'completed') return 'completed';
-  if (status === 'ongoing') return 'active';
-  if (status === 'cancelled') return 'cancelled';
-  return 'pending';
+const dayRange = (date: Date) => {
+  const start = new Date(date);
+  start.setHours(0, 0, 0, 0);
+  const end = new Date(start);
+  end.setHours(23, 59, 59, 999);
+  return { start, end };
 };
+
+const monthRange = (date: Date) => {
+  const start = new Date(date.getFullYear(), date.getMonth(), 1, 0, 0, 0, 0);
+  const end = new Date(date.getFullYear(), date.getMonth() + 1, 0, 23, 59, 59, 999);
+  return { start, end };
+};
+
+const classifyAlertPriority = (notification: NotificationRecord): number => {
+  const text = `${notification.title} ${notification.message}`.toLowerCase();
+  if (text.includes('overdue') || text.includes('past due')) return 0;
+  if (text.includes('expire') || text.includes('expiring') || text.includes('soon') || text.includes('due')) return 1;
+  return 2;
+};
+
+const normalizeNotifications = (payload: unknown): NotificationRecord[] => {
+  if (Array.isArray(payload)) return payload as NotificationRecord[];
+  if (payload && typeof payload === 'object') {
+    const asRecord = payload as { data?: unknown; items?: unknown };
+    if (Array.isArray(asRecord.data)) return asRecord.data as NotificationRecord[];
+    if (Array.isArray(asRecord.items)) return asRecord.items as NotificationRecord[];
+  }
+  return [];
+};
+
+const formatDateLabel = (value?: string): string => {
+  const date = toDate(value);
+  if (!date) return 'Unknown date';
+  return date.toLocaleDateString('en-GB');
+};
+
+const daysUntilDate = (value?: string): number | null => {
+  const target = toDate(value);
+  if (!target) return null;
+
+  const now = new Date();
+  const startOfToday = new Date(now);
+  startOfToday.setHours(0, 0, 0, 0);
+
+  const startOfTarget = new Date(target);
+  startOfTarget.setHours(0, 0, 0, 0);
+
+  const diffMs = startOfTarget.getTime() - startOfToday.getTime();
+  return Math.floor(diffMs / (24 * 60 * 60 * 1000));
+};
+
+const vehicleLabel = (vehicle: Vehicle): string => {
+  const name = vehicle.name || 'Vehicle';
+  return vehicle.plaque_immatriculation ? `${name} - ${vehicle.plaque_immatriculation}` : name;
+};
+
+const buildExpiryAlerts = (vehicles: Vehicle[]): NotificationRecord[] => {
+  const nowIso = new Date().toISOString();
+  const expiryAlerts: NotificationRecord[] = [];
+
+  vehicles.forEach((vehicle) => {
+    const insuranceDays = daysUntilDate(vehicle.insurance_expiry_date || undefined);
+    if (insuranceDays !== null && insuranceDays <= 7) {
+      const overdue = insuranceDays < 0;
+      const whenText = overdue ? `${Math.abs(insuranceDays)} day(s) overdue` : `due in ${insuranceDays} day(s)`;
+
+      expiryAlerts.push({
+        id: `dashboard-insurance-expiry-${vehicle.id}`,
+        userId: '',
+        type: 'vehicle_insurance_expiry',
+        group: 'vehicle',
+        priority: overdue ? 'high' : 'medium',
+        title: overdue
+          ? `Insurance overdue - ${vehicleLabel(vehicle)}`
+          : `Insurance due soon - ${vehicleLabel(vehicle)}`,
+        message: `${vehicleLabel(vehicle)} insurance expires on ${formatDateLabel(vehicle.insurance_expiry_date || undefined)} (${whenText}).`,
+        entityType: 'vehicle',
+        entityId: vehicle.id,
+        actionUrl: null,
+        metadata: {
+          source: 'dashboard-computed',
+          expiresAt: vehicle.insurance_expiry_date,
+          daysUntilDue: insuranceDays,
+          category: 'insurance',
+        },
+        read: false,
+        readAt: null,
+        isArchived: false,
+        createdAt: nowIso,
+        updatedAt: nowIso,
+      });
+    }
+
+    const techVisitDays = daysUntilDate(vehicle.tech_visit_expiry_date || undefined);
+    if (techVisitDays !== null && techVisitDays <= 7) {
+      const overdue = techVisitDays < 0;
+      const whenText = overdue ? `${Math.abs(techVisitDays)} day(s) overdue` : `due in ${techVisitDays} day(s)`;
+
+      expiryAlerts.push({
+        id: `dashboard-techvisit-expiry-${vehicle.id}`,
+        userId: '',
+        type: 'vehicle_tech_visit_expiry',
+        group: 'vehicle',
+        priority: overdue ? 'high' : 'medium',
+        title: overdue
+          ? `Tech visit overdue - ${vehicleLabel(vehicle)}`
+          : `Tech visit due soon - ${vehicleLabel(vehicle)}`,
+        message: `${vehicleLabel(vehicle)} technical visit expires on ${formatDateLabel(vehicle.tech_visit_expiry_date || undefined)} (${whenText}).`,
+        entityType: 'vehicle',
+        entityId: vehicle.id,
+        actionUrl: null,
+        metadata: {
+          source: 'dashboard-computed',
+          expiresAt: vehicle.tech_visit_expiry_date,
+          daysUntilDue: techVisitDays,
+          category: 'tech-visit',
+        },
+        read: false,
+        readAt: null,
+        isArchived: false,
+        createdAt: nowIso,
+        updatedAt: nowIso,
+      });
+    }
+  });
+
+  return expiryAlerts;
+};
+
+const statusText = (vehicle: Vehicle): string => {
+  const value = (vehicle as unknown as { status?: string }).status;
+  return typeof value === 'string' ? value.toLowerCase() : '';
+};
+
+const booleanFrom = (value: unknown, fallback = false): boolean => {
+  if (typeof value === 'boolean') return value;
+  if (typeof value === 'number') return value === 1;
+  if (typeof value === 'string') {
+    const normalized = value.trim().toLowerCase();
+    if (['t'].includes(normalized)) return true;
+    if (['f'].includes(normalized)) return false;
+    if (['true', '1', 'yes', 'y', 'on', 'active'].includes(normalized)) return true;
+    if (['false', '0', 'no', 'n', 'off', 'inactive'].includes(normalized)) return false;
+  }
+  return fallback;
+};
+
+const normalizedPlate = (value: unknown): string => {
+  if (typeof value !== 'string') return '';
+  return value.trim().toUpperCase().replace(/\s+/g, '');
+};
+
+const isOnTimeTrip = (trip: Trip): boolean => {
+  if (trip.status !== 'completed') return false;
+
+  const orderedStops = Array.isArray(trip.stops)
+    ? [...trip.stops].sort((a, b) => a.stopOrder - b.stopOrder)
+    : [];
+
+  const lastStop = orderedStops.length > 0 ? orderedStops[orderedStops.length - 1] : null;
+  const scheduledArrival = toDate(lastStop?.estimatedArrival || undefined);
+  const actualArrival = toDate(lastStop?.arrivalTime || trip.endTime);
+
+  if (!scheduledArrival || !actualArrival) return false;
+  return actualArrival.getTime() <= scheduledArrival.getTime();
+};
+
+const fallbackDriver = (id: string, name: string): Driver => ({
+  id,
+  name,
+  email: 'unknown@unknown.local',
+  status: 'active',
+});
 
 export const useDashboard = () => {
-  const [isLoading, setIsLoading] = useState(true);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
   const [drivers, setDrivers] = useState<Driver[]>([]);
   const [trips, setTrips] = useState<Trip[]>([]);
   const [maintenances, setMaintenances] = useState<Maintenance[]>([]);
+  const [alerts, setAlerts] = useState<NotificationRecord[]>([]);
 
-  const fetchDashboardData = useCallback(async () => {
+  const refetch = useCallback(async () => {
     try {
-      setIsLoading(true);
+      setLoading(true);
       setError(null);
 
-      const [vehiclesData, driversData, tripsData, maintData] = await Promise.all([
+      const [vehiclesData, driversData, tripsData, maintenanceData, notificationsData] = await Promise.all([
         vehiclesService.getVehicles(),
         driversService.getDrivers(),
-        tripsService.getTrips({ page: 1, limit: 1000 }),
+        tripsService.getTrips({ page: 1, limit: 1000, includeStops: true }),
         maintenanceService.getAll({ page: 1, limit: 1000 }),
+        notificationApi.getAll({ limit: 50 }),
       ]);
+
+      const expiryAlerts = buildExpiryAlerts(vehiclesData ?? []);
+
+      const parsedAlerts = normalizeNotifications(notificationsData)
+        .filter((n) => !n.read && !n.isArchived)
+        .concat(expiryAlerts)
+        .sort((a, b) => {
+          const severity = classifyAlertPriority(a) - classifyAlertPriority(b);
+          if (severity !== 0) return severity;
+          return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+        });
 
       setVehicles(vehiclesData ?? []);
       setDrivers(driversData ?? []);
       setTrips(tripsData.items ?? []);
-      setMaintenances(maintData.items ?? []);
+      setMaintenances(maintenanceData.items ?? []);
+      setAlerts(parsedAlerts);
     } catch (err: unknown) {
       const message =
         (err as { response?: { data?: { message?: string } } })?.response?.data?.message ||
         (err as Error)?.message ||
-        'Failed to fetch dashboard data.';
+        'Failed to load dashboard data.';
       setError(message);
     } finally {
-      setIsLoading(false);
+      setLoading(false);
     }
   }, []);
 
   useEffect(() => {
-    fetchDashboardData();
-  }, [fetchDashboardData]);
+    refetch();
+  }, [refetch]);
 
-  const totalDistanceKm = useMemo(
-    () => trips.reduce((sum, trip) => sum + numberFrom(trip.distance), 0),
-    [trips]
-  );
-
-  const activeVehicles = useMemo(
-    () => vehicles.filter((vehicle) => vehicle.Active).length,
-    [vehicles]
-  );
-
-  const activeDrivers = useMemo(
-    () => drivers.filter((driver) => String(driver.status).toLowerCase() === 'active').length,
-    [drivers]
-  );
-
-  const ongoingTripsCount = useMemo(
-    () => trips.filter((trip) => trip.status === 'ongoing').length,
-    [trips]
-  );
-
-  const openMaintenanceCount = useMemo(
-    () => maintenances.filter((m) => ['scheduled', 'pending', 'in_progress'].includes(m.status)).length,
-    [maintenances]
-  );
-
-  const completionRate = useMemo(() => {
-    if (trips.length === 0) return 0;
-    const completed = trips.filter((trip) => trip.status === 'completed').length;
-    return Math.round((completed / trips.length) * 100);
-  }, [trips]);
-
-  const currentTask = useMemo<DashboardTask>(() => {
-    const ongoing = [...trips]
-      .filter((trip) => trip.status === 'ongoing')
-      .sort((a, b) => new Date(b.startTime).getTime() - new Date(a.startTime).getTime())[0];
-
-    if (!ongoing) {
-      return {
-        vehicle: 'No ongoing trip',
-        plate: '—',
-        timeLeft: 'No active task right now',
-      };
-    }
-
-    const vehicleName = ongoing.vehicle?.name || 'Assigned vehicle';
-    const vehiclePlate = ongoing.vehicle?.plaque_immatriculation || 'No plate';
-    const end = toDate(ongoing.endTime);
+  const data = useMemo<DashboardData>(() => {
     const now = new Date();
+    const today = dayRange(now);
+    const yesterdayDate = new Date(now);
+    yesterdayDate.setDate(now.getDate() - 1);
+    const yesterday = dayRange(yesterdayDate);
 
-    let timeLeft = 'In progress';
-    if (end && end.getTime() > now.getTime()) {
-      const diff = (end.getTime() - now.getTime()) / 60000;
-      timeLeft = `${shortDuration(diff)} remaining`;
-    }
+    const currentMonth = monthRange(now);
+    const previousMonthDate = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+    const previousMonth = monthRange(previousMonthDate);
 
-    return {
-      vehicle: vehicleName,
-      plate: vehiclePlate,
-      timeLeft,
-    };
-  }, [trips]);
+    const tripsToday = trips.filter((trip) => {
+      const start = toDate(trip.startTime);
+      return start ? inRange(start, today.start, today.end) : false;
+    }).length;
 
-  const upcomingTask = useMemo<DashboardTask>(() => {
-    const now = new Date();
-    const upcoming = [...trips]
-      .filter((trip) => trip.status === 'scheduled')
+    const tripsYesterday = trips.filter((trip) => {
+      const start = toDate(trip.startTime);
+      return start ? inRange(start, yesterday.start, yesterday.end) : false;
+    }).length;
+
+    const maintenanceDue = maintenances.filter((item) => {
+      if (item.status === 'completed' || item.status === 'cancelled') return false;
+      const scheduled = toDate(item.scheduledDate);
+      if (!scheduled) return false;
+      const max = new Date(now);
+      max.setDate(now.getDate() + 7);
+      max.setHours(23, 59, 59, 999);
+      const min = new Date(now);
+      min.setHours(0, 0, 0, 0);
+      return inRange(scheduled, min, max);
+    }).length;
+
+    const currentMonthFuelLiters = trips
       .filter((trip) => {
         const start = toDate(trip.startTime);
-        return start ? start.getTime() >= now.getTime() : false;
+        return start ? inRange(start, currentMonth.start, currentMonth.end) : false;
       })
-      .sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime())[0];
+      .reduce((sum, trip) => sum + numberFrom((trip as unknown as { fuelConsumed?: number }).fuelConsumed ?? trip.fuel), 0);
 
-    if (!upcoming) {
-      return {
-        vehicle: 'No scheduled trip',
-        plate: '—',
-        timeLeft: 'No upcoming task',
+    const previousMonthFuelLiters = trips
+      .filter((trip) => {
+        const start = toDate(trip.startTime);
+        return start ? inRange(start, previousMonth.start, previousMonth.end) : false;
+      })
+      .reduce((sum, trip) => sum + numberFrom((trip as unknown as { fuelConsumed?: number }).fuelConsumed ?? trip.fuel), 0);
+
+    const fuelCostMonth = currentMonthFuelLiters * FUEL_PRICE_TND;
+    const previousFuelCostMonth = previousMonthFuelLiters * FUEL_PRICE_TND;
+
+    const ongoingVehicleIds = new Set(
+      trips
+        .filter((trip) => trip.status === 'ongoing')
+        .map((trip) => String(trip.vehicleId))
+    );
+
+    const openMaintenanceVehicleIds = new Set<string>();
+    const openMaintenanceVehiclePlates = new Set<string>();
+
+    maintenances
+      .filter((item) => item.status !== 'completed' && item.status !== 'cancelled')
+      .forEach((item) => {
+        if (item.vehicleId) {
+          openMaintenanceVehicleIds.add(String(item.vehicleId));
+        }
+
+        const plate = normalizedPlate(item.vehiclePlate);
+        if (plate) {
+          openMaintenanceVehiclePlates.add(plate);
+        }
+      });
+
+    // Make fleet buckets mutually exclusive:
+    // onTrip -> inMaintenance -> outOfService -> available.
+    const fleetStatusCounts = vehicles.reduce(
+      (acc, vehicle) => {
+        const rawVehicle = vehicle as unknown as {
+          id?: unknown;
+          plaque_immatriculation?: unknown;
+          Active?: unknown;
+          active?: unknown;
+          Need_Maintenance?: unknown;
+          need_maintenance?: unknown;
+          needMaintenance?: unknown;
+          maintenanceRequired?: unknown;
+          needsMaintenance?: unknown;
+        };
+        const state = statusText(vehicle);
+        const vehicleId = String(rawVehicle.id ?? vehicle.id ?? '');
+        const vehiclePlate = normalizedPlate(rawVehicle.plaque_immatriculation ?? vehicle.plaque_immatriculation);
+
+        const isActive = booleanFrom(rawVehicle.Active ?? rawVehicle.active, true);
+        const needsMaintenance = booleanFrom(
+          rawVehicle.Need_Maintenance ??
+            rawVehicle.need_maintenance ??
+            rawVehicle.needMaintenance ??
+            rawVehicle.maintenanceRequired ??
+            rawVehicle.needsMaintenance,
+          false
+        );
+
+        const isOnTrip = state.includes('on_trip') || ongoingVehicleIds.has(String(vehicle.id));
+        const isInMaintenance =
+          state.includes('maintenance') ||
+          needsMaintenance ||
+          openMaintenanceVehicleIds.has(vehicleId) ||
+          (vehiclePlate.length > 0 && openMaintenanceVehiclePlates.has(vehiclePlate));
+        const isInactive =
+          state.includes('inactive') ||
+          state.includes('out_of_service') ||
+          state.includes('out-of-service') ||
+          !isActive;
+
+        if (isOnTrip) {
+          acc.onTrip += 1;
+        } else if (isInMaintenance) {
+          // Requested behavior: inactive + maintenance must count in maintenance.
+          acc.inMaintenance += 1;
+        } else if (isInactive) {
+          // Requested behavior: inactive only (without maintenance) counts as out of service.
+          acc.outOfService += 1;
+        } else {
+          acc.available += 1;
+        }
+
+        return acc;
+      },
+      { onTrip: 0, inMaintenance: 0, outOfService: 0, available: 0 }
+    );
+
+    const { onTrip, inMaintenance, outOfService, available } = fleetStatusCounts;
+    const total = vehicles.length;
+
+    const recentTrips = [...trips]
+      .sort((a, b) => new Date(b.createdAt || b.startTime).getTime() - new Date(a.createdAt || a.startTime).getTime())
+      .slice(0, 5);
+
+    const monthTrips = trips.filter((trip) => {
+      const start = toDate(trip.startTime);
+      return start ? inRange(start, currentMonth.start, currentMonth.end) : false;
+    });
+
+    const topDriverMap = new Map<string, { driver: Driver; km: number; onTimeCount: number; totalTrips: number }>();
+
+    monthTrips.forEach((trip) => {
+      const driverId = trip.userId || trip.driver?.id;
+      if (!driverId) return;
+
+      const fromDrivers = drivers.find((driver) => String(driver.id) === String(driverId));
+      const fallbackName = trip.driver?.name || 'Unknown driver';
+      const driver = fromDrivers || fallbackDriver(String(driverId), fallbackName);
+
+      const current = topDriverMap.get(String(driverId)) || {
+        driver,
+        km: 0,
+        onTimeCount: 0,
+        totalTrips: 0,
       };
-    }
 
-    const start = toDate(upcoming.startTime);
-    const timeText = start
-      ? `Starts ${start.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}`
-      : 'Starts soon';
+      current.km += numberFrom(trip.distance);
+      current.totalTrips += 1;
+      if (isOnTimeTrip(trip)) current.onTimeCount += 1;
+
+      topDriverMap.set(String(driverId), current);
+    });
+
+    const topDrivers = Array.from(topDriverMap.values())
+      .map((item) => ({
+        driver: item.driver,
+        km: item.km,
+        onTimeRate: item.totalTrips > 0 ? Math.round((item.onTimeCount / item.totalTrips) * 100) : 0,
+      }))
+      .sort((a, b) => b.onTimeRate - a.onTimeRate)
+      .slice(0, 4);
+
+    const fuelByDay: DashboardFuelDay[] = Array.from({ length: 7 }).map((_, index) => {
+      const date = new Date(now);
+      date.setDate(now.getDate() - (6 - index));
+      const range = dayRange(date);
+
+      const liters = trips
+        .filter((trip) => trip.status === 'completed')
+        .filter((trip) => {
+          const start = toDate(trip.startTime);
+          return start ? inRange(start, range.start, range.end) : false;
+        })
+        .reduce((sum, trip) => sum + numberFrom((trip as unknown as { fuelConsumed?: number }).fuelConsumed ?? trip.fuel), 0);
+
+      return {
+        day: date.toLocaleDateString('en-GB', { weekday: 'short' }),
+        liters,
+      };
+    });
+
+    const upcomingMaintenance = [...maintenances]
+      .filter((item) => {
+        const date = toDate(item.scheduledDate);
+        if (!date) return false;
+        const max = new Date(now);
+        max.setDate(now.getDate() + 14);
+        max.setHours(23, 59, 59, 999);
+        const min = new Date(now);
+        min.setHours(0, 0, 0, 0);
+        return inRange(date, min, max);
+      })
+      .sort((a, b) => new Date(a.scheduledDate).getTime() - new Date(b.scheduledDate).getTime())
+      .slice(0, 5);
+
+    const tripsTodayDelta = tripsToday - tripsYesterday;
+    const fuelCostMonthDeltaPercent =
+      previousFuelCostMonth > 0 ? Math.round(((fuelCostMonth - previousFuelCostMonth) / previousFuelCostMonth) * 100) : 0;
 
     return {
-      vehicle: upcoming.vehicle?.name || 'Assigned vehicle',
-      plate: upcoming.vehicle?.plaque_immatriculation || 'No plate',
-      timeLeft: timeText,
+      stats: {
+        activeVehicles: vehicles.filter((vehicle) => vehicle.Active).length,
+        tripsToday,
+        maintenanceDue,
+        fuelCostMonth,
+        tripsTodayDelta,
+        fuelCostMonthDeltaPercent,
+      },
+      fleetStatus: {
+        onTrip,
+        available,
+        inMaintenance,
+        outOfService,
+        total,
+      },
+      alerts: alerts.slice(0, 5),
+      recentTrips,
+      topDrivers,
+      fuelByDay,
+      upcomingMaintenance,
     };
-  }, [trips]);
-
-  const recentTrips = useMemo<DashboardRecentTrip[]>(() => {
-    return [...trips]
-      .sort((a, b) => new Date(b.updatedAt || b.startTime).getTime() - new Date(a.updatedAt || a.startTime).getTime())
-      .slice(0, 4)
-      .map((trip) => ({
-        id: trip.id,
-        vehicle: trip.vehicle?.name || 'Assigned vehicle',
-        route: `${trip.startLocation} → ${trip.endLocation}`,
-        meta: `TR-${trip.id.slice(0, 6).toUpperCase()} · ${Math.round(numberFrom(trip.distance))} km`,
-        status: toCardStatus(trip.status),
-      }));
-  }, [trips]);
-
-  const topDrivers = useMemo(() => {
-    const byDriver = new Map<string, { name: string; trips: number }>();
-
-    trips.forEach((trip) => {
-      const key = trip.userId || trip.driver?.id;
-      if (!key) return;
-      const fallbackName = drivers.find((driver) => driver.id === key)?.name || 'Unknown driver';
-      const current = byDriver.get(key) || { name: trip.driver?.name || fallbackName, trips: 0 };
-      current.trips += 1;
-      byDriver.set(key, current);
-    });
-
-    return Array.from(byDriver.values())
-      .sort((a, b) => b.trips - a.trips)
-      .slice(0, 3);
-  }, [trips, drivers]);
-
-  const weekRange = useMemo(() => formatWeekRange(new Date()), []);
-
-  const weeklyTrips = useMemo<DashboardWeekDay[]>(() => {
-    const monday = startOfWeekMonday(new Date());
-    const labels = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-
-    return labels.map((label, index) => {
-      const date = new Date(monday);
-      date.setDate(monday.getDate() + index);
-
-      const tripsCount = trips.filter((trip) => {
-        const start = toDate(trip.startTime);
-        return start ? isSameDay(start, date) : false;
-      }).length;
-
-      return {
-        date,
-        dayLabel: label,
-        dayNumber: date.getDate(),
-        isToday: isSameDay(date, new Date()),
-        tripsCount,
-      };
-    });
-  }, [trips]);
+  }, [alerts, drivers, maintenances, trips, vehicles]);
 
   return {
-    isLoading,
+    ...data,
+    loading,
     error,
-    refetch: fetchDashboardData,
-    totalVehicles: vehicles.length,
-    activeVehicles,
-    activeDrivers,
-    ongoingTripsCount,
-    totalDistanceKm,
-    completionRate,
-    openMaintenanceCount,
-    currentTask,
-    upcomingTask,
-    recentTrips,
-    topDrivers,
-    weekRange,
-    weeklyTrips,
+    refetch,
   };
 };
