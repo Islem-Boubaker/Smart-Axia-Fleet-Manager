@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { CircleMarker, MapContainer, TileLayer, useMapEvents } from 'react-leaflet';
 import type { LeafletMouseEvent } from 'leaflet';
 import 'leaflet/dist/leaflet.css';
@@ -12,6 +12,7 @@ type TripFormValues = {
   endLocation: string;
   startTime: string;
   distance: string;
+  revenue: string;
   notes: string;
 };
 
@@ -28,6 +29,7 @@ interface TripFormProps {
     startTime: string;
     distance: number;
     fuel?: number;
+    revenue?: number;
     notes?: string;
     stops?: Array<{
       locationName: string;
@@ -177,6 +179,7 @@ const TripForm = ({ vehicles, drivers, dark = false, isSubmitting = false, onSub
     endLocation: '',
     startTime: '',
     distance: '',
+    revenue: '',
     notes: '',
   });
 
@@ -190,6 +193,7 @@ const TripForm = ({ vehicles, drivers, dark = false, isSubmitting = false, onSub
   const [isOptimizingRoute, setIsOptimizingRoute] = useState(false);
   const [mapError, setMapError] = useState<string | null>(null);
   const [routePlan, setRoutePlan] = useState<RoutePlan | null>(null);
+  const endpointLookupTimeoutsRef = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
 
   const sortedVehicles = useMemo(
     () => [...vehicles].sort((a, b) => (a.name || '').localeCompare(b.name || '')),
@@ -352,6 +356,88 @@ const TripForm = ({ vehicles, drivers, dark = false, isSubmitting = false, onSub
     }
 
     return toCompactLocation(data.display_name, data.address);
+  };
+
+  const resolvePointFromAddress = async (addressQuery: string): Promise<MapPoint | null> => {
+    const query = addressQuery.trim();
+    if (query.length < 2) return null;
+
+    const params = new URLSearchParams({
+      format: 'jsonv2',
+      q: query,
+      limit: '1',
+      'accept-language': 'en',
+    });
+
+    const response = await fetch(`https://nominatim.openstreetmap.org/search?${params.toString()}`);
+    if (!response.ok) {
+      throw new Error('Failed to find this stop on map.');
+    }
+
+    const data = (await response.json()) as Array<{ lat?: string; lon?: string }>;
+    if (!Array.isArray(data) || data.length === 0) {
+      return null;
+    }
+
+    const lat = Number(data[0].lat);
+    const lng = Number(data[0].lon);
+    if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
+      return null;
+    }
+
+    return { lat, lng };
+  };
+
+  const handleEndpointLabelChange = (endpointId: string, label: string) => {
+    setMapError(null);
+    setEndpoints((prev) =>
+      prev.map((endpoint) =>
+        endpoint.id === endpointId
+          ? {
+              ...endpoint,
+              label,
+              point: label.trim().length >= 2 ? endpoint.point : null,
+            }
+          : endpoint
+      )
+    );
+
+    const existingTimeout = endpointLookupTimeoutsRef.current[endpointId];
+    if (existingTimeout) {
+      clearTimeout(existingTimeout);
+    }
+
+    if (label.trim().length < 2) {
+      return;
+    }
+
+    endpointLookupTimeoutsRef.current[endpointId] = setTimeout(async () => {
+      try {
+        setIsResolvingLocation(true);
+        const point = await resolvePointFromAddress(label);
+        if (!point) {
+          setMapError(`Could not locate "${label}" on map.`);
+          setEndpoints((prev) =>
+            prev.map((endpoint) => (endpoint.id === endpointId ? { ...endpoint, point: null } : endpoint))
+          );
+          return;
+        }
+
+        setMapCenter(point);
+        setEndpoints((prev) =>
+          prev.map((endpoint) => (endpoint.id === endpointId ? { ...endpoint, point } : endpoint))
+        );
+        setErrors((prev) => ({ ...prev, endLocation: undefined }));
+      } catch (error) {
+        const message = error instanceof Error ? error.message : 'Could not locate this stop on map.';
+        setMapError(message);
+        setEndpoints((prev) =>
+          prev.map((endpoint) => (endpoint.id === endpointId ? { ...endpoint, point: null } : endpoint))
+        );
+      } finally {
+        setIsResolvingLocation(false);
+      }
+    }, 550);
   };
 
   const handleMapClick = async (event: LeafletMouseEvent) => {
@@ -567,6 +653,12 @@ const TripForm = ({ vehicles, drivers, dark = false, isSubmitting = false, onSub
     };
   }, [startPoint, endpoints]);
 
+  useEffect(() => {
+    return () => {
+      Object.values(endpointLookupTimeoutsRef.current).forEach((timeoutId) => clearTimeout(timeoutId));
+    };
+  }, []);
+
   const validate = () => {
     const nextErrors: Partial<Record<keyof TripFormValues, string>> = {};
 
@@ -579,6 +671,13 @@ const TripForm = ({ vehicles, drivers, dark = false, isSubmitting = false, onSub
     const distanceValue = Number(values.distance);
     if (!values.distance || Number.isNaN(distanceValue) || distanceValue <= 0) {
       nextErrors.distance = 'Distance must be a positive number.';
+    }
+
+    if (values.revenue.trim().length > 0) {
+      const revenueValue = Number(values.revenue);
+      if (Number.isNaN(revenueValue) || revenueValue < 0) {
+        nextErrors.revenue = 'Revenue must be a valid non-negative number.';
+      }
     }
 
     if (values.notes.trim().length === 1) {
@@ -601,6 +700,7 @@ const TripForm = ({ vehicles, drivers, dark = false, isSubmitting = false, onSub
       startTime: new Date(values.startTime).toISOString(),
       distance: Number(values.distance),
       fuel: estimatedFuelLiters !== null ? Number(estimatedFuelLiters.toFixed(2)) : undefined,
+      revenue: values.revenue.trim().length > 0 ? Number(values.revenue) : undefined,
       notes: values.notes.trim() || undefined,
       stops:
         routePlan?.orderedStops.map((stop, index) => ({
@@ -672,7 +772,7 @@ const TripForm = ({ vehicles, drivers, dark = false, isSubmitting = false, onSub
             onClick={addEndpoint}
             disabled={isResolvingLocation || isOptimizingRoute}
           >
-            Add endpoint
+            Add stop
           </Button>
         </div>
 
@@ -684,8 +784,8 @@ const TripForm = ({ vehicles, drivers, dark = false, isSubmitting = false, onSub
               </div>
               <Input
                 value={endpoint.label}
-                placeholder="Pick this endpoint from map"
-                readOnly
+                onChange={(e) => handleEndpointLabelChange(endpoint.id, e.target.value)}
+                placeholder="Type stop name/address or set from map"
                 className="flex-1"
               />
               <Button
@@ -695,7 +795,7 @@ const TripForm = ({ vehicles, drivers, dark = false, isSubmitting = false, onSub
                 onClick={() => beginEndpointPick(endpoint.id)}
                 disabled={isResolvingLocation || isOptimizingRoute}
               >
-                Pick on map
+                Set
               </Button>
               <Button
                 type="button"
@@ -729,7 +829,7 @@ const TripForm = ({ vehicles, drivers, dark = false, isSubmitting = false, onSub
               }}
               disabled={isResolvingLocation}
             >
-              Pick Start
+              Set start
             </Button>
           </div>
         </div>
@@ -790,7 +890,7 @@ const TripForm = ({ vehicles, drivers, dark = false, isSubmitting = false, onSub
         )}
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <Input
           label="Start date/time"
           type="datetime-local"
@@ -807,6 +907,16 @@ const TripForm = ({ vehicles, drivers, dark = false, isSubmitting = false, onSub
           error={errors.distance}
           placeholder="Calculated automatically"
           readOnly
+        />
+        <Input
+          label="Revenue (TND)"
+          type="number"
+          min="0"
+          step="0.1"
+          value={values.revenue}
+          onChange={(e) => onFieldChange('revenue', e.target.value)}
+          error={errors.revenue}
+          placeholder="Optional"
         />
       </div>
 

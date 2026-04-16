@@ -9,6 +9,7 @@ interface TripCardProps {
   index?: number;
   isBusy?: boolean;
   onViewDetails?: (trip: Trip) => void;
+  onEdit?: (trip: Trip) => void;
   onStart?: (tripId: string) => void;
   onReachStop?: (tripId: string, stopId: string) => void;
   onComplete?: (tripId: string) => void;
@@ -60,7 +61,7 @@ const compactLocation = (locationName: string) => {
   return `${state}, ${postcode}`;
 };
 
-const TripCard = memo(({ trip, dark = false, index = 0, isBusy = false, onViewDetails, onStart, onReachStop, onComplete, onCancel }: TripCardProps) => {
+const TripCard = memo(({ trip, dark = false, index = 0, isBusy = false, onViewDetails, onEdit, onStart, onReachStop, onComplete, onCancel }: TripCardProps) => {
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'completed':
@@ -291,7 +292,7 @@ const TripCard = memo(({ trip, dark = false, index = 0, isBusy = false, onViewDe
                 event.stopPropagation();
                 onStart?.(trip.id);
               }}
-              className={`px-3 py-2 text-xs font-semibold rounded-lg ${dark ? 'bg-emerald-500/20 text-emerald-200' : 'bg-emerald-50 text-emerald-700'} ${isBusy ? 'opacity-50 cursor-not-allowed' : ''}`}
+              className={`px-3 py-2 text-xs font-semibold whitespace-nowrap rounded-lg ${dark ? 'bg-emerald-500/20 text-emerald-200' : 'bg-emerald-50 text-emerald-700'} ${isBusy ? 'opacity-50 cursor-not-allowed' : ''}`}
             >
               Start Trip
             </button>
@@ -304,7 +305,7 @@ const TripCard = memo(({ trip, dark = false, index = 0, isBusy = false, onViewDe
                 event.stopPropagation();
                 onReachStop?.(trip.id, nextPendingStop.id);
               }}
-              className={`px-3 py-2 text-xs font-semibold rounded-lg ${dark ? 'bg-sky-500/20 text-sky-200' : 'bg-sky-50 text-sky-700'} ${isBusy ? 'opacity-50 cursor-not-allowed' : ''}`}
+              className={`px-3 py-2 text-xs font-semibold whitespace-nowrap rounded-lg ${dark ? 'bg-sky-500/20 text-sky-200' : 'bg-sky-50 text-sky-700'} ${isBusy ? 'opacity-50 cursor-not-allowed' : ''}`}
             >
               Stop Reached
             </button>
@@ -317,7 +318,7 @@ const TripCard = memo(({ trip, dark = false, index = 0, isBusy = false, onViewDe
                 event.stopPropagation();
                 onComplete?.(trip.id);
               }}
-              className={`px-3 py-2 text-xs font-semibold rounded-lg ${dark ? 'bg-sky-500/20 text-sky-200' : 'bg-sky-50 text-sky-700'} ${isBusy ? 'opacity-50 cursor-not-allowed' : ''}`}
+              className={`px-3 py-2 text-xs font-semibold whitespace-nowrap rounded-lg ${dark ? 'bg-sky-500/20 text-sky-200' : 'bg-sky-50 text-sky-700'} ${isBusy ? 'opacity-50 cursor-not-allowed' : ''}`}
             >
               Stop Reached
             </button>
@@ -330,7 +331,7 @@ const TripCard = memo(({ trip, dark = false, index = 0, isBusy = false, onViewDe
                 event.stopPropagation();
                 onComplete?.(trip.id);
               }}
-              className={`px-3 py-2 text-xs font-semibold rounded-lg ${dark ? 'bg-brand/20 text-brand' : 'bg-brand-light text-brand-deep'} ${isBusy ? 'opacity-50 cursor-not-allowed' : ''}`}
+              className={`px-3 py-2 text-xs font-semibold whitespace-nowrap rounded-lg ${dark ? 'bg-brand/20 text-brand' : 'bg-brand-light text-brand-deep'} ${isBusy ? 'opacity-50 cursor-not-allowed' : ''}`}
             >
               Complete Trip
             </button>
@@ -341,9 +342,22 @@ const TripCard = memo(({ trip, dark = false, index = 0, isBusy = false, onViewDe
               disabled={isBusy}
               onClick={(event) => {
                 event.stopPropagation();
+                onEdit?.(trip);
+              }}
+              className={`px-3 py-2 text-xs font-semibold whitespace-nowrap rounded-lg ${dark ? 'bg-amber-500/20 text-amber-200' : 'bg-amber-50 text-amber-700'} ${isBusy ? 'opacity-50 cursor-not-allowed' : ''}`}
+            >
+              Edit
+            </button>
+          )}
+          {(trip.status === 'scheduled' || trip.status === 'ongoing') && (
+            <button
+              type="button"
+              disabled={isBusy}
+              onClick={(event) => {
+                event.stopPropagation();
                 onCancel?.(trip.id);
               }}
-              className={`px-3 py-2 text-xs font-semibold rounded-lg ${dark ? 'bg-red-500/20 text-red-200' : 'bg-red-50 text-red-700'} ${isBusy ? 'opacity-50 cursor-not-allowed' : ''}`}
+              className={`px-3 py-2 text-xs font-semibold whitespace-nowrap rounded-lg ${dark ? 'bg-red-500/20 text-red-200' : 'bg-red-50 text-red-700'} ${isBusy ? 'opacity-50 cursor-not-allowed' : ''}`}
             >
               Cancel Trip
             </button>
