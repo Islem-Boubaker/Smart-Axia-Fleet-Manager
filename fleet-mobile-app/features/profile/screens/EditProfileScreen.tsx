@@ -20,7 +20,7 @@ import { useProfile } from "../hooks/useProfile";
 
 export default function EditProfileScreen() {
   const user = useSelector((state: any) => state.auth.user);
-  const { updateProfile } = useProfile();
+  const { updateProfile, updateAvatar } = useProfile();
 
   const isSubmitting = useRef(false);
   const isMounted = useRef(true);
@@ -30,12 +30,30 @@ export default function EditProfileScreen() {
   const [phone, setPhone] = useState(user?.phone || "");
   const [email, setEmail] = useState(user?.email || "");
   const [avatar, setAvatar] = useState<string | null>(user?.avatar || null);
+  const [selectedAvatarUri, setSelectedAvatarUri] = useState<string | null>(null);
+
+  const isLocalAvatarUri = (value: string) =>
+    value.startsWith("file://") || value.startsWith("content://");
+
+  const getFileNameFromUri = (uri: string) => {
+    const parts = uri.split("/");
+    const lastPart = parts[parts.length - 1];
+    return lastPart && lastPart.trim() ? lastPart : `avatar-${Date.now()}.jpg`;
+  };
+
+  const getMimeTypeFromFileName = (fileName: string) => {
+    const extension = fileName.split(".").pop()?.toLowerCase();
+    if (extension === "png") return "image/png";
+    if (extension === "webp") return "image/webp";
+    return "image/jpeg";
+  };
 
   useEffect(() => {
     setName(user?.name || "");
     setPhone(user?.phone || "");
     setEmail(user?.email || "");
     setAvatar(user?.avatar || null);
+    setSelectedAvatarUri(null);
   }, [user]);
 
   useEffect(() => {
@@ -62,7 +80,9 @@ export default function EditProfileScreen() {
 
     // 3. User picked an image (not cancelled)
     if (!result.canceled && result.assets.length > 0) {
-      setAvatar(result.assets[0].uri); // preview it locally immediately
+      const pickedUri = result.assets[0].uri;
+      setAvatar(pickedUri);
+      setSelectedAvatarUri(pickedUri);
     }
   }, []);
   // ────────────────────────────────────────────────────────────────
@@ -77,8 +97,22 @@ export default function EditProfileScreen() {
         name: name.trim(),
         phone: phone.trim(),
         email: email.trim(),
-        avatar, // pass the new local URI — your hook/API handles upload
       });
+
+      if (selectedAvatarUri && isLocalAvatarUri(selectedAvatarUri)) {
+        const fileName = getFileNameFromUri(selectedAvatarUri);
+        const mimeType = getMimeTypeFromFileName(fileName);
+        const formData = new FormData();
+
+        formData.append("avatar", {
+          uri: selectedAvatarUri,
+          name: fileName,
+          type: mimeType,
+        } as any);
+
+        await updateAvatar(formData);
+      }
+
       if (isMounted.current) {
         Alert.alert("Success", "Profile updated successfully.");
       }
@@ -93,7 +127,7 @@ export default function EditProfileScreen() {
       isSubmitting.current = false;
       if (isMounted.current) setIsLoading(false);
     }
-  }, [email, name, phone, avatar, updateProfile]);
+  }, [email, name, phone, selectedAvatarUri, updateAvatar, updateProfile]);
 
   // ─── Avatar block (shared between both branches) ────────────────
   const AvatarSection = (

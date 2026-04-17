@@ -24,7 +24,11 @@
         "backgroundColor": "#ffffff"
       },
       "googleServicesFile": "./google-services.json",
-      "package": "com.islemboubaker.SmartAxiaFleetManager"
+      "package": "com.islemboubaker.SmartAxiaFleetManager",
+       "permissions": [
+        "ACCESS_FINE_LOCATION",
+        "ACCESS_COARSE_LOCATION"
+      ]
     },
 
     "web": {
@@ -58,7 +62,13 @@
       "expo-web-browser",
       "@react-native-firebase/app",
       "@react-native-firebase/auth",
-      "expo-apple-authentication"
+      "expo-apple-authentication",
+      [
+        "expo-location",
+        {
+          "locationAlwaysAndWhenInUsePermission": "Allow $(PRODUCT_NAME) to use your location."
+        }
+      ]
     ],
 
     "experiments": {

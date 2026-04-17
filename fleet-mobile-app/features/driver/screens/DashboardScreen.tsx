@@ -1,7 +1,8 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { View, Text, ScrollView, StatusBar, TouchableOpacity } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { MaterialIcons } from "@expo/vector-icons";
+import * as Location from "expo-location";
 import UserAvatar from "@/shared/components/ui/userAvatar";
 import TaskCard from "../components/TaskCard";
 import TripCard from "../components/TripCard";
@@ -30,13 +31,47 @@ function DashboardScreen() {
     refetch,
   } = useDashboard();
 
+  const [currentLocation, setCurrentLocation] = useState<string>("Getting location...");
+
+  useEffect(() => {
+    getCurrentLocation();
+  }, []);
+
+  const getCurrentLocation = async () => {
+    try {
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== "granted") {
+        setCurrentLocation("Location permission denied");
+        return;
+      }
+
+      const location = await Location.getCurrentPositionAsync({
+        accuracy: Location.Accuracy.Balanced,
+      });
+
+      const address = await Location.reverseGeocodeAsync({
+        latitude: location.coords.latitude,
+        longitude: location.coords.longitude,
+      });
+
+      if (address[0]) {
+        const locationText = address[0].city || address[0].region || address[0].country || "Unknown location";
+        setCurrentLocation(locationText);
+      } else {
+        setCurrentLocation("Unable to get address");
+      }
+    } catch (error) {
+      console.error("Error getting location:", error);
+      setCurrentLocation("Location unavailable");
+    }
+  };
+
   if (isLoading) {
     return <LoadingSpinner fullScreen />;
   }
 
   const currentTask = activeTrip ?? upcomingTrip;
   const secondaryUpcoming = activeTrip ? upcomingTrip : null;
-  const region = activeTrip?.region ?? upcomingTrip?.region ?? "No active region";
 
   if (error) {
     return (
@@ -63,7 +98,7 @@ function DashboardScreen() {
           <MaterialIcons name="menu" size={22} />
           <View>
             <Text className="text-xs text-gray-400">Current Location</Text>
-            <Text className="font-bold">{region}</Text>
+            <Text className="font-bold">{currentLocation}</Text>
           </View>
         </View>
 
@@ -83,7 +118,7 @@ function DashboardScreen() {
       {/* GREETING */}
       <View className="px-5 mb-2">
         <Text className="text-lg font-bold">
-          {`${getGreeting()}, ${user?.name ?? "Driver"}`}
+          {`${getGreeting()}, ${user?.name?.split(' ')[0] ?? "Driver"}`}
         </Text>
         <Text className="text-xs text-gray-400">
           {`Pending ${pendingCount} - Completed ${completedCount}`}

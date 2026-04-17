@@ -34,6 +34,7 @@ interface Reclamation {
   status: ReclamationStatus;
   type: ReclamationType;
   date: string;
+  images: string[];
 }
 
 const toScreenReclamation = (item: any): Reclamation => ({
@@ -54,6 +55,9 @@ const toScreenReclamation = (item: any): Reclamation => ({
       ? item.type
       : "other",
   date: item.createdAt ?? new Date().toISOString(),
+  images: Array.isArray(item.images)
+    ? item.images.filter((img: unknown): img is string => typeof img === "string" && img.trim().length > 0)
+    : [],
 });
 
 // ─── Config ───────────────────────────────────────────────────────
@@ -104,7 +108,7 @@ export default function ReclamationsScreen() {
   const [error, setError] = useState<string | null>(null);
 
   // ── Fetch ──────────────────────────────────────────────────────
-  const fetchReclamations = async () => {
+  const fetchReclamations = useCallback(async () => {
     try {
       setError(null);
       const data = await getAllReclamations();
@@ -116,21 +120,21 @@ export default function ReclamationsScreen() {
       setIsLoading(false);
       setIsRefreshing(false);
     }
-  };
+  }, [getAllReclamations]);
 
   // Re-fetch every time this tab is focused
   useFocusEffect(
     useCallback(() => {
       setIsLoading(true);
       fetchReclamations();
-    }, []),
+    }, [fetchReclamations]),
   );
 
   // Pull-to-refresh — does NOT show full-screen spinner
-  const handleRefresh = () => {
+  const handleRefresh = useCallback(() => {
     setIsRefreshing(true);
     fetchReclamations();
-  };
+  }, [fetchReclamations]);
 
   // ── Derived ────────────────────────────────────────────────────
   const filtered =
@@ -148,7 +152,7 @@ export default function ReclamationsScreen() {
     <SafeAreaView className="flex-1 bg-gray-100">
       <StatusBar barStyle="dark-content" backgroundColor="#F3F4F6" />
 
-      {/* ── Header ── */}
+      {/* ── Header ── */} 
       <View className="px-5  pb-3" style={{ paddingTop: Platform.OS === "ios" ? 8 : 0 }}>
         <View className="flex-row items-center justify-between">
           {/* Left: Back */}
@@ -221,7 +225,22 @@ export default function ReclamationsScreen() {
               item={item}
               config={STATUS_CONFIG}
               typeConfig={TYPE_CONFIG}
-              onPress={() => router.push(`/reclamations/${item.id}`)}
+              onPress={() =>
+                router.push({
+                  pathname: "/reclamations/[id]",
+                  params: {
+                    id: item.id,
+                    reclamation: JSON.stringify({
+                      id: item.id,
+                      subject: item.title,
+                      message: item.description,
+                      status: item.status,
+                      images: item.images,
+                      createdAt: item.date,
+                    }),
+                  },
+                })
+              }
             />
           ))
         )}

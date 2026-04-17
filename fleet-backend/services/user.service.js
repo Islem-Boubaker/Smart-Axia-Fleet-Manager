@@ -41,6 +41,12 @@ const extractUploadedFileUrl = (file) => {
   );
 };
 
+const isLocalAvatarUri = (value) => {
+  if (typeof value !== 'string') return false;
+  const normalized = value.trim().toLowerCase();
+  return normalized.startsWith('file://') || normalized.startsWith('content://');
+};
+
 export const updateUserPhotoSvc = async (id, file) => {
   if (!file) throw Object.assign(new Error('No file uploaded'), { statusCode: 400 });
 
@@ -118,6 +124,10 @@ export const updateUserSvc = async (id, updateData) => {
 
   if (!sanitizedUpdate.password || sanitizedUpdate.password.trim() === '') {
     delete sanitizedUpdate.password;
+  }
+
+  if (isLocalAvatarUri(sanitizedUpdate.avatar)) {
+    delete sanitizedUpdate.avatar;
   }
 
   await user.update(sanitizedUpdate);
