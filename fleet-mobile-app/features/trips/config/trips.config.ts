@@ -1,8 +1,8 @@
-import type { TripStatus } from "../types/trip.types";
+import type { UiTripStatus } from "../types/trip.types";
 
 // ─── Status visual config ─────────────────────────────────────────
 export const STATUS_CONFIG: Record<
-  TripStatus,
+  UiTripStatus,
   {
     label: string;
     accentColor: string;
@@ -39,7 +39,7 @@ export const STATUS_CONFIG: Record<
 };
 
 // ─── Filter chips ─────────────────────────────────────────────────
-export type FilterOption = "all" | TripStatus;
+export type FilterOption = "all" | UiTripStatus;
 
 export const FILTER_BUTTONS: {
   id: FilterOption;
@@ -51,3 +51,9 @@ export const FILTER_BUTTONS: {
   { id: "active",    label: "Active",    dotColor: "#3B82F6" },
   { id: "completed", label: "Completed", dotColor: "#10B981" },
 ];
+
+
+export const TRIPS_CONFIG = {
+  // OSRM (Open Source Routing Machine) - no API key required for public instance
+  OSRM_BASE_URL: "https://router.project-osrm.org",
+};

@@ -129,6 +129,9 @@ export const tripsApi = {
   getTripDetail: async (tripId: string): Promise<Trip> => {
     const response = await api.get<ApiResponse<BackendTrip>>(
       `/trips/${tripId}`,
+      {
+        params: { includeStops: true },
+      },
     );
     return toTrip(response.data.data);
   },

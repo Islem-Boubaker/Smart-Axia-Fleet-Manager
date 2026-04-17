@@ -19,7 +19,7 @@ import { TripEmptyState } from "../components/TripEmptyState";
 import { TripFilterChips } from "../components/TripFilterChips";
 import { TripStatsRow } from "../components/TripStatsRow";
 import type { FilterOption } from "../config/trips.config";
-import { data } from "../data/data";
+
 import { tripsApi } from "../services/trips.api";
 import type { Trip } from "../types/trip.types";
 import BackButton from "@/shared/components/ui/BackButton";
@@ -60,13 +60,13 @@ const normalizeTrips = (items: unknown): Trip[] => {
   return items.map((item, i) => normalizeTrip(item as TripLike, i));
 };
 
-const fallbackTrips: Trip[] = normalizeTrips(data);
+// const fallbackTrips: Trip[] = normalizeTrips(data);
 
 // ─── TripsScreen ──────────────────────────────────────────────────
 export function TripsScreen() {
   const router = useRouter();
-
-  const [trips, setTrips] = useState<Trip[]>(fallbackTrips);
+ 
+  const [trips, setTrips] = useState<Trip[]>([]);
   const [filter, setFilter] = useState<FilterOption>("all");
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -78,10 +78,10 @@ export function TripsScreen() {
       setError(null);
       const apiData = await tripsApi.getAllTrips();
       const normalized = normalizeTrips(apiData);
-      setTrips(normalized.length > 0 ? normalized : fallbackTrips);
+      setTrips(normalized.length > 0 ? normalized : []);
     } catch (err: any) {
       setError(err?.message ?? "Failed to load trips");
-      setTrips(fallbackTrips);
+      setTrips([]);
     } finally {
       setIsLoading(false);
       setIsRefreshing(false);

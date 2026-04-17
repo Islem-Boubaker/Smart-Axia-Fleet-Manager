@@ -1,14 +1,13 @@
-import { View, Text } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { View,Text } from "lucide-react-native";
+import React from "react";
 
-export default function LiveTripsRoute() {
+export default function live() {
   return (
-    <SafeAreaView className="flex-1 bg-white">
-      <View className="flex-1 items-center justify-center">
-        <Text className="text-lg font-bold">Live Trips</Text>
-      </View>
-    </SafeAreaView>
+    <View className="flex-1 items-center justify-center">
+      <Text className="text-lg font-bold">Live Trip Tracking Coming Soon!</Text>
+      <Text className="text-sm text-gray-500 mt-2">
+        We are working hard to bring you real-time trip tracking. Stay tuned!
+      </Text>
+    </View>
   );
 }
-
-LiveTripsRoute.displayName = 'LiveTripsRoute';

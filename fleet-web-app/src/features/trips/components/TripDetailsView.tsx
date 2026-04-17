@@ -210,8 +210,8 @@ const TripDetailsView = ({ trip, dark = false }: TripDetailsViewProps) => {
           geometries: 'geojson',
         });
 
-        const response = await fetch(`https://router.project-osrm.org/route/v1/driving/${coordinates}?${params.toString()}`, {
-          signal: controller.signal,
+        const response = await fetch(`${coordinates}?${params.toString()}`, {
+          signal: controller.signal,https://router.project-osrm.org/route/v1/driving/
         });
 
         if (!response.ok) {
