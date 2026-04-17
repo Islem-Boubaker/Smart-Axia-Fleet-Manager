@@ -1,55 +1,62 @@
 import { View, Text } from "react-native";
 import { MaterialIcons } from "@expo/vector-icons";
-import ScoreBar from "./ScoreBar";
+import type { Trip } from "../types/driver.types";
 
-const STATUS_CONFIG = {
+const STATUS_CONFIG: Record<Trip["status"], { label: string; badge: string; text: string }> = {
   completed: {
-    label: "Completed",
+    label: "COMPLETED",
     badge: "bg-emerald-50",
     text: "text-emerald-700",
   },
-  pending: {
-    label: "Pending",
+  scheduled: {
+    label: "SCHEDULED",
     badge: "bg-orange-50",
     text: "text-orange-600",
   },
-  active: {
-    label: "Active",
+  ongoing: {
+    label: "ONGOING",
     badge: "bg-blue-50",
     text: "text-blue-700",
   },
+  cancelled: {
+    label: "CANCELLED",
+    badge: "bg-gray-100",
+    text: "text-gray-600",
+  },
 };
 
-export default function TripCard({ trip }: any) {
+interface TripCardProps {
+  trip: Trip;
+}
+
+const formatStartTime = (value?: string): string => {
+  if (!value) return "No start time";
+  return new Date(value).toLocaleString();
+};
+
+export default function TripCard({ trip }: TripCardProps) {
   const st = STATUS_CONFIG[trip.status];
 
   const meta = [
-    { icon: "confirmation-number", value: trip.tripNumber },
-    { icon: "route", value: trip.routeCode },
-    { icon: "place", value: trip.distance },
-    { icon: "schedule", value: trip.duration },
+    { icon: "place", value: `${trip.distance ?? 0} km` },
+    { icon: "alt-route", value: `${trip.stops?.length ?? 0} stops` },
+    { icon: "schedule", value: formatStartTime(trip.startTime) },
   ];
 
   return (
-    <View className="bg-white rounded-2xl p-4 flex-row mb-3 shadow-sm">
+    <View className="bg-white rounded-2xl p-4 mb-3 shadow-sm">
       <View className="flex-1">
-        <Text className="font-bold text-gray-900">{trip.vehicle}</Text>
+        <Text className="font-bold text-gray-900">{trip.startLocation} {"->"} {trip.endLocation}</Text>
 
         <View className="flex-row items-center gap-1 mb-2">
-          <MaterialIcons
-            name={trip.timeUrgent ? "access-time" : "schedule"}
-            size={14}
-            color={trip.timeUrgent ? "red" : "#9CA3AF"}
-          />
-          <Text className="text-xs text-gray-400">
-            {trip.timeUrgent || trip.date}
-          </Text>
+          <MaterialIcons name="schedule" size={14} color="#9CA3AF" />
+          <Text className="text-xs text-gray-400">{formatStartTime(trip.startTime)}</Text>
         </View>
 
         <View className="flex-row flex-wrap gap-2">
           {meta.map((m, i) => (
-            <View key={i} className="flex-row items-center gap-1 w-[45%]">
-              <MaterialIcons name={m.icon} size={14} color="#9CA3AF" />
+            <View key={i} className="flex-row items-center gap-1 w-[48%]">
+              <MaterialIcons name={m.icon as never} size={14} color="#9CA3AF" />
               <Text className="text-xs text-gray-600">{m.value}</Text>
             </View>
           ))}
@@ -63,8 +70,6 @@ export default function TripCard({ trip }: any) {
           </View>
         </View>
       </View>
-
-      <ScoreBar score={trip.score} status={trip.status} />
     </View>
   );
 }

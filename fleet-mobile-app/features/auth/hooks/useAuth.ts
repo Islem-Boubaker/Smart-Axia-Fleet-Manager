@@ -51,6 +51,13 @@ const persistAuthSession = async (
   payload: AuthResponse,
 ): Promise<void> => {
   setCsrfToken(payload.csrfToken);
+  
+  // ✅ Save tokens to secure storage (new!)
+  if (payload.accessToken && payload.refreshToken) {
+    await tokenStorage.saveTokens(payload.accessToken, payload.refreshToken);
+    console.log("✅ Tokens saved to secure storage");
+  }
+  
   await saveUserToStorage(payload.user);
   dispatch(setUser(payload.user));
 };

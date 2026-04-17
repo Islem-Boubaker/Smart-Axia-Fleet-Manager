@@ -491,7 +491,7 @@ import {
   ActivityIndicator,
 } from "react-native";
 import MapView, { Marker, Polyline } from "react-native-maps";
-import { useNavigation, useLocalSearchParams, useRouter } from "expo-router";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import { BlurView } from "expo-blur";
 import { Accordion } from "../components/ui/Accordion"; 
 import {
@@ -583,9 +583,16 @@ function getRegion(stops: TripStop[]) {
 // ─── Screen ───────────────────────────────────────────────────────────────────
 
 export default function TripDetailScreen() {
-  const navigation = useNavigation();
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
+
+  const handleGoBack = () => {
+    if (router.canGoBack()) {
+      router.back();
+      return;
+    }
+    router.replace("/(tabs)/trips");
+  };
 
   // ← Single source of truth: the hook owns all data/loading/error state
   const { trip, isLoading, error, reload } = useTripDetail(id);
@@ -664,7 +671,7 @@ export default function TripDetailScreen() {
             <Text style={{ color: "#7c3aed", fontWeight: "500" }}>Retry</Text>
           </TouchableOpacity>
           <TouchableOpacity
-            onPress={() => navigation.goBack()}
+            onPress={handleGoBack}
             style={{ backgroundColor: "#6B21F5", paddingHorizontal: 20, paddingVertical: 12, borderRadius: 12 }}
           >
             <Text style={{ color: "white", fontWeight: "500" }}>Go Back</Text>
@@ -726,7 +733,7 @@ export default function TripDetailScreen() {
         }}
       >
         <BlurView intensity={80} tint="light" style={{ borderRadius: 12, overflow: "hidden" }}>
-          <TouchableOpacity onPress={() => router.goBack()} style={{ padding: 10 }}>
+          <TouchableOpacity onPress={handleGoBack} style={{ padding: 10 }}>
             <ArrowLeft size={22} color="#1F2937" />
           </TouchableOpacity>
         </BlurView>

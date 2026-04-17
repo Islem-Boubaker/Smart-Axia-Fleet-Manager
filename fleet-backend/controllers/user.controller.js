@@ -122,9 +122,15 @@ export const login = async (req, res, next) => {
     const csrfToken = generateCsrfToken();
     res.cookie('csrf-token', csrfToken, COOKIE_OPTIONS.csrfToken);
 
+    // ✅ Return tokens in response body for mobile clients (in addition to cookies)
     res.status(StatusCodes.OK).json({
       success: true,
-      data: { user, csrfToken },
+      data: { 
+        user, 
+        csrfToken,
+        accessToken,    // ← Mobile app needs this!
+        refreshToken,   // ← Useful for mobile refresh flow
+      },
     });
   } catch (error) {
     next(error);

@@ -68,6 +68,11 @@ const applyRequestAuth = async (
   if (cookie) headers.set("Cookie", cookie);
 
   const bearerToken = await tokenStorage.getAccessToken();
+  console.log("🔑 Token retrieval:", { 
+    token: bearerToken ? "✅ Found" : "❌ NULL", 
+    tokenLength: bearerToken?.length || 0 
+  });
+  
   if (bearerToken) {
     headers.set("Authorization", `Bearer ${bearerToken}`);
   }
@@ -78,6 +83,15 @@ const applyRequestAuth = async (
   }
 
   config.headers = headers;
+  const isFormData = config.data instanceof FormData;
+  console.log("🔐 Request headers:", {
+    method: config.method?.toUpperCase(),
+    url: config.url,
+    hasAuth: Boolean(bearerToken),
+    hasCsrf: Boolean(getCsrfToken()),
+    hasCookie: Boolean(cookie),
+    isFormData,
+  });
   return config;
 };
 

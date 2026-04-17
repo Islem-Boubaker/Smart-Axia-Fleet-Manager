@@ -36,3 +36,54 @@ export interface DriverProfile {
   joinDate: string;
   status: 'active' | 'inactive' | 'suspended';
 }
+
+export type DashboardTripStatus =
+  | "scheduled"
+  | "ongoing"
+  | "completed"
+  | "cancelled";
+
+export interface TripStop {
+  id: string;
+  tripId?: string;
+  locationName?: string;
+  latitude?: number | null;
+  longitude?: number | null;
+  status?: "pending" | "reached" | "skipped";
+  stopOrder?: number;
+}
+
+export interface Trip {
+  id: string;
+  userId?: string;
+  vehicleId?: string;
+  region?: string;
+  startLocation: string;
+  endLocation: string;
+  startTime?: string;
+  endTime?: string;
+  distance?: number;
+  fuel?: string;
+  cost?: number;
+  status: DashboardTripStatus;
+  stops: TripStop[];
+}
+
+export interface DashboardData {
+  user: {
+    id: string;
+    name: string;
+    email: string;
+    role: "ADMIN" | "MANAGER" | "DRIVER";
+    avatar?: string | null;
+  } | null;
+  activeTrip: Trip | null;
+  upcomingTrip: Trip | null;
+  recentTrips: Trip[];
+  completedCount: number;
+  pendingCount: number;
+  unreadCount: number;
+  isLoading: boolean;
+  error: string | null;
+  refetch: () => Promise<void>;
+}

@@ -75,7 +75,7 @@ router.get(
 router.put(
   '/user/updateuser/:id',
   authMiddleware.authenticate,
-  authMiddleware.authorizeRoles('ADMIN'),
+  authMiddleware.authorizeRoles('ADMIN', 'MANAGER',"Driver"),
   csrfMiddleware.verifyCsrf,
   userController.updateUser
 );

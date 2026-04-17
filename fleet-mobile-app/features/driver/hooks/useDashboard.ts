@@ -1,80 +1,144 @@
-import { tripsApi } from "@/features/trips/services/trips.api";
-import type { Trip } from "@/features/trips/types/trip.types";
-import { useCallback, useEffect, useState } from "react";
-import { driverApi } from "../services/Dashboard.api";
-import type { DashboardStats, Vehicle } from "../types/driver.types";
+import { useFocusEffect, useRouter } from "expo-router";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useDispatch, useSelector } from "react-redux";
 
-interface DashboardData {
-  activeTrip: Trip | null;
-  vehicle: Vehicle | null;
-  isLoading: boolean;
-  isRefreshing: boolean;
-  completedCount: number;
-  pendingCount: number;
-  handleRefresh: () => Promise<void>;
+import { tokenStorage } from "@/features/auth/services/tokenStorage";
+import { resolveApiBaseUrl } from "@/shared/utils/apiBase";
+import type { RootState } from "@/store";
+import { clearUser } from "@/store/slices/authSlice";
+
+import type { DashboardData, Trip } from "../types/driver.types";
+
+type TripsApiPayload = {
+  data?: Trip[];
+  meta?: {
+    totalItems?: number;
+  };
+};
+
+type ApiEnvelope<T> = {
+  success: boolean;
+  data: T;
+};
+
+type UnreadCountPayload = {
+  count?: number;
+};
+
+function readErrorMessage(error: unknown): string {
+  if (error instanceof Error) return error.message;
+  return "Failed to load dashboard data";
 }
 
-/**
- * Hook for managing driver dashboard data
- * Fetches active trips, vehicle info, and statistics
- */
 export function useDashboard(): DashboardData {
+  const router = useRouter();
+  const dispatch = useDispatch();
+  const user = useSelector((state: RootState) => state.auth.user);
+  const reduxToken = useSelector((state: RootState) => (state as RootState & { auth: { token?: string } }).auth.token);
+
   const [activeTrip, setActiveTrip] = useState<Trip | null>(null);
-  const [vehicle, setVehicle] = useState<Vehicle | null>(null);
+  const [upcomingTrip, setUpcomingTrip] = useState<Trip | null>(null);
+  const [recentTrips, setRecentTrips] = useState<Trip[]>([]);
+  const [completedCount, setCompletedCount] = useState(0);
+  const [pendingCount, setPendingCount] = useState(0);
+  const [unreadCount, setUnreadCount] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
-  const [isRefreshing, setIsRefreshing] = useState(false);
-  const [stats, setStats] = useState<DashboardStats | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
-  // Load dashboard data on mount
-  const loadDashboard = useCallback(async () => {
+  const isMountedRef = useRef(true);
+  const isFetchingRef = useRef(false);
+  const baseUrl = useMemo(() => resolveApiBaseUrl(process.env.EXPO_PUBLIC_API_URL), []);
+
+  const fetchJson = useCallback(
+    async <T,>(path: string): Promise<T> => {
+      const accessToken = reduxToken ?? (await tokenStorage.getAccessToken()) ?? "";
+      const response = await fetch(`${baseUrl}${path}`, {
+        method: "GET",
+        headers: {
+          Authorization: accessToken ? `Bearer ${accessToken}` : "",
+          "Content-Type": "application/json",
+        },
+      });
+
+      if (response.status === 401) {
+        dispatch(clearUser());
+        router.replace("/(auth)/login");
+        throw new Error("Session expired. Please login again.");
+      }
+
+      if (!response.ok) {
+        throw new Error(`Request failed (${response.status}) for ${path}`);
+      }
+
+      const payload = (await response.json()) as ApiEnvelope<T>;
+      return payload.data;
+    },
+    [baseUrl, dispatch, reduxToken, router],
+  );
+
+  const refetch = useCallback(async () => {
+    if (!isMountedRef.current || isFetchingRef.current) return;
+
+    isFetchingRef.current = true;
+    setIsLoading(true);
+    setError(null);
+
     try {
-      setIsLoading(true);
+      const [scheduledPayload, ongoingPayload, completedPayload, unreadPayload] =
+        await Promise.all([
+          fetchJson<TripsApiPayload>("/trips?page=1&limit=10&status=scheduled"),
+          fetchJson<TripsApiPayload>("/trips?page=1&limit=5&status=ongoing"),
+          fetchJson<TripsApiPayload>("/trips?page=1&limit=10&status=completed"),
+          fetchJson<UnreadCountPayload>("/notifications/unread-count"),
+        ]);
 
-      // Fetch in parallel for better performance
-      const [tripData, vehicleData, statsData] = await Promise.all([
-        tripsApi.getActiveTrip().catch(() => null),
-        driverApi.getAssignedVehicle().catch(() => null),
-        driverApi.getDashboardStats().catch(() => null),
-      ]);
+      if (!isMountedRef.current) return;
 
-      setActiveTrip(tripData);
-      setVehicle(vehicleData);
-      setStats(statsData);
-    } catch (error) {
-      console.error("Failed to load dashboard:", error);
-      // Silently fail - components will show default state
+      const scheduled = scheduledPayload?.data ?? [];
+      const ongoing = ongoingPayload?.data ?? [];
+      const completed = completedPayload?.data ?? [];
+
+      setActiveTrip(ongoing[0] ?? null);
+      setUpcomingTrip(scheduled[0] ?? null);
+      setRecentTrips(completed.slice(0, 5));
+      setCompletedCount(completedPayload?.meta?.totalItems ?? completed.length);
+      setPendingCount(scheduledPayload?.meta?.totalItems ?? scheduled.length);
+      setUnreadCount(unreadPayload?.count ?? 0);
+    } catch (err) {
+      if (!isMountedRef.current) return;
+      setError(readErrorMessage(err));
     } finally {
-      setIsLoading(false);
+      if (isMountedRef.current) {
+        setIsLoading(false);
+      }
+      isFetchingRef.current = false;
     }
-  }, []);
+  }, [fetchJson]);
 
-  // Initial load
   useEffect(() => {
-    loadDashboard();
+    isMountedRef.current = true;
+    void refetch();
+    return () => {
+      isMountedRef.current = false;
+    };
+  }, [refetch]);
 
-    // Optional: Set up polling for real-time updates
-    const interval = setInterval(loadDashboard, 30000); // Refresh every 30 seconds
-
-    return () => clearInterval(interval);
-  }, [loadDashboard]);
-
-  // Handle pull-to-refresh
-  const handleRefresh = useCallback(async () => {
-    try {
-      setIsRefreshing(true);
-      await loadDashboard();
-    } finally {
-      setIsRefreshing(false);
-    }
-  }, [loadDashboard]);
+  useFocusEffect(
+    useCallback(() => {
+      void refetch();
+    }, [refetch]),
+  );
 
   return {
+    user,
     activeTrip,
-    vehicle,
+    upcomingTrip,
+    recentTrips,
+    completedCount,
+    pendingCount,
+    unreadCount,
     isLoading,
-    isRefreshing,
-    completedCount: stats?.completedTrips ?? 0,
-    pendingCount: stats?.pendingTrips ?? 0,
-    handleRefresh,
+    error,
+    refetch,
   };
 }

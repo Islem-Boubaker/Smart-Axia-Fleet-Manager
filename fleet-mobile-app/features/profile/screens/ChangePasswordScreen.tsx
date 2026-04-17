@@ -1,18 +1,45 @@
 import React, { useState } from "react";
-import { Text, View, TouchableOpacity } from "react-native";
+import { Alert, Text, View, TouchableOpacity } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { ChevronLeft } from "lucide-react-native";
 import { useRouter } from "expo-router";
 import { InputField } from "../components/ui/InputField";
 import { FormCard } from "../components/ui/FormCard";
 import { SubmitButton } from "../components/ui/SubmitButton";
+import { useProfile } from "../hooks/useProfile";
 
 export default function ChangePasswordScreen() {
   const router = useRouter();
+  const { changePassword, isSaving } = useProfile();
 
   const [current, setCurrent] = useState("");
   const [newPwd, setNewPwd] = useState("");
   const [confirm, setConfirm] = useState("");
+
+  const handleSubmit = async () => {
+    if (!current || !newPwd) {
+      Alert.alert("Validation", "Please fill all password fields.");
+      return;
+    }
+
+    if (newPwd !== confirm) {
+      Alert.alert("Validation", "New password and confirmation do not match.");
+      return;
+    }
+
+    try {
+      await changePassword({ currentPassword: current, newPassword: newPwd });
+      setCurrent("");
+      setNewPwd("");
+      setConfirm("");
+      Alert.alert("Success", "Password changed successfully.");
+    } catch (error) {
+      Alert.alert(
+        "Update failed",
+        error instanceof Error ? error.message : "Could not change password.",
+      );
+    }
+  };
 
   return (
     <SafeAreaView className="flex-1 bg-[#F5F7FA]">
@@ -48,8 +75,9 @@ export default function ChangePasswordScreen() {
       </FormCard>
 
       <SubmitButton
-        label="Update Password"
-        onPress={() => console.log("update")}
+        label={isSaving ? "Updating..." : "Update Password"}
+        onPress={handleSubmit}
+        disabled={isSaving}
       />
     </SafeAreaView>
   );

@@ -184,19 +184,13 @@ export function LoginForm({
       {/* Actions */}
       <View className="flex-row items-center justify-between mt-3">
         <TouchableOpacity onPress={onForgotPassword} disabled={isLoading}>
-          <Text className="text-[12.5px] font-bold text-[#6B21F5]">
+          <Text className="text-[12.5px] font-bold text-blue-600">
             Forgot Password?
           </Text>
         </TouchableOpacity>
       </View>
 
-      {linkSent && (
-        <View className="mt-3 bg-purple-50 border border-purple-200 rounded-xl px-4 py-2.5">
-          <Text className="text-purple-700 text-xs font-medium">
-            Magic link sent. Check your email.
-          </Text>
-        </View>
-      )}
+      
 
       {/* Submit Button */}
       <TouchableOpacity
@@ -206,7 +200,7 @@ export function LoginForm({
         disabled={isLoading}
       >
         <LinearGradient
-          colors={["#6B21F5", "#8B45FF"]}
+          colors={["#3B82F6", "#1D4ED8"]} // Blue gradient: blue-500 to blue-700
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 0 }}
           className="py-4 items-center"

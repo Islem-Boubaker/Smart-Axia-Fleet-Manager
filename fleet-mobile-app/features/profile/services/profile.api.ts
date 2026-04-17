@@ -1,39 +1,120 @@
 import type { User } from "@/features/auth/types/auth.types";
-import { tripsApi } from "@/features/trips/services/trips.api";
+import { clearUserStorage } from "@/features/auth/services/auth.session";
+import { tokenStorage } from "@/features/auth/services/tokenStorage";
 import { api } from "@/shared/services/api";
 import { clearCookies } from "@/shared/services/cookieJar";
 import { clearCsrfToken } from "@/shared/services/csrf";
 import { store } from "@/store";
 import { clearUser } from "@/store/slices/authSlice";
 
+/* ================= TYPES ================= */
+
 interface ApiEnvelope<T> {
   success: boolean;
   data: T;
 }
 
+export interface NotificationSettings {
+  emailTrips: boolean;
+  emailMaintenance: boolean;
+  emailDrivers: boolean;
+  pushTrips: boolean;
+  pushMaintenance: boolean;
+  pushAlerts: boolean;
+  smsAlerts: boolean;
+}
+
+export interface UpdateProfilePayload {
+  name?: string;
+  email?: string;
+  phone?: string;
+}
+
+export interface ChangePasswordPayload {
+  currentPassword: string;
+  newPassword: string;
+}
+
+/* ================= PROFILE ================= */
+
 export const profileApi = {
+  // 🔹 Get current user
   getCurrentUser: async (): Promise<User> => {
     const { data } = await api.get<ApiEnvelope<User>>("/user/me");
     return data.data;
   },
-};
 
-export const vehicleApi = {
-  getAssignedVehicle: async () => {
-    const active = await tripsApi.getActiveTrip();
-    if (active) return { licensePlate: active.vehicle };
-
-    const trips = await tripsApi.getAllTrips({ limit: 1, status: "scheduled" });
-    if (!trips[0]) return null;
-
-    return { licensePlate: trips[0].vehicle };
+  // 🔹 Update current user
+  updateProfile: async (payload: UpdateProfilePayload): Promise<User> => {
+    const { data } = await api.put<ApiEnvelope<User>>("/user/me", payload);
+    return data.data;
   },
-};
 
-export const logout = async (): Promise<void> => {
-  await api.post<void>("/user/logout", {});
+  // 🔹 Change password
+  changePassword: async (payload: ChangePasswordPayload): Promise<void> => {
+    await api.post("/user/change-password", payload);
+  },
 
-  await clearCookies();
-  clearCsrfToken();
-  store.dispatch(clearUser());
+  // 🔹 Upload avatar (current user)
+  updateAvatar: async (formData: FormData): Promise<User> => {
+    const { data } = await api.patch<ApiEnvelope<User>>(
+      "/user/me/avatar",
+      formData,
+      { headers: { "Content-Type": "multipart/form-data" } },
+    );
+    return data.data;
+  },
+
+  // 🔹 Notification settings
+  getNotificationSettings: async (): Promise<NotificationSettings> => {
+    const { data } = await api.get<ApiEnvelope<NotificationSettings>>("/user/me/notifications");
+    return data.data;
+  },
+
+  updateNotificationSettings: async (payload: Partial<NotificationSettings>): Promise<NotificationSettings> => {
+    const { data } = await api.put<ApiEnvelope<NotificationSettings>>(
+      "/user/me/notifications",
+      payload,
+    );
+    return data.data;
+  },
+
+  // 🔹 Update user (admin)
+  updateUser: async (id: string, payload: Partial<User>) => {
+    const { data } = await api.put<ApiEnvelope<User>>(
+      `/user/updateuser/${id}`,
+      payload,
+    );
+    return data.data;
+  },
+
+  // 🔹 Update avatar (admin)
+  updateUserAvatar: async (id: string, formData: FormData) => {
+    const { data } = await api.patch<ApiEnvelope<User>>(
+      `/user/${id}/avatar`,
+      formData,
+      { headers: { "Content-Type": "multipart/form-data" } },
+    );
+    return data.data;
+  },
+
+  // 🔹 Forgot password
+  forgotPassword: async (email: string): Promise<void> => {
+    await api.post("/user/forgot-password", { email });
+  },
+
+  // 🔹 Logout
+  logout: async (): Promise<void> => {
+    try {
+      await api.post("/user/logout", {});
+    } catch {
+      // Local logout cleanup must still run if backend logout fails.
+    } finally {
+      await tokenStorage.clearTokens();
+      await clearUserStorage();
+      await clearCookies();
+      clearCsrfToken();
+      store.dispatch(clearUser());
+    }
+  },
 };

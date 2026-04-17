@@ -70,21 +70,66 @@ export interface Reclamation {
 }
 
 export interface ReclamationDetails extends Reclamation {
-  comments?: Array<{
+  comments?: {
     id: string;
     message: string;
     createdAt: string;
-  }>;
+  }[];
 }
 
 export interface CreateReclamationData {
   subject: string;
   message: string;
   vehicleId?: string;
-  images?: File[];
+  images?: ReclamationImage[];
 }
 
 export interface UpdateReclamationData {
   subject?: string;
   message?: string;
+}
+// ─── Reclamation Types ───────────────────────────────────────────────────────
+
+export type ReclamationStep = "SUBJECT" | "PROBLEM" | "YOUR_DATA" | "SEND";
+
+export interface StepConfig {
+  key: ReclamationStep;
+  label: string;
+  index: number;
+}
+
+export interface ReclamationImage {
+  uri: string;
+  name?: string;
+  type?: string;
+}
+
+export interface ReclamationFormData {
+  subject: string;
+  message: string;
+  date: Date | null;
+  images: ReclamationImage[];
+}
+
+export interface ReclamationFormErrors {
+  subject?: string;
+  message?: string;
+}
+
+export interface ReclamationPayload {
+  subject: string;
+  message: string;
+  date: string;
+  images: ReclamationImage[];
+}
+
+export interface ReclamationResponse {
+  success: boolean;
+  message: string;
+  data?: {
+    id: string;
+    subject: string;
+    status: string;
+    createdAt: string;
+  };
 }

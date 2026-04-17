@@ -25,6 +25,8 @@ export type AuthProvider = 'apple' | 'google' | 'email' | 'password';
 export interface AuthResponse {
   user: User;
   csrfToken: string;
+  accessToken: string;   // ← New: returned by backend for mobile
+  refreshToken: string;  // ← New: returned by backend for mobile
 }
 
 export interface PaginatedUsers {

@@ -1,13 +1,10 @@
 import { TouchableOpacity, Text, Alert } from "react-native";
 import { LogOut } from "lucide-react-native";
 import { useRouter } from "expo-router";
-import { useDispatch } from "react-redux";
-import { clearUser } from "@/store/slices/authSlice";
-import { logout as logoutApi } from "../services/profile.api";
+import { profileApi } from "../services/profile.api";
 
 export default function LogoutButton() {
   const router = useRouter();
-  const dispatch = useDispatch();
 
   const handleLogout = () => {
     Alert.alert("Logout", "Are you sure?", [
@@ -16,9 +13,8 @@ export default function LogoutButton() {
         text: "Logout",
         onPress: async () => {
           try {
-            await logoutApi();
+            await profileApi.logout();
           } catch {}
-          dispatch(clearUser());
           router.replace("/(auth)/login");
         },
       },

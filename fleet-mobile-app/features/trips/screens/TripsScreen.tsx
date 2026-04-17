@@ -4,6 +4,7 @@ import { useRouter } from "expo-router";
 import React, { useCallback, useState } from "react";
 import {
   FlatList,
+  Platform,
   RefreshControl,
   StatusBar,
   Text,
@@ -21,6 +22,8 @@ import type { FilterOption } from "../config/trips.config";
 import { data } from "../data/data";
 import { tripsApi } from "../services/trips.api";
 import type { Trip } from "../types/trip.types";
+import BackButton from "@/shared/components/ui/BackButton";
+import RefreshButton from "@/shared/components/ui/RefreshButton";
 
 // ─── Types ────────────────────────────────────────────────────────
 type TripLike = Partial<Trip> & {
@@ -108,7 +111,8 @@ export function TripsScreen() {
       <StatusBar barStyle="dark-content" backgroundColor="#F3F4F6" />
 
       {/* Header */}
-      <View className="flex-row justify-between items-center px-5 pt-10 pb-2">
+      <View className="flex-row justify-between items-center px-5 pb-2"  style={{ paddingTop: Platform.OS === "ios" ? 8 : 0 }}>
+        <BackButton/>
         <View>
           <Text className="text-2xl font-extrabold text-slate-900">
             My Trips
@@ -117,18 +121,7 @@ export function TripsScreen() {
             {trips.length} trip{trips.length !== 1 ? "s" : ""} assigned
           </Text>
         </View>
-        <TouchableOpacity
-          className="w-9 h-9 rounded-xl bg-white items-center justify-center"
-          style={{
-            elevation: 1,
-            shadowColor: "#000",
-            shadowOpacity: 0.06,
-            shadowRadius: 4,
-          }}
-          onPress={handleRefresh}
-        >
-          <MaterialIcons name="refresh" size={20} color="#2D9B6F" />
-        </TouchableOpacity>
+        <RefreshButton onRefresh={handleRefresh} />
       </View>
 
       {/* Filter chips */}

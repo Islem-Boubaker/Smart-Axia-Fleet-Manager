@@ -3,12 +3,13 @@ import { useFocusEffect } from "@react-navigation/native";
 import { useRouter } from "expo-router";
 import React, { useCallback, useState } from "react";
 import {
-    RefreshControl,
-    ScrollView,
-    StatusBar,
-    Text,
-    TouchableOpacity,
-    View,
+  Platform,
+  RefreshControl,
+  ScrollView,
+  StatusBar,
+  Text,
+  TouchableOpacity,
+  View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -18,6 +19,8 @@ import ReclamationCard from "../components/ReclamationCard";
 import ReclamationStats from "../components/ReclamationStats";
 import SectionHeader from "../components/SectionHeader";
 import { useReclamation } from "../hooks/useReclamation";
+import BackButton from "@/shared/components/ui/BackButton";
+import RefreshButton from "@/shared/components/ui/RefreshButton";
 
 // ─── Types ────────────────────────────────────────────────────────
 type ReclamationStatus = "pending" | "in_progress" | "resolved";
@@ -146,27 +149,23 @@ export default function ReclamationsScreen() {
       <StatusBar barStyle="dark-content" backgroundColor="#F3F4F6" />
 
       {/* ── Header ── */}
-      <View className="flex-row justify-between items-center px-5 pt-10 pb-2">
-        <View>
-          <Text className="text-2xl font-extrabold text-slate-900">
-            Reports
-          </Text>
-          <Text className="text-xs text-gray-400 mt-0.5">
-            {reclamations.length} total reclamations
-          </Text>
+      <View className="px-5  pb-3" style={{ paddingTop: Platform.OS === "ios" ? 8 : 0 }}>
+        <View className="flex-row items-center justify-between">
+          {/* Left: Back */}
+          <BackButton />
+
+          {/* Center: Title */}
+          <View className="flex-1 items-center">
+            <Text className="text-xl font-extrabold text-slate-900">
+              Reports
+            </Text>
+            <Text className="text-xs text-gray-400 mt-0.5">
+              {reclamations.length} total reclamations
+            </Text>
+          </View>
+
+          <RefreshButton onRefresh={handleRefresh} />
         </View>
-        <TouchableOpacity
-          className="w-9 h-9 rounded-xl bg-white items-center justify-center"
-          style={{
-            elevation: 1,
-            shadowColor: "#000",
-            shadowOpacity: 0.06,
-            shadowRadius: 4,
-          }}
-          onPress={handleRefresh}
-        >
-          <MaterialIcons name="refresh" size={20} color="#2D9B6F" />
-        </TouchableOpacity>
       </View>
 
       {/* ── Filters ── */}

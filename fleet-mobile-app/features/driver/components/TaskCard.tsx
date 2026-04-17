@@ -1,16 +1,34 @@
 import { View, Text, TouchableOpacity } from "react-native";
+import type { Trip } from "../types/driver.types";
 
-export default function TaskCard({ task, isCurrent, onPress }: any) {
+interface TaskCardProps {
+  trip: Trip | null;
+  isCurrent: boolean;
+  onPress?: () => void;
+}
+
+const formatTaskTime = (trip: Trip | null): string => {
+  if (!trip?.startTime) return "No schedule";
+  return new Date(trip.startTime).toLocaleString();
+};
+
+const formatVehicleLabel = (trip: Trip | null): string => {
+  if (!trip) return "No task assigned";
+  return `${trip.startLocation} -> ${trip.endLocation}`;
+};
+
+export default function TaskCard({ trip, isCurrent, onPress }: TaskCardProps) {
   return (
     <TouchableOpacity
       className={`flex-1 rounded-2xl p-4 ${
-        isCurrent ? "bg-emerald-600" : "bg-white border border-gray-200"
+        isCurrent ? "bg-blue-500" : "bg-white border border-gray-200"
       }`}
       onPress={onPress}
+      disabled={!trip}
     >
       <Text
         className={`text-[9px] font-bold mb-1 ${
-          isCurrent ? "text-white/70" : "text-emerald-600"
+          isCurrent ? "text-white/70" : "text-blue-500"
         }`}
       >
         {isCurrent ? "CURRENT TASK" : "UPCOMING TASK"}
@@ -21,7 +39,7 @@ export default function TaskCard({ task, isCurrent, onPress }: any) {
           isCurrent ? "text-white" : "text-gray-900"
         }`}
       >
-        {task.vehicle}
+        {formatVehicleLabel(trip)}
       </Text>
 
       <Text
@@ -29,7 +47,7 @@ export default function TaskCard({ task, isCurrent, onPress }: any) {
           isCurrent ? "text-white/70" : "text-gray-400"
         }`}
       >
-        {task.timeLeft}
+        {formatTaskTime(trip)}
       </Text>
 
       <View
