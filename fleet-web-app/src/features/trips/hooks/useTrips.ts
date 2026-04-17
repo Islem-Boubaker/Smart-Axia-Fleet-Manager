@@ -78,6 +78,8 @@ export const useTrips = (filters: TripFilters = {}) => {
   };
   const completeTrip = async (id: string, data?: { endTime?: string; fuel?: number; revenue?: number }) =>
     runAction(() => tripsService.completeTrip(id, data));
+  const updateTrip = async (id: string, data: Partial<Trip>) =>
+    runAction(() => tripsService.updateTrip(id, data));
   const cancelTrip = async (id: string) => runAction(() => tripsService.cancelTrip(id));
   const assignDriver = async (id: string, userId: string) =>
     runAction(() => tripsService.assignDriver(id, userId));
@@ -94,6 +96,7 @@ export const useTrips = (filters: TripFilters = {}) => {
     error,
     refetch: fetchTrips,
     createTrip,
+    updateTrip,
     startTrip,
     completeTrip,
     cancelTrip,

@@ -6,13 +6,14 @@ interface Props {
   dark?: boolean;
   actionTripId?: string | null;
   onViewDetails?: (trip: Trip) => void;
+  onEdit?: (trip: Trip) => void;
   onStart?: (tripId: string) => void;
   onReachStop?: (tripId: string, stopId: string) => void;
   onComplete?: (tripId: string) => void;
   onCancel?: (tripId: string) => void;
 }
 
-const TripsList = ({ trips, dark = false, actionTripId = null, onViewDetails, onStart, onReachStop, onComplete, onCancel }: Props) => {
+const TripsList = ({ trips, dark = false, actionTripId = null, onViewDetails, onEdit, onStart, onReachStop, onComplete, onCancel }: Props) => {
   if (trips.length === 0)
     return (
       <div
@@ -33,6 +34,7 @@ const TripsList = ({ trips, dark = false, actionTripId = null, onViewDetails, on
           dark={dark}
           index={index}
           onViewDetails={onViewDetails}
+          onEdit={onEdit}
           onStart={onStart}
           onReachStop={onReachStop}
           onComplete={onComplete}
