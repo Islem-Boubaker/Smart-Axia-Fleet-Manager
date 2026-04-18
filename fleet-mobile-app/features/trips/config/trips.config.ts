@@ -48,7 +48,6 @@ export const FILTER_BUTTONS: {
 }[] = [
   { id: "all",       label: "All"       },
   { id: "pending",   label: "Pending",   dotColor: "#F59E0B" },
-  { id: "active",    label: "Active",    dotColor: "#3B82F6" },
   { id: "completed", label: "Completed", dotColor: "#10B981" },
 ];
 

@@ -64,7 +64,7 @@ router.delete(
 router.get(
   "/reclamations",
   authMiddleware.authenticate,
-  authMiddleware.authorizeRoles("ADMIN"),
+  authMiddleware.authorizeRoles("ADMIN", "MANAGER"),
   reclamationController.getAllReclamations
 );
 
@@ -72,7 +72,7 @@ router.get(
 router.get(
   "/reclamations/:id",
   authMiddleware.authenticate,
-  authMiddleware.authorizeRoles("ADMIN"),
+  authMiddleware.authorizeRoles("ADMIN", "MANAGER"),
   reclamationController.getReclamationById
 );
 
@@ -104,7 +104,7 @@ router.delete(
 router.get(
   "/reclamations/status/:status",
   authMiddleware.authenticate,
-  authMiddleware.authorizeRoles("ADMIN"),
+  authMiddleware.authorizeRoles("ADMIN", "MANAGER"),
   reclamationController.getReclamationsByStatus
 );
 
@@ -112,7 +112,7 @@ router.get(
 router.get(
   "/reclamations/search",
   authMiddleware.authenticate,
-  authMiddleware.authorizeRoles("ADMIN"),
+  authMiddleware.authorizeRoles("ADMIN", "MANAGER"),
   reclamationController.searchReclamations
 );
 

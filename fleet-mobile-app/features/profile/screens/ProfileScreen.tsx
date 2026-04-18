@@ -7,9 +7,6 @@ import ProfileCard from "../components/ProfileCard";
 import AccountSection from "../components/AccountSection";
 import NotificationsSection from "../components/NotificationsSection";
 import PreferenceSection from "../components/PreferenceSection";
-import PrivacySecuritySection from "../components/PrivacySecuritySection";
-import SupportSection from "../components/SupportSection";
-import AboutSection from "../components/AboutSection";
 import LogoutButton from "../components/LogoutButton";
 import BackButton from "@/shared/components/ui/BackButton";
 import { useProfile } from "../hooks/useProfile";
@@ -18,7 +15,6 @@ export default function ProfileScreen() {
   const { user, notificationSettings, updateNotificationSettings, isLoading } = useProfile();
 
   const [darkMode, setDarkMode] = useState(false);
-  const [twoFA, setTwoFA] = useState(false);
 
   const handlePushToggle = (valueOrUpdater: boolean | ((value: boolean) => boolean)) => {
     const nextValue =
@@ -59,9 +55,6 @@ export default function ProfileScreen() {
           setEmailUpdates={handleEmailToggle}
         />
         <PreferenceSection darkMode={darkMode} setDarkMode={setDarkMode} />
-        <PrivacySecuritySection twoFA={twoFA} setTwoFA={setTwoFA} />
-        <SupportSection />
-        <AboutSection />
         <LogoutButton />
       </ScrollView>
     </SafeAreaView>

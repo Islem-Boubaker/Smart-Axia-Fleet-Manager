@@ -94,12 +94,9 @@ function DashboardScreen() {
 
       {/* HEADER */}
       <View className="flex-row justify-between px-5 py-3 items-center">
-        <View className="flex-row items-center gap-3">
-          <MaterialIcons name="menu" size={22} />
-          <View>
-            <Text className="text-xs text-gray-400">Current Location</Text>
-            <Text className="font-bold">{currentLocation}</Text>
-          </View>
+        <View>
+          <Text className="text-xs text-gray-400">Current Location</Text>
+          <Text className="font-bold">{currentLocation}</Text>
         </View>
 
         <View className="flex-row gap-3 justify-center items-center">
@@ -129,8 +126,22 @@ function DashboardScreen() {
       <ScrollView className="px-5">
 
         <View className="flex-row gap-3 mb-5">
-          <TaskCard trip={currentTask} isCurrent />
-          <TaskCard trip={secondaryUpcoming} isCurrent={false} />
+          <TaskCard
+            trip={currentTask}
+            isCurrent
+            onPress={() => {
+              if (!currentTask?.id) return;
+              router.push(`/trips/${currentTask.id}`);
+            }}
+          />
+          <TaskCard
+            trip={secondaryUpcoming}
+            isCurrent={false}
+            onPress={() => {
+              if (!secondaryUpcoming?.id) return;
+              router.push(`/trips/${secondaryUpcoming.id}`);
+            }}
+          />
         </View>
 
         <View className="flex-row justify-between mb-2">
@@ -146,13 +157,7 @@ function DashboardScreen() {
         ) : (
           recentTrips.map((trip) => <TripCard key={trip.id} trip={trip} />)
         )}
-
-        {activeTrip && (
-          <View className="mt-4 mb-8 rounded-xl bg-emerald-50 px-4 py-3">
-            <Text className="text-xs text-emerald-700">Active trip</Text>
-            <Text className="text-sm font-semibold text-emerald-900">{activeTrip.startLocation} {"->"} {activeTrip.endLocation}</Text>
-          </View>
-        )}
+        <View className="mb-8" />
 
       </ScrollView>
     </SafeAreaView>

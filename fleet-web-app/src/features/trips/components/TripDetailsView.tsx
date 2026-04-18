@@ -210,9 +210,12 @@ const TripDetailsView = ({ trip, dark = false }: TripDetailsViewProps) => {
           geometries: 'geojson',
         });
 
-        const response = await fetch(`${coordinates}?${params.toString()}`, {
-          signal: controller.signal,https://router.project-osrm.org/route/v1/driving/
-        });
+        const response = await fetch(
+          `https://router.project-osrm.org/route/v1/driving/${coordinates}?${params.toString()}`,
+          {
+            signal: controller.signal,
+          }
+        );
 
         if (!response.ok) {
           throw new Error('Routing request failed');

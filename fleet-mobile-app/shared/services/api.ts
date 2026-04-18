@@ -56,6 +56,20 @@ const splitSetCookieHeader = (setCookieHeader: string | string[]): string[] => {
   return setCookieHeader.split(/,(?=\s*[^;,\s]+=)/g);
 };
 
+const getCookieValue = (cookieHeader: string, name: string): string | null => {
+  if (!cookieHeader) return null;
+
+  const parts = cookieHeader.split(";");
+  for (const part of parts) {
+    const [rawKey, ...rest] = part.trim().split("=");
+    if (!rawKey || rawKey !== name) continue;
+    const value = rest.join("=").trim();
+    return value || null;
+  }
+
+  return null;
+};
+
 const applyRequestAuth = async (
   config: InternalAxiosRequestConfig,
 ): Promise<InternalAxiosRequestConfig> => {
@@ -67,11 +81,22 @@ const applyRequestAuth = async (
   const cookie = await buildCookieHeader();
   if (cookie) headers.set("Cookie", cookie);
 
-  const bearerToken = await tokenStorage.getAccessToken();
+  const storedToken = await tokenStorage.getAccessToken();
+  const cookieToken = storedToken ? null : getCookieValue(cookie, "accessToken");
+  const bearerToken = storedToken || cookieToken;
+  const isAuthRoute = hasAuthRoute(config.url);
+
   console.log("🔑 Token retrieval:", { 
     token: bearerToken ? "✅ Found" : "❌ NULL", 
     tokenLength: bearerToken?.length || 0 
   });
+
+  if (!bearerToken && !isAuthRoute) {
+    console.warn("⚠️ Missing bearer token on protected route", {
+      method: config.method?.toUpperCase(),
+      url: config.url,
+    });
+  }
   
   if (bearerToken) {
     headers.set("Authorization", `Bearer ${bearerToken}`);
@@ -87,6 +112,7 @@ const applyRequestAuth = async (
   console.log("🔐 Request headers:", {
     method: config.method?.toUpperCase(),
     url: config.url,
+    isAuthRoute,
     hasAuth: Boolean(bearerToken),
     hasCsrf: Boolean(getCsrfToken()),
     hasCookie: Boolean(cookie),

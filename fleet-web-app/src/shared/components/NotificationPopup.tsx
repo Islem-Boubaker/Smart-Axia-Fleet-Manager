@@ -179,14 +179,6 @@ export const NotificationPopup = ({
         )}
       </div>
 
-      {/* Footer */}
-      {notifications.length > 0 && (
-        <div className="border-t border-gray-200 px-4 py-2">
-          <button className="text-sm text-blue-600 hover:text-blue-800 font-medium w-full text-center py-1">
-            View all notifications
-          </button>
-        </div>
-      )}
     </div>
   );
 };

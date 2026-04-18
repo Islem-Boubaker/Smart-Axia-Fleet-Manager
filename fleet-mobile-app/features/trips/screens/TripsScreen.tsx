@@ -1,7 +1,7 @@
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import { useFocusEffect } from "@react-navigation/native";
 import { useRouter } from "expo-router";
-import React, { useCallback, useState } from "react";
+import React, { useCallback, useMemo, useState } from "react";
 import {
   FlatList,
   Platform,
@@ -101,8 +101,16 @@ export function TripsScreen() {
   );
 
   // ── Derived ────────────────────────────────────────────────────
+  const allTripsActiveFirst = useMemo(() => {
+    const activeTrips = trips.filter((trip) => trip?.status === "active");
+    const nonActiveTrips = trips.filter((trip) => trip?.status !== "active");
+    return [...activeTrips, ...nonActiveTrips];
+  }, [trips]);
+
   const filtered =
-    filter === "all" ? trips : trips.filter((t) => t?.status === filter);
+    filter === "all"
+      ? allTripsActiveFirst
+      : trips.filter((t) => t?.status === filter);
 
   if (isLoading) return <LoadingSpinner fullScreen />;
 

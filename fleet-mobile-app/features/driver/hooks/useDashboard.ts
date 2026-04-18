@@ -25,6 +25,12 @@ type UnreadCountPayload = {
   count?: number;
 };
 
+const normalizeTrips = (items: Trip[] = []): Trip[] =>
+  items.map((trip) => ({
+    ...trip,
+    stops: Array.isArray(trip.stops) ? trip.stops : [],
+  }));
+
 function readErrorMessage(error: unknown): string {
   if (error instanceof Error) return error.message;
   return "Failed to load dashboard data";
@@ -88,15 +94,15 @@ export function useDashboard(): DashboardData {
         await Promise.all([
           fetchJson<TripsApiPayload>("/trips?page=1&limit=10&status=scheduled"),
           fetchJson<TripsApiPayload>("/trips?page=1&limit=5&status=ongoing"),
-          fetchJson<TripsApiPayload>("/trips?page=1&limit=10&status=completed"),
+          fetchJson<TripsApiPayload>("/trips?page=1&limit=10&status=completed&includeStops=true"),
           fetchJson<UnreadCountPayload>("/notifications/unread-count"),
         ]);
 
       if (!isMountedRef.current) return;
 
-      const scheduled = scheduledPayload?.data ?? [];
-      const ongoing = ongoingPayload?.data ?? [];
-      const completed = completedPayload?.data ?? [];
+      const scheduled = normalizeTrips(scheduledPayload?.data ?? []);
+      const ongoing = normalizeTrips(ongoingPayload?.data ?? []);
+      const completed = normalizeTrips(completedPayload?.data ?? []);
 
       setActiveTrip(ongoing[0] ?? null);
       setUpcomingTrip(scheduled[0] ?? null);

@@ -52,10 +52,14 @@ const persistAuthSession = async (
 ): Promise<void> => {
   setCsrfToken(payload.csrfToken);
   
-  // ✅ Save tokens to secure storage (new!)
-  if (payload.accessToken && payload.refreshToken) {
-    await tokenStorage.saveTokens(payload.accessToken, payload.refreshToken);
-    console.log("✅ Tokens saved to secure storage");
+  // Persist bearer token for mobile requests; refresh token may be cookie-managed.
+  if (payload.accessToken) {
+    await tokenStorage.saveTokens(payload.accessToken, payload.refreshToken ?? "");
+    const savedAccessToken = await tokenStorage.getAccessToken();
+    console.log("✅ Tokens saved to secure storage", {
+      accessTokenSaved: Boolean(savedAccessToken),
+      accessTokenLength: savedAccessToken?.length || 0,
+    });
   }
   
   await saveUserToStorage(payload.user);
@@ -74,6 +78,13 @@ const bootstrapSession = async (dispatch: AppDispatch): Promise<void> => {
   dispatch(setLoading(true));
 
   const cachedUser = await loadUserFromStorage();
+  const cachedAccessToken = await tokenStorage.getAccessToken();
+
+  if (!cachedUser && !cachedAccessToken) {
+    dispatch(setLoading(false));
+    return;
+  }
+
   if (cachedUser) {
     dispatch(setUser(cachedUser));
     dispatch(setLoading(true));
