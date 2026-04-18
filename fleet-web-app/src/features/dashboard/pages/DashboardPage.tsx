@@ -14,6 +14,7 @@ import ScheduledMaintenance from '../components/ScheduledMaintenance';
 import TopDriversCard from '../components/TopDriversCard';
 import TripDetailsView from '../../trips/components/TripDetailsView';
 import { useDashboard } from '../hooks/useDashboard';
+import type { NotificationRecord } from '../../notifications/services/notification.api';
 
 interface ThemeContext {
   dark: boolean;
@@ -31,9 +32,39 @@ const DashboardPage = () => {
     topDrivers,
     fuelByDay,
     upcomingMaintenance,
+    dismissAlert,
     loading,
     error,
   } = useDashboard();
+
+  const getReclamationId = (alert: NotificationRecord): string | null => {
+    const metadata = alert.metadata as { reclamationId?: string } | undefined;
+    if (metadata?.reclamationId) return String(metadata.reclamationId);
+    if (alert.entityType === 'reclamation' && alert.entityId) return String(alert.entityId);
+    return null;
+  };
+
+  const isDriverIssueAlert = (alert: NotificationRecord): boolean => {
+    if (getReclamationId(alert)) return true;
+    const text = `${alert.title} ${alert.message}`.toLowerCase();
+    return text.includes('reclamation') || text.includes('vehicle issue') || text.includes('driver report');
+  };
+
+  const handleAlertClick = async (alert: NotificationRecord) => {
+    await dismissAlert(alert);
+
+    if (isDriverIssueAlert(alert)) {
+      const reclamationId = getReclamationId(alert);
+      navigate(
+        reclamationId
+          ? `${ROUTES.DRIVER_ISSUES}?reclamationId=${encodeURIComponent(reclamationId)}`
+          : ROUTES.DRIVER_ISSUES
+      );
+      return;
+    }
+
+    navigate(ROUTES.SETTINGS);
+  };
 
   const todayLabel = useMemo(
     () =>
@@ -108,7 +139,7 @@ const DashboardPage = () => {
           <DashboardOverview fleetStatus={fleetStatus} />
         </div>
         <div className="xl:col-span-1">
-          <DashboardAlerts alerts={alerts} />
+          <DashboardAlerts alerts={alerts} onAlertClick={handleAlertClick} />
         </div>
       </div>
 

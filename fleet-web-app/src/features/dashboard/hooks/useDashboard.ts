@@ -290,6 +290,24 @@ export const useDashboard = () => {
     refetch();
   }, [refetch]);
 
+  const dismissAlert = useCallback(async (alert: NotificationRecord) => {
+    setAlerts((prev) => prev.filter((item) => item.id !== alert.id));
+
+    const isComputedAlert =
+      String(alert.id).startsWith('dashboard-') ||
+      String((alert.metadata as { source?: string } | undefined)?.source) === 'dashboard-computed';
+
+    if (isComputedAlert) {
+      return;
+    }
+
+    try {
+      await notificationApi.markAsRead(alert.id);
+    } catch {
+      // Keep UI responsive even if read-sync fails.
+    }
+  }, []);
+
   const data = useMemo<DashboardData>(() => {
     const now = new Date();
     const today = dayRange(now);
@@ -531,5 +549,6 @@ export const useDashboard = () => {
     loading,
     error,
     refetch,
+    dismissAlert,
   };
 };

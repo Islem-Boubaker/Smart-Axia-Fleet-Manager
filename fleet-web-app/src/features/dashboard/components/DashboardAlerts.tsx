@@ -5,6 +5,7 @@ import { Badge } from '../../../shared/components';
 
 interface DashboardAlertsProps {
   alerts: NotificationRecord[];
+  onAlertClick?: (alert: NotificationRecord) => void;
 }
 
 const alertColorClass = (notification: NotificationRecord) => {
@@ -20,7 +21,7 @@ const alertSubDetail = (notification: NotificationRecord) => {
   return created.toLocaleDateString('en-GB');
 };
 
-const DashboardAlerts = ({ alerts }: DashboardAlertsProps) => {
+const DashboardAlerts = ({ alerts, onAlertClick }: DashboardAlertsProps) => {
   const navigate = useNavigate();
 
   return (
@@ -41,13 +42,19 @@ const DashboardAlerts = ({ alerts }: DashboardAlertsProps) => {
               key={alert.id}
               className={`group flex items-start gap-3 py-2.5 px-2 rounded-lg transition-colors hover:bg-gray-50 dark:hover:bg-gray-800/60 ${index < Math.min(alerts.length, 5) - 1 ? 'border-b border-gray-100 dark:border-gray-800' : ''}`}
             >
-              <span className={`w-2 h-2 rounded-full mt-1 shrink-0 ${alertColorClass(alert)}`} />
-              <div>
-                <p className="text-sm text-gray-800 dark:text-gray-200 group-hover:text-gray-900 dark:group-hover:text-white">
-                  {alert.title || alert.message}
-                </p>
-                <p className="text-xs text-gray-400">{alertSubDetail(alert)}</p>
-              </div>
+              <button
+                type="button"
+                onClick={() => onAlertClick?.(alert)}
+                className="flex w-full items-start gap-3 text-left"
+              >
+                <span className={`w-2 h-2 rounded-full mt-1 shrink-0 ${alertColorClass(alert)}`} />
+                <div>
+                  <p className="text-sm text-gray-800 dark:text-gray-200 group-hover:text-gray-900 dark:group-hover:text-white">
+                    {alert.title || alert.message}
+                  </p>
+                  <p className="text-xs text-gray-400">{alertSubDetail(alert)}</p>
+                </div>
+              </button>
             </li>
           ))}
         </ul>

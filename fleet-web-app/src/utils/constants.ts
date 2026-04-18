@@ -10,6 +10,7 @@ export const ROUTES = {
   TRIPS: '/trips',
   MAINTENANCE: '/maintenance',
   REPORTS: '/reports',
+  DRIVER_ISSUES: '/driver-issues',
   SETTINGS: '/settings',
   FLEET: '/fleet',
 };

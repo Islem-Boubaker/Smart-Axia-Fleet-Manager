@@ -125,6 +125,9 @@ export const login = async (req, res, next) => {
     // ✅ Return tokens in response body for mobile clients (in addition to cookies)
     res.status(StatusCodes.OK).json({
       success: true,
+      accessToken,
+      refreshToken,
+      csrfToken,
       data: { 
         user, 
         csrfToken,

@@ -7,7 +7,6 @@ interface Props {
 
 const STATS = [
   { key: "pending",   label: "PENDING",   fill: "#F59E0B", track: "#FEF3C7" },
-  { key: "active",    label: "ACTIVE",    fill: "#3B82F6", track: "#DBEAFE" },
   { key: "completed", label: "DONE",      fill: "#10B981", track: "#D1FAE5" },
 ] as const;
 

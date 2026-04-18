@@ -8,6 +8,7 @@ import {
   FiMapPin,
   FiTool,
   FiBarChart2,
+  FiAlertCircle,
   FiSettings,
   FiX,
 } from "react-icons/fi";
@@ -30,6 +31,7 @@ export const Sidebar = memo(({ isOpen, setIsOpen, dark = false }: SidebarProps) 
       { icon: FiMapPin, label: "Trips", path: ROUTES.TRIPS },
       { icon: FiTool, label: "Maintenance", path: ROUTES.MAINTENANCE },
       { icon: FiBarChart2, label: "Reports", path: ROUTES.REPORTS },
+      { icon: FiAlertCircle, label: "Driver Issues", path: ROUTES.DRIVER_ISSUES },
       { icon: FiSettings, label: "Settings", path: ROUTES.SETTINGS },
     ],
     [],

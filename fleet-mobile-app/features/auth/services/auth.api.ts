@@ -78,11 +78,31 @@ export const login = async (
   password: string,
 ): Promise<AuthResponse> => {
   try {
-    const res = await api.post<ApiEnvelope<AuthResponse>>("/user/login", {
+    const res = await api.post<ApiEnvelope<AuthResponse> | AuthResponse>("/user/login", {
       email,
       password,
     });
-    return res.data.data;
+
+    const raw = res.data as ApiEnvelope<AuthResponse> | AuthResponse;
+    const payload = (raw as ApiEnvelope<AuthResponse>)?.data ?? (raw as AuthResponse);
+
+    if (!payload?.user) {
+      throw new Error("Login response did not include user payload.");
+    }
+
+    console.log("✅ Login response token check", {
+      hasAccessToken: Boolean(payload.accessToken),
+      accessTokenLength: payload.accessToken?.length || 0,
+      hasRefreshToken: Boolean(payload.refreshToken),
+      refreshTokenLength: payload.refreshToken?.length || 0,
+    });
+
+    return {
+      user: payload.user,
+      csrfToken: payload.csrfToken ?? "",
+      accessToken: payload.accessToken ?? "",
+      refreshToken: payload.refreshToken ?? "",
+    };
   } catch (error) {
     throw normalizeApiError(
       error,

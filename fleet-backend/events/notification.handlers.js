@@ -47,12 +47,20 @@ const emitBulkSocketNotifications = (notifications = []) => {
 };
 
 const sendEmailToUsers = async (users, { subject, message }) => {
-  if (!transporter || !Array.isArray(users) || users.length === 0) return;
+  if (!Array.isArray(users) || users.length === 0) return;
+  if (!transporter) {
+    console.warn("[NotificationHandlers] Email skipped: transporter not configured.");
+    return;
+  }
 
-  await Promise.allSettled(
-    users.map((user) => {
-      if (!user?.email) return Promise.resolve();
+  const targets = users.filter((user) => Boolean(user?.email));
+  if (!targets.length) {
+    console.warn("[NotificationHandlers] Email skipped: no recipients with email.");
+    return;
+  }
 
+  const results = await Promise.allSettled(
+    targets.map((user) => {
       const text = `Hello ${user.name ?? "there"},\n\n${message}\n\nAXIA Fleet Manager`;
 
       return transporter.sendMail({
@@ -63,6 +71,22 @@ const sendEmailToUsers = async (users, { subject, message }) => {
       });
     })
   );
+
+  const failed = results
+    .map((result, index) => ({ result, recipient: targets[index]?.email }))
+    .filter(({ result }) => result.status === "rejected");
+
+  if (failed.length) {
+    console.error("[NotificationHandlers] Email send failures:",
+      failed.map(({ recipient, result }) => ({
+        recipient,
+        error: result.reason?.message || String(result.reason),
+      }))
+    );
+    return;
+  }
+
+  console.info(`[NotificationHandlers] Email sent to ${targets.length} recipient(s).`);
 };
 
 const getUsersWithEmailPreference = async (userIds = [], preferenceKey) => {
@@ -525,5 +549,90 @@ eventBus.on("maintenance:cancelled", async ({ maintenance, vehicle }) => {
   await sendEmailToUsers(emailRecipients, {
     subject: "Maintenance Cancelled",
     message: `Maintenance for vehicle ${vehicleLabel} has been cancelled.`,
+  });
+});
+
+const getSystemNotificationRecipients = async (recipientIds = []) => {
+  if (!Array.isArray(recipientIds) || recipientIds.length === 0) return [];
+
+  return User.findAll({
+    where: {
+      id: { [Op.in]: recipientIds },
+      isActive: true,
+    },
+    attributes: ["id", "name", "email", "role", "expoPushToken", "pushAlerts"],
+  });
+};
+
+const isAdminOrManager = (user) => ["ADMIN", "MANAGER"].includes(user?.role);
+
+const buildSystemActionUrl = (payload) => {
+  const reclamationId = payload?.metadata?.reclamationId;
+  if (reclamationId) {
+    return `/driver-issues?reclamationId=${encodeURIComponent(String(reclamationId))}`;
+  }
+  return null;
+};
+
+const dispatchSystemEventNotifications = async ({ payload, type }) => {
+  const recipients = await getSystemNotificationRecipients(payload?.recipientIds || []);
+  if (!recipients.length) return;
+
+  const actionUrl = buildSystemActionUrl(payload);
+  const notifications = await Notification.bulkCreate(
+    recipients.map((user) => ({
+      userId: user.id,
+      type,
+      title: payload?.title || "System notification",
+      message: payload?.message || "A system update is available.",
+      entityType: payload?.metadata?.reclamationId ? "reclamation" : null,
+      entityId: payload?.metadata?.reclamationId || null,
+      actionUrl,
+      metadata: payload?.metadata || {},
+    }))
+  );
+
+  emitBulkSocketNotifications(notifications);
+
+  const targetAdminsManagers = recipients.filter(isAdminOrManager);
+  const emailRecipients = targetAdminsManagers.filter((user) => user.email);
+
+  await sendEmailToUsers(emailRecipients, {
+    subject: payload?.title || "System notification",
+    message: payload?.message || "A system update is available.",
+  });
+
+  const notificationByUserId = new Map(notifications.map((item) => [String(item.userId), item]));
+  const pushRecipients = recipients.filter((user) => user.expoPushToken && user.pushAlerts !== false);
+
+  if (!pushRecipients.length) {
+    console.warn("[NotificationHandlers] Push skipped: no recipients with Expo token.");
+  }
+
+  const pushResults = await Promise.allSettled(
+    pushRecipients.map((user) => {
+      const notification = notificationByUserId.get(String(user.id));
+      if (!notification || !user.expoPushToken) return Promise.resolve();
+      return NotificationService.sendExpoPush(user.expoPushToken, notification);
+    })
+  );
+
+  const failedPush = pushResults.filter((result) => result.status === "rejected");
+  if (failedPush.length) {
+    console.error(`[NotificationHandlers] Push send failures: ${failedPush.length}`);
+  }
+};
+
+eventBus.subscribe(FLEET_EVENTS.SYSTEM_ALERT, async ({ payload }) => {
+  await dispatchSystemEventNotifications({
+    payload,
+    type: NOTIFICATION_TYPES.SYSTEM_ALERT,
+  });
+});
+
+eventBus.subscribe(FLEET_EVENTS.SYSTEM_UPDATE, async ({ payload }) => {
+  await dispatchSystemEventNotifications({
+    payload,
+    type: NOTIFICATION_TYPES.SYSTEM_UPDATE,
   });
 });

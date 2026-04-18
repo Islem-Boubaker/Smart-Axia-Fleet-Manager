@@ -68,8 +68,10 @@ export const notificationApi = {
     return r.data.data;
   },
 
-  async registerPushToken(userId: string, token: string) {
-    const r = await api.post("/user/register-push-token", { userId, token });
+  async registerPushToken(_userId: string, token: string) {
+    const r = await api.put("/user/me/push-token", {
+      expoPushToken: token,
+    });
     return r.data;
   },
 };
