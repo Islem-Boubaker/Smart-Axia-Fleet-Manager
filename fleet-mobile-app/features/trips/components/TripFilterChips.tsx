@@ -11,8 +11,9 @@ export function TripFilterChips({ selected, onChange }: Props) {
     <ScrollView
       horizontal
       showsHorizontalScrollIndicator={false}
-      contentContainerStyle={{ paddingHorizontal: 20, gap: 8, alignItems: "center" }}
-      style={{ flexGrow: 0, marginBottom: 14 ,paddingTop: 10 ,paddingBottom: 10}}
+      contentContainerStyle={{ paddingHorizontal: 25, gap: 8, alignItems: "center" }}
+      style={{ flexGrow: 0, marginBottom: 14 ,paddingTop: 10 ,paddingBottom: 10 }}
+  
     >
       {FILTER_BUTTONS.map((f) => {
         const isActive = selected === f.id;
@@ -22,14 +23,17 @@ export function TripFilterChips({ selected, onChange }: Props) {
             onPress={() => onChange(f.id)}
             style={{
               height: 34,
+              width: 99,
               paddingHorizontal: 16,
+
               borderRadius: 17,
               borderWidth: 1.5,
               flexDirection: "row",
               alignItems: "center",
+              justifyContent: "center",
               gap: 6,
-              backgroundColor: isActive ? "#111827" : "#ffffff",
-              borderColor: isActive ? "#111827" : "#E5E7EB",
+              backgroundColor: isActive ? "#2d68eb" : "#ffffff",
+              borderColor: isActive ? "#2d68eb" : "#E5E7EB",
             }}
           >
             {f.dotColor && !isActive && (
@@ -49,6 +53,7 @@ export function TripFilterChips({ selected, onChange }: Props) {
                 color: isActive ? "#ffffff" : "#6B7280",
                 lineHeight: 16,
               }}
+              
             >
               {f.label}
             </Text>

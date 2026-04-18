@@ -2,21 +2,18 @@
   "expo": {
     "name": "Smart Axia Fleet Manager",
     "slug": "Smart-Axia-Fleet-Manager",
-     "owner": "islemboubaker" ,
+    "owner": "islemboubaker",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-
     "scheme": "fleetmobileapp",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
-
     "ios": {
       "supportsTablet": true,
       "googleServicesFile": "./GoogleService-Info.plist",
       "bundleIdentifier": "com.islemboubaker.SmartAxiaFleetManager"
     },
-
     "android": {
       "icon": "./assets/images/icon.png",
       "adaptiveIcon": {
@@ -25,18 +22,18 @@
       },
       "googleServicesFile": "./google-services.json",
       "package": "com.islemboubaker.SmartAxiaFleetManager",
-       "permissions": [
+      "permissions": [
         "ACCESS_FINE_LOCATION",
-        "ACCESS_COARSE_LOCATION"
+        "ACCESS_COARSE_LOCATION",
+        "android.permission.ACCESS_COARSE_LOCATION",
+        "android.permission.ACCESS_FINE_LOCATION"
       ]
     },
-
     "web": {
       "output": "static",
       "favicon": "./assets/images/adaptive-icon.png",
       "bundler": "metro"
     },
-
     "plugins": [
       [
         "expo-splash-screen",
@@ -70,15 +67,13 @@
         }
       ]
     ],
-
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
     },
-
     "extra": {
       "eas": {
-        "projectId": "YOUR_PROJECT_ID"
+        "projectId": "1b823134-dd66-49ae-9faf-64304dc704cd"
       }
     }
   }

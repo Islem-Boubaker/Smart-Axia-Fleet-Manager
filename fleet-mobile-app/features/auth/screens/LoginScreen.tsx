@@ -24,7 +24,7 @@ export default function SignInScreen() {
     onPasswordChange,
     onTogglePassword,
     onSubmit,
-    onSendMagicLink,
+   
     onLoginWithGoogle,
     onLoginWithApple,
     onForgotPassword,
@@ -58,7 +58,7 @@ export default function SignInScreen() {
             onPasswordChange={onPasswordChange}
             onTogglePassword={onTogglePassword}
             onSubmit={onSubmit}
-            onSendMagicLink={onSendMagicLink}
+            
             onLoginWithGoogle={onLoginWithGoogle}
             onLoginWithApple={onLoginWithApple}
             onForgotPassword={onForgotPassword}

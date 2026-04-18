@@ -13,13 +13,40 @@ type ExpoProjectConfig = {
   expoConfig?: { extra?: { eas?: { projectId?: string } } };
 };
 
+const UUID_V4_REGEX =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
+function isValidProjectId(value: string | undefined): value is string {
+  return Boolean(value && UUID_V4_REGEX.test(value));
+}
+
 function resolveProjectId(): string | undefined {
   const config = Constants as unknown as ExpoProjectConfig;
-  return config.easConfig?.projectId ?? config.expoConfig?.extra?.eas?.projectId;
+  const rawProjectId =
+    config.easConfig?.projectId ?? config.expoConfig?.extra?.eas?.projectId;
+
+  if (!isValidProjectId(rawProjectId)) {
+    if (rawProjectId) {
+      console.warn(
+        "[PushRegistration] Invalid EAS projectId in Expo config. Expected UUID format.",
+      );
+    }
+    return undefined;
+  }
+
+  return rawProjectId;
 }
 
 async function getPushToken(): Promise<string | null> {
   if (Platform.OS === "web") return null;
+
+  if (Constants.executionEnvironment === "storeClient") {
+    console.warn(
+      "[PushRegistration] Skipped: remote push notifications are not supported in Expo Go. Use a development build.",
+    );
+    return null;
+  }
+
   if (!Device.isDevice) {
     console.warn("[PushRegistration] Skipped: physical device required.");
     return null;

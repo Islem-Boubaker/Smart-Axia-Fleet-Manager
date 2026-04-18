@@ -11,6 +11,7 @@ import { useAuthBootstrap, useAuthGuard } from "../features/auth/hooks/useAuth";
 import { useRealtimeNotificationToasts } from "../features/notifications/hooks/useRealtimeNotificationToasts";
 import { usePushTokenRegistration } from "../features/notifications/hooks/usePushTokenRegistration";
 import { ToastProvider } from "../shared/components/toast";
+
 function AppLayout() {
   useAuthBootstrap();
   useAuthGuard();

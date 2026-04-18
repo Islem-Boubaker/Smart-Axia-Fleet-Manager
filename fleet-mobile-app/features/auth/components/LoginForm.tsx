@@ -25,7 +25,6 @@ type LoginFormProps = {
   onPasswordChange: (value: string) => void;
   onTogglePassword: () => void;
   onSubmit: () => void;
-  onSendMagicLink: () => void;
   onLoginWithGoogle: () => void;
   onLoginWithApple: () => void;
   onForgotPassword: () => void;
@@ -69,7 +68,7 @@ export function LoginForm({
           {loadingProvider === "google" ? (
             <ActivityIndicator color="#4285F4" />
           ) : (
-            <GoogleSignInButton/>
+            <GoogleSignInButton  />
           )}
         </TouchableOpacity>
 
