@@ -95,7 +95,7 @@ function DashboardScreen() {
       {/* HEADER */}
       <View className="flex-row justify-between px-5 py-3 items-center">
         <View className="flex-row items-center gap-3">
-          <MaterialIcons name="menu" size={22} />
+          {/* <MaterialIcons name="menu" size={22} /> */}
           <View>
             <Text className="text-xs text-gray-400">Current Location</Text>
             <Text className="font-bold">{currentLocation}</Text>
@@ -135,7 +135,7 @@ function DashboardScreen() {
 
         <View className="flex-row justify-between mb-2">
           <Text className="font-bold">Recent Trips</Text>
-          <Text className="text-emerald-600">View all</Text>
+          <Text className="text-blue-600">View all</Text>
         </View>
 
         {recentTrips.length === 0 ? (
