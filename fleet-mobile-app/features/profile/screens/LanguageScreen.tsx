@@ -1,9 +1,8 @@
 import React, { useState } from "react";
-import { Text, View, TouchableOpacity, ScrollView, Platform } from "react-native";
+import { Text, View, TouchableOpacity, ScrollView } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { ChevronLeft, Check } from "lucide-react-native";
 import { useRouter } from "expo-router";
-import BackButton from "@/shared/components/ui/BackButton";
 
 const languages = [
   { code: "en", label: "English",    native: "English"     },
@@ -30,8 +29,10 @@ export default function LanguageScreen() {
   return (
     <SafeAreaView className="flex-1 bg-[#F5F7FA]">
 
-      <View className="flex-row items-center px-4 pb-4" style={{ paddingTop: Platform.OS === "ios" ? 8 : 0 }}>
-       <BackButton/>
+      <View className="flex-row items-center mt-10 px-4 pb-4">
+        <TouchableOpacity onPress={() => router.back()}>
+          <ChevronLeft size={22} color="#111827" />
+        </TouchableOpacity>
         <Text className="flex-1 text-center text-lg font-bold text-gray-900">
           Language
         </Text>
@@ -52,10 +53,10 @@ export default function LanguageScreen() {
                 onPress={() => setSelected(lang.code)}
                 className={`flex-row justify-between items-center px-4 py-4 ${
                   isLast ? "" : "border-b border-gray-100"
-                } ${isSelected ? "bg-blue-50" : ""}`}
+                } ${isSelected ? "bg-emerald-50" : ""}`}
               >
                 <View>
-                  <Text className={`text-base ${isSelected ? "font-semibold text-blue-700" : "text-gray-900"}`}>
+                  <Text className={`text-base ${isSelected ? "font-semibold text-emerald-700" : "text-gray-900"}`}>
                     {lang.label}
                   </Text>
                   <Text className="text-xs text-gray-400 mt-0.5">

@@ -1,21 +1,19 @@
 import "../index.css";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { Stack } from "expo-router";
-import { ActivityIndicator, View } from "react-native";
 import { Provider, useSelector } from "react-redux";
+import { View, ActivityIndicator } from "react-native";
 
-import type { RootState } from "../store";
 import { store } from "../store/index";
+import type { RootState } from "../store";
 
 import { useAuthBootstrap, useAuthGuard } from "../features/auth/hooks/useAuth";
 import { useRealtimeNotificationToasts } from "../features/notifications/hooks/useRealtimeNotificationToasts";
-import { usePushTokenRegistration } from "../features/notifications/hooks/usePushTokenRegistration";
 import { ToastProvider } from "../shared/components/toast";
 function AppLayout() {
   useAuthBootstrap();
   useAuthGuard();
   useRealtimeNotificationToasts();
-  usePushTokenRegistration();
 
   const isLoading = useSelector((state: RootState) => state.auth.isLoading);
 
@@ -36,6 +34,10 @@ function AppLayout() {
         />
         <Stack.Screen
           name="trips/live"
+          options={{ animation: "slide_from_bottom" }}
+        />
+        <Stack.Screen
+          name="maps/index"
           options={{ animation: "slide_from_bottom" }}
         />
         <Stack.Screen
@@ -70,13 +72,16 @@ function AppLayout() {
 }
 
 export default function RootLayout() {
+
   return (
-    <Provider store={store}>
-      <SafeAreaProvider>
-        <ToastProvider>
-          <AppLayout />
-        </ToastProvider>
-      </SafeAreaProvider>
-    </Provider>
+   
+      <Provider store={store}>
+        <SafeAreaProvider>
+          <ToastProvider>
+            <AppLayout />
+          </ToastProvider>
+        </SafeAreaProvider>
+      </Provider>
+   
   );
 }
