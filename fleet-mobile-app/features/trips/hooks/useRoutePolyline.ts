@@ -1,6 +1,5 @@
 import { useState, useEffect, useMemo, useRef } from "react";
 import { TRIPS_CONFIG } from "../config/trips.config";
-import type { TripStop } from "../types/trip.types";
 
 type LatLng = { latitude: number; longitude: number };
 
@@ -11,39 +10,36 @@ type UseRoutePolylineResult = {
 };
 
 /**
- * Fetches a real road route from Google Directions API
- * for all ordered stops (origin → waypoints → destination).
+ * Fetches a real road route from OSRM
+ * for ordered points (origin → waypoints → destination).
  */
-export function useRoutePolyline(stops: TripStop[]): UseRoutePolylineResult {
+export function useRoutePolyline(points: LatLng[]): UseRoutePolylineResult {
   const [routeCoords, setRouteCoords] = useState<LatLng[]>([]);
   const [isFetchingRoute, setIsFetchingRoute] = useState(false);
   const [routeError, setRouteError] = useState<string | null>(null);
-  const validStopsRef = useRef<TripStop[]>([]);
+  const validPointsRef = useRef<LatLng[]>([]);
 
-  const validStops = useMemo(
-    () =>
-      [...stops]
-        .sort((a, b) => a.stopOrder - b.stopOrder)
-        .filter((s) => s.latitude != null && s.longitude != null),
-    [stops]
+  const validPoints = useMemo(
+    () => points.filter((p) => Number.isFinite(p.latitude) && Number.isFinite(p.longitude)),
+    [points],
   );
 
   useEffect(() => {
-    validStopsRef.current = validStops;
-  }, [validStops]);
+    validPointsRef.current = validPoints;
+  }, [validPoints]);
 
   // Use a stable content-based key so the effect doesn't retrigger on equivalent arrays.
   const routeRequestKey = useMemo(
     () =>
-      validStops
-        .map((s) => `${s.id}:${s.stopOrder}:${s.latitude}:${s.longitude}`)
+      validPoints
+        .map((p) => `${p.latitude}:${p.longitude}`)
         .join("|"),
-    [validStops]
+    [validPoints],
   );
 
   useEffect(() => {
     // Need at least origin + destination
-    if (validStopsRef.current.length < 2) {
+    if (validPointsRef.current.length < 2) {
       setIsFetchingRoute(false);
       setRouteError(null);
       setRouteCoords((prev) => (prev.length === 0 ? prev : []));
@@ -57,12 +53,12 @@ export function useRoutePolyline(stops: TripStop[]): UseRoutePolylineResult {
       setRouteError(null);
 
       try {
-        const currentStops = validStopsRef.current;
+        const currentPoints = validPointsRef.current;
 
         // Build OSRM URL: coordinates must be in [longitude, latitude] order
         // Format: lng1,lat1;lng2,lat2;lng3,lat3;...
-        const coordinates = currentStops
-          .map((s) => `${s.longitude},${s.latitude}`)
+        const coordinates = currentPoints
+          .map((p) => `${p.longitude},${p.latitude}`)
           .join(";");
 
         const url = `${TRIPS_CONFIG.OSRM_BASE_URL}/route/v1/driving/${coordinates}?overview=full&geometries=geojson`;

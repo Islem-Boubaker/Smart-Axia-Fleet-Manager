@@ -19,7 +19,7 @@ import { Accordion } from "../components/ui/Accordion";
 import { ArrowLeft, ChevronDown, ChevronUp, Clock, Fuel, Gauge, RefreshCw } from "lucide-react-native";
 import { useTripDetail } from "../hooks/useTripDetail";
 import { useRoutePolyline } from "../hooks/useRoutePolyline"; // ← new
-import type { TripStop, UiTripStatus } from "../types/trip.types";
+import type { UiTripStatus } from "../types/trip.types";
 
 if (Platform.OS === "android") {
   UIManager.setLayoutAnimationEnabledExperimental?.(true);
@@ -28,6 +28,28 @@ if (Platform.OS === "android") {
 const { height } = Dimensions.get("window");
 const SHEET_PEEK = 64;
 const SHEET_FULL = height * 0.52;
+type LatLng = { latitude: number; longitude: number };
+
+const TUNISIA_LOCATION_FALLBACKS: Record<string, LatLng> = {
+  tunis: { latitude: 36.8065, longitude: 10.1815 },
+  ariana: { latitude: 36.8625, longitude: 10.1956 },
+  manouba: { latitude: 36.8091, longitude: 10.0963 },
+  benarous: { latitude: 36.7544, longitude: 10.2181 },
+  benarouss: { latitude: 36.7544, longitude: 10.2181 },
+  sousse: { latitude: 35.8256, longitude: 10.6084 },
+  kairouan: { latitude: 35.6781, longitude: 10.0963 },
+  siliana: { latitude: 36.0887, longitude: 9.3708 },
+  sfax: { latitude: 34.7398, longitude: 10.76 },
+  nabeul: { latitude: 36.4513, longitude: 10.7351 },
+  bizerte: { latitude: 37.2744, longitude: 9.8739 },
+  gabes: { latitude: 33.8815, longitude: 10.0982 },
+  beja: { latitude: 36.7256, longitude: 9.1817 },
+  kef: { latitude: 36.1742, longitude: 8.7049 },
+  mahdia: { latitude: 35.5047, longitude: 11.0622 },
+  monastir: { latitude: 35.7643, longitude: 10.8113 },
+  tozeur: { latitude: 33.9197, longitude: 8.1335 },
+  medenine: { latitude: 33.3549, longitude: 10.5055 },
+};
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -51,13 +73,12 @@ function formatDate(iso: string | null | undefined): string {
   catch { return "—"; }
 }
 
-function getRegion(stops: TripStop[]) {
-  const coords = stops.filter((s) => s.latitude != null && s.longitude != null);
+function getRegion(coords: LatLng[]) {
   if (coords.length === 0) {
     return { latitude: 36.8065, longitude: 10.1815, latitudeDelta: 0.5, longitudeDelta: 0.5 };
   }
-  const lats = coords.map((c) => c.latitude as number);
-  const lngs = coords.map((c) => c.longitude as number);
+  const lats = coords.map((c) => c.latitude);
+  const lngs = coords.map((c) => c.longitude);
   const minLat = Math.min(...lats), maxLat = Math.max(...lats);
   const minLng = Math.min(...lngs), maxLng = Math.max(...lngs);
   return {
@@ -73,6 +94,8 @@ function getRegion(stops: TripStop[]) {
 export default function TripDetailScreen() {
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
+  const mapRef = useRef<MapView | null>(null);
+  const geocodeCache = useRef<Record<string, LatLng>>({});
 
   const handleGoBack = () => {
     if (router.canGoBack()) { router.back(); return; }
@@ -84,12 +107,169 @@ export default function TripDetailScreen() {
 
   const [sheetExpanded, setSheetExpanded] = useState(true);
   const [stopsOpen, setStopsOpen]         = useState(true);
+  const [originCoord, setOriginCoord] = useState<LatLng | null>(null);
+  const [destinationCoord, setDestinationCoord] = useState<LatLng | null>(null);
+  const [isGeocoding, setIsGeocoding] = useState(false);
   const sheetHeight = useRef(new Animated.Value(SHEET_FULL)).current;
 
   const stops = useMemo(() => trip?.stops ?? [], [trip?.stops]);
+  const sortedStops = useMemo(() => [...stops].sort((a, b) => a.stopOrder - b.stopOrder), [stops]);
+  const validStops = useMemo(
+    () => sortedStops.filter((s) => s.latitude != null && s.longitude != null),
+    [sortedStops],
+  );
+
+  const originAddress = useMemo(() => {
+    const maybeAddress = trip?.pickupLocation?.address?.trim();
+    if (maybeAddress) return maybeAddress;
+    return trip?.from?.trim() ?? "";
+  }, [trip?.pickupLocation?.address, trip?.from]);
+
+  const destinationAddress = useMemo(() => {
+    const maybeAddress = trip?.destinationLocation?.address?.trim();
+    if (maybeAddress) return maybeAddress;
+    return trip?.to?.trim() ?? "";
+  }, [trip?.destinationLocation?.address, trip?.to]);
+
+  const stopNameCoordsMap = useMemo(() => {
+    const map: Record<string, LatLng> = {};
+    for (const stop of validStops) {
+      const key = normalizeAddressKey(stop.locationName);
+      if (!map[key]) {
+        map[key] = {
+          latitude: stop.latitude as number,
+          longitude: stop.longitude as number,
+        };
+      }
+    }
+    return map;
+  }, [validStops]);
+
+  React.useEffect(() => {
+    let isCancelled = false;
+
+    const geocodeAddress = async (address: string): Promise<LatLng | null> => {
+      const normalized = address.trim();
+      if (!normalized) return null;
+      if (geocodeCache.current[normalized]) {
+        return geocodeCache.current[normalized];
+      }
+
+      const fallbackCoords = lookupTunisiaFallback(normalized);
+      if (fallbackCoords) {
+        geocodeCache.current[normalized] = fallbackCoords;
+        return fallbackCoords;
+      }
+
+      try {
+        const searchText = normalized.toLowerCase().includes("tunisia")
+          ? normalized
+          : `${normalized}, Tunisia`;
+
+        const response = await fetch(
+          `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(searchText)}&limit=1&addressdetails=1&countrycodes=tn`,
+          {
+            headers: {
+              Accept: "application/json",
+              "User-Agent": "SmartAxiaFleetManager/1.0 (mobile-app)",
+            },
+          },
+        );
+
+        if (!response.ok) return null;
+        const results = (await response.json()) as { lat: string; lon: string }[];
+        if (!Array.isArray(results) || results.length === 0) return null;
+
+        const lat = Number.parseFloat(results[0].lat);
+        const lng = Number.parseFloat(results[0].lon);
+        if (Number.isNaN(lat) || Number.isNaN(lng)) return null;
+
+        const coords = { latitude: lat, longitude: lng };
+        geocodeCache.current[normalized] = coords;
+        return coords;
+      } catch {
+        return null;
+      }
+    };
+
+    const resolveFromStopName = (address: string): LatLng | null => {
+      const key = normalizeAddressKey(address);
+      return stopNameCoordsMap[key] ?? null;
+    };
+
+    const resolveEndpoints = async () => {
+      if (!originAddress && !destinationAddress) {
+        setOriginCoord(null);
+        setDestinationCoord(null);
+        return;
+      }
+
+      setIsGeocoding(true);
+      const [origin, destination] = await Promise.all([
+        geocodeAddress(originAddress),
+        geocodeAddress(destinationAddress),
+      ]);
+
+      if (isCancelled) return;
+
+      setOriginCoord(origin ?? resolveFromStopName(originAddress));
+      setDestinationCoord(destination ?? resolveFromStopName(destinationAddress));
+      setIsGeocoding(false);
+    };
+
+    void resolveEndpoints();
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [originAddress, destinationAddress, stopNameCoordsMap]);
+
+  const allMarkerCoords = useMemo(() => {
+    const points: LatLng[] = [];
+    if (originCoord) points.push(originCoord);
+    for (const stop of validStops) {
+      points.push({
+        latitude: stop.latitude as number,
+        longitude: stop.longitude as number,
+      });
+    }
+    if (destinationCoord) points.push(destinationCoord);
+    return points;
+  }, [destinationCoord, originCoord, validStops]);
+
+  const routePathCoords = useMemo(() => allMarkerCoords, [allMarkerCoords]);
 
   // ── Real road route ───────────────────────────────────────────────────────
-  const { routeCoords, isFetchingRoute } = useRoutePolyline(stops);
+  const { routeCoords, isFetchingRoute } = useRoutePolyline(routePathCoords);
+
+  React.useEffect(() => {
+    if (!mapRef.current || allMarkerCoords.length === 0) return;
+
+    if (allMarkerCoords.length === 1) {
+      mapRef.current.animateToRegion(
+        {
+          latitude: allMarkerCoords[0].latitude,
+          longitude: allMarkerCoords[0].longitude,
+          latitudeDelta: 0.08,
+          longitudeDelta: 0.08,
+        },
+        400,
+      );
+      return;
+    }
+
+    requestAnimationFrame(() => {
+      mapRef.current?.fitToCoordinates(allMarkerCoords, {
+        edgePadding: {
+          top: 110,
+          right: 48,
+          bottom: 220,
+          left: 48,
+        },
+        animated: true,
+      });
+    });
+  }, [allMarkerCoords]);
 
   // ── Sheet animation ───────────────────────────────────────────────────────
   const animateTo = (toValue: number, expanded: boolean) => {
@@ -160,9 +340,8 @@ export default function TripDetailScreen() {
   }
 
   // ── Derived values ────────────────────────────────────────────────────────
-  const validCoords = stops.filter((s) => s.latitude != null && s.longitude != null);
-  const sortedStops = [...stops].sort((a, b) => a.stopOrder - b.stopOrder);
-  const mapRegion   = getRegion(stops);
+  const validCoords = validStops;
+  const mapRegion   = getRegion(allMarkerCoords);
 
   const backendStatus = trip.backendStatus ?? "scheduled";
   const statusStyle   = TRIP_STATUS_STYLES[trip.status] ?? TRIP_STATUS_STYLES.pending;
@@ -172,7 +351,7 @@ export default function TripDetailScreen() {
     <View style={{ flex: 1 }}>
 
       {/* ── MAP ── */}
-      <MapView style={{ flex: 1 }} region={mapRegion}>
+      <MapView ref={mapRef} style={{ flex: 1 }} initialRegion={mapRegion}>
 
         {/* Real road polyline — shown once fetched */}
         {routeCoords.length >= 2 && (
@@ -184,32 +363,42 @@ export default function TripDetailScreen() {
         )}
 
         {/* Fallback straight-line polyline while route is loading */}
-        {isFetchingRoute && validCoords.length >= 2 && (
+        {isFetchingRoute && routePathCoords.length >= 2 && (
           <Polyline
-            coordinates={validCoords.map((s) => ({
-              latitude:  s.latitude  as number,
-              longitude: s.longitude as number,
-            }))}
+            coordinates={routePathCoords}
             strokeColor="#C4B5FD"   // lighter purple = "draft"
             strokeWidth={2}
             lineDashPattern={[6, 4]}
           />
         )}
 
-        {/* Markers: green = origin, red = destination, purple = middle stops */}
-        {validCoords.map((stop, i) => (
+        {originCoord && (
+          <Marker
+            coordinate={originCoord}
+            title={originAddress || "Start"}
+            description="Start location"
+            pinColor="#22C55E"
+          />
+        )}
+
+        {validCoords.map((stop) => (
           <Marker
             key={stop.id}
             coordinate={{ latitude: stop.latitude!, longitude: stop.longitude! }}
-            title={stop.locationName}
+            title={`Stop ${stop.stopOrder}: ${stop.locationName}`}
             description={`Stop ${stop.stopOrder} · ${stop.status}`}
-            pinColor={
-              i === 0                        ? "#22C55E"  // origin
-              : i === validCoords.length - 1 ? "#EF4444"  // destination
-              : "#6B21F5"                                 // waypoint
-            }
+            pinColor="#2563EB"
           />
         ))}
+
+        {destinationCoord && (
+          <Marker
+            coordinate={destinationCoord}
+            title={destinationAddress || "End"}
+            description="Destination"
+            pinColor="#DC2626"
+          />
+        )}
       </MapView>
 
       {/* ── FLOATING HEADER ── */}
@@ -231,7 +420,7 @@ export default function TripDetailScreen() {
               {trip.tripNumber}
             </Text>
             {/* Route loading indicator in header */}
-            {isFetchingRoute && <ActivityIndicator size="small" color="#7c3aed" />}
+            {(isFetchingRoute || isGeocoding) && <ActivityIndicator size="small" color="#7c3aed" />}
           </View>
         </BlurView>
       </View>
@@ -407,4 +596,32 @@ function StatCard({ icon, label, value }: { icon: React.ReactNode; label: string
       <Text style={{ fontSize: 14, fontWeight: "600", color: "#111827" }}>{value}</Text>
     </View>
   );
+}
+
+function normalizeAddressKey(address: string): string {
+  return address
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9\s,]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function lookupTunisiaFallback(address: string): LatLng | null {
+  const normalized = normalizeAddressKey(address);
+  if (!normalized) return null;
+
+  const cityCandidate = normalized.split(",")[0]?.trim() ?? normalized;
+  const compactCandidate = cityCandidate.replace(/\s+/g, "");
+
+  if (TUNISIA_LOCATION_FALLBACKS[cityCandidate]) {
+    return TUNISIA_LOCATION_FALLBACKS[cityCandidate];
+  }
+
+  if (TUNISIA_LOCATION_FALLBACKS[compactCandidate]) {
+    return TUNISIA_LOCATION_FALLBACKS[compactCandidate];
+  }
+
+  return null;
 }

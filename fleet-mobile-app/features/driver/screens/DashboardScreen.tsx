@@ -146,7 +146,7 @@ function DashboardScreen() {
 
         <View className="flex-row justify-between mb-2">
           <Text className="font-bold">Recent Trips</Text>
-          <Text className="text-emerald-600">View all</Text>
+          <Text className="text-blue-600">View all</Text>
         </View>
 
         {recentTrips.length === 0 ? (

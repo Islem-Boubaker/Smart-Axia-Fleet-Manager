@@ -251,7 +251,7 @@ export default function ReclamationsScreen() {
         className="absolute bottom-5 right-5 w-14 h-14 rounded-full bg-emerald-500 items-center justify-center"
         style={{
           elevation: 6,
-          shadowColor: "#10B981",
+          shadowColor: "#2a36aa",
           shadowOpacity: 0.4,
           shadowRadius: 12,
         }}

@@ -10,6 +10,7 @@ import type { RootState } from "../store";
 import { useAuthBootstrap, useAuthGuard } from "../features/auth/hooks/useAuth";
 import { useRealtimeNotificationToasts } from "../features/notifications/hooks/useRealtimeNotificationToasts";
 import { ToastProvider } from "../shared/components/toast";
+
 function AppLayout() {
   useAuthBootstrap();
   useAuthGuard();

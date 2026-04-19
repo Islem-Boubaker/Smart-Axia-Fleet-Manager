@@ -25,8 +25,8 @@ export default function FilterChips({ filters, activeFilter, setActiveFilter }: 
               borderWidth: 1.5,
               alignItems: "center",
               justifyContent: "center",
-              backgroundColor: isActive ? "#2D9B6F" : "#ffffff",
-              borderColor: isActive ? "#2D9B6F" : "#E5E7EB",
+              backgroundColor: isActive ? "#2d68eb" : "#ffffff",
+              borderColor: isActive ? "#2d68eb" : "#E5E7EB",
             }}
           >
             <Text
