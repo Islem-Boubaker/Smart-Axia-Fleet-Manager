@@ -124,17 +124,7 @@ export function TripsScreen() {
 
       <MainTopHeader />
 
-      {/* Header */}
-      <View className="flex-row justify-between items-center px-5 pb-3"  style={{ paddingTop: Platform.OS === "ios" ? 8 : 0 }}>
-        <View>
-          <Text className="text-[28px] font-extrabold text-slate-900 dark:text-gray-50 tracking-tight">
-            My Trips
-          </Text>
-          <Text className="text-xs text-gray-400 dark:text-slate-400 mt-0.5">
-            {trips.length} trip{trips.length !== 1 ? "s" : ""} assigned
-          </Text>
-        </View>
-      </View>
+      <View className="px-5 pb-2" style={{ paddingTop: Platform.OS === "ios" ? 8 : 0 }} />
 
       {/* Filter chips */}
       <TripFilterChips selected={filter} onChange={setFilter} />

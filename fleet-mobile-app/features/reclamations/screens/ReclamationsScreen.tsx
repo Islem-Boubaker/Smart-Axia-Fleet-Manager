@@ -158,19 +158,7 @@ export default function ReclamationsScreen() {
 
       <MainTopHeader />
 
-      {/* ── Header ── */} 
-      <View className="px-5 pb-3" style={{ paddingTop: Platform.OS === "ios" ? 8 : 0 }}>
-        <View className="flex-row items-center justify-between">
-          <View>
-            <Text className="text-[28px] font-extrabold text-slate-900 dark:text-gray-50 tracking-tight">
-              Reports
-            </Text>
-            <Text className="text-xs text-gray-400 dark:text-slate-400 mt-0.5">
-              {reclamations.length} total reclamations
-            </Text>
-          </View>
-        </View>
-      </View>
+      <View className="px-5 pb-2" style={{ paddingTop: Platform.OS === "ios" ? 8 : 0 }} />
 
       {/* ── Filters ── */}
       <View style={{ height: 52 }}>

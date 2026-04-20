@@ -246,7 +246,7 @@ function DashboardScreen() {
 
       {/* GREETING */}
       <View className="px-5 mb-3">
-        <Text className="text-[28px] font-extrabold tracking-tight text-gray-900 dark:text-gray-50">
+        <Text className="text-2xl font-extrabold tracking-tight text-gray-900 dark:text-gray-50">
           {`${getGreeting()}, ${user?.name?.split(' ')[0] ?? "Driver"}`}
         </Text>
         <Text className="text-xs text-gray-400 dark:text-slate-400">

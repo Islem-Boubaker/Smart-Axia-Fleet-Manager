@@ -64,7 +64,9 @@ export default function LiveTripScreen() {
   const { trip, isLoading, error, reload } = useTripDetail(tripId);
   const [driverLocation, setDriverLocation] = useState<LatLng | null>(null);
   const [destinationCoord, setDestinationCoord] = useState<LatLng | null>(null);
+  const [nextStopTargetCoord, setNextStopTargetCoord] = useState<LatLng | null>(null);
   const [isResolvingDestination, setIsResolvingDestination] = useState(false);
+  const [isResolvingNextStop, setIsResolvingNextStop] = useState(false);
   const [locationError, setLocationError] = useState<string | null>(null);
   const [locationAccuracy, setLocationAccuracy] = useState<number | null>(null);
 
@@ -174,6 +176,78 @@ export default function LiveTripScreen() {
   }, [destinationAddress, stopCoords, trip]);
 
   useEffect(() => {
+    let cancelled = false;
+
+    async function resolveNextStopTarget() {
+      if (!nextStop) {
+        setNextStopTargetCoord(null);
+        return;
+      }
+
+      if (nextStopCoord) {
+        setNextStopTargetCoord(nextStopCoord);
+        return;
+      }
+
+      const candidate = String(nextStop.locationName ?? "").trim();
+      if (!candidate) {
+        setNextStopTargetCoord(null);
+        return;
+      }
+
+      setIsResolvingNextStop(true);
+      try {
+        const searchText = candidate.toLowerCase().includes("tunisia")
+          ? candidate
+          : `${candidate}, Tunisia`;
+
+        const response = await fetch(
+          `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(searchText)}&limit=1&addressdetails=1&countrycodes=tn`,
+          {
+            headers: {
+              Accept: "application/json",
+              "User-Agent": "SmartAxiaFleetManager/1.0 (mobile-app)",
+            },
+          },
+        );
+
+        if (!response.ok) {
+          setNextStopTargetCoord(null);
+          return;
+        }
+
+        const results = (await response.json()) as { lat: string; lon: string }[];
+        if (!Array.isArray(results) || results.length === 0) {
+          setNextStopTargetCoord(null);
+          return;
+        }
+
+        const lat = Number.parseFloat(results[0].lat);
+        const lng = Number.parseFloat(results[0].lon);
+        if (Number.isNaN(lat) || Number.isNaN(lng)) {
+          setNextStopTargetCoord(null);
+          return;
+        }
+
+        if (!cancelled) {
+          setNextStopTargetCoord({ latitude: lat, longitude: lng });
+        }
+      } catch {
+        if (!cancelled) {
+          setNextStopTargetCoord(null);
+        }
+      } finally {
+        if (!cancelled) setIsResolvingNextStop(false);
+      }
+    }
+
+    void resolveNextStopTarget();
+    return () => {
+      cancelled = true;
+    };
+  }, [nextStop, nextStopCoord]);
+
+  useEffect(() => {
     let mounted = true;
 
     async function startTracking() {
@@ -263,23 +337,24 @@ export default function LiveTripScreen() {
   const routeInputPoints = useMemo(() => {
     const points: LatLng[] = [];
     if (driverLocation) points.push(driverLocation);
-    if (nextStopCoord) {
-      points.push(nextStopCoord);
+    if (nextStopTargetCoord) {
+      points.push(nextStopTargetCoord);
       return points;
     }
     if (destinationCoord) points.push(destinationCoord);
     return points;
-  }, [destinationCoord, driverLocation, nextStopCoord]);
+  }, [destinationCoord, driverLocation, nextStopTargetCoord]);
 
   const { routeCoords, isFetchingRoute } = useRoutePolyline(routeInputPoints);
 
   const mapCoords = useMemo(() => {
     const points: LatLng[] = [];
     if (driverLocation) points.push(driverLocation);
-    if (nextStopCoord) points.push(nextStopCoord);
+    for (const stop of stopCoords) points.push(stop);
+    if (nextStopTargetCoord && !nextStopCoord) points.push(nextStopTargetCoord);
     if (destinationCoord) points.push(destinationCoord);
     return points;
-  }, [destinationCoord, driverLocation, nextStopCoord]);
+  }, [destinationCoord, driverLocation, nextStopCoord, nextStopTargetCoord, stopCoords]);
 
   useEffect(() => {
     if (!mapRef.current || mapCoords.length === 0) return;
@@ -370,13 +445,37 @@ export default function LiveTripScreen() {
           <Polyline coordinates={routeInputPoints} strokeColor="#60A5FA" strokeWidth={3} lineDashPattern={[8, 4]} />
         ) : null}
 
+        {sortedStops.map((stop) => {
+          if (stop.latitude == null || stop.longitude == null) return null;
+          const isNext = Boolean(nextStop && String(nextStop.id) === String(stop.id));
+          const normalizedStatus = normalizeStopStatus(stop.status);
+          const pinColor =
+            isNext
+              ? "#F59E0B"
+              : normalizedStatus === "reached"
+                ? "#16A34A"
+                : normalizedStatus === "skipped"
+                  ? "#6B7280"
+                  : "#2563EB";
+
+          return (
+            <Marker
+              key={String(stop.id)}
+              coordinate={{ latitude: stop.latitude as number, longitude: stop.longitude as number }}
+              title={`Stop #${stop.stopOrder}`}
+              description={stop.locationName}
+              pinColor={pinColor}
+            />
+          );
+        })}
+
         {destinationCoord ? (
           <Marker coordinate={destinationCoord} title={destinationAddress || "Destination"} description="Trip destination" pinColor="#DC2626" />
         ) : null}
 
-        {nextStop && nextStopCoord ? (
+        {nextStop && nextStopTargetCoord && !nextStopCoord ? (
           <Marker
-            coordinate={nextStopCoord}
+            coordinate={nextStopTargetCoord}
             title={`Next stop #${nextStop.stopOrder}`}
             description={nextStop.locationName}
             pinColor="#F59E0B"
@@ -394,7 +493,13 @@ export default function LiveTripScreen() {
 
         <View className="flex-row items-center justify-between mt-3">
           <Text className="text-xs text-gray-500 dark:text-slate-400">
-            {isResolvingDestination ? "Resolving destination..." : isFetchingRoute ? "Updating route..." : "Route ready"}
+            {isResolvingNextStop
+              ? "Resolving next stop..."
+              : isResolvingDestination
+                ? "Resolving destination..."
+                : isFetchingRoute
+                  ? "Updating route..."
+                  : "Route ready"}
           </Text>
           {locationAccuracy != null ? (
             <Text className="text-xs text-gray-500 dark:text-slate-400">
