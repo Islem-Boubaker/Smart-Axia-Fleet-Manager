@@ -155,7 +155,7 @@ const NotificationService = {
     return notifications;
   },
 
-  async getNotifications(userId, options = {}) {
+  async getNotifications(userId, options = {}, cacheKey = null) {
     const limit = Math.min(parseInt(options.limit ?? DEFAULT_PAGE_SIZE, 10), MAX_PAGE_SIZE);
     const page = parseInt(options.page ?? 1, 10);
     const offset =
@@ -181,7 +181,7 @@ const NotificationService = {
     };
   },
 
-  async getGroupedNotifications(userId, options = {}) {
+  async getGroupedNotifications(userId, options = {}, cacheKey = null) {
     const where = buildWhereClause(userId, options);
 
     const notifications = await Notification.findAll({
@@ -198,13 +198,13 @@ const NotificationService = {
     }, {});
   },
 
-  async getById(notificationId, userId) {
+  async getById(notificationId, userId, cacheKey = null) {
     return Notification.findOne({
       where: { id: notificationId, userId },
     });
   },
 
-  async getUnreadCount(userId) {
+  async getUnreadCount(userId, cacheKey = null) {
     return Notification.count({
       where: {
         userId,

@@ -77,7 +77,7 @@ export const addStops = async (tripId, stopsInput) => {
   return TripStop.bulkCreate(payload, { validate: true, returning: true });
 };
 
-export const getStops = async (tripId, callerRole, callerId) => {
+export const getStops = async (tripId, callerRole, callerId, cacheKey = null) => {
   const trip = await ensureTrip(tripId);
   ensureDriverOwnership(trip, callerRole, callerId);
 

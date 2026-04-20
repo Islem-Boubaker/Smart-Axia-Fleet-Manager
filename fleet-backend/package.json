@@ -17,6 +17,7 @@
   "license": "ISC",
   "type": "module",
   "dependencies": {
+    "@redis/client": "^5.12.1",
     "axios": "^1.14.0",
     "bcrypt": "^6.0.0",
     "bcryptjs": "^3.0.3",
@@ -41,6 +42,7 @@
     "pg": "^8.18.0",
     "pg-hstore": "^2.3.4",
     "postgres": "^3.4.8",
+    "redis": "^5.12.1",
     "sequelize": "^6.37.7",
     "socket.io": "^4.8.3",
     "uuid": "^13.0.0",

@@ -10,6 +10,7 @@ import {
   validateUpdateStatus,
   validateCompleteTrip,
 } from "../validators/trip.validator.js";
+import cacheMiddleware from "../middlewares/cache.middleware.js";
 
 const router = express.Router();
 
@@ -23,12 +24,18 @@ router.post(
   tripController.createTrip
 );
 
-router.get("/trips/", authorizeRoles("ADMIN", "MANAGER", "DRIVER"), tripController.getTrips);
+router.get(
+  "/trips/",
+  authorizeRoles("ADMIN", "MANAGER", "DRIVER"),
+  cacheMiddleware("trips", "index", { requireAuth: true }),
+  tripController.getTrips
+);
 
 router.get(
   "/trips/:id",
   authorizeRoles("ADMIN", "MANAGER", "DRIVER"),
   checkOwnership(Trip, { ownerField: "userId" }),
+  cacheMiddleware("trips", "show", { requireAuth: true }),
   tripController.getTripById
 );
 

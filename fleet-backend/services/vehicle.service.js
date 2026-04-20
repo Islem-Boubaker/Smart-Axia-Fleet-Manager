@@ -48,7 +48,7 @@ export const createVehicle = async (data) => {
 // Read
 // ─────────────────────────────────────────────
 
-export const getAllVehicles = async (query = {}) => {
+export const getAllVehicles = async (query = {}, cacheKey = null) => {
     const { page, limit, offset } = getPagination(query);
 
     const { count, rows } = await Vehicle.findAndCountAll({
@@ -60,7 +60,7 @@ export const getAllVehicles = async (query = {}) => {
     return getPagingData(count, rows, page, limit);
 };
 
-export const getVehicleById = async (id) => {
+export const getVehicleById = async (id, cacheKey = null) => {
     return await Vehicle.findByPk(id);
 };
 

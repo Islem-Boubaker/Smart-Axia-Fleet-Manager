@@ -1,6 +1,6 @@
 import http from "http";
 import app from "./app.js";
-import { sequelize } from "./config/connectdb.js";
+import { closeRedis, sequelize } from "./config/connectdb.js";
 import "./models/index.js";
 import { closeIO, initSocket } from "./config/socket.js";
 import "./events/notification.handlers.js";
@@ -108,8 +108,10 @@ async function startServer() {
         });
 
         await sequelize.close();
+        await closeRedis();
         clearTimeout(forceTimer);
         console.log("✅ DB connection closed");
+        console.log("✅ Redis connection closed");
         console.log("👋 Server shut down cleanly");
         process.exit(0);
       } catch (err) {

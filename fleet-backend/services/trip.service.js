@@ -256,7 +256,7 @@ export const createTrip = async (data) => {
   return fetchTripWithStops(result.id);
 };
 
-export const getTrips = async (filters = {}, pagination = {}, callerRole, callerId) => {
+export const getTrips = async (filters = {}, pagination = {}, callerRole, callerId, cacheKey = null) => {
   const where = {};
 
   if (filters.status) where.status = filters.status;
@@ -304,7 +304,7 @@ export const getTrips = async (filters = {}, pagination = {}, callerRole, caller
   return getPagingData(count, rows, page, limit);
 };
 
-export const getTripById = async (tripId, callerRole, callerId) => {
+export const getTripById = async (tripId, callerRole, callerId, cacheKey = null) => {
   const trip = await ensureTripExists(tripId, true);
   ensureDriverOwnership(trip, callerRole, callerId);
   enrichTripWithEstimatedFuel(trip);

@@ -111,7 +111,7 @@ export const createReclamationSvc = async (userId, subject, message) => {
   return reclamation;
 };
 
-export const getUserReclamationsSvc = async (userId, query) => {
+export const getUserReclamationsSvc = async (userId, query, cacheKey = null) => {
   const { page = 1, limit = 10 } = query;
   const offset = (page - 1) * limit;
 
@@ -130,7 +130,7 @@ export const getUserReclamationsSvc = async (userId, query) => {
   };
 };
 
-export const getMyReclamationByIdSvc = async (userId, id) => {
+export const getMyReclamationByIdSvc = async (userId, id, cacheKey = null) => {
   const reclamation = await Reclamation.findOne({ where: { id, userId } });
   if (!reclamation) throw new Error("Reclamation not found or unauthorized");
   return reclamation;
@@ -188,7 +188,7 @@ export const deleteMyReclamationSvc = async (userId, id) => {
 // ADMIN SERVICES
 // ─────────────────────────────────────────────
 
-export const getAllReclamationsSvc = async (query) => {
+export const getAllReclamationsSvc = async (query, cacheKey = null) => {
   const { page = 1, limit = 10 } = query;
   const offset = (page - 1) * limit;
 
@@ -206,7 +206,7 @@ export const getAllReclamationsSvc = async (query) => {
   };
 };
 
-export const getReclamationByIdSvc = async (id) => {
+export const getReclamationByIdSvc = async (id, cacheKey = null) => {
   const reclamation = await Reclamation.findByPk(id);
   if (!reclamation) throw new Error("Reclamation not found");
   return reclamation;
@@ -263,14 +263,14 @@ export const deleteReclamationSvc = async (id) => {
 // FILTER & SEARCH
 // ─────────────────────────────────────────────
 
-export const getReclamationsByStatusSvc = async (status) => {
+export const getReclamationsByStatusSvc = async (status, cacheKey = null) => {
   return await Reclamation.findAll({
     where: { status },
     order: [["createdAt", "DESC"]],
   });
 };
 
-export const searchReclamationsSvc = async (query) => {
+export const searchReclamationsSvc = async (query, cacheKey = null) => {
   const {
     keyword,
     status,

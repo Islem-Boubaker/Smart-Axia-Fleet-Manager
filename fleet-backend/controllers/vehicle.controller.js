@@ -2,11 +2,19 @@ import { StatusCodes } from 'http-status-codes';
 import * as vehicleService from '../services/vehicle.service.js';
 import { uploadVehiclePhotos } from '../middlewares/upload.js';
 import { successResponse } from '../utils/response.js';
+import cacheMiddleware from '../middlewares/cache.middleware.js';
 
 const extractPhotoUrls = (files = []) => {
   return files
     .map((file) => file?.path || file?.secure_url || file?.url || null)
     .filter(Boolean);
+};
+
+const invalidateVehicleCache = async (id) => {
+  await cacheMiddleware.invalidatePattern('vehicles:index:*');
+  if (id) {
+    await cacheMiddleware.invalidatePattern(`vehicles:show:id=${id}*`);
+  }
 };
 
 // ─────────────────────────────────────────────
@@ -28,6 +36,7 @@ export const createVehicle = [
       }
 
       const vehicle = await vehicleService.createVehicle(data);
+      await invalidateVehicleCache(vehicle?.id);
       res.status(StatusCodes.CREATED).json({ success: true, data: vehicle });
     } catch (err) {
       console.error('[createVehicle]', err.message, err.errors ?? '');
@@ -38,8 +47,10 @@ export const createVehicle = [
 
 export const getAllVehicles = async (req, res, next) => {
   try {
-    const result = await vehicleService.getAllVehicles(req.query);
-    res.status(StatusCodes.OK).json({ success: true, ...result });
+    const result = await vehicleService.getAllVehicles(req.query, req.cacheKey);
+    const payload = { success: true, ...result };
+    if (req.cacheSet) await req.cacheSet(payload);
+    res.status(StatusCodes.OK).json(payload);
   } catch (err) {
     next(err);
   }
@@ -47,13 +58,15 @@ export const getAllVehicles = async (req, res, next) => {
 
 export const getVehicleById = async (req, res, next) => {
   try {
-    const vehicle = await vehicleService.getVehicleById(req.params.id);
+    const vehicle = await vehicleService.getVehicleById(req.params.id, req.cacheKey);
     if (!vehicle)
       return res
         .status(StatusCodes.NOT_FOUND)
         .json({ success: false, message: 'Vehicle not found' });
 
-    res.status(StatusCodes.OK).json({ success: true, data: vehicle });
+    const payload = { success: true, data: vehicle };
+    if (req.cacheSet) await req.cacheSet(payload);
+    res.status(StatusCodes.OK).json(payload);
   } catch (err) {
     next(err);
   }
@@ -80,6 +93,8 @@ export const updateVehicle = [
           .status(StatusCodes.NOT_FOUND)
           .json({ success: false, message: 'Vehicle not found' });
 
+      await invalidateVehicleCache(req.params.id);
+
       res.status(StatusCodes.OK).json({ success: true, data: vehicle });
     } catch (err) {
       console.error('[updateVehicle]', err.message, err.errors ?? '');
@@ -95,6 +110,8 @@ export const deleteVehicle = async (req, res, next) => {
       return res
         .status(StatusCodes.NOT_FOUND)
         .json({ success: false, message: 'Vehicle not found' });
+
+    await invalidateVehicleCache(req.params.id);
 
     res.status(StatusCodes.OK).json({ success: true, message: 'Vehicle deleted successfully' });
   } catch (err) {
@@ -125,6 +142,8 @@ export const assignDriver = async (req, res, next) => {
         .status(StatusCodes.NOT_FOUND)
         .json({ success: false, message: 'Vehicle not found' });
 
+    await invalidateVehicleCache(req.params.id);
+
     res.status(StatusCodes.OK).json({ success: true, data: vehicle });
   } catch (err) {
     next(err);
@@ -142,6 +161,8 @@ export const unassignDriver = async (req, res, next) => {
       return res
         .status(StatusCodes.NOT_FOUND)
         .json({ success: false, message: 'Vehicle not found' });
+
+    await invalidateVehicleCache(req.params.id);
 
     res.status(StatusCodes.OK).json({ success: true, data: vehicle });
   } catch (err) {

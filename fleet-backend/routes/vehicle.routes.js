@@ -1,6 +1,7 @@
 import express from 'express';
 import * as vehicleController from '../controllers/vehicle.controller.js';
 import * as authMiddleware from '../middlewares/auth.middlewares.js';
+import cacheMiddleware from '../middlewares/cache.middleware.js';
 
 const router = express.Router();
 router.use(authMiddleware.authenticate);
@@ -8,9 +9,9 @@ router.use(authMiddleware.authenticate);
 router.post('/vehicle/addvehicle', authMiddleware.authorizeRoles('ADMIN', 'MANAGER'), vehicleController.createVehicle);
 
 
-router.get('/vehicle/getvehicles', authMiddleware.authenticate, authMiddleware.authorizeRoles('ADMIN', 'MANAGER'), vehicleController.getAllVehicles);
+router.get('/vehicle/getvehicles', authMiddleware.authenticate, authMiddleware.authorizeRoles('ADMIN', 'MANAGER'), cacheMiddleware('vehicles', 'index', { requireAuth: true }), vehicleController.getAllVehicles);
 
-router.get('/vehicle/getvehicle/:id', authMiddleware.authenticate, authMiddleware.authorizeRoles('ADMIN', 'MANAGER'), vehicleController.getVehicleById);
+router.get('/vehicle/getvehicle/:id', authMiddleware.authenticate, authMiddleware.authorizeRoles('ADMIN', 'MANAGER'), cacheMiddleware('vehicles', 'show', { requireAuth: true }), vehicleController.getVehicleById);
 
 
 router.put('/vehicle/updatevehicle/:id', authMiddleware.authenticate, authMiddleware.authorizeRoles('ADMIN', 'MANAGER'), vehicleController.updateVehicle);

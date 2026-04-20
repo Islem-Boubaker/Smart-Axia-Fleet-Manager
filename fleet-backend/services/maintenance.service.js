@@ -140,7 +140,7 @@ export const createMaintenance = async (payload, userId) => {
   });
 };
 
-export const getAllMaintenances = async (query = {}, callerRole = null, callerId = null) => {
+export const getAllMaintenances = async (query = {}, callerRole = null, callerId = null, cacheKey = null) => {
   const { page, limit, offset } = getPagination(query);
   const where = {};
 
@@ -173,7 +173,7 @@ export const getAllMaintenances = async (query = {}, callerRole = null, callerId
   return getPagingData(count, rows, page, limit);
 };
 
-export const getMaintenanceById = async (id, callerRole = null, callerId = null) => {
+export const getMaintenanceById = async (id, callerRole = null, callerId = null, cacheKey = null) => {
   const maintenance = await ensureMaintenanceExists(id);
 
   if (callerRole === "DRIVER" && String(maintenance.createdBy) !== String(callerId)) {
@@ -306,7 +306,7 @@ export const cancelMaintenance = async (id, userId) => {
   return updateStatus(id, "cancelled", userId);
 };
 
-export const getUpcomingMaintenances = async (query = {}) => {
+export const getUpcomingMaintenances = async (query = {}, cacheKey = null) => {
   const days = Math.min(Math.max(Number(query.days || 7), 1), 30);
   const limit = Math.min(Math.max(Number(query.limit || 20), 1), 100);
 
@@ -337,7 +337,7 @@ export const getUpcomingMaintenances = async (query = {}) => {
   };
 };
 
-export const getOverdueMaintenances = async (query = {}) => {
+export const getOverdueMaintenances = async (query = {}, cacheKey = null) => {
   const now = new Date();
   const { page, limit, offset } = getPagination(query);
 

@@ -1,6 +1,7 @@
 import express from "express";
 import * as reclamationController from "../controllers/reclamation.controller.js";
 import * as authMiddleware from "../middlewares/auth.middlewares.js";
+import cacheMiddleware from "../middlewares/cache.middleware.js";
 
 const router = express.Router();
 
@@ -30,6 +31,7 @@ router.post(
 router.get(
   "/my/reclamations",
   authMiddleware.authenticate,
+  cacheMiddleware("reclamations", "myIndex", { requireAuth: true }),
   reclamationController.getMyReclamations
 );
 
@@ -37,6 +39,7 @@ router.get(
 router.get(
   "/my/reclamations/:id",
   authMiddleware.authenticate,
+  cacheMiddleware("reclamations", "myShow", { requireAuth: true }),
   reclamationController.getMyReclamationById
 );
 
@@ -65,6 +68,7 @@ router.get(
   "/reclamations",
   authMiddleware.authenticate,
   authMiddleware.authorizeRoles("ADMIN", "MANAGER"),
+  cacheMiddleware("reclamations", "index", { requireAuth: true }),
   reclamationController.getAllReclamations
 );
 
@@ -73,6 +77,7 @@ router.get(
   "/reclamations/:id",
   authMiddleware.authenticate,
   authMiddleware.authorizeRoles("ADMIN", "MANAGER"),
+  cacheMiddleware("reclamations", "show", { requireAuth: true }),
   reclamationController.getReclamationById
 );
 
@@ -105,6 +110,7 @@ router.get(
   "/reclamations/status/:status",
   authMiddleware.authenticate,
   authMiddleware.authorizeRoles("ADMIN", "MANAGER"),
+  cacheMiddleware("reclamations", "byStatus", { requireAuth: true }),
   reclamationController.getReclamationsByStatus
 );
 
@@ -113,6 +119,7 @@ router.get(
   "/reclamations/search",
   authMiddleware.authenticate,
   authMiddleware.authorizeRoles("ADMIN", "MANAGER"),
+  cacheMiddleware("reclamations", "search", { requireAuth: true }),
   reclamationController.searchReclamations
 );
 
