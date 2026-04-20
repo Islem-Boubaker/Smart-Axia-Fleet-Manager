@@ -9,5 +9,8 @@ export { Input } from './ui/Input';
 export { Select } from './ui/Select';
 export { NotificationPopup } from './NotificationPopup';
 export { Sidebar } from './layout/Sidebar';
+export { default as AppDataTable, AppTd, AppTr } from './table/AppDataTable';
+export { default as AppStatusBadge } from './table/AppStatusBadge';
+export { default as AppRowActions } from './table/AppRowActions';
 export { ToastProvider, useToast, toast } from './toast';
 export type { Toast, ToastType, ToastOptions } from './toast';

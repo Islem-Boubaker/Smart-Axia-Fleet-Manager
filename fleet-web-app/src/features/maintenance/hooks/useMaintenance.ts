@@ -129,30 +129,3 @@ export const useMaintenance = (filters: MaintenanceFilters = {}) => {
     updateStatus: (id: string, status: string) => runAction(() => maintenanceService.updateStatus(id, status)),
   };
 };
-
-
-
-export const useVehicles = () => {
-  const [vehicles, setVehicles] = useState<Vehicle[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  const fetchVehicles = async () => {
-    try {
-      setIsLoading(true);
-      setError(null);
-      const data = await vehiclesService.getVehicles();
-      setVehicles(data ?? []);
-    } catch (err: any) {
-      setError(err?.response?.data?.message || 'Failed to fetch vehicles');
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchVehicles();
-  }, []);
-
-  return { vehicles, isLoading, error, refetch: fetchVehicles };
-};
