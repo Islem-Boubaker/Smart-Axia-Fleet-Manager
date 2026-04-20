@@ -9,17 +9,21 @@ import type { RootState } from "../store";
 
 import { useAuthBootstrap, useAuthGuard } from "../features/auth/hooks/useAuth";
 import { useRealtimeNotificationToasts } from "../features/notifications/hooks/useRealtimeNotificationToasts";
+import { usePushTokenRegistration } from "../features/notifications/hooks/usePushTokenRegistration";
 import { ToastProvider } from "../shared/components/toast";
+import { ThemeProvider } from "../shared/theme/ThemeProvider";
 
 function AppLayout() {
   useAuthBootstrap();
   useAuthGuard();
   useRealtimeNotificationToasts();
+  usePushTokenRegistration();
 
   const isLoading = useSelector((state: RootState) => state.auth.isLoading);
 
   return (
     <>
+      <View className="flex-1 bg-gray-100 dark:bg-[#0B1220]">
       <Stack screenOptions={{ headerShown: false }}>
         <Stack.Screen name="index" options={{ headerShown: false }} />
         <Stack.Screen name="(auth)" options={{ headerShown: false }} />
@@ -64,10 +68,11 @@ function AppLayout() {
       </Stack>
 
       {isLoading && (
-        <View className="absolute inset-0 items-center justify-center bg-white">
+        <View className="absolute inset-0 items-center justify-center bg-white dark:bg-[#0B1220]">
           <ActivityIndicator size="large" color="#2D9B6F" />
         </View>
       )}
+      </View>
     </>
   );
 }
@@ -78,9 +83,11 @@ export default function RootLayout() {
    
       <Provider store={store}>
         <SafeAreaProvider>
-          <ToastProvider>
-            <AppLayout />
-          </ToastProvider>
+          <ThemeProvider>
+            <ToastProvider>
+              <AppLayout />
+            </ToastProvider>
+          </ThemeProvider>
         </SafeAreaProvider>
       </Provider>
    

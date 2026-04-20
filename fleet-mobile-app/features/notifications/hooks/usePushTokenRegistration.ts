@@ -3,10 +3,10 @@ import { Platform } from "react-native";
 import { useSelector } from "react-redux";
 import Constants from "expo-constants";
 import * as Device from "expo-device";
-import * as Notifications from "expo-notifications";
 
 import type { RootState } from "@/store";
 import { notificationApi } from "../services/notification.api";
+import { getExpoPushToken, requestPushPermission } from "../utils/pushNotifications";
 
 type ExpoProjectConfig = {
   easConfig?: { projectId?: string };
@@ -52,25 +52,14 @@ async function getPushToken(): Promise<string | null> {
     return null;
   }
 
-  const permission = await Notifications.getPermissionsAsync();
-  let status = permission.status;
-
-  if (status !== "granted") {
-    const requested = await Notifications.requestPermissionsAsync();
-    status = requested.status;
-  }
-
-  if (status !== "granted") {
+  const permission = await requestPushPermission();
+  if (!permission.granted) {
     console.warn("[PushRegistration] Skipped: notification permission not granted.");
     return null;
   }
 
   const projectId = resolveProjectId();
-  const tokenResult = await Notifications.getExpoPushTokenAsync(
-    projectId ? { projectId } : undefined,
-  );
-
-  return tokenResult?.data || null;
+  return getExpoPushToken(projectId);
 }
 
 export function usePushTokenRegistration() {

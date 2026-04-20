@@ -24,7 +24,7 @@ export default function LogoutButton() {
   return (
     <TouchableOpacity
       onPress={handleLogout}
-      className="mx-4 mt-6 py-4 rounded-2xl bg-white border border-red-200 flex-row justify-center"
+      className="mx-4 mt-6 py-4 rounded-2xl bg-white border border-red-200 flex-row justify-center dark:bg-slate-900 dark:border-red-400/40"
     >
       <LogOut size={18} color="#ef4444" />
       <Text className="text-red-500 ml-2 font-semibold">Log Out</Text>

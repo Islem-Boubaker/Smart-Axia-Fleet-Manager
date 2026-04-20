@@ -5,7 +5,21 @@ import {Divider} from "./ui/Divider";
 
 import { ToggleRow } from "./ui/ToggleRow";
 
-export default function NotificationsSection({ pushNotif, setPushNotif, emailUpdates, setEmailUpdates }: any) {
+type NotificationsSectionProps = {
+  pushNotif: boolean;
+  emailUpdates: boolean;
+  onTogglePush: (value: boolean) => void;
+  onToggleEmail: (value: boolean) => void;
+  disabled?: boolean;
+};
+
+export default function NotificationsSection({
+  pushNotif,
+  emailUpdates,
+  onTogglePush,
+  onToggleEmail,
+  disabled = false,
+}: NotificationsSectionProps) {
   return (
     <>
       <SectionHeader title="Notifications" />
@@ -14,14 +28,16 @@ export default function NotificationsSection({ pushNotif, setPushNotif, emailUpd
           icon={<Bell size={16} color="#6b7280" />}
           label="Push Notifications"
           value={pushNotif}
-          onToggle={() => setPushNotif((v: boolean) => !v)}
+          onToggle={onTogglePush}
+          disabled={disabled}
         />
         <Divider />
         <ToggleRow
           icon={<Mail size={16} color="#6b7280" />}
           label="Email Updates"
           value={emailUpdates}
-          onToggle={() => setEmailUpdates((v: boolean) => !v)}
+          onToggle={onToggleEmail}
+          disabled={disabled}
         />
       </Card>
     </>

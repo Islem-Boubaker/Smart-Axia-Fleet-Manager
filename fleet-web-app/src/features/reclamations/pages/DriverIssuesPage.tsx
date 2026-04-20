@@ -1,7 +1,6 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useOutletContext, useSearchParams } from 'react-router-dom';
 import { Badge, GlobalCard, Input, Select } from '../../../shared/components';
-import { ROUTES } from '../../../utils/constants';
 import { driversService } from '../../drivers/services/drivers.service';
 import { vehiclesService } from '../../vehicles/services/vehicles.service';
 import type { Driver, Vehicle } from '../../../types';
@@ -119,12 +118,12 @@ const DriverIssuesPage = () => {
     }
   }, [requestedId, items]);
 
-  const getDriverLabel = (item: ReclamationRecord) => {
+  const getDriverLabel = useCallback((item: ReclamationRecord) => {
     const driver = drivers.find((d) => String(d.id) === String(item.userId));
     return driver?.name || item.userId;
-  };
+  }, [drivers]);
 
-  const getVehicleLabel = (item: ReclamationRecord) => {
+  const getVehicleLabel = useCallback((item: ReclamationRecord) => {
     const byVehicleId = item.vehicleId
       ? vehicles.find((v) => String(v.id) === String(item.vehicleId))
       : undefined;
@@ -135,7 +134,7 @@ const DriverIssuesPage = () => {
     if (assignedMatch) return buildVehicleLabel(assignedMatch);
 
     return item.vehicleId || 'N/A';
-  };
+  }, [drivers, vehicles]);
 
   const filteredItems = useMemo(() => {
     const normalizedSearch = searchQuery.trim().toLowerCase();
@@ -156,17 +155,17 @@ const DriverIssuesPage = () => {
         const haystack = `${item.subject} ${item.message} ${driver} ${vehicle}`.toLowerCase();
         return haystack.includes(normalizedSearch);
       });
-  }, [items, searchQuery, statusFilter, driverFilter, vehicleFilter]);
+  }, [items, searchQuery, statusFilter, driverFilter, vehicleFilter, getDriverLabel, getVehicleLabel]);
 
   const driverFilterOptions = useMemo(() => {
     const unique = new Set(items.map((item) => getDriverLabel(item)));
     return ['all', ...Array.from(unique).sort((a, b) => a.localeCompare(b))];
-  }, [items]);
+  }, [items, getDriverLabel]);
 
   const vehicleFilterOptions = useMemo(() => {
     const unique = new Set(items.map((item) => getVehicleLabel(item)));
     return ['all', ...Array.from(unique).sort((a, b) => a.localeCompare(b))];
-  }, [items]);
+  }, [items, getVehicleLabel]);
 
   const driverSelectOptions = useMemo(
     () => driverFilterOptions.map((option) => ({ value: option, label: option === 'all' ? 'All drivers' : option })),
@@ -302,40 +301,82 @@ const DriverIssuesPage = () => {
         maxWidth="2xl"
       >
         {selected && (
-          <div className="space-y-4">
-            <div className="flex items-center justify-between gap-3">
-              <p className={`text-base font-semibold ${dark ? 'text-white' : 'text-slate-900'}`}>{selected.subject}</p>
-              <Badge variant={statusVariant[selected.status]} size="sm">
-                {statusLabel[selected.status]}
-              </Badge>
+          <div className="space-y-5">
+            <div
+              className={`rounded-2xl border px-4 py-4 ${
+                dark
+                  ? 'border-slate-700/80 bg-gradient-to-br from-slate-900 to-slate-900/60'
+                  : 'border-slate-200 bg-gradient-to-br from-white to-slate-50'
+              }`}
+            >
+              <div className="flex flex-wrap items-start justify-between gap-3">
+                <div>
+                  <p className={`text-xs font-semibold uppercase tracking-[0.12em] ${dark ? 'text-slate-400' : 'text-slate-500'}`}>
+                    Driver Issue
+                  </p>
+                  <p className={`mt-1 text-lg font-bold ${dark ? 'text-white' : 'text-slate-900'}`}>{selected.subject}</p>
+                </div>
+                <Badge variant={statusVariant[selected.status]} size="sm">
+                  {statusLabel[selected.status]}
+                </Badge>
+              </div>
+              <div className="mt-3 flex flex-wrap gap-2">
+                <span
+                  className={`rounded-full px-2.5 py-1 text-[11px] font-medium ${
+                    dark ? 'bg-slate-800 text-slate-300' : 'bg-slate-100 text-slate-600'
+                  }`}
+                >
+                  ID #{selected.id}
+                </span>
+                <span
+                  className={`rounded-full px-2.5 py-1 text-[11px] font-medium ${
+                    dark ? 'bg-slate-800 text-slate-300' : 'bg-slate-100 text-slate-600'
+                  }`}
+                >
+                  Submitted {formatDateTime(selected.createdAt)}
+                </span>
+              </div>
             </div>
 
-            <div className={`rounded-xl border p-4 ${dark ? 'border-slate-700 bg-slate-900/50' : 'border-slate-200 bg-slate-50/80'}`}>
-              <p className={`whitespace-pre-wrap text-sm ${dark ? 'text-slate-200' : 'text-slate-700'}`}>{selected.message}</p>
-            </div>
+            <div className="grid grid-cols-1 gap-4 lg:grid-cols-[1.35fr_1fr]">
+              <div className={`rounded-2xl border p-4 ${dark ? 'border-slate-700 bg-slate-900/50' : 'border-slate-200 bg-slate-50/70'}`}>
+                <p className={`mb-2 text-xs font-semibold uppercase tracking-[0.12em] ${dark ? 'text-slate-400' : 'text-slate-500'}`}>
+                  Description
+                </p>
+                <p className={`whitespace-pre-wrap text-sm leading-relaxed ${dark ? 'text-slate-200' : 'text-slate-700'}`}>
+                  {selected.message}
+                </p>
+              </div>
 
-            <div className="grid grid-cols-1 gap-2 text-sm sm:grid-cols-2">
-              <p className={dark ? 'text-slate-300' : 'text-slate-700'}>
-                <span className={dark ? 'text-slate-500' : 'text-slate-500'}>Driver: </span>
-                {getDriverLabel(selected)}
-              </p>
-              <p className={dark ? 'text-slate-300' : 'text-slate-700'}>
-                <span className={dark ? 'text-slate-500' : 'text-slate-500'}>Vehicle: </span>
-                {getVehicleLabel(selected)}
-              </p>
-              <p className={dark ? 'text-slate-300' : 'text-slate-700'}>
-                <span className={dark ? 'text-slate-500' : 'text-slate-500'}>Created: </span>
-                {formatDateTime(selected.createdAt)}
-              </p>
-              <p className={dark ? 'text-slate-300' : 'text-slate-700'}>
-                <span className={dark ? 'text-slate-500' : 'text-slate-500'}>Updated: </span>
-                {formatDateTime(selected.updatedAt)}
-              </p>
+              <div className={`rounded-2xl border p-4 ${dark ? 'border-slate-700 bg-slate-900/40' : 'border-slate-200 bg-white/90'}`}>
+                <p className={`mb-3 text-xs font-semibold uppercase tracking-[0.12em] ${dark ? 'text-slate-400' : 'text-slate-500'}`}>
+                  Context
+                </p>
+                <div className="space-y-2.5 text-sm">
+                  <div className={`rounded-xl border px-3 py-2 ${dark ? 'border-slate-700 bg-slate-900' : 'border-slate-200 bg-slate-50/80'}`}>
+                    <p className={dark ? 'text-slate-500 text-[11px]' : 'text-slate-500 text-[11px]'}>Driver</p>
+                    <p className={`font-semibold ${dark ? 'text-slate-200' : 'text-slate-800'}`}>{getDriverLabel(selected)}</p>
+                  </div>
+                  <div className={`rounded-xl border px-3 py-2 ${dark ? 'border-slate-700 bg-slate-900' : 'border-slate-200 bg-slate-50/80'}`}>
+                    <p className={dark ? 'text-slate-500 text-[11px]' : 'text-slate-500 text-[11px]'}>Vehicle</p>
+                    <p className={`font-semibold ${dark ? 'text-slate-200' : 'text-slate-800'}`}>{getVehicleLabel(selected)}</p>
+                  </div>
+                  <div className={`rounded-xl border px-3 py-2 ${dark ? 'border-slate-700 bg-slate-900' : 'border-slate-200 bg-slate-50/80'}`}>
+                    <p className={dark ? 'text-slate-500 text-[11px]' : 'text-slate-500 text-[11px]'}>Last update</p>
+                    <p className={`font-semibold ${dark ? 'text-slate-200' : 'text-slate-800'}`}>{formatDateTime(selected.updatedAt)}</p>
+                  </div>
+                </div>
+              </div>
             </div>
 
             {selected.images?.length ? (
               <div>
-                <p className={`mb-2 text-sm font-semibold ${dark ? 'text-slate-200' : 'text-slate-800'}`}>Attachments</p>
+                <div className="mb-2 flex items-center justify-between">
+                  <p className={`text-sm font-semibold ${dark ? 'text-slate-200' : 'text-slate-800'}`}>Attachments</p>
+                  <p className={`text-xs ${dark ? 'text-slate-500' : 'text-slate-500'}`}>
+                    {selected.images.length} file{selected.images.length > 1 ? 's' : ''}
+                  </p>
+                </div>
                 <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                   {selected.images.map((image, index) => (
                     <a
@@ -343,9 +384,15 @@ const DriverIssuesPage = () => {
                       href={image}
                       target="_blank"
                       rel="noreferrer"
-                      className={`block overflow-hidden rounded-xl border ${dark ? 'border-slate-700' : 'border-slate-200'}`}
+                      className={`group block overflow-hidden rounded-2xl border transition ${
+                        dark ? 'border-slate-700 hover:border-slate-500' : 'border-slate-200 hover:border-slate-300'
+                      }`}
                     >
-                      <img src={image} alt={`Issue attachment ${index + 1}`} className="h-40 w-full object-cover" />
+                      <img
+                        src={image}
+                        alt={`Issue attachment ${index + 1}`}
+                        className="h-44 w-full object-cover transition duration-200 group-hover:scale-[1.02]"
+                      />
                     </a>
                   ))}
                 </div>

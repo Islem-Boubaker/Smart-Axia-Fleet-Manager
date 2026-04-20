@@ -26,6 +26,15 @@ export interface Trip {
   id: string;
   tripNumber: string;
   vehicle: string;
+  vehicleId?: string;
+  vehicleRecord?: {
+    id: string;
+    name?: string;
+    plaque_immatriculation?: string;
+    model?: string;
+    Vehicle_Model?: string;
+    consumption?: number | null;
+  } | null;
   status: UiTripStatus;
   backendStatus?: BackendTripStatus;
   from: string;

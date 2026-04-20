@@ -261,7 +261,8 @@ export const loginUserSvc = async (email, password) => {
     role: user.role,
     email: user.email,
     phone: user.phone,
-    avatar: user.avatar 
+    avatar: user.avatar,
+    assignedVehicle: user.assignedVehicle
   };
 
   // Générer les deux tokens

@@ -2,7 +2,7 @@
 import React, { useState } from "react";
 import { View, Text, TouchableOpacity, LayoutAnimation, Platform, UIManager } from "react-native";
 import { ChevronDown, ChevronUp } from "lucide-react-native";
-import type { TripStop, UiTripStatus } from "../../types/trip.types";
+import { useAppTheme } from "@/shared/theme/ThemeProvider";
 
 if (Platform.OS === "android") {
   UIManager.setLayoutAnimationEnabledExperimental?.(true);
@@ -24,6 +24,7 @@ export function AccordionItem({
   defaultOpen = false,
 }: AccordionItemProps) {
   const [isOpen, setIsOpen] = useState(defaultOpen);
+  const { isDark } = useAppTheme();
 
   const toggleAccordion = () => {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
@@ -36,8 +37,8 @@ export function AccordionItem({
     <View
       style={{
         borderBottomWidth: 1,
-        borderColor: "#E5E7EB",
-        backgroundColor: "white",
+        borderColor: isDark ? "#334155" : "#E5E7EB",
+        backgroundColor: isDark ? "#0F172A" : "white",
       }}
     >
       {/* Header row — title always visible at the top */}
@@ -57,7 +58,7 @@ export function AccordionItem({
           style={{
             fontSize: 14,
             fontWeight: "500",
-            color: "#111827",
+            color: isDark ? "#F8FAFC" : "#111827",
             flex: 1,
             marginRight: 12,
           }}
@@ -65,9 +66,9 @@ export function AccordionItem({
           {title}
         </Text>
         {isOpen ? (
-          <ChevronUp size={18} color="#6B7280" />
+          <ChevronUp size={18} color={isDark ? "#94A3B8" : "#6B7280"} />
         ) : (
-          <ChevronDown size={18} color="#6B7280" />
+          <ChevronDown size={18} color={isDark ? "#94A3B8" : "#6B7280"} />
         )}
       </TouchableOpacity>
 
@@ -83,7 +84,7 @@ export function AccordionItem({
           <Text
             style={{
               fontSize: 13,
-              color: "#6B7280",
+              color: isDark ? "#CBD5E1" : "#6B7280",
               lineHeight: 20,
             }}
           >
@@ -96,7 +97,7 @@ export function AccordionItem({
 }
 
 interface AccordionProps {
-  items: Array<{ title: string; content: string | null }>;
+  items: { title: string; content: string | null }[];
   defaultOpenIndex?: number;
 }
 

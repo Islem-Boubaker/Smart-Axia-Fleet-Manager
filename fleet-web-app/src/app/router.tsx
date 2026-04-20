@@ -8,6 +8,7 @@ import DriversPage from "../features/drivers/pages/DriversPage";
 import TripsPage from "../features/trips/pages/TripsPage";
 import ReportsPage from "../features/reports/pages/ReportsPage";
 import SettingsPage from "../features/settings/pages/SettingsPage";
+import DriverIssuesPage from "../features/reclamations/pages/DriverIssuesPage";
 import { ROUTES } from "../utils/constants.js";
 import { DashboardLayout } from "../shared/components/index.js";
 export default function AppRouter() {
@@ -27,6 +28,7 @@ export default function AppRouter() {
           <Route path={ROUTES.TRIPS} element={<TripsPage />} />
           <Route path={ROUTES.MAINTENANCE} element={<MaintenancePage />} />
           <Route path={ROUTES.REPORTS} element={<ReportsPage />} />
+          <Route path={ROUTES.DRIVER_ISSUES} element={<DriverIssuesPage />} />
           <Route path={ROUTES.SETTINGS} element={<SettingsPage />} />
         </Route>
 

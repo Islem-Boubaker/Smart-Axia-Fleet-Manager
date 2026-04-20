@@ -140,14 +140,14 @@ export default function EditProfileScreen() {
   );
 
   return (
-    <SafeAreaView className="flex-1 bg-[#F5F7FA]">
+    <SafeAreaView className="flex-1 bg-[#F5F7FA] dark:bg-[#0B1220]">
       {/* Header */}
       <View
         className="flex-row items-center mt-10 px-4 pb-4"
         style={{ paddingTop: Platform.OS === "ios" ? 8 : 0 }}
       >
         <BackButton />
-        <Text className="flex-1 text-center text-lg font-bold text-gray-900">
+        <Text className="flex-1 text-center text-lg font-bold text-gray-900 dark:text-gray-50">
           Edit Profile
         </Text>
       </View>
@@ -158,8 +158,8 @@ export default function EditProfileScreen() {
           {avatar ? (
             <Image source={{ uri: avatar }} className="w-28 h-28 rounded-full" />
           ) : (
-            <View className="w-28 h-28 rounded-full bg-blue-100 border-2 border-blue-400 items-center justify-center">
-              <Text className="text-blue-600 text-xl font-bold">
+            <View className="w-28 h-28 rounded-full bg-blue-100 border-2 border-blue-400 items-center justify-center dark:bg-blue-950/60 dark:border-blue-500">
+              <Text className="text-blue-600 text-xl font-bold dark:text-blue-300">
                 {user?.name?.[0]?.toUpperCase() ?? "U"}
               </Text>
             </View>
@@ -174,11 +174,11 @@ export default function EditProfileScreen() {
         <InputField label="Name" value={name} onChangeText={setName} />
 
         <View className="mb-4">
-          <Text className="text-gray-500 text-xs mb-1">Phone Number</Text>
-          <View className="flex-row items-center bg-gray-100 rounded-xl px-4 py-3">
-            <Text className="flex-1 text-gray-900">{phone}</Text>
+          <Text className="text-gray-500 text-xs mb-1 dark:text-slate-400">Phone Number</Text>
+          <View className="flex-row items-center bg-gray-100 rounded-xl px-4 py-3 dark:bg-slate-800">
+            <Text className="flex-1 text-gray-900 dark:text-gray-100">{phone}</Text>
             <TouchableOpacity onPress={() => console.log("change phone")}>
-              <Text className="text-gray-500 font-medium">Change</Text>
+              <Text className="text-gray-500 font-medium dark:text-slate-300">Change</Text>
             </TouchableOpacity>
           </View>
         </View>

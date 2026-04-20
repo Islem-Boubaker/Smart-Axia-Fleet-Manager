@@ -6,22 +6,24 @@ import { useRouter } from "expo-router";
 import { InputField } from "../components/ui/InputField";
 import { FormCard } from "../components/ui/FormCard";
 import { SubmitButton } from "../components/ui/SubmitButton";
+import { useAppTheme } from "@/shared/theme/ThemeProvider";
 
 export default function ChangePasswordScreen() {
   const router = useRouter();
+  const { isDark } = useAppTheme();
 
   const [current, setCurrent] = useState("");
   const [newPwd, setNewPwd] = useState("");
   const [confirm, setConfirm] = useState("");
 
   return (
-    <SafeAreaView className="flex-1 bg-[#F5F7FA]">
+    <SafeAreaView className="flex-1 bg-[#F5F7FA] dark:bg-[#0B1220]">
       {/* Header */}
       <View className="flex-row items-center mt-10 px-4 pb-4">
         <TouchableOpacity onPress={() => router.back()}>
-          <ChevronLeft size={22} color="#111827" />
+          <ChevronLeft size={22} color={isDark ? "#F8FAFC" : "#111827"} />
         </TouchableOpacity>
-        <Text className="flex-1 text-center text-lg font-bold text-gray-900">
+        <Text className="flex-1 text-center text-lg font-bold text-gray-900 dark:text-gray-50">
           Change Password
         </Text>
       </View>

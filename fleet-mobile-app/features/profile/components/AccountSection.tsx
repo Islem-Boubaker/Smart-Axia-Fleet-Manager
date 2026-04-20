@@ -13,8 +13,7 @@ export default function AccountSection() {
         <LinkRow onPress={() => router.push("/profile/edit")} icon={<User size={16} color="#6b7280" />} label="Edit Profile" />
         <Divider />
         <LinkRow onPress={() => router.push("/profile/change-password")} icon={<Lock size={16} color="#6b7280" />} label="Change Password" />
-        <Divider />
-        <LinkRow onPress={() => router.push("/profile/email-notifications")} icon={<Mail size={16} color="#6b7280" />} label="Email Notifications" />
+        {/* Email notifications removed per request */}
       </Card>
     </>
   );

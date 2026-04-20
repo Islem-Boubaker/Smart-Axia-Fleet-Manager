@@ -69,14 +69,10 @@ export interface Trip {
   stops: TripStop[];
 }
 
+import type { User } from "@/features/auth/types/auth.types";
+
 export interface DashboardData {
-  user: {
-    id: string;
-    name: string;
-    email: string;
-    role: "ADMIN" | "MANAGER" | "DRIVER";
-    avatar?: string | null;
-  } | null;
+  user: (User & { assignedVehicle?: string | null }) | null;
   activeTrip: Trip | null;
   upcomingTrip: Trip | null;
   recentTrips: Trip[];

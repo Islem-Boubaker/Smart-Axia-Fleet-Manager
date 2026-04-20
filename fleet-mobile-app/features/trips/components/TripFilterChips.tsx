@@ -1,5 +1,6 @@
 import { ScrollView, TouchableOpacity, Text, View } from "react-native";
 import { FILTER_BUTTONS, type FilterOption } from "../config/trips.config";
+import { useAppTheme } from "@/shared/theme/ThemeProvider";
 
 interface Props {
   selected: FilterOption;
@@ -7,6 +8,8 @@ interface Props {
 }
 
 export function TripFilterChips({ selected, onChange }: Props) {
+  const { isDark } = useAppTheme();
+
   return (
     <ScrollView
       horizontal
@@ -32,8 +35,8 @@ export function TripFilterChips({ selected, onChange }: Props) {
               alignItems: "center",
               justifyContent: "center",
               gap: 6,
-              backgroundColor: isActive ? "#2d68eb" : "#ffffff",
-              borderColor: isActive ? "#2d68eb" : "#E5E7EB",
+              backgroundColor: isActive ? "#2d68eb" : isDark ? "#0F172A" : "#ffffff",
+              borderColor: isActive ? "#2d68eb" : isDark ? "#334155" : "#E5E7EB",
             }}
           >
             {f.dotColor && !isActive && (
@@ -50,7 +53,7 @@ export function TripFilterChips({ selected, onChange }: Props) {
               style={{
                 fontSize: 12,
                 fontWeight: "600",
-                color: isActive ? "#ffffff" : "#6B7280",
+                color: isActive ? "#ffffff" : isDark ? "#CBD5E1" : "#6B7280",
                 lineHeight: 16,
               }}
               

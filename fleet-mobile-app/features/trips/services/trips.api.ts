@@ -63,6 +63,8 @@ const toTrip = (item: BackendTrip): Trip => {
     id: item.id,
     tripNumber: item.tripNumber ?? item.id.slice(0, 8).toUpperCase(),
     vehicle: vehicleLabel,
+    vehicleId: item.vehicle?.id,
+    vehicleRecord: item.vehicle ?? null,
     status: mapStatusToUi(item.status),
     backendStatus: item.status,
     from: item.startLocation,

@@ -12,7 +12,7 @@ export default function NotificationsScreen() {
   return (
     <SafeAreaView
       edges={["top", "left", "right"]}
-      className="flex-1 bg-gray-100"
+      className="flex-1 bg-gray-100 dark:bg-[#0B1220]"
     >
       {/* Header */}
       <NotificationHeader
@@ -30,7 +30,7 @@ export default function NotificationsScreen() {
       {/* Error state */}
       {!loading && error && (
         <View className="flex-1 items-center justify-center px-8">
-          <Text className="text-base text-gray-400 text-center">{error}</Text>
+          <Text className="text-base text-gray-400 dark:text-slate-400 text-center">{error}</Text>
         </View>
       )}
 
@@ -38,10 +38,10 @@ export default function NotificationsScreen() {
       {!loading && !error && groups.every((g) => g.items.length === 0) && (
         <View className="flex-1 items-center justify-center px-8">
           <Text className="text-4xl mb-3">🔔</Text>
-          <Text className="text-base font-semibold text-slate-900 mb-1">
+          <Text className="text-base font-semibold text-slate-900 dark:text-gray-50 mb-1">
             All caught up!
           </Text>
-          <Text className="text-sm text-gray-400 text-center">
+          <Text className="text-sm text-gray-400 dark:text-slate-400 text-center">
             No notifications yet. Check back later.
           </Text>
         </View>

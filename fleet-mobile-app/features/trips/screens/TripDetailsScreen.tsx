@@ -11,6 +11,7 @@ import {
   UIManager,
   Platform,
   ActivityIndicator,
+  Alert,
 } from "react-native";
 import MapView, { Marker, Polyline } from "react-native-maps";
 import { useLocalSearchParams, useRouter } from "expo-router";
@@ -20,6 +21,8 @@ import { ArrowLeft, ChevronDown, ChevronUp, Clock, Fuel, Gauge, RefreshCw } from
 import { useTripDetail } from "../hooks/useTripDetail";
 import { useRoutePolyline } from "../hooks/useRoutePolyline"; // ← new
 import type { UiTripStatus } from "../types/trip.types";
+import { useAppTheme } from "@/shared/theme/ThemeProvider";
+import { tripsApi } from "../services/trips.api";
 
 if (Platform.OS === "android") {
   UIManager.setLayoutAnimationEnabledExperimental?.(true);
@@ -93,9 +96,28 @@ function getRegion(coords: LatLng[]) {
 
 export default function TripDetailScreen() {
   const router = useRouter();
+  const { isDark } = useAppTheme();
   const { id } = useLocalSearchParams<{ id: string }>();
   const mapRef = useRef<MapView | null>(null);
   const geocodeCache = useRef<Record<string, LatLng>>({});
+  const colors = useMemo(
+    () => ({
+      pageBg: isDark ? "#0B1220" : "#F9FAFB",
+      surface: isDark ? "#0F172A" : "#FFFFFF",
+      mutedSurface: isDark ? "#1E293B" : "#F3F4F6",
+      softSurface: isDark ? "#111827" : "#F9FAFB",
+      border: isDark ? "#334155" : "#E5E7EB",
+      text: isDark ? "#F8FAFC" : "#111827",
+      subtext: isDark ? "#94A3B8" : "#6B7280",
+      icon: isDark ? "#CBD5E1" : "#1F2937",
+      blurTint: isDark ? "dark" : "light",
+      sheetShadow: isDark ? "#020617" : "#000000",
+      primary: "#6B21F5",
+      primarySoft: isDark ? "#312E81" : "#EDE9FE",
+      routeDraft: isDark ? "#8B5CF6" : "#C4B5FD",
+    }),
+    [isDark],
+  );
 
   const handleGoBack = () => {
     if (router.canGoBack()) { router.back(); return; }
@@ -110,6 +132,7 @@ export default function TripDetailScreen() {
   const [originCoord, setOriginCoord] = useState<LatLng | null>(null);
   const [destinationCoord, setDestinationCoord] = useState<LatLng | null>(null);
   const [isGeocoding, setIsGeocoding] = useState(false);
+  const [isNavigating, setIsNavigating] = useState(false);
   const sheetHeight = useRef(new Animated.Value(SHEET_FULL)).current;
 
   const stops = useMemo(() => trip?.stops ?? [], [trip?.stops]);
@@ -304,8 +327,9 @@ export default function TripDetailScreen() {
   if (isLoading) {
     return (
       <View style={{ flex: 1, alignItems: "center", justifyContent: "center", backgroundColor: "#F9FAFB" }}>
+      
         <ActivityIndicator size="large" color="#6B21F5" />
-        <Text style={{ marginTop: 12, color: "#6B7280", fontSize: 14 }}>Loading trip…</Text>
+        <Text style={{ marginTop: 12, color: colors.subtext, fontSize: 14 }}>Loading trip…</Text>
       </View>
     );
   }
@@ -313,20 +337,20 @@ export default function TripDetailScreen() {
   // ── Error ─────────────────────────────────────────────────────────────────
   if (error || !trip) {
     return (
-      <View style={{ flex: 1, alignItems: "center", justifyContent: "center", backgroundColor: "#F9FAFB", padding: 32 }}>
-        <Text style={{ fontSize: 16, fontWeight: "600", color: "#111827", marginBottom: 8 }}>
+      <View style={{ flex: 1, alignItems: "center", justifyContent: "center", backgroundColor: colors.pageBg, padding: 32 }}>
+        <Text style={{ fontSize: 16, fontWeight: "600", color: colors.text, marginBottom: 8 }}>
           Failed to load trip
         </Text>
-        <Text style={{ color: "#6B7280", fontSize: 13, textAlign: "center" }}>
+        <Text style={{ color: colors.subtext, fontSize: 13, textAlign: "center" }}>
           {error ?? "Trip not found"}
         </Text>
         <View style={{ flexDirection: "row", gap: 12, marginTop: 20 }}>
           <TouchableOpacity
             onPress={reload}
-            style={{ backgroundColor: "#EDE9FE", paddingHorizontal: 20, paddingVertical: 12, borderRadius: 12, flexDirection: "row", alignItems: "center", gap: 6 }}
+            style={{ backgroundColor: colors.primarySoft, paddingHorizontal: 20, paddingVertical: 12, borderRadius: 12, flexDirection: "row", alignItems: "center", gap: 6 }}
           >
-            <RefreshCw size={14} color="#7c3aed" />
-            <Text style={{ color: "#7c3aed", fontWeight: "500" }}>Retry</Text>
+            <RefreshCw size={14} color={colors.primary} />
+            <Text style={{ color: colors.primary, fontWeight: "500" }}>Retry</Text>
           </TouchableOpacity>
           <TouchableOpacity
             onPress={handleGoBack}
@@ -346,9 +370,32 @@ export default function TripDetailScreen() {
   const backendStatus = trip.backendStatus ?? "scheduled";
   const statusStyle   = TRIP_STATUS_STYLES[trip.status] ?? TRIP_STATUS_STYLES.pending;
 
+  const handlePrimaryAction = async () => {
+    if (!trip?.id) return;
+    if (backendStatus === "cancelled" || backendStatus === "completed") return;
+
+    if (backendStatus === "scheduled") {
+      try {
+        setIsNavigating(true);
+        await tripsApi.startTrip(trip.id);
+      } catch (err) {
+        const message = err instanceof Error ? err.message : "Unable to start trip right now.";
+        Alert.alert("Start Trip Failed", message);
+        return;
+      } finally {
+        setIsNavigating(false);
+      }
+    }
+
+    router.push({
+      pathname: "/trips/live",
+      params: { tripId: trip.id },
+    });
+  };
+
   // ── Render ────────────────────────────────────────────────────────────────
   return (
-    <View style={{ flex: 1 }}>
+    <View style={{ flex: 1, backgroundColor: colors.pageBg }}>
 
       {/* ── MAP ── */}
       <MapView ref={mapRef} style={{ flex: 1 }} initialRegion={mapRegion}>
@@ -366,7 +413,7 @@ export default function TripDetailScreen() {
         {isFetchingRoute && routePathCoords.length >= 2 && (
           <Polyline
             coordinates={routePathCoords}
-            strokeColor="#C4B5FD"   // lighter purple = "draft"
+            strokeColor={colors.routeDraft}
             strokeWidth={2}
             lineDashPattern={[6, 4]}
           />
@@ -408,19 +455,19 @@ export default function TripDetailScreen() {
           flexDirection: "row", justifyContent: "space-between", alignItems: "center",
         }}
       >
-        <BlurView intensity={80} tint="light" style={{ borderRadius: 12, overflow: "hidden" }}>
+        <BlurView intensity={80} tint={colors.blurTint as "light" | "dark"} style={{ borderRadius: 12, overflow: "hidden" }}>
           <TouchableOpacity onPress={handleGoBack} style={{ padding: 10 }}>
-            <ArrowLeft size={22} color="#1F2937" />
+            <ArrowLeft size={22} color={colors.icon} />
           </TouchableOpacity>
         </BlurView>
 
-        <BlurView intensity={80} tint="light" style={{ borderRadius: 14, overflow: "hidden" }}>
+        <BlurView intensity={80} tint={colors.blurTint as "light" | "dark"} style={{ borderRadius: 14, overflow: "hidden" }}>
           <View style={{ paddingHorizontal: 14, paddingVertical: 8, flexDirection: "row", alignItems: "center", gap: 8 }}>
-            <Text style={{ color: "#7c3aed", fontWeight: "700", fontSize: 13 }}>
+            <Text style={{ color: colors.primary, fontWeight: "700", fontSize: 13 }}>
               {trip.tripNumber}
             </Text>
             {/* Route loading indicator in header */}
-            {(isFetchingRoute || isGeocoding) && <ActivityIndicator size="small" color="#7c3aed" />}
+            {(isFetchingRoute || isGeocoding) && <ActivityIndicator size="small" color={colors.primary} />}
           </View>
         </BlurView>
       </View>
@@ -430,11 +477,11 @@ export default function TripDetailScreen() {
         style={{
           height: sheetHeight,
           position: "absolute", bottom: 0, left: 0, right: 0,
-          backgroundColor: "white",
+          backgroundColor: colors.surface,
           borderTopLeftRadius: 24, borderTopRightRadius: 24,
-          shadowColor: "#000",
+          shadowColor: colors.sheetShadow,
           shadowOffset: { width: 0, height: -4 },
-          shadowOpacity: 0.1, shadowRadius: 16, elevation: 12,
+          shadowOpacity: isDark ? 0.35 : 0.1, shadowRadius: 16, elevation: 12,
         }}
       >
         {/* Drag handle */}
@@ -442,7 +489,7 @@ export default function TripDetailScreen() {
           {...panResponder.panHandlers}
           style={{ alignItems: "center", paddingTop: 12, paddingBottom: 4 }}
         >
-          <View style={{ width: 40, height: 4, backgroundColor: "#D1D5DB", borderRadius: 2 }} />
+          <View style={{ width: 40, height: 4, backgroundColor: colors.border, borderRadius: 2 }} />
         </View>
 
         {/* Collapse / expand pill */}
@@ -454,11 +501,11 @@ export default function TripDetailScreen() {
             marginBottom: 6,
             paddingHorizontal: 16,
             paddingVertical: 5,
-            backgroundColor: "#F3F4F6",
+            backgroundColor: colors.mutedSurface,
             borderRadius: 20,
           }}
         >
-          <Text style={{ fontSize: 11, color: "#6B7280" }}>
+          <Text style={{ fontSize: 11, color: colors.subtext }}>
             {sheetExpanded ? "▼ collapse" : "▲ expand"}
           </Text>
         </TouchableOpacity>
@@ -469,10 +516,10 @@ export default function TripDetailScreen() {
           {/* Vehicle + route + status badge */}
           <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start" }}>
             <View style={{ flex: 1, marginRight: 12 }}>
-              <Text style={{ fontSize: 17, fontWeight: "700", color: "#111827" }}>
+              <Text style={{ fontSize: 17, fontWeight: "700", color: colors.text }}>
                 {trip.vehicle}
               </Text>
-              <Text style={{ color: "#9CA3AF", fontSize: 12, marginTop: 2 }}>
+              <Text style={{ color: colors.subtext, fontSize: 12, marginTop: 2 }}>
                 {trip.pickupLocation.address} → {trip.destinationLocation.address}
               </Text>
             </View>
@@ -493,8 +540,8 @@ export default function TripDetailScreen() {
 
           {/* Date / time */}
           <View style={{ flexDirection: "row", alignItems: "center", gap: 5, marginTop: 6 }}>
-            <Clock size={12} color="#9CA3AF" />
-            <Text style={{ fontSize: 12, color: "#9CA3AF" }}>
+            <Clock size={12} color={colors.subtext} />
+            <Text style={{ fontSize: 12, color: colors.subtext }}>
               {formatDate(trip.scheduledTime ?? trip.actualStartTime)} · {formatTime(trip.scheduledTime ?? trip.actualStartTime)}
               {trip.actualEndTime ? ` → ${formatTime(trip.actualEndTime)}` : ""}
             </Text>
@@ -502,9 +549,9 @@ export default function TripDetailScreen() {
 
           {/* Stats */}
           <View style={{ flexDirection: "row", gap: 8, marginTop: 12 }}>
-            <StatCard icon={<Gauge size={14} color="#7c3aed" />} label="distance" value={trip.distance} />
-            <StatCard icon={<Fuel size={14} color="#7c3aed" />} label="fuel" value={trip.fuel ?? "—"} />
-            <StatCard icon={<Clock size={14} color="#7c3aed" />} label="fare" value={trip.fare != null ? `${trip.fare} TND` : "—"} />
+            <StatCard icon={<Gauge size={14} color={colors.primary} />} label="distance" value={trip.distance} isDark={isDark} />
+            <StatCard icon={<Fuel size={14} color={colors.primary} />} label="fuel" value={trip.fuel ?? "—"} isDark={isDark} />
+            <StatCard icon={<Clock size={14} color={colors.primary} />} label="fare" value={trip.fare != null ? `${trip.fare} TND` : "—"} isDark={isDark} />
           </View>
 
           {/* ── Stops header ── */}
@@ -519,14 +566,14 @@ export default function TripDetailScreen() {
             
             }}
           >
-            <Text style={{ fontSize: 14, fontWeight: "600", color: "#111827" }}>Trip stops</Text>
+            <Text style={{ fontSize: 14, fontWeight: "600", color: colors.text }}>Trip stops</Text>
             <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
-              <View style={{ backgroundColor: "#F3F4F6", paddingHorizontal: 8, paddingVertical: 3, borderRadius: 20 }}>
-                <Text style={{ fontSize: 11, color: "#6B7280" }}>
+              <View style={{ backgroundColor: colors.mutedSurface, paddingHorizontal: 8, paddingVertical: 3, borderRadius: 20 }}>
+                <Text style={{ fontSize: 11, color: colors.subtext }}>
                   {stops.length} {stops.length === 1 ? "stop" : "stops"}
                 </Text>
               </View>
-              {stopsOpen ? <ChevronUp size={16} color="#9CA3AF" /> : <ChevronDown size={16} color="#9CA3AF" />}
+              {stopsOpen ? <ChevronUp size={16} color={colors.subtext} /> : <ChevronDown size={16} color={colors.subtext} />}
             </View>
           </TouchableOpacity>
 
@@ -553,22 +600,25 @@ export default function TripDetailScreen() {
             style={{
               marginTop: 18,
               marginBottom: 32,
-              backgroundColor: backendStatus === "ongoing" ? "#6B21F5" : "#F3F4F6",
+              backgroundColor: backendStatus === "ongoing" ? colors.primary : colors.mutedSurface,
               padding: 15,
               borderRadius: 16,
-              opacity: backendStatus === "cancelled" || backendStatus === "completed" ? 0.5 : 1,
+              opacity: backendStatus === "cancelled" || backendStatus === "completed" || isNavigating ? 0.5 : 1,
             }}
-            disabled={backendStatus === "cancelled" || backendStatus === "completed"}
+            disabled={backendStatus === "cancelled" || backendStatus === "completed" || isNavigating}
+            onPress={() => void handlePrimaryAction()}
           >
             <Text
               style={{
-                color: backendStatus === "ongoing" ? "white" : "#374151",
+                color: backendStatus === "ongoing" ? "white" : isDark ? "#E2E8F0" : "#374151",
                 textAlign: "center",
                 fontWeight: "600",
                 fontSize: 15,
               }}
             >
-              {backendStatus === "ongoing"
+              {isNavigating
+                ? "Starting Trip..."
+                : backendStatus === "ongoing"
                 ? "Navigate Now"
                 : backendStatus === "scheduled"
                 ? "Start Trip"
@@ -588,12 +638,12 @@ export default function TripDetailScreen() {
 
 // ─── Sub-components ───────────────────────────────────────────────────────────
 
-function StatCard({ icon, label, value }: { icon: React.ReactNode; label: string; value: string }) {
+function StatCard({ icon, label, value, isDark }: { icon: React.ReactNode; label: string; value: string; isDark: boolean }) {
   return (
-    <View style={{ flex: 1, backgroundColor: "#F9FAFB", borderRadius: 12, padding: 10, gap: 4 }}>
+    <View style={{ flex: 1, backgroundColor: isDark ? "#111827" : "#F9FAFB", borderRadius: 12, padding: 10, gap: 4, borderWidth: isDark ? 1 : 0, borderColor: isDark ? "#334155" : "transparent" }}>
       {icon}
-      <Text style={{ fontSize: 10, color: "#9CA3AF", marginTop: 2 }}>{label}</Text>
-      <Text style={{ fontSize: 14, fontWeight: "600", color: "#111827" }}>{value}</Text>
+      <Text style={{ fontSize: 10, color: isDark ? "#94A3B8" : "#9CA3AF", marginTop: 2 }}>{label}</Text>
+      <Text style={{ fontSize: 14, fontWeight: "600", color: isDark ? "#F8FAFC" : "#111827" }}>{value}</Text>
     </View>
   );
 }

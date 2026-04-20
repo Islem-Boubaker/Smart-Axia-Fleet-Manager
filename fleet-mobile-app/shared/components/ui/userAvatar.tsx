@@ -34,7 +34,15 @@ const UserAvatar = ({ size }: UserAvatarProps) => {
   return (
     <View
       className="rounded-full bg-emerald-100 border-2 border-white items-center justify-center overflow-hidden"
-      style={{ width: avatarSize.width, height: avatarSize.height }}
+      style={{
+        width: avatarSize.width,
+        height: avatarSize.height,
+        shadowColor: "#0F172A",
+        shadowOpacity: 0.12,
+        shadowRadius: 8,
+        shadowOffset: { width: 0, height: 4 },
+        elevation: 4,
+      }}
     >
       {user?.avatar ? (
         <Image

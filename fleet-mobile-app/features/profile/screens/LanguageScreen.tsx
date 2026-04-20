@@ -3,6 +3,7 @@ import { Text, View, TouchableOpacity, ScrollView } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { ChevronLeft, Check } from "lucide-react-native";
 import { useRouter } from "expo-router";
+import { useAppTheme } from "@/shared/theme/ThemeProvider";
 
 const languages = [
   { code: "en", label: "English",    native: "English"     },
@@ -25,15 +26,16 @@ const languages = [
 export default function LanguageScreen() {
   const router   = useRouter();
   const [selected, setSelected] = useState("en");
+  const { isDark } = useAppTheme();
 
   return (
-    <SafeAreaView className="flex-1 bg-[#F5F7FA]">
+    <SafeAreaView className="flex-1 bg-[#F5F7FA] dark:bg-[#0B1220]">
 
       <View className="flex-row items-center mt-10 px-4 pb-4">
         <TouchableOpacity onPress={() => router.back()}>
-          <ChevronLeft size={22} color="#111827" />
+          <ChevronLeft size={22} color={isDark ? "#F8FAFC" : "#111827"} />
         </TouchableOpacity>
-        <Text className="flex-1 text-center text-lg font-bold text-gray-900">
+        <Text className="flex-1 text-center text-lg font-bold text-gray-900 dark:text-gray-50">
           Language
         </Text>
       </View>
@@ -42,7 +44,7 @@ export default function LanguageScreen() {
         className="mx-4 mt-4"
         showsVerticalScrollIndicator={false}
       >
-        <View className="bg-white border border-gray-200 rounded-2xl overflow-hidden">
+        <View className="bg-white border border-gray-200 rounded-2xl overflow-hidden dark:bg-slate-900 dark:border-slate-700">
           {languages.map((lang, i) => {
             const isSelected = selected === lang.code;
             const isLast     = i === languages.length - 1;
@@ -52,19 +54,19 @@ export default function LanguageScreen() {
                 key={lang.code}
                 onPress={() => setSelected(lang.code)}
                 className={`flex-row justify-between items-center px-4 py-4 ${
-                  isLast ? "" : "border-b border-gray-100"
-                } ${isSelected ? "bg-emerald-50" : ""}`}
+                  isLast ? "" : "border-b border-gray-100 dark:border-slate-700"
+                } ${isSelected ? "bg-emerald-50 dark:bg-emerald-500/10" : ""}`}
               >
                 <View>
-                  <Text className={`text-base ${isSelected ? "font-semibold text-emerald-700" : "text-gray-900"}`}>
+                  <Text className={`text-base ${isSelected ? "font-semibold text-emerald-700 dark:text-emerald-300" : "text-gray-900 dark:text-gray-100"}`}>
                     {lang.label}
                   </Text>
-                  <Text className="text-xs text-gray-400 mt-0.5">
+                  <Text className="text-xs text-gray-400 mt-0.5 dark:text-slate-400">
                     {lang.native}
                   </Text>
                 </View>
 
-                {isSelected && <Check size={18} color="#10b981" />}
+                {isSelected && <Check size={18} color={isDark ? "#6EE7B7" : "#10b981"} />}
               </TouchableOpacity>
             );
           })}

@@ -2,6 +2,7 @@ import { View, Text, TouchableOpacity } from "react-native";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import { STATUS_CONFIG } from "../config/trips.config";
 import type { Trip } from "../types/trip.types";
+import { useAppTheme } from "@/shared/theme/ThemeProvider";
 
 interface Props {
   trip: Trip;
@@ -9,6 +10,7 @@ interface Props {
 }
 
 export function TripCard({ trip, onPress }: Props) {
+  const { isDark } = useAppTheme();
   // ✅ Guard — if trip is undefined/null, render nothing
   if (!trip) return null;
 
@@ -18,13 +20,13 @@ export function TripCard({ trip, onPress }: Props) {
 
   return (
     <TouchableOpacity
-      className="bg-white rounded-[18px] mb-3 overflow-hidden"
+      className="bg-white dark:bg-slate-900 rounded-3xl mb-3 overflow-hidden border border-gray-100 dark:border-slate-700"
       style={{
-        elevation: 1,
-        shadowColor: "#000",
-        shadowOpacity: 0.06,
-        shadowRadius: 6,
-        shadowOffset: { width: 0, height: 2 },
+        elevation: 4,
+        shadowColor: "#0F172A",
+        shadowOpacity: isDark ? 0.28 : 0.1,
+        shadowRadius: 10,
+        shadowOffset: { width: 0, height: 6 },
       }}
       onPress={onPress}
       activeOpacity={0.85}
@@ -38,10 +40,10 @@ export function TripCard({ trip, onPress }: Props) {
         {/* Top row: vehicle + badge */}
         <View className="flex-row items-start justify-between mb-2.5">
           <View className="flex-1 mr-2">
-            <Text className="text-[15px] font-bold text-slate-900" numberOfLines={1}>
+            <Text className="text-[15px] font-bold text-slate-900 dark:text-gray-50" numberOfLines={1}>
               {trip.vehicle || "—"}
             </Text>
-            <Text className="text-[11px] text-gray-400 mt-0.5">
+            <Text className="text-[11px] text-gray-400 dark:text-slate-400 mt-0.5">
               # {trip.tripNumber || "—"}
             </Text>
           </View>
@@ -65,7 +67,7 @@ export function TripCard({ trip, onPress }: Props) {
             style={{ backgroundColor: cfg.accentColor }}
           />
           <Text
-            className="text-xs font-medium text-slate-700"
+            className="text-xs font-medium text-slate-700 dark:text-slate-200"
             numberOfLines={1}
             style={{ flex: 1 }}
           >
@@ -73,12 +75,12 @@ export function TripCard({ trip, onPress }: Props) {
           </Text>
 
           <View className="flex-row items-center" style={{ width: 40 }}>
-            <View style={{ flex: 1, borderTopWidth: 1, borderStyle: "dashed", borderColor: "#E5E7EB" }} />
-            <MaterialIcons name="arrow-forward" size={10} color="#9CA3AF" />
+            <View style={{ flex: 1, borderTopWidth: 1, borderStyle: "dashed", borderColor: isDark ? "#334155" : "#E5E7EB" }} />
+            <MaterialIcons name="arrow-forward" size={10} color={isDark ? "#94A3B8" : "#9CA3AF"} />
           </View>
 
           <Text
-            className="text-xs font-medium text-slate-700 text-right"
+            className="text-xs font-medium text-slate-700 dark:text-slate-200 text-right"
             numberOfLines={1}
             style={{ flex: 1 }}
           >
@@ -92,7 +94,7 @@ export function TripCard({ trip, onPress }: Props) {
           {!!trip.distance && (
             <View className="flex-row items-center gap-1.5">
               <MaterialIcons name="straighten" size={13} color="#9CA3AF" />
-              <Text className="text-[11px] text-gray-500 font-medium">
+              <Text className="text-[11px] text-gray-500 dark:text-slate-400 font-medium">
                 {trip.distance}
               </Text>
             </View>
@@ -100,7 +102,7 @@ export function TripCard({ trip, onPress }: Props) {
           {!!trip.duration && (
             <View className="flex-row items-center gap-1.5">
               <MaterialIcons name="schedule" size={13} color="#9CA3AF" />
-              <Text className="text-[11px] text-gray-500 font-medium">
+              <Text className="text-[11px] text-gray-500 dark:text-slate-400 font-medium">
                 {trip.duration}
               </Text>
             </View>
@@ -117,10 +119,10 @@ export function TripCard({ trip, onPress }: Props) {
       </View>
 
       {/* Card footer */}
-      <View className="flex-row items-center justify-between px-4 py-2.5 border-t border-gray-100 bg-gray-50">
+      <View className="flex-row items-center justify-between px-4 py-2.5 border-t border-gray-100 dark:border-slate-700 bg-gray-50 dark:bg-slate-800">
         <View className="flex-row items-center gap-1.5">
-          <MaterialIcons name="calendar-today" size={11} color="#9CA3AF" />
-          <Text className="text-[11px] text-gray-400">
+          <MaterialIcons name="calendar-today" size={11} color={isDark ? "#94A3B8" : "#9CA3AF"} />
+          <Text className="text-[11px] text-gray-400 dark:text-slate-400">
             {trip.date || "—"}
           </Text>
         </View>
