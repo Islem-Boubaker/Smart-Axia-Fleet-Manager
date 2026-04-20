@@ -2,7 +2,6 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import SignIn from "../features/auth/pages/Signin";
 import DashboardPage from "../features/dashboard/pages/DashboardPage";
 import VehiclesPage from "../features/vehicles/pages/VehiclesPage";
-import VehicleDetailsPage from "../features/fleet/pages/VehicleDetailsPage";
 import MaintenancePage from "../features/maintenance/pages/MaintenancePage";
 import DriversPage from "../features/drivers/pages/DriversPage";
 import TripsPage from "../features/trips/pages/TripsPage";
@@ -23,7 +22,6 @@ export default function AppRouter() {
         <Route element={<DashboardLayout />}>
           <Route path={ROUTES.DASHBOARD} element={<DashboardPage />} />
           <Route path={ROUTES.VEHICLES} element={<VehiclesPage />} />
-          <Route path="/fleet/details/:id" element={<VehicleDetailsPage />} />
           <Route path={ROUTES.DRIVERS} element={<DriversPage />} />
           <Route path={ROUTES.TRIPS} element={<TripsPage />} />
           <Route path={ROUTES.MAINTENANCE} element={<MaintenancePage />} />

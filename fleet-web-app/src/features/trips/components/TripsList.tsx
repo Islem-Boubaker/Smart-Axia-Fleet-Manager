@@ -1,4 +1,4 @@
-import TripCard from '../components/TripCard';
+import { AppDataTable, AppRowActions, AppStatusBadge, AppTd, AppTr, Button } from '../../../shared/components';
 import type { Trip } from '../../../types';
 
 interface Props {
@@ -25,24 +25,69 @@ const TripsList = ({ trips, dark = false, actionTripId = null, onViewDetails, on
       </div>
     );
 
+  const statusVariant = (status: Trip['status']) => {
+    if (status === 'completed') return 'success';
+    if (status === 'ongoing') return 'info';
+    if (status === 'scheduled') return 'warning';
+    if (status === 'cancelled') return 'danger';
+    return 'neutral';
+  };
+
+  const formatDate = (value?: string) => {
+    if (!value) return 'N/A';
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return value;
+    return date.toLocaleString();
+  };
+
   return (
-    <div className="space-y-5">
-      {trips.map((trip, index) => (
-        <TripCard
-          key={trip.id}
-          trip={trip}
-          dark={dark}
-          index={index}
-          onViewDetails={onViewDetails}
-          onEdit={onEdit}
-          onStart={onStart}
-          onReachStop={onReachStop}
-          onComplete={onComplete}
-          onCancel={onCancel}
-          isBusy={actionTripId === trip.id}
-        />
-      ))}
-    </div>
+    <AppDataTable
+      columns={['Route', 'Driver', 'Vehicle', 'Distance', 'Start', 'Status', 'Actions']}
+      totalResults={trips.length}
+      dark={dark}
+      ariaLabel="Trips table"
+    >
+      {trips.map((trip) => {
+        const isBusy = actionTripId === trip.id;
+
+        return (
+          <AppTr key={trip.id}>
+            <AppTd className={dark ? 'text-slate-200' : 'text-slate-700'}>
+              {trip.startLocation} {'->'} {trip.endLocation}
+            </AppTd>
+
+            <AppTd className={dark ? 'text-slate-300' : 'text-slate-600'}>{trip.driver?.name || 'Unassigned'}</AppTd>
+            <AppTd className={dark ? 'text-slate-300' : 'text-slate-600'}>
+              {trip.vehicle?.name || 'Unknown vehicle'}
+            </AppTd>
+
+            <AppTd className={dark ? 'text-slate-300' : 'text-slate-600'}>{trip.distance ?? 0} km</AppTd>
+
+            <AppTd className={dark ? 'text-slate-300' : 'text-slate-600'}>{formatDate(trip.startTime)}</AppTd>
+
+            <AppTd>
+              <AppStatusBadge variant={statusVariant(trip.status)}>{trip.status}</AppStatusBadge>
+            </AppTd>
+
+            <AppTd>
+              <div className="flex flex-wrap items-center gap-2">
+                {(trip.status === 'scheduled' || trip.status === 'ongoing') && (
+                  <Button type="button" size="sm" variant="secondary" onClick={() => onCancel?.(trip.id)} disabled={isBusy}>
+                    Cancel
+                  </Button>
+                )}
+
+                <AppRowActions
+                  onView={onViewDetails ? () => onViewDetails(trip) : undefined}
+                  onEdit={onEdit ? () => onEdit(trip) : undefined}
+                  disabled={isBusy}
+                />
+              </div>
+            </AppTd>
+          </AppTr>
+        );
+      })}
+    </AppDataTable>
   );
 };
 

@@ -2,13 +2,16 @@ import { useState, useCallback } from 'react';
 import { useOutletContext } from 'react-router-dom';
 import axios from 'axios';
 import { useVehicles } from '../hooks/useVehicles';
-import { toast } from '../../../shared/components';
-import VehiclesHeader from '../components/VehiclesHeader';
-import VehiclesFilters from '../components/VehiclesFilters';
-import VehiclesGrid from '../components/VehiclesGrid';
+import { Button, toast } from '../../../shared/components';
+import { FiPlus } from 'react-icons/fi';
 import VehicleModal from '../components/VehicleModal';
 import type { Vehicle } from '../../../types';
 import { pageShellClasses, pageShellInnerSpacing } from '../../../shared/utils/pageShell';
+import PageHeader from '../components/PageHeader';
+import Toolbar from '../components/Toolbar';
+import VehiclesTable from '../components/VehiclesTable';
+import VehicleDetailsModal from '../components/VehicleDetailsModal';
+import { getVehicleRecommendations } from '../components/maintenanceStatic';
 
 interface ThemeContext {
   dark: boolean;
@@ -16,13 +19,30 @@ interface ThemeContext {
 
 const VehiclesPage = () => {
   const { dark } = useOutletContext<ThemeContext>();
-  const { vehicles, isLoading, createVehicle, updateVehicle, deleteVehicle } = useVehicles();
-  const [searchQuery, setSearchQuery] = useState('');
-  const [activeFilter, setActiveFilter] = useState('all');
-  const [typeFilter, setTypeFilter] = useState('all');
+  const {
+    filteredVehicles,
+    isLoading,
+    error,
+    searchQuery,
+    setSearchQuery,
+    statusFilter,
+    setStatusFilter,
+    typeFilter,
+    setTypeFilter,
+    selectedVehicleRow,
+    selectedVehicleDetails,
+    openVehicleDetails,
+    closeVehicleDetails,
+    isDetailsLoading,
+    detailsError,
+    createVehicle,
+    updateVehicle,
+    deleteVehicle,
+  } = useVehicles();
+
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-  const [selectedVehicle, setSelectedVehicle] = useState<Vehicle | null>(null);
+  const [selectedVehicleForEdit, setSelectedVehicleForEdit] = useState<Vehicle | null>(null);
   const [formError, setFormError] = useState('');
 
   const extractErrorMessage = (err: unknown): string => {
@@ -31,16 +51,6 @@ const VehiclesPage = () => {
     }
     return err instanceof Error ? err.message : 'An unexpected error occurred';
   };
-
-  const filteredVehicles = vehicles.filter((vehicle) => {
-    const matchesSearch = `${vehicle.name} ${vehicle.plaque_immatriculation ?? ''}`
-      .toLowerCase()
-      .includes(searchQuery.toLowerCase());
-    const matchesActive =
-      activeFilter === 'all' || String(vehicle.Active) === activeFilter;
-    const matchesType = typeFilter === 'all' || vehicle.type === typeFilter;
-    return matchesSearch && matchesActive && matchesType;
-  });
 
   const handleAddVehicle = useCallback(
     async (data: Partial<Vehicle> | FormData) => {
@@ -60,28 +70,28 @@ const VehiclesPage = () => {
   );
 
   const handleEditVehicle = useCallback((vehicle: Vehicle) => {
-    setSelectedVehicle(vehicle);
+    setSelectedVehicleForEdit(vehicle);
     setFormError('');
     setIsEditModalOpen(true);
   }, []);
 
   const handleUpdateVehicle = useCallback(
     async (data: Partial<Vehicle> | FormData) => {
-      if (!selectedVehicle) return;
+      if (!selectedVehicleForEdit) return;
       const loadingId = toast.loading('Updating vehicle…');
       try {
         setFormError('');
-        await updateVehicle(selectedVehicle.id, data);
+        await updateVehicle(selectedVehicleForEdit.id, data);
         toast.update(loadingId, { type: 'success', title: 'Success', message: 'Vehicle updated successfully!' });
         setIsEditModalOpen(false);
-        setSelectedVehicle(null);
+        setSelectedVehicleForEdit(null);
       } catch (err) {
         const msg = extractErrorMessage(err);
         toast.update(loadingId, { type: 'error', title: 'Error', message: msg });
         setFormError(msg);
       }
     },
-    [selectedVehicle, updateVehicle],
+    [selectedVehicleForEdit, updateVehicle],
   );
 
   const handleDeleteVehicle = useCallback(
@@ -98,25 +108,48 @@ const VehiclesPage = () => {
     [deleteVehicle],
   );
 
+  const detailsVehicle = selectedVehicleDetails ?? selectedVehicleRow?.vehicle ?? null;
+  const detailsRecommendations = getVehicleRecommendations(detailsVehicle?.plaque_immatriculation);
+
+  const groupedRecommendations = {
+    high: detailsRecommendations.filter((item) => item.priority === 'high'),
+    medium: detailsRecommendations.filter((item) => item.priority === 'medium'),
+    low: detailsRecommendations.filter((item) => item.priority === 'low'),
+  };
+
   return (
     <>
       <div className={`${pageShellClasses(dark)} ${pageShellInnerSpacing} animate-fade-in`}>
-        <VehiclesHeader onAdd={() => setIsAddModalOpen(true)} dark={dark} />
-        <VehiclesFilters
-          searchQuery={searchQuery}
+        <PageHeader
+          title="Vehicles"
+          description="Your full fleet inventory and live status."
+          dark={dark}
+          actions={
+            <Button onClick={() => setIsAddModalOpen(true)} className="rounded-xl">
+              <FiPlus className="mr-2" />
+              Add Vehicle
+            </Button>
+          }
+        />
+
+        <Toolbar
+          searchValue={searchQuery}
           onSearchChange={setSearchQuery}
-          activeFilter={activeFilter}
-          onActiveChange={setActiveFilter}
+          statusFilter={statusFilter}
+          onStatusChange={setStatusFilter}
           typeFilter={typeFilter}
           onTypeChange={setTypeFilter}
           dark={dark}
         />
-        <VehiclesGrid
-          vehicles={filteredVehicles}
+
+        <VehiclesTable
+          rows={filteredVehicles}
           isLoading={isLoading}
+          error={error}
+          dark={dark}
+          onView={openVehicleDetails}
           onEdit={handleEditVehicle}
           onDelete={handleDeleteVehicle}
-          dark={dark}
         />
       </div>
 
@@ -133,14 +166,40 @@ const VehiclesPage = () => {
         isOpen={isEditModalOpen}
         onClose={() => {
           setIsEditModalOpen(false);
-          setSelectedVehicle(null);
+          setSelectedVehicleForEdit(null);
           setFormError('');
         }}
         title="Edit Vehicle"
         dark={dark}
-        vehicle={selectedVehicle ?? undefined}
+        vehicle={selectedVehicleForEdit ?? undefined}
         onSubmit={handleUpdateVehicle}
         error={formError}
+      />
+
+      <VehicleDetailsModal
+        isOpen={Boolean(selectedVehicleRow || selectedVehicleDetails || isDetailsLoading || detailsError)}
+        onClose={closeVehicleDetails}
+        onEdit={() => {
+          if (!detailsVehicle) return;
+          setSelectedVehicleForEdit(detailsVehicle);
+          setFormError('');
+          setIsEditModalOpen(true);
+        }}
+        vehicle={detailsVehicle}
+        assignment={selectedVehicleRow?.currentAssignment ?? null}
+        maintenanceHistory={
+          (selectedVehicleRow?.maintenanceHistory ?? []).map((record) => ({
+            id: record.id,
+            scheduledDate: record.scheduledDate,
+            status: record.status,
+            priority: record.priority,
+            cost: record.cost,
+            description: record.description,
+          }))
+        }
+        recommendations={groupedRecommendations}
+        isLoading={isDetailsLoading}
+        error={detailsError}
       />
     </>
   );

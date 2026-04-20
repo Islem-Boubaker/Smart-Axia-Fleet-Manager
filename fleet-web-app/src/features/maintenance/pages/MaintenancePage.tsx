@@ -34,17 +34,6 @@ const MaintenancePage = () => {
   const [editError, setEditError] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
 
-  const scheduledRecords = records.filter(
-    (record) =>
-      record.status === 'scheduled' ||
-      record.status === 'pending' ||
-      record.status === 'in_progress'
-  );
-
-  const historyRecords = records.filter(
-    (record) => record.status === 'completed' || record.status === 'cancelled'
-  );
-
   const handleScheduleMaintenance = useCallback(async (data: Record<string, unknown>) => {
     try {
       setSubmitError(null);
@@ -162,9 +151,9 @@ const MaintenancePage = () => {
         )}
 
         <div className="space-y-3">
-          <h2 className={`text-lg font-bold ${dark ? 'text-white' : 'text-slate-900'}`}>Scheduled maintenance</h2>
+          <h2 className={`text-lg font-bold ${dark ? 'text-white' : 'text-slate-900'}`}>Maintenance records</h2>
           <p className={`text-sm ${dark ? 'text-slate-400' : 'text-slate-500'}`}>
-            Manage all non-completed maintenance records
+            All maintenance records in one table.
           </p>
         </div>
 
@@ -174,29 +163,7 @@ const MaintenancePage = () => {
           </div>
         ) : (
           <MaintenanceTable
-            data={scheduledRecords}
-            dark={dark}
-            onUpdate={refetch}
-            onTransition={handleTransition}
-            onEdit={handleOpenEdit}
-            onRemove={handleAskRemoveMaintenance}
-          />
-        )}
-
-        <div className="space-y-3">
-          <h2 className={`text-lg font-bold ${dark ? 'text-white' : 'text-slate-900'}`}>History records</h2>
-          <p className={`text-sm ${dark ? 'text-slate-400' : 'text-slate-500'}`}>
-            Completed and cancelled maintenance
-          </p>
-        </div>
-
-        {isLoading ? (
-          <div className={`text-center py-16 rounded-2xl border ${dark ? 'border-slate-700 text-slate-400' : 'border-slate-200 text-slate-500'}`}>
-            Loading…
-          </div>
-        ) : (
-          <MaintenanceTable
-            data={historyRecords}
+            data={records}
             dark={dark}
             onUpdate={refetch}
             onTransition={handleTransition}

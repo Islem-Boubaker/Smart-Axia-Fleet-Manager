@@ -39,6 +39,7 @@ export interface ApiResponse<T> {
 export interface Driver {
   id: string;
   name: string;
+  avatar?: string;
   email: string;
   phone?: string;
   licenseNumber?: string;
