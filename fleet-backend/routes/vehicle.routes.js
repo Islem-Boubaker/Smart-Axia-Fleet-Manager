@@ -19,4 +19,6 @@ router.delete('/vehicle/deletevehicle/:id',authMiddleware.authorizeRoles('ADMIN'
 router.patch('/vehicle/:id/assign-driver',authMiddleware.authorizeRoles('ADMIN', 'MANAGER'),vehicleController.assignDriver);
 router.patch('/vehicle/:id/unassign-driver', authMiddleware.authorizeRoles('ADMIN', 'MANAGER'), vehicleController.unassignDriver);
 router.post('/vehicle/check-idle',authMiddleware.authorizeRoles('ADMIN', 'MANAGER'), vehicleController.checkIdleVehicles);
+
+router.post('/vehicle/:id/maintenance-ai', authMiddleware.authorizeRoles('ADMIN', 'MANAGER'), vehicleController.MaintenanceRecommandationAI);
 export default router;

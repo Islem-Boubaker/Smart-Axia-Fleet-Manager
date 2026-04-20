@@ -4,6 +4,9 @@ import User from '../models/user.model.js';
 import Reclamation from '../models/reclamation.model.js';
 import { getPagination, getPagingData } from '../utils/pagination.js';
 import { eventBus, FLEET_EVENTS } from '../events/eventBus.js';
+import { buildCarPrompt } from '../utils/promptBuilder.js';
+import validateAndFill from '../utils/validateAndFill.js';
+import { runAgents } from '../utils/runAgents.js';
 
 // ─────────────────────────────────────────────
 // Helpers
@@ -69,7 +72,7 @@ export const updateVehicle = async (id, data) => {
     const vehicle = await Vehicle.findByPk(id);
     if (!vehicle) return null;
 
-    const previousStatus   = vehicle.status;
+    const previousStatus = vehicle.status;
     const previousDriverId = vehicle.driverId ?? null;
 
     const updatedVehicle = await vehicle.update(data);
@@ -83,8 +86,8 @@ export const updateVehicle = async (id, data) => {
             FLEET_EVENTS.DRIVER_ASSIGNED,
             {
                 driverId: data.driverId,
-                vehicle:  updatedVehicle,
-                tripId:   data.tripId ?? null,
+                vehicle: updatedVehicle,
+                tripId: data.tripId ?? null,
             },
             'DRIVER_ASSIGNED'
         );
@@ -96,8 +99,8 @@ export const updateVehicle = async (id, data) => {
             FLEET_EVENTS.DRIVER_UNASSIGNED,
             {
                 driverId: previousDriverId,
-                vehicle:  updatedVehicle,
-                tripId:   data.tripId ?? null,
+                vehicle: updatedVehicle,
+                tripId: data.tripId ?? null,
             },
             'DRIVER_UNASSIGNED'
         );
@@ -111,10 +114,10 @@ export const updateVehicle = async (id, data) => {
             publishSafely(
                 FLEET_EVENTS.VEHICLE_BREAKDOWN,
                 {
-                    vehicle:   updatedVehicle,
-                    driverId:  updatedVehicle.driverId ?? previousDriverId ?? null,
+                    vehicle: updatedVehicle,
+                    driverId: updatedVehicle.driverId ?? previousDriverId ?? null,
                     managerId,
-                    location:  data.location ?? null,
+                    location: data.location ?? null,
                 },
                 'VEHICLE_BREAKDOWN'
             );
@@ -158,7 +161,7 @@ export const checkIdleVehicles = async (thresholdMinutes = 30) => {
 
     const idleVehicles = await Vehicle.findAll({
         where: {
-            status:    'AVAILABLE',
+            status: 'AVAILABLE',
             updatedAt: { [Op.lte]: cutoff },
         },
     });
@@ -179,5 +182,38 @@ export const checkIdleVehicles = async (thresholdMinutes = 30) => {
             },
             'VEHICLE_IDLE'
         );
+    }
+};
+
+
+export const generateMaintenanceAI = async (vehicleId) => {
+    const vehicle = await Vehicle.findByPk(vehicleId);
+    if (!vehicle) return null;
+
+    const prompt = buildCarPrompt(vehicle);
+
+    const data = await runAgents(prompt);
+    const raw = typeof data?.response === 'string' ? data.response : '';
+
+    try {
+        const clean = raw.replace(/```json|```/gi, '').trim();
+        const start = clean.indexOf('{');
+        const end = clean.lastIndexOf('}');
+
+        if (start === -1 || end === -1 || end < start) {
+            throw new Error('No valid JSON object found in AI output');
+        }
+
+        const jsonCandidate = clean.slice(start, end + 1);
+        let parsed = JSON.parse(jsonCandidate);
+        parsed = validateAndFill(parsed);
+
+        await vehicle.update({
+            maintenance_recommandation_ai: parsed,
+        });
+
+        return parsed;
+    } catch (err) {
+        return { raw, parseError: true, error: err?.message || 'Invalid AI output' };
     }
 };

@@ -1,6 +1,7 @@
 import { StatusCodes } from 'http-status-codes';
 import * as vehicleService from '../services/vehicle.service.js';
 import { uploadVehiclePhotos } from '../middlewares/upload.js';
+import { successResponse } from '../utils/response.js';
 
 const extractPhotoUrls = (files = []) => {
   return files
@@ -160,6 +161,18 @@ export const checkIdleVehicles = async (req, res, next) => {
       success: true,
       message: `Idle check completed (threshold: ${threshold} min)`,
     });
+  } catch (err) {
+    next(err);
+  }
+};
+
+
+
+
+export const MaintenanceRecommandationAI = async (req, res, next) => {
+  try {
+    const recommendation = await vehicleService.generateMaintenanceAI(req.params.id);
+    return successResponse(res, recommendation, 'AI recommendation generated and saved');
   } catch (err) {
     next(err);
   }
