@@ -10,7 +10,7 @@
     /* IE and Edge */
     -ms-overflow-style: none;
   }
-  
+
   /* Chrome, Safari and Opera */
   ::-webkit-scrollbar {
     display: none;
@@ -19,6 +19,39 @@
 
 /* ── Toast progress bar animation ─────────────────────────── */
 @keyframes toast-progress {
-  from { width: 100%; }
-  to   { width: 0%; }
+  from {
+    width: 100%;
+  }
+  to {
+    width: 0%;
+  }
+}
+
+/* Hide default scrollbar but keep functionality */
+.hide-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.hide-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* OR show custom scrollbar (Webkit only) */
+.custom-scrollbar::-webkit-scrollbar {
+  height: 10px;
+  background: transparent;
+  display: none;
+}
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: #1e293b;
+  border-radius: 10px;
+  margin: 0 8px;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: #0c0c0e;
+  border-radius: 10px;
+  border: 2px solid #1e293b;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #7c3aed;
 }

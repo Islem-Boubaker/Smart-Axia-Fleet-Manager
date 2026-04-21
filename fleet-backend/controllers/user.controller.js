@@ -3,12 +3,23 @@ import { StatusCodes } from 'http-status-codes';
 import { COOKIE_OPTIONS } from '../config/security.js';
 import { generateCsrfToken } from '../utils/jwt.js';
 import { uploadUserAvatar } from '../middlewares/upload.js';
+import cacheMiddleware from '../middlewares/cache.middleware.js';
+
+const invalidateUserCache = async (id) => {
+  await cacheMiddleware.invalidatePattern('users:index:*');
+  await cacheMiddleware.invalidatePattern('users:me:*');
+  await cacheMiddleware.invalidatePattern('users:notificationSettings:*');
+  if (id) {
+    await cacheMiddleware.invalidatePattern(`users:show:id=${id}*`);
+  }
+};
 
 export const createUser = [
   uploadUserAvatar.single('avatar'),
   async (req, res, next) => {
     try {
       const user = await userService.createUserSvc(req.body, req.file);
+      await invalidateUserCache(user?.id);
       res.status(StatusCodes.CREATED).json({ success: true, data: user });
     } catch (error) {
       next(error);
@@ -21,6 +32,7 @@ export const updateUserAvatar = [
   async (req, res, next) => {
     try {
       const user = await userService.updateUserPhotoSvc(req.params.id, req.file);
+      await invalidateUserCache(req.params.id);
       res.status(StatusCodes.OK).json({ success: true, data: user });
     } catch (error) {
       next(error);
@@ -33,6 +45,7 @@ export const updateMyAvatar = [
   async (req, res, next) => {
     try {
       const user = await userService.updateUserPhotoSvc(req.user.id, req.file);
+      await invalidateUserCache(req.user.id);
       res.status(StatusCodes.OK).json({ success: true, data: user });
     } catch (error) {
       next(error);
@@ -42,8 +55,10 @@ export const updateMyAvatar = [
 
 export const getAllUsers = async (req, res, next) => {
   try {
-    const result = await userService.getAllUsersSvc(req.query);
-    res.status(StatusCodes.OK).json({ success: true, ...result });
+    const result = await userService.getAllUsersSvc(req.query, req.cacheKey);
+    const payload = { success: true, ...result };
+    if (req.cacheSet) await req.cacheSet(payload);
+    res.status(StatusCodes.OK).json(payload);
   } catch (error) {
     next(error);
   }
@@ -51,11 +66,13 @@ export const getAllUsers = async (req, res, next) => {
 
 export const getUserById = async (req, res, next) => {
   try {
-    const user = await userService.getUserByIdSvc(req.params.id);
+    const user = await userService.getUserByIdSvc(req.params.id, req.cacheKey);
     if (!user) {
       return res.status(StatusCodes.NOT_FOUND).json({ success: false, message: 'User not found' });
     }
-    res.status(StatusCodes.OK).json({ success: true, data: user });
+    const payload = { success: true, data: user };
+    if (req.cacheSet) await req.cacheSet(payload);
+    res.status(StatusCodes.OK).json(payload);
   } catch (error) {
     next(error);
   }
@@ -67,6 +84,7 @@ export const updateUser = async (req, res, next) => {
     if (!updatedUser) {
       return res.status(StatusCodes.NOT_FOUND).json({ success: false, message: 'User not found' });
     }
+    await invalidateUserCache(req.params.id);
     res.status(StatusCodes.OK).json({ success: true, data: updatedUser });
   } catch (error) {
     next(error);
@@ -80,6 +98,7 @@ export const updateMe = async (req, res, next) => {
     if (!updatedUser) {
       return res.status(StatusCodes.NOT_FOUND).json({ success: false, message: 'User not found' });
     }
+    await invalidateUserCache(req.user.id);
     res.status(StatusCodes.OK).json({ success: true, data: updatedUser });
   } catch (error) {
     next(error);
@@ -92,6 +111,7 @@ export const deleteUser = async (req, res, next) => {
     if (!deleted) {
       return res.status(StatusCodes.NOT_FOUND).json({ success: false, message: 'User not found' });
     }
+    await invalidateUserCache(req.params.id);
     res.sendStatus(StatusCodes.NO_CONTENT);
   } catch (error) {
     next(error);
@@ -173,6 +193,7 @@ export const changePassword = async (req, res, next) => {
     }
 
     await userService.changePasswordSvc(req.user.id, currentPassword, newPassword);
+    await invalidateUserCache(req.user.id);
 
     res.status(StatusCodes.OK).json({
       success: true,
@@ -220,11 +241,13 @@ export const logout = async (_req, res) => {
 
 export const getMe = async (req, res, next) => {
   try {
-    const user = await userService.getUserByIdSvc(req.user.id);
+    const user = await userService.getUserByIdSvc(req.user.id, req.cacheKey);
     if (!user) {
       return res.status(StatusCodes.NOT_FOUND).json({ success: false, message: 'User not found' });
     }
-    res.status(StatusCodes.OK).json({ success: true, data: user });
+    const payload = { success: true, data: user };
+    if (req.cacheSet) await req.cacheSet(payload);
+    res.status(StatusCodes.OK).json(payload);
   } catch (error) {
     next(error);
   }
@@ -232,12 +255,14 @@ export const getMe = async (req, res, next) => {
 
 export const getMyNotificationSettings = async (req, res, next) => {
   try {
-    const settings = await userService.getMyNotificationSettingsSvc(req.user.id);
+    const settings = await userService.getMyNotificationSettingsSvc(req.user.id, req.cacheKey);
     if (!settings) {
       return res.status(StatusCodes.NOT_FOUND).json({ success: false, message: 'User not found' });
     }
 
-    res.status(StatusCodes.OK).json({ success: true, data: settings });
+    const payload = { success: true, data: settings };
+    if (req.cacheSet) await req.cacheSet(payload);
+    res.status(StatusCodes.OK).json(payload);
   } catch (error) {
     next(error);
   }
@@ -249,6 +274,8 @@ export const updateMyNotificationSettings = async (req, res, next) => {
     if (!settings) {
       return res.status(StatusCodes.NOT_FOUND).json({ success: false, message: 'User not found' });
     }
+
+    await invalidateUserCache(req.user.id);
 
     res.status(StatusCodes.OK).json({ success: true, data: settings });
   } catch (error) {
@@ -262,6 +289,8 @@ export const updateMyPushToken = async (req, res, next) => {
     if (!payload) {
       return res.status(StatusCodes.NOT_FOUND).json({ success: false, message: 'User not found' });
     }
+
+    await invalidateUserCache(req.user.id);
 
     res.status(StatusCodes.OK).json({ success: true, data: payload });
   } catch (error) {

@@ -10,6 +10,7 @@ import {
   validateUpcomingQuery,
   validateOverdueQuery,
 } from "../validators/maintenance.validator.js";
+import cacheMiddleware from "../middlewares/cache.middleware.js";
 
 const router = express.Router();
 
@@ -19,6 +20,7 @@ router.get(
   "/maintenances/upcoming",
   authorizeRoles("ADMIN", "MANAGER", "DRIVER"),
   validateUpcomingQuery,
+  cacheMiddleware("maintenances", "upcoming", { requireAuth: true }),
   maintenanceController.getUpcomingMaintenances
 );
 
@@ -26,6 +28,7 @@ router.get(
   "/maintenances/overdue",
   authorizeRoles("ADMIN", "MANAGER"),
   validateOverdueQuery,
+  cacheMiddleware("maintenances", "overdue", { requireAuth: true }),
   maintenanceController.getOverdueMaintenances
 );
 
@@ -41,12 +44,14 @@ router.get(
   "/maintenances",
   authorizeRoles("ADMIN", "MANAGER", "DRIVER"),
   validateListMaintenancesQuery,
+  cacheMiddleware("maintenances", "index", { requireAuth: true }),
   maintenanceController.getAllMaintenances
 );
 
 router.get(
   "/maintenances/:id",
   authorizeRoles("ADMIN", "MANAGER", "DRIVER"),
+  cacheMiddleware("maintenances", "show", { requireAuth: true }),
   maintenanceController.getMaintenanceById
 );
 

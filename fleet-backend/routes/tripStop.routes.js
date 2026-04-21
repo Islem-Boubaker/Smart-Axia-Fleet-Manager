@@ -9,6 +9,7 @@ import {
   validateSkipStop,
 } from "../validators/trip.validator.js";
 import * as tripStopController from "../controllers/tripStop.controller.js";
+import cacheMiddleware from "../middlewares/cache.middleware.js";
 
 const router = express.Router();
 
@@ -25,6 +26,7 @@ router.post(
 router.get(
   "/trips/:id/stops",
   authorizeRoles("ADMIN", "MANAGER", "DRIVER"),
+  cacheMiddleware("tripStops", "index", { requireAuth: true }),
   tripStopController.getStops
 );
 

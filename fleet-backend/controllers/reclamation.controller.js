@@ -1,6 +1,15 @@
 import { StatusCodes } from 'http-status-codes';
 import * as reclamationService from '../services/reclamation.service.js';
 import { uploadReclamationImages } from '../middlewares/upload.js';
+import cacheMiddleware from '../middlewares/cache.middleware.js';
+
+const invalidateReclamationCache = async (id) => {
+  await cacheMiddleware.invalidatePattern('reclamations:*');
+  if (id) {
+    await cacheMiddleware.invalidatePattern(`reclamations:show:id=${id}*`);
+    await cacheMiddleware.invalidatePattern(`reclamations:myShow:id=${id}*`);
+  }
+};
 
 export const createVehicleReclamation = [
   uploadReclamationImages.array('images', 5),
@@ -14,6 +23,7 @@ export const createVehicleReclamation = [
         message,
         req.files
       );
+      await invalidateReclamationCache(data?.id);
       res.status(StatusCodes.CREATED).json({ success: true, data });
     } catch (error) {
       next(error);
@@ -26,6 +36,7 @@ export const createReclamation = async (req, res, next) => {
     const { subject, message } = req.body;
 
     const result = await reclamationService.createReclamationSvc(req.user.id, subject, message);
+    await invalidateReclamationCache(result?.id);
 
     res.status(StatusCodes.CREATED).json({
       success: true,
@@ -39,12 +50,16 @@ export const createReclamation = async (req, res, next) => {
 
 export const getMyReclamations = async (req, res, next) => {
   try {
-    const result = await reclamationService.getUserReclamationsSvc(req.user.id, req.query);
+    const result = await reclamationService.getUserReclamationsSvc(req.user.id, req.query, req.cacheKey);
 
-    res.status(StatusCodes.OK).json({
+    const payload = {
       success: true,
       ...result,
-    });
+    };
+
+    if (req.cacheSet) await req.cacheSet(payload);
+
+    res.status(StatusCodes.OK).json(payload);
   } catch (error) {
     next(error);
   }
@@ -54,12 +69,16 @@ export const getMyReclamationById = async (req, res, next) => {
   try {
     const { id } = req.params;
 
-    const result = await reclamationService.getMyReclamationByIdSvc(req.user.id, id);
+    const result = await reclamationService.getMyReclamationByIdSvc(req.user.id, id, req.cacheKey);
 
-    res.status(StatusCodes.OK).json({
+    const payload = {
       success: true,
       data: result,
-    });
+    };
+
+    if (req.cacheSet) await req.cacheSet(payload);
+
+    res.status(StatusCodes.OK).json(payload);
   } catch (error) {
     next(error);
   }
@@ -70,6 +89,7 @@ export const updateMyReclamation = async (req, res, next) => {
     const { id } = req.params;
 
     const result = await reclamationService.updateMyReclamationSvc(req.user.id, id, req.body);
+    await invalidateReclamationCache(id);
 
     res.status(StatusCodes.OK).json({
       success: true,
@@ -86,6 +106,7 @@ export const deleteMyReclamation = async (req, res, next) => {
     const { id } = req.params;
 
     await reclamationService.deleteMyReclamationSvc(req.user.id, id);
+    await invalidateReclamationCache(id);
 
     res.status(StatusCodes.OK).json({
       success: true,
@@ -98,12 +119,16 @@ export const deleteMyReclamation = async (req, res, next) => {
 
 export const getAllReclamations = async (req, res, next) => {
   try {
-    const result = await reclamationService.getAllReclamationsSvc(req.query);
+    const result = await reclamationService.getAllReclamationsSvc(req.query, req.cacheKey);
 
-    res.status(StatusCodes.OK).json({
+    const payload = {
       success: true,
       ...result,
-    });
+    };
+
+    if (req.cacheSet) await req.cacheSet(payload);
+
+    res.status(StatusCodes.OK).json(payload);
   } catch (error) {
     next(error);
   }
@@ -113,12 +138,16 @@ export const getReclamationById = async (req, res, next) => {
   try {
     const { id } = req.params;
 
-    const result = await reclamationService.getReclamationByIdSvc(id);
+    const result = await reclamationService.getReclamationByIdSvc(id, req.cacheKey);
 
-    res.status(StatusCodes.OK).json({
+    const payload = {
       success: true,
       data: result,
-    });
+    };
+
+    if (req.cacheSet) await req.cacheSet(payload);
+
+    res.status(StatusCodes.OK).json(payload);
   } catch (error) {
     next(error);
   }
@@ -130,6 +159,7 @@ export const updateReclamationStatus = async (req, res, next) => {
     const { status } = req.body;
 
     const result = await reclamationService.updateReclamationStatusSvc(id, status);
+    await invalidateReclamationCache(id);
 
     res.status(StatusCodes.OK).json({
       success: true,
@@ -146,6 +176,7 @@ export const deleteReclamation = async (req, res, next) => {
     const { id } = req.params;
 
     await reclamationService.deleteReclamationSvc(id);
+    await invalidateReclamationCache(id);
 
     res.status(StatusCodes.OK).json({
       success: true,
@@ -160,12 +191,16 @@ export const getReclamationsByStatus = async (req, res, next) => {
   try {
     const { status } = req.params;
 
-    const result = await reclamationService.getReclamationsByStatusSvc(status);
+    const result = await reclamationService.getReclamationsByStatusSvc(status, req.cacheKey);
 
-    res.status(StatusCodes.OK).json({
+    const payload = {
       success: true,
       data: result,
-    });
+    };
+
+    if (req.cacheSet) await req.cacheSet(payload);
+
+    res.status(StatusCodes.OK).json(payload);
   } catch (error) {
     next(error);
   }
@@ -173,12 +208,16 @@ export const getReclamationsByStatus = async (req, res, next) => {
 
 export const searchReclamations = async (req, res, next) => {
   try {
-    const result = await reclamationService.searchReclamationsSvc(req.query);
+    const result = await reclamationService.searchReclamationsSvc(req.query, req.cacheKey);
 
-    res.status(StatusCodes.OK).json({
+    const payload = {
       success: true,
       ...result,
-    });
+    };
+
+    if (req.cacheSet) await req.cacheSet(payload);
+
+    res.status(StatusCodes.OK).json(payload);
   } catch (error) {
     next(error);
   }
@@ -189,6 +228,7 @@ export const uploadAttachmentCtrl = [
   async (req, res, next) => {
     try {
       const data = await reclamationService.uploadAttachmentSvc(req.params.id, req.files);
+      await invalidateReclamationCache(req.params.id);
       res.status(StatusCodes.OK).json({ success: true, data });
     } catch (error) {
       next(error);

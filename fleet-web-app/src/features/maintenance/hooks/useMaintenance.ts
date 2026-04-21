@@ -1,4 +1,3 @@
-import { vehiclesService, type Vehicle } from '../../vehicles/services/vehicles.service';
 import { useState, useEffect } from 'react';
 import {
   maintenanceService,

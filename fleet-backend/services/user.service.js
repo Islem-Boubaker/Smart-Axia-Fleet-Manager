@@ -87,7 +87,7 @@ export const createUserSvc = async (userData, file = null) => {
   return safeUser;
 };
 
-export const getAllUsersSvc = async (query = {}) => {
+export const getAllUsersSvc = async (query = {}, cacheKey = null) => {
   const { page, limit, offset } = getPagination(query);
   const { count, rows } = await User.findAndCountAll({
     attributes: { exclude: ['password'] },
@@ -98,7 +98,7 @@ export const getAllUsersSvc = async (query = {}) => {
   return getPagingData(count, rows, page, limit);
 };
 
-export const getUserByIdSvc = async (id) => {
+export const getUserByIdSvc = async (id, cacheKey = null) => {
   return await User.findByPk(id, { attributes: { exclude: ['password'] } });
 };
 export const updateUserSvc = async (id, updateData) => {
@@ -140,7 +140,7 @@ export const deleteUserSvc = async (id) => {
   return await User.destroy({ where: { id } });
 };
 
-export const getMyNotificationSettingsSvc = async (userId) => {
+export const getMyNotificationSettingsSvc = async (userId, cacheKey = null) => {
   const user = await User.findByPk(userId, { attributes: NOTIFICATION_KEYS });
   if (!user) return null;
   return user.toJSON();

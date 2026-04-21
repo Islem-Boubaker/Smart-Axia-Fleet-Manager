@@ -13,7 +13,7 @@ interface Props {
   onCancel?: (tripId: string) => void;
 }
 
-const TripsList = ({ trips, dark = false, actionTripId = null, onViewDetails, onEdit, onStart, onReachStop, onComplete, onCancel }: Props) => {
+const TripsList = ({ trips, dark = false, actionTripId = null, onViewDetails, onEdit, onCancel }: Props) => {
   if (trips.length === 0)
     return (
       <div

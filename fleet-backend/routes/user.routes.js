@@ -5,6 +5,7 @@ import * as userController from '../controllers/user.controller.js';
 import * as authMiddleware from '../middlewares/auth.middlewares.js';
 import * as csrfMiddleware from '../middlewares/csrf.middleware.js';
 import { RATE_LIMIT } from '../config/security.js';
+import cacheMiddleware from '../middlewares/cache.middleware.js';
 
 const router = Router();
 router.post('/user/login', rateLimit(RATE_LIMIT.login), userController.login);
@@ -20,9 +21,9 @@ router.post(
   userController.changePassword
 );
 
-router.get('/user/me', authMiddleware.authenticate, userController.getMe);
+router.get('/user/me', authMiddleware.authenticate, cacheMiddleware('users', 'me', { requireAuth: true }), userController.getMe);
 router.put('/user/me', authMiddleware.authenticate, csrfMiddleware.verifyCsrf, userController.updateMe);
-router.get('/user/me/notifications', authMiddleware.authenticate, userController.getMyNotificationSettings);
+router.get('/user/me/notifications', authMiddleware.authenticate, cacheMiddleware('users', 'notificationSettings', { requireAuth: true }), userController.getMyNotificationSettings);
 router.put(
   '/user/me/notifications',
   authMiddleware.authenticate,
@@ -63,6 +64,7 @@ router.get(
   authMiddleware.authenticate,
   csrfMiddleware.verifyCsrf,
   authMiddleware.authorizeRoles('ADMIN'),
+  cacheMiddleware('users', 'index', { requireAuth: true }),
   userController.getAllUsers
 );
 router.get(
@@ -70,6 +72,7 @@ router.get(
   authMiddleware.authenticate,
   csrfMiddleware.verifyCsrf,
   authMiddleware.authorizeRoles('ADMIN', 'MANAGER'),
+  cacheMiddleware('users', 'show', { requireAuth: true }),
   userController.getUserById
 );
 router.put(
