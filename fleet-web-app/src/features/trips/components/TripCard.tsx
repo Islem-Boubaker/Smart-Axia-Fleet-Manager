@@ -2,6 +2,7 @@ import { memo } from 'react';
 import { FiArrowRight, FiTruck, FiUser } from 'react-icons/fi';
 import { Badge } from '../../../shared/components';
 import type { Trip } from '../../../types';
+import { compactLocationLabel } from '../utils/locationLabel';
 
 interface TripCardProps {
   trip: Trip;
@@ -42,23 +43,6 @@ const formatFuel = (trip: Trip) => {
   }
 
   return 'N/A';
-};
-
-const compactLocation = (locationName: string) => {
-  const parts = locationName.split(',').map((part) => part.trim()).filter(Boolean);
-  if (parts.length < 2) return locationName;
-
-  const postcodeMatch = locationName.match(/\b\d{4,6}\b/);
-  const postcode = postcodeMatch?.[0];
-  if (!postcode) return locationName;
-
-  const postcodeIndex = parts.findIndex((part) => part.includes(postcode));
-  if (postcodeIndex <= 0) return locationName;
-
-  const state = parts[postcodeIndex - 1];
-  if (!state) return locationName;
-
-  return `${state}, ${postcode}`;
 };
 
 const TripCard = memo(({ trip, dark = false, index = 0, isBusy = false, onViewDetails, onEdit, onStart, onReachStop, onComplete, onCancel }: TripCardProps) => {
@@ -107,9 +91,9 @@ const TripCard = memo(({ trip, dark = false, index = 0, isBusy = false, onViewDe
   const canFinishLastStep = trip.status === 'ongoing' && hasStops && !nextPendingStop;
   const canCompleteTrip = trip.status === 'ongoing' && !hasStops;
 
-  const compactEndLocation = compactLocation(trip.endLocation).trim().toLowerCase();
+  const compactEndLocation = compactLocationLabel(trip.endLocation).trim().toLowerCase();
   const compactLastStopLocation = orderedStops.length > 0
-    ? compactLocation(orderedStops[orderedStops.length - 1].locationName).trim().toLowerCase()
+    ? compactLocationLabel(orderedStops[orderedStops.length - 1].locationName).trim().toLowerCase()
     : null;
   const hasDuplicateLastStop = Boolean(compactLastStopLocation && compactLastStopLocation === compactEndLocation);
   const timelineStops = hasDuplicateLastStop ? orderedStops.slice(0, -1) : orderedStops;
@@ -124,7 +108,7 @@ const TripCard = memo(({ trip, dark = false, index = 0, isBusy = false, onViewDe
   }> = [
     {
       id: `start-${trip.id}`,
-      title: compactLocation(trip.startLocation),
+      title: compactLocationLabel(trip.startLocation),
       subtitle: formatDateTime(trip.startTime),
       kind: 'start',
     },
@@ -140,7 +124,7 @@ const TripCard = memo(({ trip, dark = false, index = 0, isBusy = false, onViewDe
 
       return {
         id: stop.id,
-        title: compactLocation(stop.locationName),
+        title: compactLocationLabel(stop.locationName),
         subtitle,
         kind: 'stop' as const,
         stopState: stop.status,
@@ -149,7 +133,7 @@ const TripCard = memo(({ trip, dark = false, index = 0, isBusy = false, onViewDe
     }),
     {
       id: `end-${trip.id}`,
-      title: compactLocation(trip.endLocation),
+      title: compactLocationLabel(trip.endLocation),
       subtitle: trip.endTime ? formatDateTime(trip.endTime) : trip.status === 'completed' ? 'Reached destination' : 'Final destination',
       kind: 'end',
     },
@@ -187,9 +171,9 @@ const TripCard = memo(({ trip, dark = false, index = 0, isBusy = false, onViewDe
               Trip #{trip.id}
             </p>
             <h3 className={`mt-1 text-lg font-bold ${dark ? 'text-white' : 'text-slate-900'}`}>
-              {compactLocation(trip.startLocation)}
+              {compactLocationLabel(trip.startLocation)}
               <FiArrowRight className="inline mx-2 w-4 h-4 opacity-50 align-[-2px]" />
-              {compactLocation(trip.endLocation)}
+              {compactLocationLabel(trip.endLocation)}
             </h3>
           </div>
           <Badge variant={getStatusColor(trip.status) as 'success' | 'warning' | 'info' | 'error' | 'default'}>

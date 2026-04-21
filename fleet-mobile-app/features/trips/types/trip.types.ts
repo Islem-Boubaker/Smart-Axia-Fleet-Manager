@@ -20,6 +20,8 @@ export interface TripStop {
 export interface TripLocation {
   address: string;
   city: string;
+  latitude?: number | null;
+  longitude?: number | null;
 }
 
 export interface Trip {
@@ -54,6 +56,10 @@ export interface Trip {
   fuel?: string | null;
   pickupLocation: TripLocation;
   destinationLocation: TripLocation;
+  startLatitude?: number | null;
+  startLongitude?: number | null;
+  endLatitude?: number | null;
+  endLongitude?: number | null;
   stops?: TripStop[];
 }
 

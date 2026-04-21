@@ -19,7 +19,10 @@ import { BlurView } from "expo-blur";
 import { Accordion } from "../components/ui/Accordion";
 import { ArrowLeft, ChevronDown, ChevronUp, Clock, Fuel, Gauge, RefreshCw } from "lucide-react-native";
 import { useTripDetail } from "../hooks/useTripDetail";
+import { useTripActions } from "../hooks/useTripActions";
 import { useRoutePolyline } from "../hooks/useRoutePolyline"; // ← new
+import { normalizeAddressKey, resolveTunisiaAddressToCoord } from "../utils/geocoding";
+import { filterDestinationDuplicateStops } from "../utils/routeDedup";
 import type { UiTripStatus } from "../types/trip.types";
 import { useAppTheme } from "@/shared/theme/ThemeProvider";
 import { tripsApi } from "../services/trips.api";
@@ -32,27 +35,6 @@ const { height } = Dimensions.get("window");
 const SHEET_PEEK = 64;
 const SHEET_FULL = height * 0.52;
 type LatLng = { latitude: number; longitude: number };
-
-const TUNISIA_LOCATION_FALLBACKS: Record<string, LatLng> = {
-  tunis: { latitude: 36.8065, longitude: 10.1815 },
-  ariana: { latitude: 36.8625, longitude: 10.1956 },
-  manouba: { latitude: 36.8091, longitude: 10.0963 },
-  benarous: { latitude: 36.7544, longitude: 10.2181 },
-  benarouss: { latitude: 36.7544, longitude: 10.2181 },
-  sousse: { latitude: 35.8256, longitude: 10.6084 },
-  kairouan: { latitude: 35.6781, longitude: 10.0963 },
-  siliana: { latitude: 36.0887, longitude: 9.3708 },
-  sfax: { latitude: 34.7398, longitude: 10.76 },
-  nabeul: { latitude: 36.4513, longitude: 10.7351 },
-  bizerte: { latitude: 37.2744, longitude: 9.8739 },
-  gabes: { latitude: 33.8815, longitude: 10.0982 },
-  beja: { latitude: 36.7256, longitude: 9.1817 },
-  kef: { latitude: 36.1742, longitude: 8.7049 },
-  mahdia: { latitude: 35.5047, longitude: 11.0622 },
-  monastir: { latitude: 35.7643, longitude: 10.8113 },
-  tozeur: { latitude: 33.9197, longitude: 8.1335 },
-  medenine: { latitude: 33.3549, longitude: 10.5055 },
-};
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -126,6 +108,7 @@ export default function TripDetailScreen() {
 
   const normalizedTripId = Array.isArray(id) ? id[0] : id;
   const { trip, isLoading, error, reload } = useTripDetail(normalizedTripId);
+  const { markStopReached, isSubmitting: isSubmittingTripAction } = useTripActions();
 
   const [sheetExpanded, setSheetExpanded] = useState(true);
   const [stopsOpen, setStopsOpen]         = useState(true);
@@ -168,51 +151,51 @@ export default function TripDetailScreen() {
     return map;
   }, [validStops]);
 
+  const originCoordsFromTrip = useMemo(() => {
+    if (trip?.pickupLocation?.latitude != null && trip?.pickupLocation?.longitude != null) {
+      return {
+        latitude: trip.pickupLocation.latitude,
+        longitude: trip.pickupLocation.longitude,
+      };
+    }
+    if (trip?.startLatitude != null && trip?.startLongitude != null) {
+      return {
+        latitude: trip.startLatitude,
+        longitude: trip.startLongitude,
+      };
+    }
+    return null;
+  }, [trip?.pickupLocation?.latitude, trip?.pickupLocation?.longitude, trip?.startLatitude, trip?.startLongitude]);
+
+  const destinationCoordsFromTrip = useMemo(() => {
+    if (trip?.destinationLocation?.latitude != null && trip?.destinationLocation?.longitude != null) {
+      return {
+        latitude: trip.destinationLocation.latitude,
+        longitude: trip.destinationLocation.longitude,
+      };
+    }
+    if (trip?.endLatitude != null && trip?.endLongitude != null) {
+      return {
+        latitude: trip.endLatitude,
+        longitude: trip.endLongitude,
+      };
+    }
+    return null;
+  }, [trip?.destinationLocation?.latitude, trip?.destinationLocation?.longitude, trip?.endLatitude, trip?.endLongitude]);
+
+  const visibleStops = useMemo(() => {
+    return filterDestinationDuplicateStops(sortedStops, destinationAddress, destinationCoordsFromTrip);
+  }, [destinationAddress, destinationCoordsFromTrip, sortedStops]);
+  const nextPendingStop = useMemo(
+    () => visibleStops.find((stop) => stop.status === "pending") ?? null,
+    [visibleStops],
+  );
+
   React.useEffect(() => {
     let isCancelled = false;
 
     const geocodeAddress = async (address: string): Promise<LatLng | null> => {
-      const normalized = address.trim();
-      if (!normalized) return null;
-      if (geocodeCache.current[normalized]) {
-        return geocodeCache.current[normalized];
-      }
-
-      const fallbackCoords = lookupTunisiaFallback(normalized);
-      if (fallbackCoords) {
-        geocodeCache.current[normalized] = fallbackCoords;
-        return fallbackCoords;
-      }
-
-      try {
-        const searchText = normalized.toLowerCase().includes("tunisia")
-          ? normalized
-          : `${normalized}, Tunisia`;
-
-        const response = await fetch(
-          `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(searchText)}&limit=1&addressdetails=1&countrycodes=tn`,
-          {
-            headers: {
-              Accept: "application/json",
-              "User-Agent": "SmartAxiaFleetManager/1.0 (mobile-app)",
-            },
-          },
-        );
-
-        if (!response.ok) return null;
-        const results = (await response.json()) as { lat: string; lon: string }[];
-        if (!Array.isArray(results) || results.length === 0) return null;
-
-        const lat = Number.parseFloat(results[0].lat);
-        const lng = Number.parseFloat(results[0].lon);
-        if (Number.isNaN(lat) || Number.isNaN(lng)) return null;
-
-        const coords = { latitude: lat, longitude: lng };
-        geocodeCache.current[normalized] = coords;
-        return coords;
-      } catch {
-        return null;
-      }
+      return resolveTunisiaAddressToCoord(address, geocodeCache.current);
     };
 
     const resolveFromStopName = (address: string): LatLng | null => {
@@ -224,6 +207,13 @@ export default function TripDetailScreen() {
       if (!originAddress && !destinationAddress) {
         setOriginCoord(null);
         setDestinationCoord(null);
+        return;
+      }
+
+      if (originCoordsFromTrip || destinationCoordsFromTrip) {
+        setOriginCoord(originCoordsFromTrip ?? resolveFromStopName(originAddress));
+        setDestinationCoord(destinationCoordsFromTrip ?? resolveFromStopName(destinationAddress));
+        setIsGeocoding(false);
         return;
       }
 
@@ -245,12 +235,13 @@ export default function TripDetailScreen() {
     return () => {
       isCancelled = true;
     };
-  }, [originAddress, destinationAddress, stopNameCoordsMap]);
+  }, [destinationAddress, destinationCoordsFromTrip, originAddress, originCoordsFromTrip, stopNameCoordsMap]);
 
   const allMarkerCoords = useMemo(() => {
     const points: LatLng[] = [];
     if (originCoord) points.push(originCoord);
-    for (const stop of validStops) {
+    for (const stop of visibleStops) {
+      if (stop.latitude == null || stop.longitude == null) continue;
       points.push({
         latitude: stop.latitude as number,
         longitude: stop.longitude as number,
@@ -258,7 +249,11 @@ export default function TripDetailScreen() {
     }
     if (destinationCoord) points.push(destinationCoord);
     return points;
-  }, [destinationCoord, originCoord, validStops]);
+  }, [destinationCoord, originCoord, visibleStops]);
+  const validCoords = useMemo(
+    () => visibleStops.filter((s) => s.latitude != null && s.longitude != null),
+    [visibleStops],
+  );
 
   const routePathCoords = useMemo(() => allMarkerCoords, [allMarkerCoords]);
 
@@ -364,33 +359,47 @@ export default function TripDetailScreen() {
   }
 
   // ── Derived values ────────────────────────────────────────────────────────
-  const validCoords = validStops;
   const mapRegion   = getRegion(allMarkerCoords);
 
   const backendStatus = trip.backendStatus ?? "scheduled";
   const statusStyle   = TRIP_STATUS_STYLES[trip.status] ?? TRIP_STATUS_STYLES.pending;
 
-  const handlePrimaryAction = async () => {
+  const handleStartTrip = async () => {
     if (!trip?.id) return;
-    if (backendStatus === "cancelled" || backendStatus === "completed") return;
+    if (backendStatus !== "scheduled") return;
 
-    if (backendStatus === "scheduled") {
-      try {
-        setIsNavigating(true);
-        await tripsApi.startTrip(trip.id);
-      } catch (err) {
-        const message = err instanceof Error ? err.message : "Unable to start trip right now.";
-        Alert.alert("Start Trip Failed", message);
-        return;
-      } finally {
-        setIsNavigating(false);
-      }
+    try {
+      setIsNavigating(true);
+      await tripsApi.startTrip(trip.id);
+      await reload();
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Unable to start trip right now.";
+      Alert.alert("Start Trip Failed", message);
+    } finally {
+      setIsNavigating(false);
     }
+  };
+
+  const handleNavigateToLiveTrip = () => {
+    if (!trip?.id) return;
+    if (backendStatus !== "ongoing") return;
 
     router.push({
       pathname: "/trips/live",
       params: { tripId: trip.id },
     });
+  };
+
+  const handleMarkNextStopReached = async () => {
+    if (!trip?.id || !nextPendingStop?.id) return;
+
+    try {
+      await markStopReached(trip.id, nextPendingStop.id, new Date().toISOString());
+      await reload();
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Unable to mark the next stop as reached.";
+      Alert.alert("Stop Update Failed", message);
+    }
   };
 
   // ── Render ────────────────────────────────────────────────────────────────
@@ -570,7 +579,7 @@ export default function TripDetailScreen() {
             <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
               <View style={{ backgroundColor: colors.mutedSurface, paddingHorizontal: 8, paddingVertical: 3, borderRadius: 20 }}>
                 <Text style={{ fontSize: 11, color: colors.subtext }}>
-                  {stops.length} {stops.length === 1 ? "stop" : "stops"}
+                  {visibleStops.length} {visibleStops.length === 1 ? "stop" : "stops"}
                 </Text>
               </View>
               {stopsOpen ? <ChevronUp size={16} color={colors.subtext} /> : <ChevronDown size={16} color={colors.subtext} />}
@@ -579,13 +588,13 @@ export default function TripDetailScreen() {
 
        
           {/* Stops list */}
-          {stopsOpen && stops.length > 0 && (
+          {stopsOpen && visibleStops.length > 0 && (
             <View style={{ marginTop: 8 }}>
   
               <View style={{ marginTop: 16 }}>
                
                 <Accordion
-                  items={sortedStops.map((stop) => ({
+                  items={visibleStops.map((stop) => ({
                     title: `Stop ${stop.stopOrder}: ${stop.locationName}`,
                     content: stop.notes ?? null,
                   }))}
@@ -593,6 +602,58 @@ export default function TripDetailScreen() {
                 />
               </View>
             </View>
+          )}
+
+          {backendStatus === "scheduled" && (
+            <TouchableOpacity
+              style={{
+                marginTop: 18,
+                backgroundColor: colors.primary,
+                padding: 15,
+                borderRadius: 16,
+                opacity: isNavigating ? 0.6 : 1,
+              }}
+              disabled={isNavigating}
+              onPress={() => void handleStartTrip()}
+            >
+              <Text
+                style={{
+                  color: "white",
+                  textAlign: "center",
+                  fontWeight: "700",
+                  fontSize: 15,
+                }}
+              >
+                {isNavigating ? "Starting Trip..." : "Start Trip"}
+              </Text>
+            </TouchableOpacity>
+          )}
+
+          {backendStatus === "ongoing" && nextPendingStop && (
+            <TouchableOpacity
+              style={{
+                marginTop: 18,
+                backgroundColor: "#0F766E",
+                padding: 15,
+                borderRadius: 16,
+                opacity: isSubmittingTripAction ? 0.6 : 1,
+              }}
+              disabled={isSubmittingTripAction}
+              onPress={() => void handleMarkNextStopReached()}
+            >
+              <Text
+                style={{
+                  color: "white",
+                  textAlign: "center",
+                  fontWeight: "700",
+                  fontSize: 15,
+                }}
+              >
+                {isSubmittingTripAction
+                  ? "Updating Stop..."
+                  : `Stop Reached${nextPendingStop.locationName ? ` · ${nextPendingStop.locationName}` : ""}`}
+              </Text>
+            </TouchableOpacity>
           )}
 
           {/* CTA */}
@@ -603,25 +664,23 @@ export default function TripDetailScreen() {
               backgroundColor: backendStatus === "ongoing" ? colors.primary : colors.mutedSurface,
               padding: 15,
               borderRadius: 16,
-              opacity: backendStatus === "cancelled" || backendStatus === "completed" || isNavigating ? 0.5 : 1,
+              opacity: backendStatus === "ongoing" ? 1 : 0.5,
             }}
-            disabled={backendStatus === "cancelled" || backendStatus === "completed" || isNavigating}
-            onPress={() => void handlePrimaryAction()}
+            disabled={backendStatus !== "ongoing"}
+            onPress={handleNavigateToLiveTrip}
           >
             <Text
               style={{
-                color: backendStatus === "ongoing" ? "white" : isDark ? "#E2E8F0" : "#374151",
+                color: backendStatus === "ongoing" ? "white" : isDark ? "#94A3B8" : "#6B7280",
                 textAlign: "center",
                 fontWeight: "600",
                 fontSize: 15,
               }}
             >
-              {isNavigating
-                ? "Starting Trip..."
-                : backendStatus === "ongoing"
+              {backendStatus === "ongoing"
                 ? "Navigate Now"
                 : backendStatus === "scheduled"
-                ? "Start Trip"
+                ? "Trip Not Started Yet"
                 : backendStatus === "completed"
                 ? "Trip Completed"
                 : "Trip Cancelled"}
@@ -646,32 +705,4 @@ function StatCard({ icon, label, value, isDark }: { icon: React.ReactNode; label
       <Text style={{ fontSize: 14, fontWeight: "600", color: isDark ? "#F8FAFC" : "#111827" }}>{value}</Text>
     </View>
   );
-}
-
-function normalizeAddressKey(address: string): string {
-  return address
-    .toLowerCase()
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .replace(/[^a-z0-9\s,]/g, " ")
-    .replace(/\s+/g, " ")
-    .trim();
-}
-
-function lookupTunisiaFallback(address: string): LatLng | null {
-  const normalized = normalizeAddressKey(address);
-  if (!normalized) return null;
-
-  const cityCandidate = normalized.split(",")[0]?.trim() ?? normalized;
-  const compactCandidate = cityCandidate.replace(/\s+/g, "");
-
-  if (TUNISIA_LOCATION_FALLBACKS[cityCandidate]) {
-    return TUNISIA_LOCATION_FALLBACKS[cityCandidate];
-  }
-
-  if (TUNISIA_LOCATION_FALLBACKS[compactCandidate]) {
-    return TUNISIA_LOCATION_FALLBACKS[compactCandidate];
-  }
-
-  return null;
 }

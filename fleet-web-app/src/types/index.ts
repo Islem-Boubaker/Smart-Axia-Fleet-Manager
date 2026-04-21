@@ -73,7 +73,11 @@ export interface Trip {
   region?: string;
   notes?: string;
   startLocation: string;
+  startLatitude?: number;
+  startLongitude?: number;
   endLocation: string;
+  endLatitude?: number;
+  endLongitude?: number;
   startTime: string;
   endTime?: string;
   distance: number;
