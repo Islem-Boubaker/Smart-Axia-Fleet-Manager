@@ -1,9 +1,8 @@
 ﻿import { memo } from "react";
 import type { Vehicle } from "../../../types";
 import type { VehicleTableRow } from "../hooks/useVehicles";
-import { AppDataTable, AppRowActions, AppStatusBadge, AppTd, AppTr, Button } from '../../../shared/components';
+import { AppDataTable, AppStatusBadge, AppTd, AppTr } from '../../../shared/components';
 import RowActions from "./RowActions";
-import StatusBadge from "./StatusBadge";
 import { getVehicleRecommendations } from "./maintenanceStatic";
 
 interface VehiclesTableProps {

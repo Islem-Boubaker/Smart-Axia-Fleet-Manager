@@ -33,7 +33,6 @@ const AppDataTable = ({
   const [scrollbarLeft, setScrollbarLeft] = useState(0);
   const [showScrollbar, setShowScrollbar] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
-  const [maxScrollbarLeft, setMaxScrollbarLeft] = useState(0);
 
   const SCROLLBAR_THUMB_WIDTH = 80; // Fixed width in pixels
 
@@ -87,7 +86,6 @@ const AppDataTable = ({
         // Calculate maximum scrollbar position (track width - thumb width)
         const trackWidth = clientWidth;
         const maxThumbPosition = trackWidth - SCROLLBAR_THUMB_WIDTH;
-        setMaxScrollbarLeft(maxThumbPosition);
 
         // Calculate scrollbar thumb position
         const maxScroll = scrollWidth - clientWidth;
