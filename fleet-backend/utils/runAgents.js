@@ -23,7 +23,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 // Load fleet-backend/.env even when server is started from a different cwd.
-dotenv.config({ path: path.resolve(__dirname, '../.env') });
+dotenv.config({ path: path.resolve(__dirname, '../.env'), quiet: true });
 
 export const runAgents = async (prompt) => {
     const apiKey = process.env.GEMINI_API_KEY;

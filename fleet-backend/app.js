@@ -15,10 +15,10 @@ import maintenanceRoutes from './routes/maintenance.routes.js';
 import notificationRoutes from './routes/notification.routes.js';
 import tripRoutes from './routes/trip.routes.js';
 import tripStopRoutes from './routes/tripStop.routes.js';
-dotenv.config();
+dotenv.config({ quiet: true });
 
 initializeRedis().catch((error) => {
-	console.error('[Redis] Initialization warning:', error.message);
+	console.error('[Redis] Initialization warning:', error?.message || String(error));
 });
 
 const app = express();

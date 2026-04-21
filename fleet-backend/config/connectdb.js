@@ -2,7 +2,7 @@ import { Sequelize } from "sequelize";
 import dotenv from "dotenv";
 import { createClient, createClientPool } from "@redis/client";
 
-dotenv.config();
+dotenv.config({ quiet: true });
 
 const databaseUrl = process.env.DATABASE_URL;
 if (!databaseUrl) {
@@ -27,6 +27,39 @@ export const sequelize = new Sequelize(databaseUrl, {
 });
 
 const redisUrl = process.env.REDIS_URL || "redis://localhost:6379";
+
+const maskRedisUrl = (value) => {
+  try {
+    const parsed = new URL(value);
+    const hasAuth = Boolean(parsed.username || parsed.password);
+    const auth = hasAuth ? "***@" : "";
+    return `${parsed.protocol}//${auth}${parsed.hostname}:${parsed.port || "6379"}${parsed.pathname || ""}`;
+  } catch {
+    return "[invalid REDIS_URL]";
+  }
+};
+
+const formatRedisError = (error) => {
+  if (!error) return "Unknown Redis error";
+
+  const pieces = [
+    error?.name,
+    error?.code,
+    error?.message,
+    error?.cause?.code,
+    error?.cause?.message,
+  ].filter(Boolean);
+
+  if (!pieces.length) {
+    try {
+      return JSON.stringify(error);
+    } catch {
+      return String(error);
+    }
+  }
+
+  return pieces.join(" | ");
+};
 
 const decodeSafe = (value) => {
   if (!value) return null;
@@ -91,7 +124,7 @@ let redisConnectPromise = null;
 
 redisClient.on("error", (error) => {
   redisReady = false;
-  console.error("[Redis] Client error:", error.message);
+  console.error("[Redis] Client error:", formatRedisError(error));
 });
 
 redisClient.on("ready", () => {
@@ -109,22 +142,46 @@ export const initializeRedis = async () => {
     return redisPool;
   }
 
+  if (!process.env.REDIS_URL && process.env.NODE_ENV === "production") {
+    console.warn("[Redis] REDIS_URL is not set in production. Falling back to localhost, which usually fails on Render.");
+  }
+
   if (!redisConnectPromise) {
-    redisConnectPromise = Promise.all([redisClient.connect(), redisPool.connect()])
+    redisConnectPromise = Promise.allSettled([redisClient.connect(), redisPool.connect()])
+      .then((results) => {
+        const [clientResult, poolResult] = results;
+
+        if (clientResult.status === "rejected") {
+          console.error("[Redis] Client connect failed:", formatRedisError(clientResult.reason));
+        }
+
+        if (poolResult.status === "rejected") {
+          console.error("[Redis] Pool connect failed:", formatRedisError(poolResult.reason));
+        }
+
+        if (!redisClient.isOpen && !redisPool.isOpen) {
+          throw new Error(
+            `No Redis connection available. REDIS_URL=${maskRedisUrl(redisUrl)}`
+          );
+        }
+
+        if (redisClient.isOpen || redisPool.isOpen) {
+          redisReady = true;
+          console.log(`[Redis] Connected (${redisPool.isOpen ? "pool" : "client"} mode)`);
+        }
+      })
       .catch((error) => {
         redisConnectPromise = null;
-        console.error("[Redis] Failed to connect:", error.message);
+        console.error("[Redis] Failed to connect:", formatRedisError(error));
         throw error;
       })
       .finally(() => {
-        if (redisClient.isOpen && redisPool.isOpen) {
-          redisConnectPromise = null;
-        }
+        redisConnectPromise = null;
       });
   }
 
   await redisConnectPromise;
-  return redisPool;
+  return redisPool.isOpen ? redisPool : redisClient;
 };
 
 export const getRedisClient = () => (redisPool.isOpen ? redisPool : redisClient);
