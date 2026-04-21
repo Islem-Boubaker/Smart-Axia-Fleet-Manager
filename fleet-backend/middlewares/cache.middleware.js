@@ -1,7 +1,14 @@
 import { getRedisClient, isRedisAvailable } from "../config/connectdb.js";
 
-const LIST_TTL_SECONDS = 600;
-const SINGLE_TTL_SECONDS = 1800;
+const CACHE_KEY_PREFIX = process.env.CACHE_KEY_PREFIX || "smartfleet:v1";
+const LIST_TTL_SECONDS = Number.parseInt(process.env.CACHE_LIST_TTL_SECONDS || "600", 10);
+const SINGLE_TTL_SECONDS = Number.parseInt(process.env.CACHE_SINGLE_TTL_SECONDS || "1800", 10);
+
+const toSafePositiveInt = (value, fallback) =>
+  Number.isInteger(value) && value > 0 ? value : fallback;
+
+const listTtlSeconds = toSafePositiveInt(LIST_TTL_SECONDS, 600);
+const singleTtlSeconds = toSafePositiveInt(SINGLE_TTL_SECONDS, 1800);
 
 const normalizeQuery = (query = {}) => {
   const params = new URLSearchParams();
@@ -27,14 +34,41 @@ const normalizeQuery = (query = {}) => {
 
 const withWildcard = (key) => (key.endsWith("*") ? key : `${key}*`);
 
+const buildCacheKey = ({ model, method, queryString }) => {
+  const safeModel = String(model || "resource").trim().toLowerCase();
+  const safeMethod = String(method || "index").trim().toLowerCase();
+  const safeQuery = queryString || "_";
+  return `${CACHE_KEY_PREFIX}:${safeModel}:${safeMethod}:${safeQuery}`;
+};
+
 const invalidatePattern = async (pattern) => {
   const client = getRedisClient();
   if (!client?.isOpen || !isRedisAvailable()) return 0;
 
   try {
-    const keys = await client.keys(pattern);
-    if (!keys.length) return 0;
-    return await client.del(keys);
+    let cursor = "0";
+    let deleted = 0;
+
+    do {
+      const reply = await client.scan(cursor, {
+        MATCH: pattern,
+        COUNT: 200,
+      });
+
+      cursor = reply?.cursor || "0";
+      const keys = reply?.keys || [];
+
+      if (!keys.length) continue;
+
+      // Prefer UNLINK to reduce blocking on large invalidations.
+      if (typeof client.unlink === "function") {
+        deleted += await client.unlink(keys);
+      } else {
+        deleted += await client.del(keys);
+      }
+    } while (cursor !== "0");
+
+    return deleted;
   } catch (error) {
     console.error("[Cache] invalidatePattern failed:", error.message);
     return 0;
@@ -59,8 +93,8 @@ const cacheMiddleware = (model = "resource", method = "index", options = {}) => 
     };
 
     const queryString = normalizeQuery(mergedQuery);
-    const cacheKey = `${model}:${method}:${queryString}`;
-    const ttl = req.params?.id ? SINGLE_TTL_SECONDS : LIST_TTL_SECONDS;
+    const cacheKey = buildCacheKey({ model, method, queryString });
+    const ttl = req.params?.id ? singleTtlSeconds : listTtlSeconds;
     const client = getRedisClient();
 
     req.cacheKey = cacheKey;
@@ -97,8 +131,13 @@ const cacheMiddleware = (model = "resource", method = "index", options = {}) => 
 };
 
 cacheMiddleware.invalidatePattern = async (pattern) => {
-  const safePattern = withWildcard(pattern);
+  const withPrefix = pattern.startsWith(`${CACHE_KEY_PREFIX}:`)
+    ? pattern
+    : `${CACHE_KEY_PREFIX}:${pattern}`;
+  const safePattern = withWildcard(withPrefix);
   return invalidatePattern(safePattern);
 };
+
+cacheMiddleware.buildCacheKey = buildCacheKey;
 
 export default cacheMiddleware;

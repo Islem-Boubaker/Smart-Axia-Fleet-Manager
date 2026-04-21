@@ -1,127 +1,132 @@
-# Redis in Fleet Backend
+# Redis in Fleet Backend (Production Guide)
 
-## What is Redis?
-Redis is an in-memory key-value data store.
+## Overview
+This backend uses two cache layers:
 
-In this project, Redis is used as a cache layer in front of the database to:
-- speed up GET endpoints
-- reduce repeated SQL queries
-- reduce API response time under load
+1. Standard Redis cache-aside for API responses.
+2. Semantic cache (LangCache) for AI prompt/response reuse.
 
-## Why use Redis here?
-Your backend has many list/detail endpoints that are read frequently.
-Caching those responses in Redis means:
-- first request = DB query + cache write
-- next requests = Redis read (faster)
+Both layers are fail-safe. If Redis or LangCache fails, the app still serves fresh data from source systems.
 
-This improves performance and reduces database pressure.
-
-## Current Redis integration in this project
-
-### 1. Redis connection and lifecycle
-- File: `config/connectdb.js`
-- Responsibilities:
-  - create Redis client and client pool
-  - connect with retry strategy
-  - support local/prod URL via `REDIS_URL`
-  - graceful close on shutdown
-
-### 2. Cache middleware
-- File: `middlewares/cache.middleware.js`
-- Responsibilities:
-  - only cache GET requests
-  - skip cache when `nocache=true`
-  - build cache key in format: `model:method:queryString`
-  - include `userId` for auth-specific data
-  - use TTL:
-    - list/index: 600s
-    - single/by id: 1800s
-  - expose helpers:
-    - `req.cacheKey`
-    - `req.cacheSet(data)`
-    - `req.cacheInvalidate(key)`
-    - `cacheMiddleware.invalidatePattern(pattern)`
-
-### 3. App startup
-- File: `app.js`
-- Responsibilities:
-  - initialize Redis safely on app boot
-  - continue app even if Redis fails (log warning only)
-
-### 4. Graceful shutdown
-- File: `server.js`
-- Responsibilities:
-  - close Redis on SIGTERM/SIGINT
-  - close DB and sockets cleanly
-
-## How request flow works with cache
-
-### GET endpoint (cache read-through)
-1. Request arrives
-2. Middleware builds key (ex: `vehicles:index:limit=10&page=1&userId=123`)
-3. If key exists in Redis (HIT), return cached JSON immediately
-4. If key missing (MISS), controller/service fetches from DB
-5. Controller stores response with `req.cacheSet(...)`
-6. Response is returned
-
-### POST/PUT/PATCH/DELETE endpoint (cache invalidation)
-1. Mutation succeeds
-2. Controller invalidates related keys/patterns (list + detail)
-3. Next GET will rebuild fresh cache
+## Implementation files
+- `fleet-backend/config/connectdb.js`
+  Redis connection, pooling, retries, startup, and graceful shutdown.
+- `fleet-backend/middlewares/cache.middleware.js`
+  Cache-aside middleware with TTL, key strategy, and safe invalidation.
+- `fleet-backend/services/semanticCache.service.js`
+  LangCache wrapper for semantic search/set/deleteQuery with graceful fallback.
+- `fleet-backend/services/vehicle.service.js`
+  AI maintenance flow using semantic cache before calling the model.
 
 ## Environment variables
-Add to `.env`:
+Set these in `fleet-backend/.env`:
 
 ```env
+# Core Redis
 REDIS_URL=redis://localhost:6379
-NODE_ENV=development
+
+# API cache controls
+CACHE_KEY_PREFIX=smartfleet:v1
+CACHE_LIST_TTL_SECONDS=600
+CACHE_SINGLE_TTL_SECONDS=1800
+
+# Semantic cache (LangCache)
+ENABLE_SEMANTIC_CACHE=true
+REDIS_LANGCACHE_SERVER_URL=https://aws-us-east-1.langcache.redis.io
+REDIS_LANGCACHE_CACHE_ID=your_cache_id
+REDIS_API_KEY=your_langcache_api_key
+SEMANTIC_CACHE_SIMILARITY_THRESHOLD=0.9
+SEMANTIC_CACHE_TTL_MS=86400000
+```
+
+## Cache-aside pattern in this app
+
+### Read flow (GET)
+1. Build cache key from prefix + resource + method + normalized query.
+2. Try Redis read first.
+3. On hit: return cached response.
+4. On miss: fetch from DB/service.
+5. Save payload to Redis with TTL.
+6. Return fresh payload.
+
+### Write flow (POST/PUT/PATCH/DELETE)
+1. Execute mutation in DB.
+2. Invalidate related keys/patterns.
+3. Next read repopulates cache.
+
+## Cache key naming strategy
+Format:
+
+```text
+{CACHE_KEY_PREFIX}:{model}:{method}:{normalizedQuery}
 ```
 
 Examples:
-- local without auth: `redis://localhost:6379`
-- local with password: `redis://:yourpassword@localhost:6379`
-- ACL/prod: `redis://username:password@host:port`
-- TLS/prod: `rediss://username:password@host:port`
+- `smartfleet:v1:vehicles:index:limit=10&page=1&userId=12`
+- `smartfleet:v1:vehicles:show:id=42&userId=12`
 
-## Route usage pattern
-Apply cache middleware to GET routes, after auth for protected endpoints:
+Why this strategy:
+- Namespaced by version (`v1`) for safe rollout.
+- Model/method segmentation for precise invalidation.
+- Query normalization prevents duplicate keys for same params.
 
-```js
-router.get(
-  '/vehicle/getvehicles',
-  authMiddleware.authenticate,
-  authMiddleware.authorizeRoles('ADMIN', 'MANAGER'),
-  cacheMiddleware('vehicles', 'index', { requireAuth: true }),
-  vehicleController.getAllVehicles
-);
-```
+## TTL strategy
+- List endpoints: `CACHE_LIST_TTL_SECONDS` (default 600s).
+- Detail endpoints: `CACHE_SINGLE_TTL_SECONDS` (default 1800s).
+- Semantic entries: `SEMANTIC_CACHE_TTL_MS` (default 24h).
 
-## Controller usage pattern
-For GET:
+## Graceful error handling
+- Redis connection issues do not crash app startup.
+- Cache get/set/invalidate failures log and continue.
+- LangCache failures automatically fall back to live AI generation.
 
-```js
-const data = await service.getAll(query, req.cacheKey);
-const payload = { success: true, data };
-if (req.cacheSet) await req.cacheSet(payload);
-return res.status(200).json(payload);
-```
+## Invalidation examples
 
-For mutations:
+Invalidate all vehicle list variations:
 
 ```js
 await cacheMiddleware.invalidatePattern('vehicles:index:*');
+```
+
+Invalidate one vehicle detail family:
+
+```js
 await cacheMiddleware.invalidatePattern(`vehicles:show:id=${id}*`);
 ```
 
-## Operational checklist
-1. Start Redis
-2. Start backend
-3. Call one GET endpoint twice
-4. Confirm second call is faster (cached)
-5. Call update/delete endpoint
-6. Confirm next GET returns fresh data (invalidated)
+Invalidate semantic entries by metadata attributes:
 
-## Notes
-- Cache errors must never crash your API.
-- Keep key naming consistent across routes/controllers.
-- Invalidation must always happen after successful mutations.
+```js
+await semanticInvalidateByAttributes({
+  feature: 'maintenance-recommendation',
+  vehicleId: String(id),
+});
+```
+
+## Semantic caching behavior (AI app)
+For maintenance recommendations:
+1. Build prompt from vehicle context.
+2. Search semantic cache with threshold + attributes.
+3. On hit, parse cached response and persist.
+4. On miss, call Gemini, parse result, save DB, then `set` semantic cache.
+
+## How to run
+From `fleet-backend`:
+
+```bash
+npm install
+npm run dev
+```
+
+## How to test quickly
+1. Call `GET /vehicle/getvehicles` twice. Second call should be faster.
+2. Update a vehicle (`PUT /vehicle/updatevehicle/:id`).
+3. Call `GET /vehicle/getvehicle/:id` and verify fresh value.
+4. Trigger maintenance AI twice for similar prompts and verify second call reuses semantic cache.
+
+## Deploy notes
+1. Use managed Redis with TLS (`rediss://`) in production.
+2. Set secure env vars in your host (never hardcode secrets).
+3. Keep cache prefix versioned to support safe cache migrations.
+4. Monitor cache hit ratio and Redis latency.
+5. Rotate `REDIS_API_KEY` if it was ever exposed.

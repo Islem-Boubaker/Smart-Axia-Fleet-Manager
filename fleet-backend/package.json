@@ -17,6 +17,7 @@
   "license": "ISC",
   "type": "module",
   "dependencies": {
+    "@redis-ai/langcache": "^0.11.1",
     "@redis/client": "^5.12.1",
     "axios": "^1.14.0",
     "bcrypt": "^6.0.0",

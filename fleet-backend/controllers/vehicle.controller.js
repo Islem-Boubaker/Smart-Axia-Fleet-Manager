@@ -3,6 +3,7 @@ import * as vehicleService from '../services/vehicle.service.js';
 import { uploadVehiclePhotos } from '../middlewares/upload.js';
 import { successResponse } from '../utils/response.js';
 import cacheMiddleware from '../middlewares/cache.middleware.js';
+import { semanticInvalidateByAttributes } from '../services/semanticCache.service.js';
 
 const extractPhotoUrls = (files = []) => {
   return files
@@ -14,6 +15,10 @@ const invalidateVehicleCache = async (id) => {
   await cacheMiddleware.invalidatePattern('vehicles:index:*');
   if (id) {
     await cacheMiddleware.invalidatePattern(`vehicles:show:id=${id}*`);
+    await semanticInvalidateByAttributes({
+      feature: 'maintenance-recommendation',
+      vehicleId: String(id),
+    });
   }
 };
 

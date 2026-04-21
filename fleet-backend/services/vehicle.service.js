@@ -7,6 +7,7 @@ import { eventBus, FLEET_EVENTS } from '../events/eventBus.js';
 import { buildCarPrompt } from '../utils/promptBuilder.js';
 import validateAndFill from '../utils/validateAndFill.js';
 import { runAgents } from '../utils/runAgents.js';
+import { semanticSearch, semanticSet } from './semanticCache.service.js';
 
 // ─────────────────────────────────────────────
 // Helpers
@@ -192,10 +193,13 @@ export const generateMaintenanceAI = async (vehicleId) => {
 
     const prompt = buildCarPrompt(vehicle);
 
-    const data = await runAgents(prompt);
-    const raw = typeof data?.response === 'string' ? data.response : '';
+    const semanticAttributes = {
+        feature: 'maintenance-recommendation',
+        vehicleId: String(vehicleId),
+    };
 
-    try {
+    const parseRecommendation = (rawText) => {
+        const raw = typeof rawText === 'string' ? rawText : '';
         const clean = raw.replace(/```json|```/gi, '').trim();
         const start = clean.indexOf('{');
         const end = clean.lastIndexOf('}');
@@ -207,9 +211,35 @@ export const generateMaintenanceAI = async (vehicleId) => {
         const jsonCandidate = clean.slice(start, end + 1);
         let parsed = JSON.parse(jsonCandidate);
         parsed = validateAndFill(parsed);
+        return parsed;
+    };
+
+    const cached = await semanticSearch(prompt, { attributes: semanticAttributes });
+
+    if (cached?.response) {
+        try {
+            const parsed = parseRecommendation(cached.response);
+            await vehicle.update({
+                maintenance_recommandation_ai: parsed,
+            });
+            return parsed;
+        } catch (error) {
+            console.warn('[SemanticCache] Cached recommendation parse failed:', error.message);
+        }
+    }
+
+    const data = await runAgents(prompt);
+    const raw = typeof data?.response === 'string' ? data.response : '';
+
+    try {
+        const parsed = parseRecommendation(raw);
 
         await vehicle.update({
             maintenance_recommandation_ai: parsed,
+        });
+
+        await semanticSet(prompt, JSON.stringify(parsed), {
+            attributes: semanticAttributes,
         });
 
         return parsed;
