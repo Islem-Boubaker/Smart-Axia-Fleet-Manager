@@ -1,7 +1,7 @@
 ﻿import { memo } from "react";
 import type { Vehicle } from "../../../types";
 import type { VehicleTableRow } from "../hooks/useVehicles";
-import DataTable, { Td, Tr } from "./DataTable";
+import { AppDataTable, AppRowActions, AppStatusBadge, AppTd, AppTr, Button } from '../../../shared/components';
 import RowActions from "./RowActions";
 import StatusBadge from "./StatusBadge";
 import { getVehicleRecommendations } from "./maintenanceStatic";
@@ -73,7 +73,7 @@ const VehiclesTable = memo(
     }
 
     return (
-      <DataTable
+      <AppDataTable
         columns={[
           "Vehicle",
           "Model",
@@ -100,8 +100,8 @@ const VehiclesTable = memo(
           );
 
           return (
-            <Tr key={row.vehicle.id}>
-              <Td className={dark ? 'text-slate-100' : 'text-slate-900'}>
+            <AppTr key={row.vehicle.id}>
+              <AppTd className={dark ? 'text-slate-100' : 'text-slate-900'}>
                 <div className="flex items-center gap-3">
                   <div
                     className={`flex h-11 w-14 items-center justify-center rounded-md border text-slate-500 ${
@@ -137,17 +137,17 @@ const VehiclesTable = memo(
                     </p>
                   </div>
                 </div>
-              </Td>
+              </AppTd>
 
-              <Td className={dark ? 'text-slate-200' : 'text-slate-600'}>{row.vehicle.Vehicle_Model}</Td>
+              <AppTd className={dark ? 'text-slate-200' : 'text-slate-600'}>{row.vehicle.Vehicle_Model}</AppTd  >
 
-              <Td>
-                <StatusBadge variant={statusVariant(row.statusLabel)}>
+              <AppTd>
+                <AppStatusBadge variant={statusVariant(row.statusLabel)}>
                   {row.statusLabel}
-                </StatusBadge>
-              </Td>
+                </AppStatusBadge>
+              </AppTd>
 
-              <Td
+              <AppTd
                 className={
                   row.driverName === "Unassigned"
                     ? dark
@@ -159,10 +159,10 @@ const VehiclesTable = memo(
                 }
               >
                 {row.driverName}
-              </Td>
+              </AppTd>
 
-              <Td className={dark ? 'text-slate-300' : 'text-slate-500'}>{row.lastTripLabel}</Td>
-              <Td>
+              <AppTd className={dark ? 'text-slate-300' : 'text-slate-500'}>{row.lastTripLabel}</AppTd>
+              <AppTd>
                 {recommendations.length === 0 ? (
                   <span className={`text-xs ${dark ? 'text-slate-400' : 'text-slate-400'}`}>
                     No recommendations
@@ -199,18 +199,18 @@ const VehiclesTable = memo(
                     </button>
                   </div>
                 )}
-              </Td>
-              <Td>
+              </AppTd>
+              <AppTd>
                 <RowActions
                   onView={() => onView(row.vehicle.id)}
                   onEdit={() => onEdit(row.vehicle)}
                   onDelete={() => onDelete(row.vehicle.id)}
                 />
-              </Td>
-            </Tr>
+              </AppTd>
+            </AppTr>
           );
         })}
-      </DataTable>
+      </AppDataTable>
     );
   },
 );
