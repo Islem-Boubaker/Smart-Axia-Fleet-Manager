@@ -35,9 +35,11 @@ const VehiclesPage = () => {
     closeVehicleDetails,
     isDetailsLoading,
     detailsError,
+    fetchVehicles,
     createVehicle,
     updateVehicle,
     deleteVehicle,
+    generateMaintenanceRecommendations,
   } = useVehicles();
 
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
@@ -185,6 +187,8 @@ const VehiclesPage = () => {
           setFormError('');
           setIsEditModalOpen(true);
         }}
+        onGenerateRecommendations={generateMaintenanceRecommendations}
+        onRecommendationsGenerated={fetchVehicles}
         vehicle={detailsVehicle}
         assignment={selectedVehicleRow?.currentAssignment ?? null}
         maintenanceHistory={

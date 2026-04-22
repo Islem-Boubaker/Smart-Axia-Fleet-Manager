@@ -26,6 +26,7 @@ export interface Vehicle {
   Brake_Condition: 'New' | 'Good' | 'Worn Out';
   Battery_Status: 'New' | 'Good' | 'Weak';
   Need_Maintenance: boolean;
+  maintenance_recommandation_ai?: unknown;
   createdAt?: string;
   updatedAt?: string;
 }

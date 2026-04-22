@@ -198,6 +198,7 @@ export const checkIdleVehicles = async (req, res, next) => {
 export const MaintenanceRecommandationAI = async (req, res, next) => {
   try {
     const recommendation = await vehicleService.generateMaintenanceAI(req.params.id);
+    await invalidateVehicleCache(req.params.id);
     return successResponse(res, recommendation, 'AI recommendation generated and saved');
   } catch (err) {
     next(err);

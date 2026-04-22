@@ -10,6 +10,15 @@ export type VehicleStatusFilter = 'all' | 'available' | 'in_use' | 'maintenance'
 export type VehicleTypeFilter = Vehicle['type'] | 'all';
 export type VehicleStatusLabel = 'Available' | 'In Use' | 'Maintenance' | 'Inactive';
 
+export interface MaintenanceRecommendation {
+  overview: string;
+  level: 'HIGH' | 'MEDIUM' | 'LOW';
+}
+
+interface MaintenanceRecommendationPayload {
+  recommendations: MaintenanceRecommendation[];
+}
+
 export interface VehicleAssignmentSummary {
   driverName: string;
   tripStatus: Trip['status'];
@@ -26,6 +35,7 @@ export interface VehicleTableRow {
   lastTripTime?: string;
   currentAssignment: VehicleAssignmentSummary | null;
   maintenanceHistory: Maintenance[];
+  maintenanceRecommendations: MaintenanceRecommendation[];
 }
 
 const getErrorMessage = (err: unknown, fallback: string): string => {
@@ -82,6 +92,76 @@ const resolveStatus = (vehicle: Vehicle, activeTrip: Trip | undefined): VehicleS
   return vehicle.Active ? 'Available' : 'Inactive';
 };
 
+const applyMaintenanceRecommendationsToVehicle = (
+  vehicle: Vehicle,
+  recommendations: MaintenanceRecommendation[],
+): Vehicle => ({
+  ...vehicle,
+  maintenance_recommandation_ai: {
+    recommendations,
+  } as MaintenanceRecommendationPayload,
+});
+
+const isMaintenanceLevel = (value: unknown): value is MaintenanceRecommendation['level'] => {
+  return value === 'HIGH' || value === 'MEDIUM' || value === 'LOW';
+};
+
+const normalizeMaintenanceRecommendation = (value: unknown): MaintenanceRecommendation | null => {
+  if (!value || typeof value !== 'object') return null;
+
+  const candidate = value as { overview?: unknown; level?: unknown };
+  const overview = typeof candidate.overview === 'string' ? candidate.overview.trim() : '';
+  const level = isMaintenanceLevel(candidate.level) ? candidate.level : null;
+
+  if (overview.length === 0 || !level) return null;
+
+  return {
+    overview,
+    level,
+  };
+};
+
+export const parseMaintenanceRecommendation = (vehicle: Vehicle): MaintenanceRecommendation[] => {
+  const rawValue = vehicle.maintenance_recommandation_ai;
+
+  const parsedValue = (() => {
+    if (rawValue == null) return null;
+
+    if (typeof rawValue === 'string') {
+      const trimmed = rawValue.trim();
+      if (trimmed.length === 0) return null;
+
+      try {
+        return JSON.parse(trimmed) as unknown;
+      } catch {
+        return null;
+      }
+    }
+
+    return rawValue;
+  })();
+
+  if (!parsedValue || typeof parsedValue !== 'object') return [];
+
+  if (Array.isArray(parsedValue)) {
+    return parsedValue
+      .map(normalizeMaintenanceRecommendation)
+      .filter((item): item is MaintenanceRecommendation => item !== null);
+  }
+
+  const candidate = parsedValue as { recommendations?: unknown };
+  const recommendations = candidate.recommendations;
+
+  if (!Array.isArray(recommendations)) {
+    const singleRecommendation = normalizeMaintenanceRecommendation(parsedValue);
+    return singleRecommendation ? [singleRecommendation] : [];
+  }
+
+  return recommendations
+    .map(normalizeMaintenanceRecommendation)
+    .filter((item): item is MaintenanceRecommendation => item !== null);
+};
+
 export const useVehicles = () => {
   const queryClient = useQueryClient();
 
@@ -94,16 +174,22 @@ export const useVehicles = () => {
   const vehiclesQuery = useQuery({
     queryKey: queryKeys.vehicles.lists(),
     queryFn: vehiclesService.getVehicles,
+    staleTime: 5 * 60 * 1000,
+    refetchOnWindowFocus: false,
   });
 
   const tripsQuery = useQuery({
     queryKey: queryKeys.trips.list({ page: 1, limit: 300 }),
     queryFn: () => tripsService.getTrips({ page: 1, limit: 300 }),
+    staleTime: 2 * 60 * 1000,
+    refetchOnWindowFocus: false,
   });
 
   const maintenanceQuery = useQuery({
     queryKey: queryKeys.maintenance.list({ page: 1, limit: 300 }),
     queryFn: () => maintenanceService.getAll({ page: 1, limit: 300 }),
+    staleTime: 2 * 60 * 1000,
+    refetchOnWindowFocus: false,
   });
 
   const selectedVehicleDetailsQuery = useQuery({
@@ -131,6 +217,32 @@ export const useVehicles = () => {
     },
   });
 
+  const generateMaintenanceRecommendationsMutation = useMutation({
+    mutationFn: (vehicleId: string) => vehiclesService.generateMaintenanceRecommendations(vehicleId),
+    onSuccess: (recommendations, vehicleId) => {
+      queryClient.setQueryData<Vehicle | undefined>(
+        queryKeys.vehicles.detail(vehicleId),
+        (currentVehicle) =>
+          currentVehicle
+            ? applyMaintenanceRecommendationsToVehicle(currentVehicle, recommendations)
+            : currentVehicle,
+      );
+
+      queryClient.setQueriesData<Vehicle[]>({ queryKey: queryKeys.vehicles.lists() }, (currentVehicles) => {
+        if (!currentVehicles) return currentVehicles;
+
+        return currentVehicles.map((vehicle) =>
+          vehicle.id === vehicleId
+            ? applyMaintenanceRecommendationsToVehicle(vehicle, recommendations)
+            : vehicle,
+        );
+      });
+
+      queryClient.invalidateQueries({ queryKey: queryKeys.vehicles.detail(vehicleId) });
+      queryClient.invalidateQueries({ queryKey: queryKeys.vehicles.lists() });
+    },
+  });
+
   const deleteVehicleMutation = useMutation({
     mutationFn: vehiclesService.deleteVehicle,
     onSuccess: (_data, vehicleId) => {
@@ -142,9 +254,12 @@ export const useVehicles = () => {
     },
   });
 
-  const vehicles = vehiclesQuery.data ?? [];
-  const trips = tripsQuery.data?.items ?? [];
-  const maintenanceRecords = maintenanceQuery.data?.items ?? [];
+  const vehicles = useMemo(() => vehiclesQuery.data ?? [], [vehiclesQuery.data]);
+  const trips = useMemo(() => tripsQuery.data?.items ?? [], [tripsQuery.data?.items]);
+  const maintenanceRecords = useMemo(
+    () => maintenanceQuery.data?.items ?? [],
+    [maintenanceQuery.data?.items],
+  );
   const isLoading =
     vehiclesQuery.isLoading ||
     tripsQuery.isLoading ||
@@ -198,6 +313,7 @@ export const useVehicles = () => {
         lastTripTime: latestTrip?.startTime,
         currentAssignment,
         maintenanceHistory: vehicleMaintenanceHistory,
+        maintenanceRecommendations: parseMaintenanceRecommendation(vehicle),
       };
     });
   }, [maintenanceRecords, trips, vehicles]);
@@ -254,6 +370,10 @@ export const useVehicles = () => {
     await deleteVehicleMutation.mutateAsync(id);
   }, [deleteVehicleMutation]);
 
+  const generateMaintenanceRecommendations = useCallback(async (vehicleId: string) => {
+    return generateMaintenanceRecommendationsMutation.mutateAsync(vehicleId);
+  }, [generateMaintenanceRecommendationsMutation]);
+
   const selectedVehicleDetails = selectedVehicleDetailsQuery.data ?? null;
   const isDetailsLoading = selectedVehicleDetailsQuery.isLoading || selectedVehicleDetailsQuery.isFetching;
   const detailsError = selectedVehicleDetailsQuery.error
@@ -270,6 +390,7 @@ export const useVehicles = () => {
     createVehicle,
     updateVehicle,
     deleteVehicle,
+    generateMaintenanceRecommendations,
     searchQuery,
     setSearchQuery,
     statusFilter,
@@ -290,6 +411,8 @@ export const useVehicleOptions = () => {
   const query = useQuery({
     queryKey: queryKeys.vehicles.lists(),
     queryFn: vehiclesService.getVehicles,
+    staleTime: 5 * 60 * 1000,
+    refetchOnWindowFocus: false,
   });
 
   return {
