@@ -1,8 +1,10 @@
 import { useEffect, useMemo, useRef, useState, useCallback } from "react";
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { io, Socket } from "socket.io-client";
 import notificationApi from "../../features/notifications/services/notification.api";
 import type { NotificationRecord } from "../../features/notifications/services/notification.api";
 import { toast } from "../components";
+import { queryKeys } from '../services/queryKeys';
 
 export interface HeaderNotificationItem {
   id: string;
@@ -41,38 +43,38 @@ function toHeaderNotification(notification: NotificationRecord): HeaderNotificat
   };
 }
 
+function extractNotifications(payload: unknown): NotificationRecord[] {
+  if (Array.isArray(payload)) return payload as NotificationRecord[];
+  if (payload && typeof payload === 'object') {
+    const response = payload as { notifications?: unknown; items?: unknown; data?: unknown };
+    if (Array.isArray(response.notifications)) return response.notifications as NotificationRecord[];
+    if (Array.isArray(response.items)) return response.items as NotificationRecord[];
+    if (Array.isArray(response.data)) return response.data as NotificationRecord[];
+  }
+  return [];
+}
+
 export function useNotificationSocket({ token }: UseNotificationSocketOptions = {}) {
+  const queryClient = useQueryClient();
   const socketRef = useRef<Socket | null>(null);
   const shownToastIdsRef = useRef<Set<string>>(new Set());
   const [isConnected, setIsConnected] = useState(false);
-  const [items, setItems] = useState<NotificationRecord[]>([]);
-  const [unreadCount, setUnreadCount] = useState(0);
-  const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    let mounted = true;
+  const notificationsQuery = useQuery({
+    queryKey: queryKeys.notifications.list({ limit: 20 }),
+    queryFn: () => notificationApi.getAll({ limit: 20 }),
+    staleTime: 60 * 1000,
+  });
 
-    notificationApi
-      .getAll({ limit: 20 })
-      .then((data) => {
-        if (!mounted) return;
-        const notifications = data.notifications ?? [];
-        setItems(notifications);
-        setUnreadCount(notifications.filter((item: NotificationRecord) => !item.read && !item.readAt).length);
-      })
-      .catch(() => {
-        if (!mounted) return;
-        setItems([]);
-        setUnreadCount(0);
-      })
-      .finally(() => {
-        if (mounted) setLoading(false);
-      });
+  const items = useMemo(
+    () => extractNotifications(notificationsQuery.data),
+    [notificationsQuery.data]
+  );
 
-    return () => {
-      mounted = false;
-    };
-  }, []);
+  const unreadCount = useMemo(
+    () => items.filter((item) => !item.read && !item.readAt).length,
+    [items]
+  );
 
   useEffect(() => {
     const socket = io(resolveApiBaseUrl(), {
@@ -94,14 +96,16 @@ export function useNotificationSocket({ token }: UseNotificationSocketOptions = 
     });
 
     socket.on("notification:new", (notification: NotificationRecord) => {
-      let inserted = false;
-      setItems((prev) => {
-        if (prev.some((item) => item.id === notification.id)) return prev;
-        inserted = true;
-        return [notification, ...prev];
+      queryClient.setQueryData(queryKeys.notifications.list({ limit: 20 }), (old: unknown) => {
+        const previousItems = extractNotifications(old);
+        if (previousItems.some((item) => item.id === notification.id)) {
+          return old;
+        }
+
+        return [notification, ...previousItems];
       });
 
-      if (inserted && !shownToastIdsRef.current.has(notification.id)) {
+      if (!shownToastIdsRef.current.has(notification.id)) {
         shownToastIdsRef.current.add(notification.id);
         toast.info(notification.message, {
           title: notification.title,
@@ -109,13 +113,11 @@ export function useNotificationSocket({ token }: UseNotificationSocketOptions = 
         });
       }
 
-      if (!notification.read && !notification.readAt) {
-        setUnreadCount((count) => count + 1);
-      }
+      queryClient.invalidateQueries({ queryKey: queryKeys.notifications.unreadCount() });
     });
 
     socket.on("notification:count", ({ count }: { count: number }) => {
-      setUnreadCount(count);
+      queryClient.setQueryData(queryKeys.notifications.unreadCount(), { count });
     });
 
     return () => {
@@ -123,40 +125,42 @@ export function useNotificationSocket({ token }: UseNotificationSocketOptions = 
       socketRef.current = null;
       setIsConnected(false);
     };
-  }, [token]);
+  }, [queryClient, token]);
 
   const notifications = useMemo(() => items.map(toHeaderNotification), [items]);
 
   const markAsRead = useCallback(async (id: string) => {
-    setItems((prev) =>
-      prev.map((item) =>
+    queryClient.setQueryData(queryKeys.notifications.list({ limit: 20 }), (old: unknown) => {
+      const previousItems = extractNotifications(old);
+      return previousItems.map((item) =>
         item.id === id
           ? { ...item, read: true, readAt: item.readAt ?? new Date().toISOString() }
           : item
-      )
-    );
-    setUnreadCount((count) => Math.max(0, count - 1));
+      );
+    });
     socketRef.current?.emit("notification:mark_read", { notificationId: id });
     await notificationApi.markAsRead(id);
-  }, []);
+    await queryClient.invalidateQueries({ queryKey: queryKeys.notifications.all });
+  }, [queryClient]);
 
   const markAllAsRead = useCallback(async () => {
-    setItems((prev) =>
-      prev.map((item) => ({
+    queryClient.setQueryData(queryKeys.notifications.list({ limit: 20 }), (old: unknown) => {
+      const previousItems = extractNotifications(old);
+      return previousItems.map((item) => ({
         ...item,
         read: true,
         readAt: item.readAt ?? new Date().toISOString(),
-      }))
-    );
-    setUnreadCount(0);
+      }));
+    });
     socketRef.current?.emit("notification:mark_all_read", {});
     await notificationApi.markAllAsRead();
-  }, []);
+    await queryClient.invalidateQueries({ queryKey: queryKeys.notifications.all });
+  }, [queryClient]);
 
   return {
     notifications,
     unreadCount,
-    loading,
+    loading: notificationsQuery.isLoading,
     isConnected,
     markAsRead,
     markAllAsRead,

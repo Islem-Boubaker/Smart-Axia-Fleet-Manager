@@ -1,8 +1,10 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useCallback, useMemo, useState } from 'react';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { vehiclesService } from '../services/vehicles.service';
 import { tripsService } from '../../trips/services/trips.service';
 import { maintenanceService } from '../../maintenance/services/maintenance.service';
 import type { Maintenance, Trip, Vehicle } from '../../../types';
+import { queryKeys } from '../../../shared/services/queryKeys';
 
 export type VehicleStatusFilter = 'all' | 'available' | 'in_use' | 'maintenance' | 'inactive';
 export type VehicleTypeFilter = Vehicle['type'] | 'all';
@@ -81,45 +83,86 @@ const resolveStatus = (vehicle: Vehicle, activeTrip: Trip | undefined): VehicleS
 };
 
 export const useVehicles = () => {
-  const [vehicles, setVehicles] = useState<Vehicle[]>([]);
-  const [trips, setTrips] = useState<Trip[]>([]);
-  const [maintenanceRecords, setMaintenanceRecords] = useState<Maintenance[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const queryClient = useQueryClient();
 
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<VehicleStatusFilter>('all');
   const [typeFilter, setTypeFilter] = useState<VehicleTypeFilter>('all');
 
   const [selectedVehicleId, setSelectedVehicleId] = useState<string | null>(null);
-  const [selectedVehicleDetails, setSelectedVehicleDetails] = useState<Vehicle | null>(null);
-  const [isDetailsLoading, setIsDetailsLoading] = useState(false);
-  const [detailsError, setDetailsError] = useState<string | null>(null);
+
+  const vehiclesQuery = useQuery({
+    queryKey: queryKeys.vehicles.lists(),
+    queryFn: vehiclesService.getVehicles,
+  });
+
+  const tripsQuery = useQuery({
+    queryKey: queryKeys.trips.list({ page: 1, limit: 300 }),
+    queryFn: () => tripsService.getTrips({ page: 1, limit: 300 }),
+  });
+
+  const maintenanceQuery = useQuery({
+    queryKey: queryKeys.maintenance.list({ page: 1, limit: 300 }),
+    queryFn: () => maintenanceService.getAll({ page: 1, limit: 300 }),
+  });
+
+  const selectedVehicleDetailsQuery = useQuery({
+    queryKey: queryKeys.vehicles.detail(selectedVehicleId ?? ''),
+    queryFn: () => vehiclesService.getVehicleById(selectedVehicleId as string),
+    enabled: Boolean(selectedVehicleId),
+  });
+
+  const createVehicleMutation = useMutation({
+    mutationFn: vehiclesService.createVehicle,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.vehicles.all });
+      queryClient.invalidateQueries({ queryKey: queryKeys.dashboard.stats() });
+      queryClient.invalidateQueries({ queryKey: queryKeys.dashboard.recentVehicles() });
+    },
+  });
+
+  const updateVehicleMutation = useMutation({
+    mutationFn: ({ id, data }: { id: string; data: Partial<Vehicle> | FormData }) =>
+      vehiclesService.updateVehicle(id, data),
+    onSuccess: (_data, variables) => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.vehicles.detail(variables.id) });
+      queryClient.invalidateQueries({ queryKey: queryKeys.vehicles.lists() });
+      queryClient.invalidateQueries({ queryKey: queryKeys.dashboard.stats() });
+    },
+  });
+
+  const deleteVehicleMutation = useMutation({
+    mutationFn: vehiclesService.deleteVehicle,
+    onSuccess: (_data, vehicleId) => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.vehicles.lists() });
+      queryClient.invalidateQueries({ queryKey: queryKeys.dashboard.stats() });
+      if (selectedVehicleId === vehicleId) {
+        setSelectedVehicleId(null);
+      }
+    },
+  });
+
+  const vehicles = vehiclesQuery.data ?? [];
+  const trips = tripsQuery.data?.items ?? [];
+  const maintenanceRecords = maintenanceQuery.data?.items ?? [];
+  const isLoading =
+    vehiclesQuery.isLoading ||
+    tripsQuery.isLoading ||
+    maintenanceQuery.isLoading ||
+    createVehicleMutation.isPending ||
+    updateVehicleMutation.isPending ||
+    deleteVehicleMutation.isPending;
+
+  const queryError = vehiclesQuery.error || tripsQuery.error || maintenanceQuery.error;
+  const error = queryError ? getErrorMessage(queryError, 'Failed to fetch vehicles') : null;
 
   const fetchVehicles = useCallback(async () => {
-    try {
-      setIsLoading(true);
-      setError(null);
-
-      const [vehicleData, tripsData, maintenanceData] = await Promise.all([
-        vehiclesService.getVehicles(),
-        tripsService.getTrips({ page: 1, limit: 300 }),
-        maintenanceService.getAll({ page: 1, limit: 300 }),
-      ]);
-
-      setVehicles(vehicleData);
-      setTrips(tripsData.items ?? []);
-      setMaintenanceRecords(maintenanceData.items ?? []);
-    } catch (err: unknown) {
-      setError(getErrorMessage(err, 'Failed to fetch vehicles'));
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    fetchVehicles();
-  }, [fetchVehicles]);
+    await Promise.all([
+      queryClient.invalidateQueries({ queryKey: queryKeys.vehicles.all }),
+      queryClient.invalidateQueries({ queryKey: queryKeys.trips.lists() }),
+      queryClient.invalidateQueries({ queryKey: queryKeys.maintenance.all }),
+    ]);
+  }, [queryClient]);
 
   const vehicleRows = useMemo<VehicleTableRow[]>(() => {
     return vehicles.map((vehicle) => {
@@ -189,51 +232,33 @@ export const useVehicles = () => {
     return vehicleRows.find((row) => row.vehicle.id === selectedVehicleId) ?? null;
   }, [selectedVehicleId, vehicleRows]);
 
-  const openVehicleDetails = useCallback(async (id: string) => {
+  const openVehicleDetails = useCallback((id: string) => {
     setSelectedVehicleId(id);
-    setSelectedVehicleDetails(null);
-    setDetailsError(null);
-    setIsDetailsLoading(true);
-
-    try {
-      const details = await vehiclesService.getVehicleById(id);
-      setSelectedVehicleDetails(details);
-    } catch (err: unknown) {
-      setDetailsError(getErrorMessage(err, 'Failed to load vehicle details'));
-    } finally {
-      setIsDetailsLoading(false);
-    }
   }, []);
 
   const closeVehicleDetails = useCallback(() => {
     setSelectedVehicleId(null);
-    setSelectedVehicleDetails(null);
-    setDetailsError(null);
-    setIsDetailsLoading(false);
   }, []);
 
   const createVehicle = useCallback(async (data: Partial<Vehicle> | FormData) => {
-    const created = await vehiclesService.createVehicle(data);
-    setVehicles((prev) => [...prev, created]);
+    const created = await createVehicleMutation.mutateAsync(data);
     return created;
-  }, []);
+  }, [createVehicleMutation]);
 
   const updateVehicle = useCallback(async (id: string, data: Partial<Vehicle> | FormData) => {
-    const updated = await vehiclesService.updateVehicle(id, data);
-    setVehicles((prev) => prev.map((v) => (v.id === id ? updated : v)));
-    setSelectedVehicleDetails((prev) => (prev && prev.id === id ? updated : prev));
+    const updated = await updateVehicleMutation.mutateAsync({ id, data });
     return updated;
-  }, []);
+  }, [updateVehicleMutation]);
 
   const deleteVehicle = useCallback(async (id: string) => {
-    await vehiclesService.deleteVehicle(id);
-    setVehicles((prev) => prev.filter((v) => v.id !== id));
+    await deleteVehicleMutation.mutateAsync(id);
+  }, [deleteVehicleMutation]);
 
-    if (selectedVehicleId === id) {
-      setSelectedVehicleId(null);
-      setSelectedVehicleDetails(null);
-    }
-  }, [selectedVehicleId]);
+  const selectedVehicleDetails = selectedVehicleDetailsQuery.data ?? null;
+  const isDetailsLoading = selectedVehicleDetailsQuery.isLoading || selectedVehicleDetailsQuery.isFetching;
+  const detailsError = selectedVehicleDetailsQuery.error
+    ? getErrorMessage(selectedVehicleDetailsQuery.error, 'Failed to load vehicle details')
+    : null;
 
   return {
     vehicles,
@@ -258,5 +283,19 @@ export const useVehicles = () => {
     closeVehicleDetails,
     isDetailsLoading,
     detailsError,
+  };
+};
+
+export const useVehicleOptions = () => {
+  const query = useQuery({
+    queryKey: queryKeys.vehicles.lists(),
+    queryFn: vehiclesService.getVehicles,
+  });
+
+  return {
+    vehicles: query.data ?? [],
+    isLoading: query.isLoading,
+    error: query.error ? getErrorMessage(query.error, 'Failed to fetch vehicles') : null,
+    refetch: query.refetch,
   };
 };

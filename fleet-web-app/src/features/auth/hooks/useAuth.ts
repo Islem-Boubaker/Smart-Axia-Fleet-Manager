@@ -2,6 +2,7 @@
 //  useAuth — cookie-based auth hook (no tokens in JS)
 // ─────────────────────────────────────────────────────────────
 import { useCallback } from 'react';
+import { useMutation } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { useAppDispatch, useAppSelector } from '../../../shared/hooks';
 import { setUser, clearUser, setLoading, setError } from '../../../store/authSlice';
@@ -13,12 +14,16 @@ export const useAuth = () => {
   const navigate = useNavigate();
   const { user, isAuthenticated, loading, error } = useAppSelector((state) => state.auth);
 
+  const signInMutation = useMutation({ mutationFn: authAPI.signIn });
+  const signUpMutation = useMutation({ mutationFn: authAPI.signUp });
+  const signOutMutation = useMutation({ mutationFn: authAPI.signOut });
+
   const signIn = useCallback(
     async (credentials: SignInCredentials) => {
       try {
         dispatch(setLoading(true));
         dispatch(setError(null));
-        const authUser = await authAPI.signIn(credentials);
+        const authUser = await signInMutation.mutateAsync(credentials);
         dispatch(setUser(authUser));
         navigate('/dashboard');
       } catch (err: unknown) {
@@ -30,7 +35,7 @@ export const useAuth = () => {
         dispatch(setLoading(false));
       }
     },
-    [dispatch, navigate]
+    [dispatch, navigate, signInMutation]
   );
 
   const signUp = useCallback(
@@ -38,7 +43,7 @@ export const useAuth = () => {
       try {
         dispatch(setLoading(true));
         dispatch(setError(null));
-        const authUser = await authAPI.signUp(data);
+        const authUser = await signUpMutation.mutateAsync(data);
         dispatch(setUser(authUser));
         navigate('/dashboard');
       } catch (err: unknown) {
@@ -50,12 +55,12 @@ export const useAuth = () => {
         dispatch(setLoading(false));
       }
     },
-    [dispatch, navigate]
+    [dispatch, navigate, signUpMutation]
   );
 
   const signOut = useCallback(async () => {
     try {
-      await authAPI.signOut();
+      await signOutMutation.mutateAsync();
       dispatch(clearUser());
       navigate('/signin');
     } catch (err) {
@@ -64,7 +69,7 @@ export const useAuth = () => {
       dispatch(clearUser());
       navigate('/signin');
     }
-  }, [dispatch, navigate]);
+  }, [dispatch, navigate, signOutMutation]);
 
   return {
     user,

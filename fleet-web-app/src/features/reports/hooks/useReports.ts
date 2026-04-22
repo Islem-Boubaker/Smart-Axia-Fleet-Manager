@@ -1,9 +1,11 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useMemo } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { driversService } from '../../drivers/services/drivers.service';
 import { maintenanceService } from '../../maintenance/services/maintenance.service';
 import { tripsService } from '../../trips/services/trips.service';
 import { vehiclesService } from '../../vehicles/services/vehicles.service';
 import type { Driver, Maintenance, Trip, Vehicle } from '../../../types';
+import { queryKeys } from '../../../shared/services/queryKeys';
 
 type TrendDirection = 'up' | 'down';
 
@@ -143,18 +145,9 @@ export const useReports = (
   dateRange: string,
   customRange?: { startDate?: string; endDate?: string }
 ) => {
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [drivers, setDrivers] = useState<Driver[]>([]);
-  const [vehicles, setVehicles] = useState<Vehicle[]>([]);
-  const [trips, setTrips] = useState<Trip[]>([]);
-  const [maintenances, setMaintenances] = useState<Maintenance[]>([]);
-
-  const fetchReportData = useCallback(async () => {
-    try {
-      setIsLoading(true);
-      setError(null);
-
+  const reportsQuery = useQuery({
+    queryKey: queryKeys.reports.overview({ dateRange, customRange }),
+    queryFn: async () => {
       const [driversData, vehiclesData, tripsData, maintenanceData] = await Promise.all([
         driversService.getDrivers(),
         vehiclesService.getVehicles(),
@@ -162,24 +155,19 @@ export const useReports = (
         maintenanceService.getAll({ page: 1, limit: 1000 }),
       ]);
 
-      setDrivers(driversData ?? []);
-      setVehicles(vehiclesData ?? []);
-      setTrips(tripsData.items ?? []);
-      setMaintenances(maintenanceData.items ?? []);
-    } catch (err: unknown) {
-      const message =
-        (err as { response?: { data?: { message?: string } } })?.response?.data?.message ||
-        (err as Error)?.message ||
-        'Failed to load reports data.';
-      setError(message);
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
+      return {
+        drivers: driversData ?? [],
+        vehicles: vehiclesData ?? [],
+        trips: tripsData.items ?? [],
+        maintenances: maintenanceData.items ?? [],
+      };
+    },
+  });
 
-  useEffect(() => {
-    fetchReportData();
-  }, [fetchReportData]);
+  const drivers = (reportsQuery.data?.drivers ?? []) as Driver[];
+  const vehicles = (reportsQuery.data?.vehicles ?? []) as Vehicle[];
+  const trips = (reportsQuery.data?.trips ?? []) as Trip[];
+  const maintenances = (reportsQuery.data?.maintenances ?? []) as Maintenance[];
 
   const filteredTrips = useMemo(() => {
     return trips.filter((trip) => inDateRange(toDate(trip.startTime), dateRange, customRange));
@@ -471,11 +459,16 @@ export const useReports = (
     return;
   };
 
+  const error =
+    (reportsQuery.error as { response?: { data?: { message?: string } }; message?: string } | null)?.response?.data?.message ||
+    (reportsQuery.error as Error | null)?.message ||
+    null;
+
   return {
-    isLoading,
+    isLoading: reportsQuery.isLoading,
     error,
     exportReport,
-    refetch: fetchReportData,
+    refetch: reportsQuery.refetch,
     rangeDays: effectiveRangeDays,
     vehiclesRaw: vehicles,
     driversRaw: drivers,

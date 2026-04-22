@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useOutletContext } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
 import { FiBell, FiEdit2, FiLock, FiUser } from 'react-icons/fi';
 import { Card, Button } from '../../../shared/components';
 import ProfileSettings from '../components/ProfileSettings';
@@ -12,6 +13,7 @@ import { useSettings } from '../hooks/useSettings';
 import { settingsService } from '../services/settings.service';
 import { toast } from '../../../shared/components';
 import { pageShellClasses } from '../../../shared/utils/pageShell';
+import { queryKeys } from '../../../shared/services/queryKeys';
 
 interface ThemeContext {
   dark: boolean;
@@ -245,18 +247,15 @@ const SettingsPage = () => {
     smsAlerts: false,
   });
 
-  useEffect(() => {
-    const loadNotificationSettings = async () => {
-      try {
-        const remote = await settingsService.getNotifications();
-        setNotifications((prev) => ({ ...prev, ...remote }));
-      } catch (error) {
-        console.error('Failed to load notification settings:', error);
-      }
-    };
+  const notificationsQuery = useQuery({
+    queryKey: queryKeys.settings.notifications(),
+    queryFn: settingsService.getNotifications,
+  });
 
-    loadNotificationSettings();
-  }, []);
+  useEffect(() => {
+    if (!notificationsQuery.data) return;
+    setNotifications((prev) => ({ ...prev, ...notificationsQuery.data }));
+  }, [notificationsQuery.data]);
 
   const handleChangePassword = async (currentPassword: string, newPassword: string) => {
     const loadingId = toast.loading('Updating password...');

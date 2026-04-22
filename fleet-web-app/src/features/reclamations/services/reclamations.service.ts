@@ -45,6 +45,38 @@ export const reclamationsService = {
     const response = await api.get<ReclamationDetailPayload>(`/reclamations/${id}`);
     return response.data.data;
   },
+
+  async create(data: {
+    subject: string;
+    message: string;
+    vehicleId?: string;
+    images?: File[];
+  }) {
+    const formData = new FormData();
+    formData.append('subject', data.subject);
+    formData.append('message', data.message);
+    if (data.vehicleId) formData.append('vehicleId', data.vehicleId);
+    if (Array.isArray(data.images)) {
+      data.images.forEach((file) => formData.append('images', file));
+    }
+
+    const response = await api.post<ReclamationDetailPayload>('/reclamations', formData);
+    return response.data.data;
+  },
+
+  async update(id: string, data: Partial<Pick<ReclamationRecord, 'subject' | 'message' | 'vehicleId'>>) {
+    const response = await api.patch<ReclamationDetailPayload>(`/reclamations/${id}`, data);
+    return response.data.data;
+  },
+
+  async remove(id: string) {
+    await api.delete(`/reclamations/${id}`);
+  },
+
+  async updateStatus(id: string, status: ReclamationStatus) {
+    const response = await api.patch<ReclamationDetailPayload>(`/reclamations/${id}/status`, { status });
+    return response.data.data;
+  },
 };
 
 export default reclamationsService;

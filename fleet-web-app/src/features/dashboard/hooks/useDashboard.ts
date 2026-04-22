@@ -1,4 +1,5 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { driversService } from '../../drivers/services/drivers.service';
 import { maintenanceService } from '../../maintenance/services/maintenance.service';
 import notificationApi, { type NotificationRecord } from '../../notifications/services/notification.api';
@@ -6,6 +7,7 @@ import { tripsService } from '../../trips/services/trips.service';
 import { vehiclesService } from '../../vehicles/services/vehicles.service';
 import type { Driver, Maintenance, Trip, Vehicle } from '../../../types';
 import { FUEL_PRICE_TND } from '../../../utils/constants';
+import { queryKeys } from '../../../shared/services/queryKeys';
 
 export interface DashboardStats {
   activeVehicles: number;
@@ -238,19 +240,13 @@ const fallbackDriver = (id: string, name: string): Driver => ({
 });
 
 export const useDashboard = () => {
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [vehicles, setVehicles] = useState<Vehicle[]>([]);
-  const [drivers, setDrivers] = useState<Driver[]>([]);
-  const [trips, setTrips] = useState<Trip[]>([]);
-  const [maintenances, setMaintenances] = useState<Maintenance[]>([]);
+  const queryClient = useQueryClient();
   const [alerts, setAlerts] = useState<NotificationRecord[]>([]);
 
-  const refetch = useCallback(async () => {
-    try {
-      setLoading(true);
-      setError(null);
-
+  const dashboardQuery = useQuery({
+    queryKey: queryKeys.dashboard.all,
+    staleTime: 2 * 60 * 1000,
+    queryFn: async () => {
       const [vehiclesData, driversData, tripsData, maintenanceData, notificationsData] = await Promise.all([
         vehiclesService.getVehicles(),
         driversService.getDrivers(),
@@ -259,39 +255,44 @@ export const useDashboard = () => {
         notificationApi.getAll({ limit: 50 }),
       ]);
 
-      const expiryAlerts = buildExpiryAlerts(vehiclesData ?? []);
+      return {
+        vehicles: vehiclesData ?? [],
+        drivers: driversData ?? [],
+        trips: tripsData.items ?? [],
+        maintenances: maintenanceData.items ?? [],
+        notifications: normalizeNotifications(notificationsData),
+      };
+    },
+  });
 
-      const parsedAlerts = normalizeNotifications(notificationsData)
-        .filter((n) => !n.read && !n.isArchived)
-        .concat(expiryAlerts)
-        .sort((a, b) => {
-          const severity = classifyAlertPriority(a) - classifyAlertPriority(b);
-          if (severity !== 0) return severity;
-          return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
-        });
+  const vehicles = dashboardQuery.data?.vehicles ?? [];
+  const drivers = dashboardQuery.data?.drivers ?? [];
+  const trips = dashboardQuery.data?.trips ?? [];
+  const maintenances = dashboardQuery.data?.maintenances ?? [];
 
-      setVehicles(vehiclesData ?? []);
-      setDrivers(driversData ?? []);
-      setTrips(tripsData.items ?? []);
-      setMaintenances(maintenanceData.items ?? []);
-      setAlerts(parsedAlerts);
-    } catch (err: unknown) {
-      const message =
-        (err as { response?: { data?: { message?: string } } })?.response?.data?.message ||
-        (err as Error)?.message ||
-        'Failed to load dashboard data.';
-      setError(message);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+  const computedAlerts = useMemo(() => {
+    const expiryAlerts = buildExpiryAlerts(vehicles);
+    return (dashboardQuery.data?.notifications ?? [])
+      .filter((n) => !n.read && !n.isArchived)
+      .concat(expiryAlerts)
+      .sort((a, b) => {
+        const severity = classifyAlertPriority(a) - classifyAlertPriority(b);
+        if (severity !== 0) return severity;
+        return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+      });
+  }, [dashboardQuery.data?.notifications, vehicles]);
 
-  useEffect(() => {
-    refetch();
-  }, [refetch]);
+  const visibleAlerts = alerts.length > 0 ? alerts : computedAlerts;
+
+  const refetch = useCallback(async () => {
+    await queryClient.invalidateQueries({ queryKey: queryKeys.dashboard.all });
+  }, [queryClient]);
 
   const dismissAlert = useCallback(async (alert: NotificationRecord) => {
-    setAlerts((prev) => prev.filter((item) => item.id !== alert.id));
+    setAlerts((prev) => {
+      const base = prev.length > 0 ? prev : computedAlerts;
+      return base.filter((item) => item.id !== alert.id);
+    });
 
     const isComputedAlert =
       String(alert.id).startsWith('dashboard-') ||
@@ -303,10 +304,11 @@ export const useDashboard = () => {
 
     try {
       await notificationApi.markAsRead(alert.id);
+      queryClient.invalidateQueries({ queryKey: queryKeys.notifications.all });
     } catch {
       // Keep UI responsive even if read-sync fails.
     }
-  }, []);
+  }, [computedAlerts, queryClient]);
 
   const data = useMemo<DashboardData>(() => {
     const now = new Date();
@@ -536,17 +538,22 @@ export const useDashboard = () => {
         outOfService,
         total,
       },
-      alerts: alerts.slice(0, 5),
+      alerts: visibleAlerts.slice(0, 5),
       recentTrips,
       topDrivers,
       fuelByDay,
       upcomingMaintenance,
     };
-  }, [alerts, drivers, maintenances, trips, vehicles]);
+  }, [drivers, maintenances, trips, vehicles, visibleAlerts]);
+
+  const error =
+    (dashboardQuery.error as { response?: { data?: { message?: string } }; message?: string } | null)?.response?.data?.message ||
+    (dashboardQuery.error as Error | null)?.message ||
+    null;
 
   return {
     ...data,
-    loading,
+    loading: dashboardQuery.isLoading,
     error,
     refetch,
     dismissAlert,

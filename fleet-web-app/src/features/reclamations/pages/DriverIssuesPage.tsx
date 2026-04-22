@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useOutletContext, useSearchParams } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
 import { driversService } from '../../drivers/services/drivers.service';
 import { vehiclesService } from '../../vehicles/services/vehicles.service';
 import type { Driver, Vehicle } from '../../../types';
@@ -11,6 +12,7 @@ import reclamationsService, {
   type ReclamationRecord,
   type ReclamationStatus,
 } from '../services/reclamations.service';
+import { queryKeys } from '../../../shared/services/queryKeys';
 
 interface ThemeContext {
   dark: boolean;
@@ -51,11 +53,6 @@ const DriverIssuesPage = () => {
   const { dark } = useOutletContext<ThemeContext>();
   const [searchParams, setSearchParams] = useSearchParams();
 
-  const [items, setItems] = useState<ReclamationRecord[]>([]);
-  const [drivers, setDrivers] = useState<Driver[]>([]);
-  const [vehicles, setVehicles] = useState<Vehicle[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState<'all' | ReclamationStatus>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [driverFilter, setDriverFilter] = useState('all');
@@ -64,40 +61,31 @@ const DriverIssuesPage = () => {
 
   const requestedId = searchParams.get('reclamationId');
 
-  useEffect(() => {
-    let mounted = true;
+  const reclamationsQuery = useQuery({
+    queryKey: queryKeys.reclamations.list({ page: 1, limit: 200 }),
+    queryFn: () => reclamationsService.getAll(1, 200),
+  });
 
-    const run = async () => {
-      try {
-        setLoading(true);
-        setError(null);
-        const [data, driversData, vehiclesData] = await Promise.all([
-          reclamationsService.getAll(1, 200),
-          driversService.getDrivers(),
-          vehiclesService.getVehicles(),
-        ]);
-        if (!mounted) return;
-        setItems(data.items);
-        setDrivers(driversData ?? []);
-        setVehicles(vehiclesData ?? []);
-      } catch (err: unknown) {
-        if (!mounted) return;
-        const message =
-          (err as { response?: { data?: { message?: string } } })?.response?.data?.message ||
-          (err as Error)?.message ||
-          'Failed to load driver issue reports.';
-        setError(message);
-      } finally {
-        if (mounted) setLoading(false);
-      }
-    };
+  const driversQuery = useQuery({
+    queryKey: queryKeys.drivers.lists(),
+    queryFn: driversService.getDrivers,
+  });
 
-    run();
+  const vehiclesQuery = useQuery({
+    queryKey: queryKeys.vehicles.lists(),
+    queryFn: vehiclesService.getVehicles,
+  });
 
-    return () => {
-      mounted = false;
-    };
-  }, []);
+  const items = (reclamationsQuery.data?.items ?? []) as ReclamationRecord[];
+  const drivers = (driversQuery.data ?? []) as Driver[];
+  const vehicles = (vehiclesQuery.data ?? []) as Vehicle[];
+  const loading = reclamationsQuery.isLoading || driversQuery.isLoading || vehiclesQuery.isLoading;
+
+  const queryError = reclamationsQuery.error || driversQuery.error || vehiclesQuery.error;
+  const error =
+    (queryError as { response?: { data?: { message?: string } }; message?: string } | null)?.response?.data?.message ||
+    (queryError as Error | null)?.message ||
+    null;
 
   useEffect(() => {
     if (!requestedId || items.length === 0) return;
