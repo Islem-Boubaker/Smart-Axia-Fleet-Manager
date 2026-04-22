@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { useOutletContext, useSearchParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { driversService } from '../../drivers/services/drivers.service';
@@ -76,9 +76,9 @@ const DriverIssuesPage = () => {
     queryFn: vehiclesService.getVehicles,
   });
 
-  const items = (reclamationsQuery.data?.items ?? []) as ReclamationRecord[];
-  const drivers = (driversQuery.data ?? []) as Driver[];
-  const vehicles = (vehiclesQuery.data ?? []) as Vehicle[];
+  const items = useMemo(() => (reclamationsQuery.data?.items ?? []) as ReclamationRecord[], [reclamationsQuery.data?.items]);
+  const drivers = useMemo(() => (driversQuery.data ?? []) as Driver[], [driversQuery.data]);
+  const vehicles = useMemo(() => (vehiclesQuery.data ?? []) as Vehicle[], [vehiclesQuery.data]);
   const loading = reclamationsQuery.isLoading || driversQuery.isLoading || vehiclesQuery.isLoading;
 
   const queryError = reclamationsQuery.error || driversQuery.error || vehiclesQuery.error;
@@ -87,13 +87,11 @@ const DriverIssuesPage = () => {
     (queryError as Error | null)?.message ||
     null;
 
-  useEffect(() => {
-    if (!requestedId || items.length === 0) return;
-    const match = items.find((item) => String(item.id) === String(requestedId));
-    if (match) {
-      setSelected(match);
-    }
-  }, [requestedId, items]);
+  const selectedIssue = useMemo(() => {
+    if (selected) return selected;
+    if (!requestedId || items.length === 0) return null;
+    return items.find((item) => String(item.id) === String(requestedId)) ?? null;
+  }, [selected, requestedId, items]);
 
   const getDriverLabel = useCallback((item: ReclamationRecord) => {
     const driver = drivers.find((d) => String(d.id) === String(item.userId));
@@ -216,8 +214,8 @@ const DriverIssuesPage = () => {
       )}
 
       <DriverIssueDetailsModal
-        issue={selected}
-        isOpen={Boolean(selected)}
+        issue={selectedIssue}
+        isOpen={Boolean(selectedIssue)}
         dark={dark}
         onClose={closeDetails}
         statusLabel={statusLabel}

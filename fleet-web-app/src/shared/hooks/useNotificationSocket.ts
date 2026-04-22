@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useRef, useState, useCallback } from "react";
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { io, Socket } from "socket.io-client";
-import notificationApi from "../../features/notifications/services/notification.api";
-import type { NotificationRecord } from "../../features/notifications/services/notification.api";
+import notificationApi from "../services/notification.api";
+import type { NotificationRecord } from "../services/notification.api";
 import { toast } from "../components";
 import { queryKeys } from '../services/queryKeys';
 
@@ -161,6 +161,7 @@ export function useNotificationSocket({ token }: UseNotificationSocketOptions = 
     notifications,
     unreadCount,
     loading: notificationsQuery.isLoading,
+    error: notificationsQuery.error?.message ?? null,
     isConnected,
     markAsRead,
     markAllAsRead,

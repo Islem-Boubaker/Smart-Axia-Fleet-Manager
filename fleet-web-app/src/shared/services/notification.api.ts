@@ -1,4 +1,4 @@
-import api from "../../../shared/services/api";
+import api from "./api";
 
 export interface NotificationRecord {
   id: string;
@@ -42,20 +42,24 @@ function toQuery(params: NotificationFilters | Record<string, unknown>): string 
 }
 
 export const notificationApi = {
-  getAll(filters: NotificationFilters = {}) {
-    return api.get(`/notifications${toQuery(filters)}`).then((response) => response.data.data);
+  async getAll(filters: NotificationFilters = {}) {
+    const response = await api.get(`/notifications${toQuery(filters)}`);
+    return response.data.data;
   },
 
-  getUnreadCount() {
-    return api.get("/notifications/unread-count").then((response) => response.data.data);
+  async getUnreadCount() {
+    const response = await api.get("/notifications/unread-count");
+    return response.data.data;
   },
 
-  markAsRead(id: string) {
-    return api.patch(`/notifications/${id}/read`).then((response) => response.data);
+  async markAsRead(id: string) {
+    const response = await api.patch(`/notifications/${id}/read`);
+    return response.data;
   },
 
-  markAllAsRead(group?: string) {
-    return api.patch("/notifications/read-all", { group }).then((response) => response.data);
+  async markAllAsRead(group?: string) {
+    const response = await api.patch("/notifications/read-all", { group });
+    return response.data;
   },
 };
 

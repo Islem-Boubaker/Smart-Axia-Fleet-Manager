@@ -14,7 +14,7 @@ import ScheduledMaintenance from '../components/ScheduledMaintenance';
 import TopDriversCard from '../components/TopDriversCard';
 import TripDetailsView from '../../trips/components/TripDetailsView';
 import { useDashboard } from '../hooks/useDashboard';
-import type { NotificationRecord } from '../../notifications/services/notification.api';
+import type { NotificationRecord } from '../../../shared/services/notification.api';
 
 interface ThemeContext {
   dark: boolean;

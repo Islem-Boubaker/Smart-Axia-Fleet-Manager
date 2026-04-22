@@ -5,7 +5,7 @@ import { useNotificationSocket } from '../../../hooks/useNotificationSocket';
 
 export const HeaderNotifications = memo(() => {
   const [isOpen, setIsOpen] = useState(false);
-  const { notifications, unreadCount, markAsRead, markAllAsRead } = useNotificationSocket();
+  const { notifications, unreadCount, markAsRead, markAllAsRead, loading, error } = useNotificationSocket();
   const bellRef = useRef<HTMLButtonElement>(null);
 
   return (
@@ -13,7 +13,11 @@ export const HeaderNotifications = memo(() => {
       <button
         ref={bellRef}
         onClick={() => setIsOpen(prev => !prev)}
-        className="relative p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg"
+        className="
+          relative p-2 rounded-lg
+          text-gray-500 hover:text-gray-700 hover:bg-gray-100
+          dark:text-slate-400 dark:hover:bg-slate-800
+        "
       >
         <FiBell className="text-xl" />
 
@@ -28,9 +32,11 @@ export const HeaderNotifications = memo(() => {
         isOpen={isOpen}
         onClose={() => setIsOpen(false)}
         notifications={notifications}
+        loading={loading}
+        error={error}
         onMarkAsRead={markAsRead}
         onMarkAllAsRead={markAllAsRead}
-        triggerRef={bellRef as any}
+        triggerRef={bellRef}
       />
     </div>
   );

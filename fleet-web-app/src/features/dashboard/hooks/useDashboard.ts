@@ -2,7 +2,7 @@ import { useCallback, useMemo, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { driversService } from '../../drivers/services/drivers.service';
 import { maintenanceService } from '../../maintenance/services/maintenance.service';
-import notificationApi, { type NotificationRecord } from '../../notifications/services/notification.api';
+import notificationApi, { type NotificationRecord } from '../../../shared/services/notification.api';
 import { tripsService } from '../../trips/services/trips.service';
 import { vehiclesService } from '../../vehicles/services/vehicles.service';
 import type { Driver, Maintenance, Trip, Vehicle } from '../../../types';

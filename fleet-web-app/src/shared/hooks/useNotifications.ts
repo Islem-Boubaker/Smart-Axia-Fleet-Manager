@@ -3,7 +3,7 @@ import notificationApi, {
   type NotificationFilters,
   type NotificationRecord,
 } from '../services/notification.api'
-import { queryKeys } from '../../../shared/services/queryKeys'
+import { queryKeys } from '../services/queryKeys'
 
 export const useNotifications = (filters: NotificationFilters = {}) => {
   return useQuery({
