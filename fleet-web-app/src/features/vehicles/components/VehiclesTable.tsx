@@ -75,7 +75,7 @@ const VehiclesTable = memo(
       <AppDataTable
         columns={[
           "Vehicle",
-          "Model",
+    
           "Status",
           "Driver",
           "Last Trip",
@@ -138,7 +138,7 @@ const VehiclesTable = memo(
                 </div>
               </AppTd>
 
-              <AppTd className={dark ? 'text-slate-200' : 'text-slate-600'}>{row.vehicle.Vehicle_Model}</AppTd  >
+           
 
               <AppTd>
                 <AppStatusBadge variant={statusVariant(row.statusLabel)}>
