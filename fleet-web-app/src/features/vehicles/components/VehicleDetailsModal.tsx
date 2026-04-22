@@ -2,12 +2,10 @@ import { useEffect, useState } from 'react';
 import { Button, GlobalCard } from '../../../shared/components';
 import type { Vehicle } from '../../../types';
 import type { VehicleAssignmentSummary } from '../hooks/useVehicles';
-import type { MaintenanceRecommendation } from './maintenanceStatic';
 
-interface GroupedRecommendations {
-  high: MaintenanceRecommendation[];
-  medium: MaintenanceRecommendation[];
-  low: MaintenanceRecommendation[];
+interface MaintenanceRecommendation {
+  overview: string;
+  level: 'HIGH' | 'MEDIUM' | 'LOW';
 }
 
 interface VehicleDetailsModalProps {
@@ -26,23 +24,11 @@ interface VehicleDetailsModalProps {
     cost: number;
     description?: string;
   }>;
-  recommendations: GroupedRecommendations;
   isLoading?: boolean;
   error?: string | null;
 }
 
-interface Recommendation {
-  overview: string;
-  level: 'HIGH' | 'MEDIUM' | 'LOW';
-}
-
 const sectionTitleClass = 'text-sm font-semibold text-slate-900';
-
-const priorityBadgeClass: Record<keyof GroupedRecommendations, string> = {
-  high: 'bg-rose-100 text-rose-700',
-  medium: 'bg-amber-100 text-amber-700',
-  low: 'bg-blue-100 text-blue-700',
-};
 
 const prettyDate = (value?: string): string => {
   if (!value) return 'N/A';
@@ -64,7 +50,7 @@ const VehicleDetailsModal = ({
   error = null,
 }: VehicleDetailsModalProps) => {
   const [isGenerating, setIsGenerating] = useState(false);
-  const [liveRecommendations, setLiveRecommendations] = useState<Recommendation[] | null>(null);
+  const [liveRecommendations, setLiveRecommendations] = useState<MaintenanceRecommendation[] | null>(null);
 
   useEffect(() => {
     if (!isOpen) {
@@ -73,9 +59,9 @@ const VehicleDetailsModal = ({
     }
   }, [isOpen]);
 
-  const displayedRecommendations: Recommendation[] =
+  const displayedRecommendations: MaintenanceRecommendation[] =
     liveRecommendations ??
-    ((vehicle?.maintenance_recommandation_ai as { recommendations?: Recommendation[] } | null | undefined)
+    ((vehicle?.maintenance_recommandation_ai as { recommendations?: MaintenanceRecommendation[] } | null | undefined)
       ?.recommendations ?? []);
 
   const handleGenerateRecommendations = async () => {
