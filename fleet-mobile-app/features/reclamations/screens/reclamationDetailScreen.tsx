@@ -265,10 +265,10 @@ export default function ReclamationDetailScreen({
     return <LoadingSpinner fullScreen />;
   }
   return (
-    <SafeAreaView className="flex-1 bg-white">
+    <SafeAreaView className="flex-1 bg-white dark:bg-[#0B1220]">
       {/* ── Header ── */}
       <View
-        className="border-b border-slate-100"
+        className="border-b border-slate-100 dark:border-slate-700"
         style={{
           paddingTop: Platform.OS === "ios" ? 8 : 20,
           paddingBottom: 12,
@@ -284,7 +284,7 @@ export default function ReclamationDetailScreen({
 
         {/* Center: title */}
         <Text
-          className="text-base font-semibold text-slate-800"
+          className="text-base font-semibold text-slate-800 dark:text-gray-50"
           style={{ flex: 1, textAlign: "center" }}
           numberOfLines={1}
         >
@@ -314,11 +314,11 @@ export default function ReclamationDetailScreen({
           <ImageCarousel images={images} />
         ) : (
           <View
-            className="h-40 bg-slate-50 items-center justify-center mx-4 mt-4 rounded-2xl border border-slate-200"
+            className="h-40 bg-slate-50 dark:bg-slate-800 items-center justify-center mx-4 mt-4 rounded-2xl border border-slate-200 dark:border-slate-700"
             style={{ borderStyle: "dashed" }}
           >
             <Text className="text-3xl mb-1">📋</Text>
-            <Text className="text-xs text-slate-400">No attachments</Text>
+            <Text className="text-xs text-slate-400 dark:text-slate-300">No attachments</Text>
           </View>
         )}
 
@@ -327,27 +327,27 @@ export default function ReclamationDetailScreen({
           {/* Status + Date */}
           <View className="flex-row items-center justify-between mb-4">
             <StatusBadge status={status} />
-            <Text className="text-xs text-slate-400">
+            <Text className="text-xs text-slate-400 dark:text-slate-400">
               {formatDate(createdAt)}
             </Text>
           </View>
 
           {/* Subject */}
-          <Text className="text-xl font-bold text-slate-900 mb-3">
+          <Text className="text-xl font-bold text-slate-900 dark:text-gray-50 mb-3">
             {subject}
           </Text>
 
           {/* Divider */}
-          <View className="h-px bg-slate-100 mb-4" />
+          <View className="h-px bg-slate-100 dark:bg-slate-700 mb-4" />
 
           {/* Message */}
           <Text
-            className="text-lg font-semibold text-slate-400 uppercase mb-2"
+            className="text-lg font-semibold text-slate-400 dark:text-slate-400 uppercase mb-2"
             style={{ letterSpacing: 1 }}
           >
             Description
           </Text>
-          <Text className="text-base text-slate-700 leading-6 ">{message}</Text>
+          <Text className="text-base text-slate-700 dark:text-slate-300 leading-6 ">{message}</Text>
         </View>
       </ScrollView>
     </SafeAreaView>

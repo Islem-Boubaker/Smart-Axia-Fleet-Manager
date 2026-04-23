@@ -18,7 +18,7 @@ export default function PreferenceSection({
           icon={<Moon size={16} color="#6b7280" />}
           label="Dark Mode"
           value={darkMode}
-          onToggle={() => setDarkMode(!darkMode)}
+          onToggle={setDarkMode}
         />
       </Card>
     </>

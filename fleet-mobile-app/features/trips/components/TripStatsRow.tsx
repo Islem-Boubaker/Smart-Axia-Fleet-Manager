@@ -22,11 +22,11 @@ export function TripStatsRow({ trips }: Props) {
         return (
           <View
             key={key}
-            className="flex-1 bg-white rounded-2xl px-3  py-2.5"
+            className="flex-1 bg-white dark:bg-slate-900 rounded-2xl px-3  py-2.5 border border-gray-100 dark:border-slate-700"
             style={{ elevation: 1, shadowColor: "#000", shadowOpacity: 0.04, shadowRadius: 4 }}
           >
-            <Text className="text-lg font-extrabold text-slate-900">{count}</Text>
-            <Text className="text-[9px] font-bold text-gray-400 tracking-wide mt-0.5">
+            <Text className="text-lg font-extrabold text-slate-900 dark:text-gray-50">{count}</Text>
+            <Text className="text-[9px] font-bold text-gray-400 dark:text-slate-400 tracking-wide mt-0.5">
               {label}
             </Text>
             {/* Mini progress bar */}

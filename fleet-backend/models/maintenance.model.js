@@ -1,6 +1,7 @@
 import { DataTypes } from 'sequelize';
 import { sequelize } from '../config/connectdb.js';
 
+
 const Maintenance = sequelize.define(
   'Maintenance',
   {
@@ -46,7 +47,7 @@ const Maintenance = sequelize.define(
     },
     status: {
       type: DataTypes.ENUM('scheduled', 'pending', 'in_progress', 'in progress', 'completed', 'cancelled'),
-      allowNull: false,
+      allowNull: true,
       defaultValue: 'pending',
     },
     type: {

@@ -111,33 +111,33 @@ export const DatePickerModal: React.FC<DatePickerModalProps> = ({
         onPress={onCancel}
       >
         <Pressable
-          className="bg-white rounded-t-3xl px-5 pt-6 pb-8"
+          className="bg-white dark:bg-slate-900 rounded-t-3xl px-5 pt-6 pb-8"
           onPress={() => {}}
         >
           {/* Handle bar */}
-          <View className="w-12 h-1 bg-gray-200 rounded-full self-center mb-5" />
+          <View className="w-12 h-1 bg-gray-200 dark:bg-slate-700 rounded-full self-center mb-5" />
 
           {/* Header: month/year navigation */}
           <View className="flex-row items-center justify-between mb-5">
             <TouchableOpacity
               onPress={prevMonth}
-              className="w-9 h-9 rounded-full bg-gray-100 items-center justify-center"
+              className="w-9 h-9 rounded-full bg-gray-100 dark:bg-slate-800 items-center justify-center"
             >
-              <Text className="text-gray-600 font-bold text-base">‹</Text>
+              <Text className="text-gray-600 dark:text-slate-200 font-bold text-base">‹</Text>
             </TouchableOpacity>
 
             <View className="items-center">
-              <Text className="text-base font-bold text-gray-800">
+              <Text className="text-base font-bold text-gray-800 dark:text-gray-50">
                 {MONTHS[viewMonth]}
               </Text>
-              <Text className="text-xs text-gray-400 font-medium">{viewYear}</Text>
+              <Text className="text-xs text-gray-400 dark:text-slate-400 font-medium">{viewYear}</Text>
             </View>
 
             <TouchableOpacity
               onPress={nextMonth}
-              className="w-9 h-9 rounded-full bg-gray-100 items-center justify-center"
+              className="w-9 h-9 rounded-full bg-gray-100 dark:bg-slate-800 items-center justify-center"
             >
-              <Text className="text-gray-600 font-bold text-base">›</Text>
+              <Text className="text-gray-600 dark:text-slate-200 font-bold text-base">›</Text>
             </TouchableOpacity>
           </View>
 
@@ -146,6 +146,7 @@ export const DatePickerModal: React.FC<DatePickerModalProps> = ({
             {DAYS.map((d, i) => (
               <View key={i} className="flex-1 items-center">
                 <Text className="text-xs font-bold text-gray-400">{d}</Text>
+                
               </View>
             ))}
           </View>
@@ -177,7 +178,7 @@ export const DatePickerModal: React.FC<DatePickerModalProps> = ({
                           ? 'text-white'
                           : todayCell
                           ? 'text-rose-500'
-                          : 'text-gray-700'
+                          : 'text-gray-700 dark:text-slate-200'
                       }`}
                     >
                       {day}
@@ -192,9 +193,9 @@ export const DatePickerModal: React.FC<DatePickerModalProps> = ({
           <View className="flex-row mt-4 gap-3">
             <TouchableOpacity
               onPress={onCancel}
-              className="flex-1 py-3.5 rounded-2xl border border-gray-200 items-center"
+              className="flex-1 py-3.5 rounded-2xl border border-gray-200 dark:border-slate-700 items-center"
             >
-              <Text className="text-gray-500 font-semibold text-sm">Cancel</Text>
+              <Text className="text-gray-500 dark:text-slate-300 font-semibold text-sm">Cancel</Text>
             </TouchableOpacity>
 
             <TouchableOpacity

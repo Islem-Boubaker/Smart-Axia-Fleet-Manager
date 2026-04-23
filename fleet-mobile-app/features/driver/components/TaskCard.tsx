@@ -21,7 +21,7 @@ export default function TaskCard({ trip, isCurrent, onPress }: TaskCardProps) {
   return (
     <TouchableOpacity
       className={`flex-1 rounded-2xl p-4 ${
-        isCurrent ? "bg-blue-500" : "bg-white border border-gray-200"
+        isCurrent ? "bg-blue-500" : "bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700"
       }`}
       onPress={onPress}
       disabled={!trip}
@@ -36,7 +36,7 @@ export default function TaskCard({ trip, isCurrent, onPress }: TaskCardProps) {
 
       <Text
         className={`text-lg font-bold ${
-          isCurrent ? "text-white" : "text-gray-900"
+          isCurrent ? "text-white" : "text-gray-900 dark:text-gray-50"
         }`}
       >
         {formatVehicleLabel(trip)}
@@ -44,7 +44,7 @@ export default function TaskCard({ trip, isCurrent, onPress }: TaskCardProps) {
 
       <Text
         className={`text-xs mb-3 ${
-          isCurrent ? "text-white/70" : "text-gray-400"
+          isCurrent ? "text-white/70" : "text-gray-400 dark:text-slate-400"
         }`}
       >
         {formatTaskTime(trip)}
@@ -52,12 +52,12 @@ export default function TaskCard({ trip, isCurrent, onPress }: TaskCardProps) {
 
       <View
         className={`rounded-lg py-2 items-center ${
-          isCurrent ? "bg-white/20" : "bg-gray-100"
+          isCurrent ? "bg-white/20" : "bg-gray-100 dark:bg-slate-800"
         }`}
       >
         <Text
           className={`text-xs font-semibold ${
-            isCurrent ? "text-white" : "text-gray-900"
+            isCurrent ? "text-white" : "text-gray-900 dark:text-gray-100"
           }`}
         >
           Task details

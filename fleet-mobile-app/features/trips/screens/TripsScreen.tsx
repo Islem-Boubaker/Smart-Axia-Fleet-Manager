@@ -22,8 +22,8 @@ import type { FilterOption } from "../config/trips.config";
 
 import { tripsApi } from "../services/trips.api";
 import type { Trip } from "../types/trip.types";
-import BackButton from "@/shared/components/ui/BackButton";
-import RefreshButton from "@/shared/components/ui/RefreshButton";
+import { useAppTheme } from "@/shared/theme/ThemeProvider";
+import MainTopHeader from "@/shared/components/layout/MainTopHeader";
 
 // ─── Types ────────────────────────────────────────────────────────
 type TripLike = Partial<Trip> & {
@@ -65,6 +65,7 @@ const normalizeTrips = (items: unknown): Trip[] => {
 // ─── TripsScreen ──────────────────────────────────────────────────
 export function TripsScreen() {
   const router = useRouter();
+  const { isDark } = useAppTheme();
  
   const [trips, setTrips] = useState<Trip[]>([]);
   const [filter, setFilter] = useState<FilterOption>("all");
@@ -115,22 +116,15 @@ export function TripsScreen() {
   if (isLoading) return <LoadingSpinner fullScreen />;
 
   return (
-    <SafeAreaView className="flex-1 bg-gray-100">
-      <StatusBar barStyle="dark-content" backgroundColor="#F3F4F6" />
+    <SafeAreaView className="flex-1 bg-gray-100 dark:bg-[#0B1220]">
+      <StatusBar
+        barStyle={isDark ? "light-content" : "dark-content"}
+        backgroundColor={isDark ? "#0B1220" : "#F3F4F6"}
+      />
 
-      {/* Header */}
-      <View className="flex-row justify-between items-center px-5 pb-2"  style={{ paddingTop: Platform.OS === "ios" ? 8 : 0 }}>
-        <BackButton/>
-        <View>
-          <Text className="text-2xl font-extrabold text-slate-900">
-            My Trips
-          </Text>
-          <Text className="text-xs text-gray-400 mt-0.5">
-            {trips.length} trip{trips.length !== 1 ? "s" : ""} assigned
-          </Text>
-        </View>
-        <RefreshButton onRefresh={handleRefresh} />
-      </View>
+      <MainTopHeader />
+
+      <View className="px-5 pb-2" style={{ paddingTop: Platform.OS === "ios" ? 8 : 0 }} />
 
       {/* Filter chips */}
       <TripFilterChips selected={filter} onChange={setFilter} />
@@ -139,20 +133,20 @@ export function TripsScreen() {
       <TripStatsRow trips={trips} />
 
       {/* Section header */}
-      <View className="flex-row justify-between items-center px-5 mb-2">
-        <Text className="text-[13px] font-bold text-gray-700">
+      <View className="flex-row justify-between items-center px-5 mb-2 mt-1">
+        <Text className="text-[13px] font-bold text-gray-700 dark:text-slate-200 tracking-wide">
           {filter === "all"
             ? "All trips"
             : `${filter.charAt(0).toUpperCase() + filter.slice(1)} trips`}
         </Text>
-        <Text className="text-[11px] text-gray-400">
+        <Text className="text-[11px] text-gray-400 dark:text-slate-400">
           {filtered.length} result{filtered.length !== 1 ? "s" : ""}
         </Text>
       </View>
 
       {/* Error banner */}
       {error && (
-        <View className="mx-5 mb-3 bg-red-50 border border-red-200 rounded-2xl px-4 py-3 flex-row items-center gap-2">
+        <View className="mx-5 mb-3 bg-red-50 border border-red-200 rounded-3xl px-4 py-3 flex-row items-center gap-2">
           <MaterialIcons name="error-outline" size={16} color="#EF4444" />
           <Text className="text-xs text-red-600 flex-1">{error}</Text>
           <TouchableOpacity onPress={fetchTrips}>

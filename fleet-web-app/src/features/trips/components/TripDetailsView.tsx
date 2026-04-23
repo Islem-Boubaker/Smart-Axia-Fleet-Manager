@@ -3,6 +3,7 @@ import { CircleMarker, MapContainer, Polyline, TileLayer, useMap } from 'react-l
 import type { LatLngExpression } from 'leaflet';
 import type { Trip } from '../../../types';
 import 'leaflet/dist/leaflet.css';
+import { compactLocationLabel } from '../utils/locationLabel';
 
 type TripDetailsViewProps = {
   trip: Trip;
@@ -41,23 +42,6 @@ const formatDateTime = (value?: string) => {
 const formatNumber = (value?: number, suffix = '') => {
   if (typeof value !== 'number' || !Number.isFinite(value)) return 'N/A';
   return `${value.toFixed(1)}${suffix}`;
-};
-
-const compactLocation = (locationName: string) => {
-  const parts = locationName.split(',').map((part) => part.trim()).filter(Boolean);
-  if (parts.length < 2) return locationName;
-
-  const postcodeMatch = locationName.match(/\b\d{4,6}\b/);
-  const postcode = postcodeMatch?.[0];
-  if (!postcode) return locationName;
-
-  const postcodeIndex = parts.findIndex((part) => part.includes(postcode));
-  if (postcodeIndex <= 0) return locationName;
-
-  const state = parts[postcodeIndex - 1];
-  if (!state) return locationName;
-
-  return `${state}, ${postcode}`;
 };
 
 const geocodeLocation = async (query: string, signal: AbortSignal): Promise<GeoPoint | null> => {
@@ -154,6 +138,24 @@ const TripDetailsView = ({ trip, dark = false }: TripDetailsViewProps) => {
 
     const run = async () => {
       try {
+        const hasExactStart =
+          typeof trip.startLatitude === 'number' &&
+          Number.isFinite(trip.startLatitude) &&
+          typeof trip.startLongitude === 'number' &&
+          Number.isFinite(trip.startLongitude);
+        const hasExactEnd =
+          typeof trip.endLatitude === 'number' &&
+          Number.isFinite(trip.endLatitude) &&
+          typeof trip.endLongitude === 'number' &&
+          Number.isFinite(trip.endLongitude);
+
+        if (hasExactStart || hasExactEnd) {
+          setStartMarker(hasExactStart ? { lat: trip.startLatitude as number, lng: trip.startLongitude as number } : null);
+          setEndMarker(hasExactEnd ? { lat: trip.endLatitude as number, lng: trip.endLongitude as number } : null);
+          setIsGeocoding(false);
+          return;
+        }
+
         setIsGeocoding(true);
         const [startPoint, endPoint] = await Promise.all([
           geocodeLocation(trip.startLocation, controller.signal),
@@ -174,7 +176,7 @@ const TripDetailsView = ({ trip, dark = false }: TripDetailsViewProps) => {
       isMounted = false;
       controller.abort();
     };
-  }, [trip.id, trip.startLocation, trip.endLocation]);
+  }, [trip.endLatitude, trip.endLocation, trip.endLongitude, trip.id, trip.startLatitude, trip.startLocation, trip.startLongitude]);
 
   const routingPoints = useMemo<GeoPoint[]>(() => {
     const points: GeoPoint[] = [];
@@ -273,9 +275,9 @@ const TripDetailsView = ({ trip, dark = false }: TripDetailsViewProps) => {
       <div className={`rounded-2xl border p-4 ${dark ? 'border-slate-700/80 bg-slate-900/45' : 'border-slate-200/90 bg-white/80'}`}>
         <p className={`text-xs font-semibold uppercase tracking-wide ${dark ? 'text-slate-400' : 'text-slate-500'}`}>Route</p>
         <p className={`mt-2 text-base font-semibold ${dark ? 'text-white' : 'text-slate-900'}`}>
-          {compactLocation(trip.startLocation)}
+          {compactLocationLabel(trip.startLocation)}
           <span className="mx-2 opacity-60">→</span>
-          {compactLocation(trip.endLocation)}
+          {compactLocationLabel(trip.endLocation)}
         </p>
       </div>
 
@@ -303,7 +305,7 @@ const TripDetailsView = ({ trip, dark = false }: TripDetailsViewProps) => {
             {orderedStops.map((stop) => (
               <div key={stop.id} className={`rounded-xl border px-3 py-2 ${dark ? 'border-slate-700/70 bg-slate-800/40' : 'border-slate-200 bg-slate-50/80'}`}>
                 <p className={`text-sm font-medium ${dark ? 'text-slate-100' : 'text-slate-900'}`}>
-                  {stop.locationName}
+                  {compactLocationLabel(stop.locationName)}
                 </p>
                 <p className={`text-xs ${dark ? 'text-slate-400' : 'text-slate-600'}`}>
                   Status: {stop.status} {stop.arrivalTime ? `• ${formatDateTime(stop.arrivalTime)}` : ''}
@@ -323,7 +325,7 @@ const TripDetailsView = ({ trip, dark = false }: TripDetailsViewProps) => {
           <p className={`text-sm ${dark ? 'text-slate-400' : 'text-slate-600'}`}>
             {isGeocoding
               ? 'Resolving start and destination markers...'
-              : 'Map is unavailable for this trip because no mappable coordinates were found.'}
+                  : 'Map is unavailable for this trip because no mappable coordinates were found.'}
           </p>
         ) : (
           <div className="space-y-2">

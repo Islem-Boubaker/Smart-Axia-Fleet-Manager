@@ -12,10 +12,10 @@ export function TripEmptyState({ filter }: Props) {
   return (
     <View className="items-center justify-center py-16">
       <MaterialIcons name="directions-car" size={52} color="#E5E7EB" />
-      <Text className="text-sm font-semibold text-gray-400 mt-4">
+      <Text className="text-sm font-semibold text-gray-400 dark:text-slate-400 mt-4">
         No {label} trips found
       </Text>
-      <Text className="text-xs text-gray-300 mt-1">
+      <Text className="text-xs text-gray-300 dark:text-slate-500 mt-1">
         Pull down to refresh
       </Text>
     </View>

@@ -7,6 +7,7 @@ export interface User {
   role: UserRole;
   phone?: string | null;
   avatar?: string | null;
+  assignedVehicle?: string | null;
 }
 
 export interface LoginCredentials {

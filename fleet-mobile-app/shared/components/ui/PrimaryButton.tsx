@@ -20,7 +20,7 @@ export function PrimaryButton({
 
   return (
     <TouchableOpacity
-      className={`bg-blue-600 rounded-lg py-4 items-center justify-center ${
+      className={`bg-brand-600 rounded-2xl py-4 items-center justify-center ${
         isDisabled ? "opacity-50" : ""
       }`}
       onPress={onPress}
@@ -31,7 +31,7 @@ export function PrimaryButton({
       {loading ? (
         <ActivityIndicator size="small" color="#ffffff" />
       ) : (
-        <Text className="text-white text-base font-semibold">
+        <Text className="text-white text-base font-bold tracking-[0.2px]">
           {label}
         </Text>
       )}

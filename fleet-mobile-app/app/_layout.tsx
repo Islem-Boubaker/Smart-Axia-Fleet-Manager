@@ -1,16 +1,17 @@
 import "../index.css";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { Stack } from "expo-router";
-import { ActivityIndicator, View } from "react-native";
 import { Provider, useSelector } from "react-redux";
+import { View, ActivityIndicator } from "react-native";
 
-import type { RootState } from "../store";
 import { store } from "../store/index";
+import type { RootState } from "../store";
 
 import { useAuthBootstrap, useAuthGuard } from "../features/auth/hooks/useAuth";
 import { useRealtimeNotificationToasts } from "../features/notifications/hooks/useRealtimeNotificationToasts";
 import { usePushTokenRegistration } from "../features/notifications/hooks/usePushTokenRegistration";
 import { ToastProvider } from "../shared/components/toast";
+import { ThemeProvider } from "../shared/theme/ThemeProvider";
 
 function AppLayout() {
   useAuthBootstrap();
@@ -22,6 +23,7 @@ function AppLayout() {
 
   return (
     <>
+      <View className="flex-1 bg-gray-100 dark:bg-[#0B1220]">
       <Stack screenOptions={{ headerShown: false }}>
         <Stack.Screen name="index" options={{ headerShown: false }} />
         <Stack.Screen name="(auth)" options={{ headerShown: false }} />
@@ -37,6 +39,10 @@ function AppLayout() {
         />
         <Stack.Screen
           name="trips/live"
+          options={{ animation: "slide_from_bottom" }}
+        />
+        <Stack.Screen
+          name="maps/index"
           options={{ animation: "slide_from_bottom" }}
         />
         <Stack.Screen
@@ -62,22 +68,28 @@ function AppLayout() {
       </Stack>
 
       {isLoading && (
-        <View className="absolute inset-0 items-center justify-center bg-white">
+        <View className="absolute inset-0 items-center justify-center bg-white dark:bg-[#0B1220]">
           <ActivityIndicator size="large" color="#2D9B6F" />
         </View>
       )}
+      </View>
     </>
   );
 }
 
 export default function RootLayout() {
+
   return (
-    <Provider store={store}>
-      <SafeAreaProvider>
-        <ToastProvider>
-          <AppLayout />
-        </ToastProvider>
-      </SafeAreaProvider>
-    </Provider>
+   
+      <Provider store={store}>
+        <SafeAreaProvider>
+          <ThemeProvider>
+            <ToastProvider>
+              <AppLayout />
+            </ToastProvider>
+          </ThemeProvider>
+        </SafeAreaProvider>
+      </Provider>
+   
   );
 }

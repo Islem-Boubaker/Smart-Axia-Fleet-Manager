@@ -1,60 +1,115 @@
-import React, { useState } from "react";
-import { Platform, ScrollView, Text, View } from "react-native";
+import React, { useCallback, useMemo } from "react";
+import { ScrollView, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { LoadingSpinner } from "@/shared/components/ui/LoadingSpinner";
+import { useSelector } from "react-redux";
 
 import ProfileCard from "../components/ProfileCard";
 import AccountSection from "../components/AccountSection";
 import NotificationsSection from "../components/NotificationsSection";
 import PreferenceSection from "../components/PreferenceSection";
 import LogoutButton from "../components/LogoutButton";
-import BackButton from "@/shared/components/ui/BackButton";
+import type { RootState } from "@/store";
 import { useProfile } from "../hooks/useProfile";
+import { toast } from "@/shared/components/toast/toast";
+import { useAppTheme } from "@/shared/theme/ThemeProvider";
+import { requestPushPermission } from "@/features/notifications/utils/pushNotifications";
 
 export default function ProfileScreen() {
-  const { user, notificationSettings, updateNotificationSettings, isLoading } = useProfile();
+  const user = useSelector((state: RootState) => state.auth.user);
+  const { notificationSettings, updateNotificationSettings, isSaving } = useProfile();
+  const { isDark, setTheme } = useAppTheme();
 
-  const [darkMode, setDarkMode] = useState(false);
+  const pushNotif = useMemo(
+    () =>
+      notificationSettings.pushTrips &&
+      notificationSettings.pushMaintenance &&
+      notificationSettings.pushAlerts,
+    [notificationSettings.pushAlerts, notificationSettings.pushMaintenance, notificationSettings.pushTrips],
+  );
 
-  const handlePushToggle = (valueOrUpdater: boolean | ((value: boolean) => boolean)) => {
-    const nextValue =
-      typeof valueOrUpdater === "function"
-        ? valueOrUpdater(notificationSettings.pushAlerts)
-        : valueOrUpdater;
-    void updateNotificationSettings({ pushAlerts: nextValue });
-  };
+  const emailUpdates = useMemo(
+    () =>
+      notificationSettings.emailTrips &&
+      notificationSettings.emailMaintenance &&
+      notificationSettings.emailDrivers,
+    [notificationSettings.emailDrivers, notificationSettings.emailMaintenance, notificationSettings.emailTrips],
+  );
 
-  const handleEmailToggle = (valueOrUpdater: boolean | ((value: boolean) => boolean)) => {
-    const nextValue =
-      typeof valueOrUpdater === "function"
-        ? valueOrUpdater(notificationSettings.emailTrips)
-        : valueOrUpdater;
-    void updateNotificationSettings({ emailTrips: nextValue });
-  };
+  const setPushNotif = useCallback(
+    async (value: boolean) => {
+      try {
+        if (value) {
+          const permission = await requestPushPermission();
+          if (permission.unsupportedInExpoGo) {
+            toast.error("Push delivery is unavailable in Expo Go. Preference will still be saved.");
+          }
+          if (!permission.unsupportedInExpoGo && !permission.granted) {
+            toast.error("Push permission denied. Enable it in phone settings.");
+            return;
+          }
+        }
 
-  if (isLoading && !user) {
-    return <LoadingSpinner fullScreen />;
-  }
+        await updateNotificationSettings({
+          pushTrips: value,
+          pushMaintenance: value,
+          pushAlerts: value,
+        });
+        toast.success(`Push notifications ${value ? "enabled" : "disabled"}.`);
+      } catch (error) {
+        const message = error instanceof Error ? error.message : "Failed to update push notifications";
+        toast.error(message);
+      }
+    },
+    [updateNotificationSettings],
+  );
+
+  const setEmailUpdates = useCallback(
+    async (value: boolean) => {
+      try {
+        await updateNotificationSettings({
+          emailTrips: value,
+          emailMaintenance: value,
+          emailDrivers: value,
+        });
+        toast.success(`Email notifications ${value ? "enabled" : "disabled"}.`);
+      } catch (error) {
+        const message = error instanceof Error ? error.message : "Failed to update email notifications";
+        toast.error(message);
+      }
+    },
+    [updateNotificationSettings],
+  );
+
+  const setDarkMode = useCallback(
+    async (value: boolean) => {
+      try {
+        await setTheme(value ? "dark" : "light");
+      } catch {
+        toast.error("Failed to update theme mode.");
+      }
+    },
+    [setTheme],
+  );
 
   return (
-    <SafeAreaView className="flex-1 bg-[#F5F7FA]">
-      <View className="flex-row items-center " style={{ paddingTop: Platform.OS === "ios" ? 8 : 0 }}>
-        <BackButton/>
-        <Text className="flex-1 text-center text-lg font-bold text-gray-900">
+    <SafeAreaView className="flex-1 bg-[#F5F7FA] dark:bg-[#0B1220]">
+      <View className="mt-10 px-4 pb-4">
+        <Text className="text-[22px] font-extrabold tracking-tight text-gray-900 dark:text-gray-50">
           Profile
         </Text>
       </View>
 
-      <ScrollView className="pb-8" showsVerticalScrollIndicator={false}>
+      <ScrollView className="pb-8" showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 96 }}>
         <ProfileCard user={user} />
         <AccountSection />
         <NotificationsSection
-          pushNotif={notificationSettings.pushAlerts}
-          setPushNotif={handlePushToggle}
-          emailUpdates={notificationSettings.emailTrips}
-          setEmailUpdates={handleEmailToggle}
+          pushNotif={pushNotif}
+          emailUpdates={emailUpdates}
+          onTogglePush={setPushNotif}
+          onToggleEmail={setEmailUpdates}
+          disabled={isSaving}
         />
-        <PreferenceSection darkMode={darkMode} setDarkMode={setDarkMode} />
+        <PreferenceSection darkMode={isDark} setDarkMode={setDarkMode} />
         <LogoutButton />
       </ScrollView>
     </SafeAreaView>

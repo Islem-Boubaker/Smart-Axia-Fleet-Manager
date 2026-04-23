@@ -48,9 +48,29 @@ const Trip = sequelize.define(
       allowNull: false,
     },
 
+    startLatitude: {
+      type: DataTypes.FLOAT,
+      allowNull: true,
+    },
+
+    startLongitude: {
+      type: DataTypes.FLOAT,
+      allowNull: true,
+    },
+
     endLocation: {
       type: DataTypes.STRING,
       allowNull: false,
+    },
+
+    endLatitude: {
+      type: DataTypes.FLOAT,
+      allowNull: true,
+    },
+
+    endLongitude: {
+      type: DataTypes.FLOAT,
+      allowNull: true,
     },
 
     startTime: {

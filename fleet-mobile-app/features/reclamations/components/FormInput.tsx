@@ -32,7 +32,7 @@ export const FormInput: React.FC<FormInputProps> = ({
     <View className="mb-5">
       {/* Label */}
       <View className="flex-row mb-2">
-        <Text className="text-sm font-semibold text-gray-700 tracking-wide">
+        <Text className="text-sm font-semibold text-gray-700 dark:text-slate-200 tracking-wide">
           {label}
         </Text>
         {required && (
@@ -44,8 +44,8 @@ export const FormInput: React.FC<FormInputProps> = ({
       <View
         className={`rounded-2xl border px-4 py-1 bg-white shadow-sm ${
           hasError
-            ? 'border-rose-400 bg-rose-50'
-            : 'border-gray-200 focus:border-rose-400'
+            ? 'border-rose-400 bg-rose-50 dark:bg-rose-500/10'
+            : 'border-gray-200 dark:border-slate-700 dark:bg-slate-900 focus:border-rose-400'
         }`}
         style={{
           shadowColor: '#000',
@@ -63,7 +63,7 @@ export const FormInput: React.FC<FormInputProps> = ({
           multiline={multiline}
           numberOfLines={multiline ? numberOfLines : 1}
           textAlignVertical={multiline ? 'top' : 'center'}
-          className={`text-gray-800 text-sm font-medium ${
+          className={`text-gray-800 dark:text-gray-100 text-sm font-medium ${
             multiline ? 'min-h-[120px] py-3' : 'py-3'
           }`}
           style={{ fontFamily: 'System' }}

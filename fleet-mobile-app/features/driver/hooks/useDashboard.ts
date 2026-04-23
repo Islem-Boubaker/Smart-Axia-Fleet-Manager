@@ -25,6 +25,8 @@ type UnreadCountPayload = {
   count?: number;
 };
 
+const DASHBOARD_REQUEST_TIMEOUT_MS = 10000;
+
 const normalizeTrips = (items: Trip[] = []): Trip[] =>
   items.map((trip) => ({
     ...trip,
@@ -32,6 +34,12 @@ const normalizeTrips = (items: Trip[] = []): Trip[] =>
   }));
 
 function readErrorMessage(error: unknown): string {
+  if (
+    error instanceof Error &&
+    (error.name === "AbortError" || error.message.includes("timed out"))
+  ) {
+    return "Dashboard request timed out. Check that the mobile app can reach the backend API.";
+  }
   if (error instanceof Error) return error.message;
   return "Failed to load dashboard data";
 }
@@ -57,27 +65,42 @@ export function useDashboard(): DashboardData {
 
   const fetchJson = useCallback(
     async <T,>(path: string): Promise<T> => {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => {
+        controller.abort();
+      }, DASHBOARD_REQUEST_TIMEOUT_MS);
+
       const accessToken = reduxToken ?? (await tokenStorage.getAccessToken()) ?? "";
-      const response = await fetch(`${baseUrl}${path}`, {
-        method: "GET",
-        headers: {
-          Authorization: accessToken ? `Bearer ${accessToken}` : "",
-          "Content-Type": "application/json",
-        },
-      });
+      try {
+        const response = await fetch(`${baseUrl}${path}`, {
+          method: "GET",
+          headers: {
+            Authorization: accessToken ? `Bearer ${accessToken}` : "",
+            "Content-Type": "application/json",
+          },
+          signal: controller.signal,
+        });
 
-      if (response.status === 401) {
-        dispatch(clearUser());
-        router.replace("/(auth)/login");
-        throw new Error("Session expired. Please login again.");
+        if (response.status === 401) {
+          dispatch(clearUser());
+          router.replace("/(auth)/login");
+          throw new Error("Session expired. Please login again.");
+        }
+
+        if (!response.ok) {
+          throw new Error(`Request failed (${response.status}) for ${path}`);
+        }
+
+        const payload = (await response.json()) as ApiEnvelope<T>;
+        return payload.data;
+      } catch (error) {
+        if (error instanceof Error && error.name === "AbortError") {
+          throw new Error(`Dashboard request timed out for ${path}`);
+        }
+        throw error;
+      } finally {
+        clearTimeout(timeoutId);
       }
-
-      if (!response.ok) {
-        throw new Error(`Request failed (${response.status}) for ${path}`);
-      }
-
-      const payload = (await response.json()) as ApiEnvelope<T>;
-      return payload.data;
     },
     [baseUrl, dispatch, reduxToken, router],
   );

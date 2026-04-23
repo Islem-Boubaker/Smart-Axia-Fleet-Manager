@@ -27,7 +27,11 @@ export interface CreateTripRequest {
   vehicleId: string;
   userId: string;
   startLocation: string;
+  startLatitude?: number;
+  startLongitude?: number;
   endLocation: string;
+  endLatitude?: number;
+  endLongitude?: number;
   startTime: string;
   distance: number;
   region?: string;

@@ -72,11 +72,20 @@ export const profileApi = {
   },
 
   updateNotificationSettings: async (payload: Partial<NotificationSettings>): Promise<NotificationSettings> => {
-    const { data } = await api.put<ApiEnvelope<NotificationSettings>>(
-      "/user/me/notifications",
-      payload,
-    );
-    return data.data;
+    try {
+      const { data } = await api.put<ApiEnvelope<NotificationSettings>>(
+        "/user/me/notifications",
+        payload,
+      );
+      return data.data;
+    } catch (error: any) {
+      console.error("[updateNotificationSettings] failed", {
+        message: error?.message,
+        status: error?.response?.status,
+        data: error?.response?.data,
+      });
+      throw error;
+    }
   },
 
   // 🔹 Update user (admin)

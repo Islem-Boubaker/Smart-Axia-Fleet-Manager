@@ -78,14 +78,14 @@ const CreateReclamationScreen: React.FC = () => {
 
   if (hook.isSuccess) {
     return (
-      <SafeAreaView className="flex-1 bg-white">
+      <SafeAreaView className="flex-1 bg-white dark:bg-[#0B1220]">
         <SuccessScreen onReset={hook.resetForm} />
       </SafeAreaView>
     );
   }
 
   return (
-    <SafeAreaView className="flex-1 bg-white">
+    <SafeAreaView className="flex-1 bg-white dark:bg-[#0B1220]">
       <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
 
       <KeyboardAvoidingView
@@ -109,7 +109,7 @@ const CreateReclamationScreen: React.FC = () => {
 
             <BackButton/>
 
-            <Text className="text-base font-bold text-gray-800 tracking-tight">
+            <Text className="text-base font-bold text-gray-800 dark:text-gray-50 tracking-tight">
               Report an issue
             </Text>
 
@@ -120,7 +120,7 @@ const CreateReclamationScreen: React.FC = () => {
         </View>
 
         {/* Divider */}
-        <View className="h-px bg-gray-100 mx-5 mb-2" />
+        <View className="h-px bg-gray-100 dark:bg-slate-700 mx-5 mb-2" />
 
         {/* ── Scrollable form area ─────────────────────────────────────── */}
         <ScrollView
@@ -134,7 +134,7 @@ const CreateReclamationScreen: React.FC = () => {
 
         {/* ── Bottom action area ──────────────────────────────────────── */}
         <View
-          className="px-5 pb-6 pt-3 bg-white border-t border-gray-100"
+          className="px-5 pb-6 pt-3 bg-white dark:bg-slate-900 border-t border-gray-100 dark:border-slate-700"
           style={{
             shadowColor: "#000",
             shadowOffset: { width: 0, height: -2 },

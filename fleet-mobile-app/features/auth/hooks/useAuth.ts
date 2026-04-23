@@ -13,7 +13,7 @@ import {
   setUser,
 } from "@/store/slices/authSlice";
 import { clearCookies } from "@/shared/services/cookieJar";
-import { clearCsrfToken, setCsrfToken } from "@/shared/services/csrf";
+import { clearStoredCsrfToken, loadCsrfToken, saveCsrfToken } from "@/shared/services/csrf";
 import { tokenStorage } from "../services/tokenStorage";
 import {
   clearUserStorage,
@@ -50,7 +50,7 @@ const persistAuthSession = async (
   dispatch: AppDispatch,
   payload: AuthResponse,
 ): Promise<void> => {
-  setCsrfToken(payload.csrfToken);
+  await saveCsrfToken(payload.csrfToken || null);
   
   // Persist bearer token for mobile requests; refresh token may be cookie-managed.
   if (payload.accessToken) {
@@ -70,7 +70,7 @@ const clearSession = async (dispatch: AppDispatch): Promise<void> => {
   await tokenStorage.clearTokens();
   await clearCookies();
   await clearUserStorage();
-  clearCsrfToken();
+  await clearStoredCsrfToken();
   dispatch(clearUser());
 };
 
@@ -79,6 +79,7 @@ const bootstrapSession = async (dispatch: AppDispatch): Promise<void> => {
 
   const cachedUser = await loadUserFromStorage();
   const cachedAccessToken = await tokenStorage.getAccessToken();
+  await loadCsrfToken();
 
   if (!cachedUser && !cachedAccessToken) {
     dispatch(setLoading(false));

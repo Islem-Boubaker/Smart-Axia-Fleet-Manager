@@ -19,8 +19,8 @@ import ReclamationCard from "../components/ReclamationCard";
 import ReclamationStats from "../components/ReclamationStats";
 import SectionHeader from "../components/SectionHeader";
 import { useReclamation } from "../hooks/useReclamation";
-import BackButton from "@/shared/components/ui/BackButton";
-import RefreshButton from "@/shared/components/ui/RefreshButton";
+import { useAppTheme } from "@/shared/theme/ThemeProvider";
+import MainTopHeader from "@/shared/components/layout/MainTopHeader";
 
 // ─── Types ────────────────────────────────────────────────────────
 type ReclamationStatus = "pending" | "in_progress" | "resolved";
@@ -99,6 +99,7 @@ const FILTERS = [
 // ─── Screen ───────────────────────────────────────────────────────
 export default function ReclamationsScreen() {
   const router = useRouter();
+  const { isDark } = useAppTheme();
   const { getAllReclamations } = useReclamation();
 
   const [reclamations, setReclamations] = useState<Reclamation[]>([]);
@@ -149,28 +150,15 @@ export default function ReclamationsScreen() {
   if (isLoading) return <LoadingSpinner fullScreen />;
 
   return (
-    <SafeAreaView className="flex-1 bg-gray-100">
-      <StatusBar barStyle="dark-content" backgroundColor="#F3F4F6" />
+    <SafeAreaView className="flex-1 bg-gray-100 dark:bg-[#0B1220]">
+      <StatusBar
+        barStyle={isDark ? "light-content" : "dark-content"}
+        backgroundColor={isDark ? "#0B1220" : "#F3F4F6"}
+      />
 
-      {/* ── Header ── */} 
-      <View className="px-5  pb-3" style={{ paddingTop: Platform.OS === "ios" ? 8 : 0 }}>
-        <View className="flex-row items-center justify-between">
-          {/* Left: Back */}
-          <BackButton />
+      <MainTopHeader />
 
-          {/* Center: Title */}
-          <View className="flex-1 items-center">
-            <Text className="text-xl font-extrabold text-slate-900">
-              Reports
-            </Text>
-            <Text className="text-xs text-gray-400 mt-0.5">
-              {reclamations.length} total reclamations
-            </Text>
-          </View>
-
-          <RefreshButton onRefresh={handleRefresh} />
-        </View>
-      </View>
+      <View className="px-5 pb-2" style={{ paddingTop: Platform.OS === "ios" ? 8 : 0 }} />
 
       {/* ── Filters ── */}
       <View style={{ height: 52 }}>
@@ -189,7 +177,7 @@ export default function ReclamationsScreen() {
 
       {/* ── Error banner ── */}
       {error && (
-        <View className="mx-5 mb-3 bg-red-50 border border-red-200 rounded-2xl px-4 py-3 flex-row items-center gap-2">
+        <View className="mx-5 mb-3 bg-red-50 border border-red-200 rounded-3xl px-4 py-3 flex-row items-center gap-2">
           <MaterialIcons name="error-outline" size={16} color="#EF4444" />
           <Text className="text-xs text-red-600 flex-1">{error}</Text>
           <TouchableOpacity onPress={fetchReclamations}>
@@ -214,7 +202,7 @@ export default function ReclamationsScreen() {
         {filtered.length === 0 ? (
           <View className="items-center py-16">
             <MaterialIcons name="inbox" size={52} color="#D1D5DB" />
-            <Text className="text-sm text-gray-400 mt-3">
+            <Text className="text-sm text-gray-400 dark:text-slate-400 mt-3">
               No reclamations found
             </Text>
           </View>
@@ -248,12 +236,13 @@ export default function ReclamationsScreen() {
 
       {/* ── FAB ── */}
       <TouchableOpacity
-        className="absolute bottom-5 right-5 w-14 h-14 rounded-full bg-emerald-500 items-center justify-center"
+        className="absolute bottom-5 right-5 w-14 h-14 rounded-3xl bg-brand-600 items-center justify-center border border-white/20"
         style={{
-          elevation: 6,
-          shadowColor: "#2a36aa",
-          shadowOpacity: 0.4,
-          shadowRadius: 12,
+          elevation: 10,
+          shadowColor: "#0F172A",
+          shadowOpacity: 0.3,
+          shadowRadius: 16,
+          shadowOffset: { width: 0, height: 8 },
         }}
         onPress={() => router.push("/reclamations/create")}
         activeOpacity={0.85}

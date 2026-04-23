@@ -12,13 +12,13 @@ export function NotificationGroupCard({ group, onItemPress }: Props) {
   return (
     <View className="mb-5">
       {/* Group label e.g. TODAY / YESTERDAY */}
-      <Text className="text-[11px] font-bold text-gray-400 tracking-widest mb-2 px-1">
+      <Text className="text-[11px] font-bold text-gray-400 dark:text-slate-400 tracking-widest mb-2 px-1">
         {group.group}
       </Text>
 
       {/* Card containing rows */}
       <View
-        className="bg-white rounded-2xl overflow-hidden"
+        className="bg-white dark:bg-slate-900 rounded-2xl overflow-hidden border border-gray-100 dark:border-slate-700"
         style={{
           elevation: 1,
           shadowColor: '#000',
@@ -32,7 +32,7 @@ export function NotificationGroupCard({ group, onItemPress }: Props) {
             <NotificationRow item={item} onPress={onItemPress} />
             {/* Divider between rows (not after last) */}
             {idx < group.items.length - 1 && (
-              <View className="h-px bg-gray-100 mx-4" />
+              <View className="h-px bg-gray-100 dark:bg-slate-700 mx-4" />
             )}
           </React.Fragment>
         ))}

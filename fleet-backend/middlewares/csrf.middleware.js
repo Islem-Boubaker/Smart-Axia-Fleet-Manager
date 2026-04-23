@@ -35,11 +35,11 @@ function timingSafeEqual(a, b) {
 export const verifyCsrf = (req, res, next) => {
   if (SAFE_METHODS.has(req.method)) return next();
 
-  const hasCookieAuth = Boolean(req.cookies?.accessToken || req.cookies?.refreshToken);
   const hasBearerAuth = Boolean(req.get('authorization'));
 
-  // Bearer-token requests are not subject to CSRF (attackers can't set Authorization headers cross-site).
-  if (!hasCookieAuth && hasBearerAuth) return next();
+  // Bearer-token requests are not subject to CSRF, even if a cookie is also present.
+  // Mobile clients often send both Authorization and a synced cookie jar.
+  if (hasBearerAuth) return next();
 
   const cookieToken = req.cookies?.['csrf-token'] || req.cookies?.['XSRF-TOKEN'];
   const headerToken = getHeaderToken(req);

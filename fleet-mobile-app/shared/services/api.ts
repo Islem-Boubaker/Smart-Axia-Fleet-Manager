@@ -2,7 +2,7 @@ import { tokenStorage } from "@/features/auth/services/tokenStorage";
 import axios, { AxiosError, AxiosHeaders, InternalAxiosRequestConfig } from "axios";
 import { resolveApiBaseUrl } from "../utils/apiBase";
 import { buildCookieHeader, clearCookies, syncCookiesFromServer } from "./cookieJar";
-import { clearCsrfToken, getCsrfToken, setCsrfToken } from "./csrf";
+import { clearCsrfToken, getCsrfToken, saveCsrfToken } from "./csrf";
 
 const apiUrl = resolveApiBaseUrl(process.env.EXPO_PUBLIC_API_URL);
 
@@ -40,14 +40,14 @@ const shouldAttachCsrfHeader = (method?: string): boolean => {
   return !["GET", "HEAD", "OPTIONS"].includes(normalized);
 };
 
-const updateCsrfFromPayload = (payload: unknown): void => {
+const updateCsrfFromPayload = async (payload: unknown): Promise<void> => {
   if (!payload || typeof payload !== "object") return;
 
   const data = payload as { csrfToken?: string; data?: { csrfToken?: string } };
   const csrfToken = data?.data?.csrfToken ?? data?.csrfToken;
 
   if (csrfToken) {
-    setCsrfToken(csrfToken);
+    await saveCsrfToken(csrfToken);
   }
 };
 
@@ -128,7 +128,7 @@ const applyResponseAuth = async (response: any) => {
     await syncCookiesFromServer(cookies);
   }
 
-  updateCsrfFromPayload(response?.data);
+  await updateCsrfFromPayload(response?.data);
   return response;
 };
 

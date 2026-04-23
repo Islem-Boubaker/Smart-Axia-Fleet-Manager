@@ -3,12 +3,13 @@ import { sendValidationError } from "../utils/response.js";
 
 const uuid = z.string().uuid();
 const isoDate = z.string().datetime();
+const coordNumber = z.number().finite().min(-180).max(180);
 
 const stopSchema = z.object({
   locationName: z.string().min(1),
   stopOrder: z.number().int().positive(),
-  latitude: z.number().optional().nullable(),
-  longitude: z.number().optional().nullable(),
+  latitude: coordNumber.min(-90).max(90).optional().nullable(),
+  longitude: coordNumber.optional().nullable(),
   estimatedArrival: isoDate.optional().nullable(),
   notes: z.string().optional().nullable(),
 });
@@ -16,8 +17,8 @@ const stopSchema = z.object({
 const stopUpdateSchema = z.object({
   locationName: z.string().min(1).optional(),
   stopOrder: z.number().int().positive().optional(),
-  latitude: z.number().optional().nullable(),
-  longitude: z.number().optional().nullable(),
+  latitude: coordNumber.min(-90).max(90).optional().nullable(),
+  longitude: coordNumber.optional().nullable(),
   estimatedArrival: isoDate.optional().nullable(),
   notes: z.string().optional().nullable(),
 });
@@ -45,7 +46,11 @@ const createTripSchema = z.object({
   region: z.string().min(2).optional(),
   notes: z.string().optional().nullable(),
   startLocation: z.string().min(2),
+  startLatitude: coordNumber.min(-90).max(90).optional().nullable(),
+  startLongitude: coordNumber.optional().nullable(),
   endLocation: z.string().min(2),
+  endLatitude: coordNumber.min(-90).max(90).optional().nullable(),
+  endLongitude: coordNumber.optional().nullable(),
   startTime: isoDate,
   endTime: isoDate.optional().nullable(),
   distance: z.number().positive(),
@@ -61,7 +66,11 @@ const updateTripSchema = z
     region: z.string().min(2).optional(),
     notes: z.string().optional().nullable(),
     startLocation: z.string().min(2).optional(),
+    startLatitude: coordNumber.min(-90).max(90).optional().nullable(),
+    startLongitude: coordNumber.optional().nullable(),
     endLocation: z.string().min(2).optional(),
+    endLatitude: coordNumber.min(-90).max(90).optional().nullable(),
+    endLongitude: coordNumber.optional().nullable(),
     startTime: isoDate.optional(),
     endTime: isoDate.optional().nullable(),
     distance: z.number().positive().optional(),

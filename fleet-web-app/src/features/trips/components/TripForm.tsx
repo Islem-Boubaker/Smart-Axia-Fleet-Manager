@@ -4,6 +4,7 @@ import type { LeafletMouseEvent } from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { Button, Input, Select } from '../../../shared/components';
 import type { Driver, Vehicle } from '../../../types';
+import { formatLocationFromAddress } from '../utils/locationLabel';
 
 type TripFormValues = {
   vehicleId: string;
@@ -25,7 +26,11 @@ interface TripFormProps {
     vehicleId: string;
     userId: string;
     startLocation: string;
+    startLatitude?: number;
+    startLongitude?: number;
     endLocation: string;
+    endLatitude?: number;
+    endLongitude?: number;
     startTime: string;
     distance: number;
     fuel?: number;
@@ -80,49 +85,12 @@ type NominatimAddress = {
   town?: string;
   village?: string;
   municipality?: string;
+  suburb?: string;
   province?: string;
   region?: string;
 };
 
 const MAP_ATTRIBUTION = '&copy; OpenStreetMap contributors';
-
-const extractStateAndPostcodeFromText = (value: string): string | null => {
-  const parts = value.split(',').map((part) => part.trim()).filter(Boolean);
-  if (parts.length < 2) return null;
-
-  const postcodeMatch = value.match(/\b\d{4,6}\b/);
-  const postcode = postcodeMatch?.[0];
-  if (!postcode) return null;
-
-  const postcodeIndex = parts.findIndex((part) => part.includes(postcode));
-  if (postcodeIndex <= 0) return null;
-
-  const state = parts[postcodeIndex - 1];
-  if (!state) return null;
-
-  return `${state}, ${postcode}`;
-};
-
-const toCompactLocation = (displayName: string, address?: NominatimAddress): string => {
-  const postcode = address?.postcode?.trim();
-  const state = (
-    address?.state ||
-    address?.state_district ||
-    address?.county ||
-    address?.city ||
-    address?.town ||
-    address?.village ||
-    address?.municipality ||
-    address?.province ||
-    address?.region
-  )?.trim();
-
-  if (state && postcode) return `${state}, ${postcode}`;
-  if (state) return state;
-  if (postcode) return postcode;
-
-  return extractStateAndPostcodeFromText(displayName) || displayName;
-};
 
 const createEndpoint = (): Endpoint => ({
   id: `ep-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
@@ -355,7 +323,7 @@ const TripForm = ({ vehicles, drivers, dark = false, isSubmitting = false, onSub
       throw new Error(data.error || 'No address found for selected point.');
     }
 
-    return toCompactLocation(data.display_name, data.address);
+    return formatLocationFromAddress(data.display_name, data.address);
   };
 
   const resolvePointFromAddress = async (addressQuery: string): Promise<MapPoint | null> => {
@@ -692,18 +660,26 @@ const TripForm = ({ vehicles, drivers, dark = false, isSubmitting = false, onSub
     event.preventDefault();
     if (!validate()) return;
 
+    const orderedRouteStops = routePlan?.orderedStops ?? [];
+    const intermediateStops = orderedRouteStops.slice(0, -1);
+    const finalDestination = orderedRouteStops[orderedRouteStops.length - 1] ?? null;
+
     await onSubmit({
       vehicleId: values.vehicleId,
       userId: values.userId,
       startLocation: values.startLocation.trim(),
+      startLatitude: startPoint?.lat,
+      startLongitude: startPoint?.lng,
       endLocation: values.endLocation.trim(),
+      endLatitude: finalDestination?.point.lat,
+      endLongitude: finalDestination?.point.lng,
       startTime: new Date(values.startTime).toISOString(),
       distance: Number(values.distance),
       fuel: estimatedFuelLiters !== null ? Number(estimatedFuelLiters.toFixed(2)) : undefined,
       revenue: values.revenue.trim().length > 0 ? Number(values.revenue) : undefined,
       notes: values.notes.trim() || undefined,
       stops:
-        routePlan?.orderedStops.map((stop, index) => ({
+        intermediateStops.map((stop, index) => ({
           locationName: stop.label,
           stopOrder: index + 1,
           latitude: stop.point.lat,
@@ -762,7 +738,7 @@ const TripForm = ({ vehicles, drivers, dark = false, isSubmitting = false, onSub
           <div>
             <p className={`text-sm font-semibold ${dark ? 'text-slate-100' : 'text-slate-900'}`}>Endpoints</p>
             <p className={`text-xs ${dark ? 'text-slate-400' : 'text-slate-500'}`}>
-              Add multiple endpoints, pick each one on the map, and route order will be optimized automatically.
+              Add endpoints on the map. The final endpoint becomes the destination, and earlier endpoints are stored as stops.
             </p>
           </div>
           <Button
@@ -880,6 +856,11 @@ const TripForm = ({ vehicles, drivers, dark = false, isSubmitting = false, onSub
                 : 'border-amber-200 bg-amber-50 text-amber-700'
           }`}>
             {routePlan.source === 'optimized' ? 'Optimized route order' : 'Fallback route order'}: {routePlan.orderedStops.map((stop, i) => `${i + 1}. ${stop.label}`).join(' -> ')}
+            {routePlan.orderedStops.length > 0 && (
+              <span>
+                {' '}• Final destination: {routePlan.orderedStops[routePlan.orderedStops.length - 1]?.label}
+              </span>
+            )}
           </div>
         )}
 

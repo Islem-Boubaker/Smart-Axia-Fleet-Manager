@@ -1,4 +1,5 @@
 import { api } from "@/shared/services/api";
+import { formatLocationLabel } from "../utils/locationLabel";
 import type {
     Trip,
     TripCompletionPayload,
@@ -24,7 +25,11 @@ interface BackendTrip {
   status: "scheduled" | "ongoing" | "completed" | "cancelled";
   region?: string;
   startLocation: string;
+  startLatitude?: number | null;
+  startLongitude?: number | null;
   endLocation: string;
+  endLatitude?: number | null;
+  endLongitude?: number | null;
   startTime?: string;
   endTime?: string;
   distance?: number;
@@ -57,16 +62,25 @@ const toTrip = (item: BackendTrip): Trip => {
     item.vehicle?.model ||
     item.vehicle?.Vehicle_Model ||
     "Assigned vehicle";
-  const firstStop = item.stops?.[0];
+  const normalizedStops =
+    item.stops?.map((stop) => ({
+      ...stop,
+      locationName: formatLocationLabel(stop.locationName),
+    })) ?? [];
+  const firstStop = normalizedStops[0];
+  const startLocationLabel = formatLocationLabel(item.startLocation);
+  const endLocationLabel = formatLocationLabel(item.endLocation);
 
   return {
     id: item.id,
     tripNumber: item.tripNumber ?? item.id.slice(0, 8).toUpperCase(),
     vehicle: vehicleLabel,
+    vehicleId: item.vehicle?.id,
+    vehicleRecord: item.vehicle ?? null,
     status: mapStatusToUi(item.status),
     backendStatus: item.status,
-    from: item.startLocation,
-    to: item.endLocation,
+    from: startLocationLabel,
+    to: endLocationLabel,
     distance: item.distance ? `${item.distance} km` : "",
     duration: "",
     date: formatDate(item.startTime ?? item.createdAt),
@@ -81,15 +95,23 @@ const toTrip = (item: BackendTrip): Trip => {
     actualEndTime: item.endTime,
     fare: item.cost ?? null,
     fuel: item.fuel ?? null,
+    startLatitude: item.startLatitude ?? null,
+    startLongitude: item.startLongitude ?? null,
+    endLatitude: item.endLatitude ?? null,
+    endLongitude: item.endLongitude ?? null,
     pickupLocation: {
-      address: item.startLocation,
+      address: startLocationLabel,
       city: item.region ?? "",
+      latitude: item.startLatitude ?? null,
+      longitude: item.startLongitude ?? null,
     },
     destinationLocation: {
-      address: item.endLocation,
+      address: endLocationLabel,
       city: item.region ?? "",
+      latitude: item.endLatitude ?? null,
+      longitude: item.endLongitude ?? null,
     },
-    stops: item.stops,
+    stops: normalizedStops,
   };
 };
 

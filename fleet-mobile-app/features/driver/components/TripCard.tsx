@@ -44,20 +44,20 @@ export default function TripCard({ trip }: TripCardProps) {
   ];
 
   return (
-    <View className="bg-white rounded-2xl p-4 mb-3 shadow-sm">
+    <View className="bg-white dark:bg-slate-900 rounded-2xl p-4 mb-3 shadow-sm border border-gray-100 dark:border-slate-700">
       <View className="flex-1">
-        <Text className="font-bold text-gray-900">{trip.startLocation} {"->"} {trip.endLocation}</Text>
+        <Text className="font-bold text-gray-900 dark:text-gray-50">{trip.startLocation} {"->"} {trip.endLocation}</Text>
 
         <View className="flex-row items-center gap-1 mb-2">
           <MaterialIcons name="schedule" size={14} color="#9CA3AF" />
-          <Text className="text-xs text-gray-400">{formatStartTime(trip.startTime)}</Text>
+          <Text className="text-xs text-gray-400 dark:text-slate-400">{formatStartTime(trip.startTime)}</Text>
         </View>
 
         <View className="flex-row flex-wrap gap-2">
           {meta.map((m, i) => (
             <View key={i} className="flex-row items-center gap-1 w-[48%]">
               <MaterialIcons name={m.icon as never} size={14} color="#9CA3AF" />
-              <Text className="text-xs text-gray-600">{m.value}</Text>
+              <Text className="text-xs text-gray-600 dark:text-slate-300">{m.value}</Text>
             </View>
           ))}
         </View>
