@@ -38,6 +38,10 @@ app.set("trust proxy", 1);
 app.use('/', [userRoutes, vehicleRoutes, reclamationRoutes, maintenanceRoutes, notificationRoutes,tripRoutes,tripStopRoutes]);
 
 app.use(errorHandler);
+
+
+
+
 export default app;
 
 
