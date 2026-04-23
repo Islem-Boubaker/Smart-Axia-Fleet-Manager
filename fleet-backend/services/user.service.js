@@ -241,8 +241,6 @@ export const changePasswordSvc = async (userId, currentPassword, newPassword) =>
 
 
 export const loginUserSvc = async (email, password) => {
-  console.time('login-total');
-
 
   const user = await User.scope('withPassword').findOne({
     where: { email },
@@ -253,10 +251,16 @@ export const loginUserSvc = async (email, password) => {
       'role',
       'phone',
       'avatar',
-      'isActive'
+      'isActive',
+      'name',
+      'company',
+      'country',
+      'city',
+      'postalCode',
+      'taxId',
     ],
   });
-  
+
 
   if (!user) {
     throwAuthError();
@@ -270,9 +274,9 @@ export const loginUserSvc = async (email, password) => {
   }
 
   // ⚡ 2. Fast password compare
- 
+
   const isMatch = await user.comparePassword(password);
-  
+
 
   if (!isMatch) {
     throwAuthError();
@@ -287,7 +291,7 @@ export const loginUserSvc = async (email, password) => {
 
   const accessToken = Token.generateAccessToken(payload);
   const refreshToken = Token.generateRefreshToken(payload);
- 
+
 
   // ⚡ 5. Safe user object (no password)
   const safeUser = user.toSafeJSON();
