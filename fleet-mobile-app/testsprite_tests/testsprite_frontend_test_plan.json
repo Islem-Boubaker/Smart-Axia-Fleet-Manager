@@ -1,0 +1,263 @@
+[
+  {
+    "id": "TC001",
+    "title": "Sign in from login and reach the protected dashboard",
+    "description": "Users can sign in with valid credentials and are taken to the main dashboard where a fleet summary is visible.",
+    "category": "Authentication (Login & Password Recovery)",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /(auth)/login"
+      },
+      {
+        "type": "action",
+        "description": "Fill {{LOGIN_USER}} into the email field"
+      },
+      {
+        "type": "action",
+        "description": "Fill {{LOGIN_PASSWORD}} into the password field"
+      },
+      {
+        "type": "action",
+        "description": "Submit the login form"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the user lands on the main dashboard at /(tabs)/home"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify a fleet dashboard summary is displayed"
+      }
+    ],
+    "priority": "High"
+  },
+  {
+    "id": "TC002",
+    "title": "Block access to dashboard when opening home while logged out",
+    "description": "Users who are not authenticated and try to access the home dashboard are redirected to the login screen.",
+    "category": "Authentication (Login & Password Recovery)",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /(tabs)/home"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the login screen is displayed"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify access to the dashboard content is not available"
+      }
+    ],
+    "priority": "High"
+  },
+  {
+    "id": "TC003",
+    "title": "Open app root while logged out and reach login",
+    "description": "Unauthenticated users opening the root route are shown the login screen.",
+    "category": "Main Dashboard (Home)",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the login screen is displayed"
+      }
+    ],
+    "priority": "High"
+  },
+  {
+    "id": "TC004",
+    "title": "Dashboard renders summary after login",
+    "description": "After signing in, the home dashboard renders a fleet status summary without blocking errors.",
+    "category": "Main Dashboard (Home)",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /(auth)/login"
+      },
+      {
+        "type": "action",
+        "description": "Fill {{LOGIN_USER}} into the email field"
+      },
+      {
+        "type": "action",
+        "description": "Fill {{LOGIN_PASSWORD}} into the password field"
+      },
+      {
+        "type": "action",
+        "description": "Submit the login form"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify a fleet dashboard summary is displayed"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify vehicles and trips overview content is displayed"
+      }
+    ],
+    "priority": "High"
+  },
+  {
+    "id": "TC005",
+    "title": "Reject invalid email format on login",
+    "description": "Users entering an invalid email format are prevented from logging in and see an email validation error.",
+    "category": "Authentication (Login & Password Recovery)",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /(auth)/login"
+      },
+      {
+        "type": "action",
+        "description": "Fill invalid-email-format into the email field"
+      },
+      {
+        "type": "action",
+        "description": "Fill any-password into the password field"
+      },
+      {
+        "type": "action",
+        "description": "Submit the login form"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify an email format validation error is visible"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the user remains on the login screen"
+      }
+    ],
+    "priority": "High"
+  },
+  {
+    "id": "TC006",
+    "title": "Authenticated user can navigate directly to home and see dashboard",
+    "description": "Authenticated users can open the home route directly and the dashboard summary is displayed.",
+    "category": "Main Dashboard (Home)",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /(auth)/login"
+      },
+      {
+        "type": "action",
+        "description": "Fill {{LOGIN_USER}} into the email field"
+      },
+      {
+        "type": "action",
+        "description": "Fill {{LOGIN_PASSWORD}} into the password field"
+      },
+      {
+        "type": "action",
+        "description": "Submit the login form"
+      },
+      {
+        "type": "action",
+        "description": "Navigate to /(tabs)/home"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify a fleet dashboard summary is displayed"
+      }
+    ],
+    "priority": "High"
+  },
+  {
+    "id": "TC007",
+    "title": "Recover password then return to login to sign in",
+    "description": "Users can request password recovery, return to the login screen, and successfully sign in to reach the dashboard.",
+    "category": "Authentication (Login & Password Recovery)",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /(auth)/forgotPassword"
+      },
+      {
+        "type": "action",
+        "description": "Fill a validly formatted email into the email field"
+      },
+      {
+        "type": "action",
+        "description": "Submit the password recovery form"
+      },
+      {
+        "type": "action",
+        "description": "Navigate to /(auth)/login"
+      },
+      {
+        "type": "action",
+        "description": "Fill {{LOGIN_USER}} into the email field"
+      },
+      {
+        "type": "action",
+        "description": "Fill {{LOGIN_PASSWORD}} into the password field"
+      },
+      {
+        "type": "action",
+        "description": "Submit the login form"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the user lands on the main dashboard at /(tabs)/home"
+      }
+    ],
+    "priority": "Medium"
+  },
+  {
+    "id": "TC008",
+    "title": "Password recovery request shows confirmation",
+    "description": "Users can submit a password recovery request and see a confirmation that instructions were sent.",
+    "category": "Authentication (Login & Password Recovery)",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /(auth)/forgotPassword"
+      },
+      {
+        "type": "action",
+        "description": "Fill a validly formatted email into the email field"
+      },
+      {
+        "type": "action",
+        "description": "Submit the password recovery form"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify a confirmation that recovery instructions were sent is visible"
+      }
+    ],
+    "priority": "Medium"
+  },
+  {
+    "id": "TC009",
+    "title": "Reject invalid email format on password recovery",
+    "description": "Users entering an invalid email format on password recovery are prevented from submitting and see an email validation error.",
+    "category": "Authentication (Login & Password Recovery)",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /(auth)/forgotPassword"
+      },
+      {
+        "type": "action",
+        "description": "Fill invalid-email-format into the email field"
+      },
+      {
+        "type": "action",
+        "description": "Submit the password recovery form"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify an email format validation error is visible"
+      }
+    ],
+    "priority": "Medium"
+  }
+]

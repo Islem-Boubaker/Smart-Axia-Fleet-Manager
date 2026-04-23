@@ -1,92 +1,74 @@
-import { useState } from 'react';
-import { View, TextInput, TouchableOpacity, StyleSheet, Alert } from 'react-native';
-import { ThemedText } from '@/src/shared/components/ThemedText';
-import { ThemedView } from '@/src/shared/components/ThemedView';
-import { useAuth } from '../hooks/useAuth';
+import React from "react";
+import {
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+  StatusBar,
+  View,
+} from "react-native";
 
-export default function LoginScreen() {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const { login, loading } = useAuth();
+import LoginHeader from "../components/LoginHeader";
+import { LoginForm } from "../components/LoginForm";
+import { LoginFooter } from "../components/LoginFooter";
+import { useLogin } from "../hooks/useLogin";
 
-  const handleLogin = async () => {
-    try {
-      await login({ email, password });
-      Alert.alert('Success', 'Logged in successfully!');
-    } catch (error) {
-      Alert.alert('Error', error instanceof Error ? error.message : 'Login failed');
-    }
-  };
+export default function SignInScreen() {
+  const {
+    credentials,
+    showPassword,
+    isLoading,
+    loadingProvider,
+    error,
+    linkSent,
+    onEmailChange,
+    onPasswordChange,
+    onTogglePassword,
+    onSubmit,
+   
+    onLoginWithGoogle,
+    onLoginWithApple,
+    onForgotPassword,
+    showApple,
+  } = useLogin();
 
   return (
-    <ThemedView style={styles.container}>
-      <ThemedText type="title" style={styles.title}>
-        Login
-      </ThemedText>
-
-      <TextInput
-        style={styles.input}
-        placeholder="Email"
-        value={email}
-        onChangeText={setEmail}
-        keyboardType="email-address"
-        autoCapitalize="none"
-      />
-
-      <TextInput
-        style={styles.input}
-        placeholder="Password"
-        value={password}
-        onChangeText={setPassword}
-        secureTextEntry
-      />
-
-      <TouchableOpacity
-        style={[styles.button, loading && styles.buttonDisabled]}
-        onPress={handleLogin}
-        disabled={loading}
+    <KeyboardAvoidingView
+      className="flex-1"
+      behavior={Platform.OS === "ios" ? "padding" : "height"}
+    >
+      <ScrollView
+        className="flex-1 bg-[#F4F3FB]"
+        contentContainerStyle={{ flexGrow: 1, justifyContent: "center" }}
+        keyboardShouldPersistTaps="handled"
       >
-        <ThemedText style={styles.buttonText}>
-          {loading ? 'Loading...' : 'Login'}
-        </ThemedText>
-      </TouchableOpacity>
-    </ThemedView>
+        <StatusBar barStyle="light-content" />
+
+        <View className="px-7 pt-8 pb-10">
+          <LoginHeader />
+
+          <LoginForm
+            credentials={credentials}
+            showPassword={showPassword}
+            isLoading={isLoading}
+            loadingProvider={loadingProvider}
+            error={error}
+            linkSent={linkSent}
+            showApple={showApple}
+            onEmailChange={onEmailChange}
+            onPasswordChange={onPasswordChange}
+            onTogglePassword={onTogglePassword}
+            onSubmit={onSubmit}
+            
+            onLoginWithGoogle={onLoginWithGoogle}
+            onLoginWithApple={onLoginWithApple}
+            onForgotPassword={onForgotPassword}
+          />
+
+          <View className="mt-8">
+            <LoginFooter />
+          </View>
+        </View>
+      </ScrollView>
+    </KeyboardAvoidingView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    padding: 20,
-    justifyContent: 'center',
-  },
-  title: {
-    marginBottom: 30,
-    textAlign: 'center',
-  },
-  input: {
-    height: 50,
-    borderWidth: 1,
-    borderColor: '#ddd',
-    borderRadius: 8,
-    paddingHorizontal: 15,
-    marginBottom: 15,
-    fontSize: 16,
-  },
-  button: {
-    backgroundColor: '#0a7ea4',
-    height: 50,
-    borderRadius: 8,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginTop: 10,
-  },
-  buttonDisabled: {
-    opacity: 0.6,
-  },
-  buttonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-});

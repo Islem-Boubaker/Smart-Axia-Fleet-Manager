@@ -1,9 +1,7 @@
-  import React from 'react'
+import ProfileScreen  from "@/features/profile/screens/ProfileScreen";
 
-export default function Profile() {
-  return (
-    <div>
-      
-    </div>
-  )
+export default function ProfileRoute() {
+  return <ProfileScreen />;
 }
+
+ProfileRoute.displayName = 'ProfileRoute';

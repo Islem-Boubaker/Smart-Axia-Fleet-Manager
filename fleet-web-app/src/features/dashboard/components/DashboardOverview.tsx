@@ -1,0 +1,47 @@
+import type { DashboardFleetStatus } from '../hooks/useDashboard';
+import { Badge } from '../../../shared/components';
+
+interface DashboardOverviewProps {
+  fleetStatus: DashboardFleetStatus;
+}
+
+const DashboardOverview = ({ fleetStatus }: DashboardOverviewProps) => {
+  const total = Math.max(fleetStatus.total, 1);
+
+  const blocks = [
+    { label: 'On trip', count: fleetStatus.onTrip, fill: 'bg-blue-500' },
+    { label: 'Available', count: fleetStatus.available, fill: 'bg-emerald-500' },
+    { label: 'In maintenance', count: fleetStatus.inMaintenance, fill: 'bg-amber-400' },
+    { label: 'Out of service', count: fleetStatus.outOfService, fill: 'bg-red-400' },
+  ];
+
+  return (
+    <div className="relative overflow-hidden bg-white/90 dark:bg-gray-900/70 rounded-2xl border border-gray-200/70 dark:border-gray-700/60 shadow-sm p-5">
+      <div className="pointer-events-none absolute -right-8 -top-8 h-24 w-24 rounded-full bg-blue-100/70 dark:bg-blue-900/20 blur-xl" />
+      <div className="mb-4 flex items-center justify-between">
+        <h2 className="text-sm font-medium text-gray-700 dark:text-gray-300">Fleet status overview</h2>
+        <Badge variant="default" size="sm">
+          {fleetStatus.total.toLocaleString('en-TN')} vehicles
+        </Badge>
+      </div>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        {blocks.map((block) => {
+          const width = Math.max(0, Math.min(100, (block.count / total) * 100));
+          return (
+            <div key={block.label} className="rounded-xl border border-gray-200/70 dark:border-gray-700/60 bg-gray-50/80 dark:bg-gray-800/50 p-4 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-sm">
+              <div className="flex items-center justify-between">
+                <p className="text-xs text-gray-500 dark:text-gray-400">{block.label}</p>
+                <p className="text-lg font-semibold text-gray-900 dark:text-white">{block.count.toLocaleString('en-TN')}</p>
+              </div>
+              <div className="bg-gray-100 dark:bg-gray-700 rounded-full h-2 mt-2">
+                <div className={`h-full rounded-full ${block.fill}`} style={{ width: `${width}%` }} />
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+};
+
+export default DashboardOverview;
