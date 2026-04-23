@@ -54,20 +54,20 @@ export const authAPI = {
 
 
   
-  async refreshToken(): Promise<void> {
+  // async refreshToken(): Promise<void> {
 
-    const response = await api.post('/user/refresh-token');
-    setCsrfToken(response.data?.data?.csrfToken ?? response.data?.csrfToken);
-  },
+  //   const response = await api.post('/user/refresh-token');
+  //   setCsrfToken(response.data?.data?.csrfToken ?? response.data?.csrfToken);
+  // },
 
 
   
-  async getCurrentUser(): Promise<AuthUser> {
+  // async getCurrentUser(): Promise<AuthUser> {
 
-    const response = await api.get('/user/me');
+  //   const response = await api.get('/user/me');
 
-    return response.data.data;
-  },
+  //   return response.data.data;
+  // },
 
   async forgotPassword(email: string): Promise<void> {
     await api.post('/user/forgot-password', { email });

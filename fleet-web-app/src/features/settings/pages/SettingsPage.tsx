@@ -49,7 +49,7 @@ const ProfileFieldTiles = ({
     {items.map((item) => (
       <div
         key={item.label}
-        className={`rounded-xl px-3 py-2.5 sm:px-4 sm:py-3.5 border transition-colors ${
+        className={`rounded-xl px-3 py-2.5 sm:px-2 sm:py-3.5 border transition-colors ${
           dark
             ? 'border-slate-700/50 bg-slate-800/35 hover:bg-slate-800/55'
             : 'border-slate-200/80 bg-slate-50/80 hover:bg-white'
@@ -58,7 +58,7 @@ const ProfileFieldTiles = ({
         <p className={`text-[10px] sm:text-[11px] font-semibold uppercase tracking-[0.1em] ${dark ? 'text-slate-500' : 'text-slate-500'}`}>
           {item.label}
         </p>
-        <p className={`mt-1 sm:mt-2 text-xs sm:text-base font-medium leading-snug ${dark ? 'text-slate-100' : 'text-slate-900'}`}>
+        <p className={`mt-1 sm:mt-2 text-xs sm:text-xs font-medium leading-snug ${dark ? 'text-slate-100' : 'text-slate-900'}`}>
           {item.value || '—'}
         </p>
       </div>
