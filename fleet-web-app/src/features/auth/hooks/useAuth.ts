@@ -70,6 +70,22 @@ export const useAuth = () => {
       navigate('/signin');
     }
   }, [dispatch, navigate, signOutMutation]);
+  const forgotPassword = useCallback(
+    async (email: string) => {
+      try {
+        await authAPI.forgotPassword(email);
+      } catch (error: unknown) {
+        const axiosError = error as {
+          response?: { data?: { message?: string } };
+          message?: string;
+        };
+        const errorMessage = axiosError.response?.data?.message || axiosError.message || 'Failed to request new password';
+        dispatch(setError(errorMessage));
+        throw error;
+      }
+    },
+    [dispatch]
+  );
 
   return {
     user,
@@ -79,6 +95,7 @@ export const useAuth = () => {
     signIn,
     signUp,
     signOut,
+    forgotPassword,
   };
 };
 
