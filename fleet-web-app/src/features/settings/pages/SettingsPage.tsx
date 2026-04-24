@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
-import { useOutletContext } from 'react-router-dom';
+import { useOutletContext, useLocation } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { FiBell, FiEdit2, FiLock, FiUser } from 'react-icons/fi';
+import { FiEdit2 } from 'react-icons/fi';
 import { Card, Button } from '../../../shared/components';
 import ProfileSettings from '../components/ProfileSettings';
 import NotificationSettings from '../components/NotificationSettings';
@@ -18,12 +18,6 @@ import { queryKeys } from '../../../shared/services/queryKeys';
 interface ThemeContext {
   dark: boolean;
 }
-
-const MENU_ITEMS = [
-  { id: 'profile', label: 'My Profile', icon: FiUser },
-  { id: 'security', label: 'Password & Security', icon: FiLock },
-  { id: 'notifications', label: 'Notifications', icon: FiBell },
-];
 
 const editBtnClass = (dark: boolean) =>
   dark
@@ -170,11 +164,25 @@ const tabTitle: Record<string, string> = {
 
 const SettingsPage = () => {
   const { dark } = useOutletContext<ThemeContext>();
+  const location = useLocation();
   const { user } = useAppSelector((state) => state.auth);
   const dispatch = useAppDispatch();
   const { changePassword, updateNotifications, isLoading: isSettingsLoading } = useSettings();
-  const [activeTab, setActiveTab] = useState('profile');
   const [isEditingProfile, setIsEditingProfile] = useState(false);
+
+  // Derive active tab from query parameters
+  const getActiveTab = () => {
+    const searchParams = new URLSearchParams(location.search);
+    const tab = searchParams.get('tab');
+    
+    // Return the tab if it's valid, otherwise default to 'profile'
+    if (tab === 'notifications' || tab === 'security' || tab === 'profile') {
+      return tab;
+    }
+    return 'profile';
+  };
+
+  const activeTab = getActiveTab();
 
   const profileData: ProfileData = {
     name: user?.name || '',
@@ -298,7 +306,7 @@ const SettingsPage = () => {
                 onClick={() => setIsEditingProfile(false)}
                 className={dark ? '!text-slate-300 hover:!bg-slate-800' : ''}
               >
-                Back to profile overview
+                ← Back to profile overview
               </Button>
               <ProfileSettings profileData={profileData} onSave={handleSaveProfile} dark={dark} />
             </div>
@@ -332,54 +340,11 @@ const SettingsPage = () => {
 
   return (
     <div className={`${shell} overflow-hidden animate-fade-in`}>
-      <div className="grid grid-cols-1 lg:grid-cols-[minmax(240px,280px),1fr] min-h-[70vh] gap-8 lg:gap-10 p-6 sm:p-8 lg:p-10">
-        <aside
-          className={`lg:pr-8 lg:border-r lg:pb-0 pb-8 border-b lg:border-b-0 ${
-            dark ? 'border-slate-700/80' : 'border-slate-200/80'
-          }`}
-        >
-          <p className={`text-xs font-semibold uppercase tracking-[0.12em] mb-4 ${dark ? 'text-slate-500' : 'text-slate-400'}`}>
-            Settings
-          </p>
-          <nav className="space-y-1">
-            {MENU_ITEMS.map((item) => {
-              const Icon = item.icon;
-              const isActive = activeTab === item.id;
-
-              return (
-                <button
-                  key={item.id}
-                  type="button"
-                  onClick={() => {
-                    setActiveTab(item.id);
-                    if (item.id !== 'profile') {
-                      setIsEditingProfile(false);
-                    }
-                  }}
-                  className={`w-full text-left flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 ${
-                    isActive
-                      ? dark
-                        ? 'bg-brand/15 text-brand font-semibold ring-1 ring-brand/20'
-                        : 'bg-brand-light text-brand-deep font-semibold ring-1 ring-brand/10'
-                      : dark
-                        ? 'text-slate-300 hover:bg-slate-800/80 hover:text-white'
-                        : 'text-slate-600 hover:bg-white/80 hover:text-slate-900'
-                  }`}
-                >
-                  <Icon className="text-base shrink-0" />
-                  <span className="font-medium">{item.label}</span>
-                </button>
-              );
-            })}
-          </nav>
-        </aside>
-
-        <main className="min-w-0 lg:pl-2">
-          <h2 className={`text-2xl sm:text-3xl font-extrabold tracking-tight mb-6 lg:mb-8 ${dark ? 'text-white' : 'text-slate-900'}`}>
-            {tabTitle[activeTab] ?? 'Settings'}
-          </h2>
-          <div className="space-y-6 lg:space-y-8">{renderTabContent()}</div>
-        </main>
+      <div className="max-w-5xl mx-auto p-6 sm:p-8 lg:p-10">
+        <h2 className={`text-2xl sm:text-3xl font-extrabold tracking-tight mb-6 lg:mb-8 ${dark ? 'text-white' : 'text-slate-900'}`}>
+          {tabTitle[activeTab] ?? 'Settings'}
+        </h2>
+        <div className="space-y-6 lg:space-y-8">{renderTabContent()}</div>
       </div>
     </div>
   );

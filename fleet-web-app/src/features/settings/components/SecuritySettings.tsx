@@ -57,13 +57,13 @@ const SecuritySettings = ({ dark = false, isLoading = false, onChangePassword }:
   };
 
   return (
-    <Card
-      title="Security"
-      subtitle="Manage your password and security"
-      dark={dark}
-      padding="lg"
-      className={cardExtra(dark)}
-    >
+    // <Card
+    //   title="Security"
+    //   subtitle="Manage your password and security"
+    //   dark={dark}
+    //   padding="lg"
+    //   className={cardExtra(dark)}
+    // >
       <form onSubmit={handleSubmit} className="space-y-5">
         <div>
           <label className={`block text-sm font-medium mb-2 ${label}`}>Current password</label>
@@ -106,7 +106,7 @@ const SecuritySettings = ({ dark = false, isLoading = false, onChangePassword }:
           </Button>
         </div>
       </form>
-    </Card>
+    // </Card>
   );
 };
 

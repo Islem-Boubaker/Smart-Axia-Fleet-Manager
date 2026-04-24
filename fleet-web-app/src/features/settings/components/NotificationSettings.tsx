@@ -30,13 +30,13 @@ const NotificationSettings = ({ notifications, onChange, onSave, isSaving = fals
   ) as [string, boolean][];
 
   return (
-    <Card
-      title="Notifications"
-      subtitle="Manage how you receive notifications"
-      dark={dark}
-      padding="lg"
-      className={cardExtra(dark)}
-    >
+    // <Card
+    //   title="Notifications"
+    //   subtitle="Manage how you receive notifications"
+    //   dark={dark}
+    //   padding="lg"
+    //   className={cardExtra(dark)}
+    // >
       <div className="space-y-8">
         <NotificationGroup
           title="Email"
@@ -59,7 +59,7 @@ const NotificationSettings = ({ notifications, onChange, onSave, isSaving = fals
           </Button>
         </div>
       </div>
-    </Card>
+    // </Card>
   );
 };
 
