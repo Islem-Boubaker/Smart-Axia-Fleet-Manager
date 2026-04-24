@@ -52,7 +52,7 @@ export const Sidebar = memo(
     const [settingsOpen, setSettingsOpen] = useState(
       location.pathname.startsWith(ROUTES.SETTINGS),
     );
-    const navigation = useNavigate();
+    useNavigate();
 
     const menuItems = useMemo(
       () => [

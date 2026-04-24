@@ -1,12 +1,8 @@
 import { FiSave } from 'react-icons/fi';
-import { Card, Button } from '../../../shared/components';
+import { Button } from '../../../shared/components';
 import NotificationGroup from './NotificationGroup';
 import type { NotificationPreferences } from '../settings.types';
 
-const cardExtra = (dark: boolean) =>
-  dark
-    ? 'rounded-2xl !border-slate-700/70 !bg-slate-900/40 shadow-soft ring-1 ring-white/[0.06] backdrop-blur-md'
-    : 'rounded-2xl !border-slate-200/90 !bg-white/75 shadow-glass backdrop-blur-sm';
 
 interface Props {
   notifications: NotificationPreferences;
