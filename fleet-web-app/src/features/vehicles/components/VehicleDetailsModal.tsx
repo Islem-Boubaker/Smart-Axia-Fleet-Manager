@@ -1,18 +1,19 @@
+import { useEffect, useState } from 'react';
 import { Button, GlobalCard } from '../../../shared/components';
 import type { Vehicle } from '../../../types';
 import type { VehicleAssignmentSummary } from '../hooks/useVehicles';
-import type { MaintenanceRecommendation } from './maintenanceStatic';
 
-interface GroupedRecommendations {
-  high: MaintenanceRecommendation[];
-  medium: MaintenanceRecommendation[];
-  low: MaintenanceRecommendation[];
+interface MaintenanceRecommendation {
+  overview: string;
+  level: 'HIGH' | 'MEDIUM' | 'LOW';
 }
 
 interface VehicleDetailsModalProps {
   isOpen: boolean;
   onClose: () => void;
   onEdit: () => void;
+  onGenerateRecommendations: (vehicleId: string) => Promise<MaintenanceRecommendation[]>;
+  onRecommendationsGenerated?: () => Promise<void> | void;
   vehicle: Vehicle | null;
   assignment: VehicleAssignmentSummary | null;
   maintenanceHistory: Array<{
@@ -23,18 +24,11 @@ interface VehicleDetailsModalProps {
     cost: number;
     description?: string;
   }>;
-  recommendations: GroupedRecommendations;
   isLoading?: boolean;
   error?: string | null;
 }
 
 const sectionTitleClass = 'text-sm font-semibold text-slate-900';
-
-const priorityBadgeClass: Record<keyof GroupedRecommendations, string> = {
-  high: 'bg-rose-100 text-rose-700',
-  medium: 'bg-amber-100 text-amber-700',
-  low: 'bg-blue-100 text-blue-700',
-};
 
 const prettyDate = (value?: string): string => {
   if (!value) return 'N/A';
@@ -47,13 +41,44 @@ const VehicleDetailsModal = ({
   isOpen,
   onClose,
   onEdit,
+  onGenerateRecommendations,
+  onRecommendationsGenerated,
   vehicle,
   assignment,
   maintenanceHistory,
-  recommendations,
   isLoading = false,
   error = null,
 }: VehicleDetailsModalProps) => {
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [liveRecommendations, setLiveRecommendations] = useState<MaintenanceRecommendation[] | null>(null);
+
+  useEffect(() => {
+    if (!isOpen) {
+      setLiveRecommendations(null);
+      setIsGenerating(false);
+    }
+  }, [isOpen]);
+
+  const displayedRecommendations: MaintenanceRecommendation[] =
+    liveRecommendations ??
+    ((vehicle?.maintenance_recommandation_ai as { recommendations?: MaintenanceRecommendation[] } | null | undefined)
+      ?.recommendations ?? []);
+
+  const handleGenerateRecommendations = async () => {
+    if (!vehicle) return;
+
+    setIsGenerating(true);
+    try {
+      const fresh = await onGenerateRecommendations(vehicle.id);
+      setLiveRecommendations(fresh);
+      await onRecommendationsGenerated?.();
+    } catch (generationError) {
+      console.error('Failed to generate recommendations:', generationError);
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
   return (
     <GlobalCard
       isOpen={isOpen}
@@ -140,33 +165,65 @@ const VehicleDetailsModal = ({
           </section>
 
           <section>
-            <h3 className={sectionTitleClass}>Maintenance Recommendations</h3>
-            <div className="mt-2 grid grid-cols-1 gap-3 md:grid-cols-3">
-              {(['high', 'medium', 'low'] as const).map((priority) => (
-                <div key={priority} className="rounded-xl border border-slate-200 p-3">
-                  <div className="mb-2 flex items-center justify-between">
-                    <span className={`rounded-full px-2 py-0.5 text-xs font-semibold uppercase ${priorityBadgeClass[priority]}`}>
-                      {priority}
-                    </span>
-                    <span className="text-xs text-slate-500">{recommendations[priority].length}</span>
-                  </div>
-
-                  {recommendations[priority].length === 0 ? (
-                    <p className="text-xs text-slate-500">No recommendations.</p>
-                  ) : (
-                    <ul className="space-y-2">
-                      {recommendations[priority].map((item) => (
-                        <li key={`${priority}-${item.title}`} className="rounded-md bg-slate-50 p-2">
-                          <p className="text-xs font-semibold text-slate-900">{item.title}</p>
-                          <p className="text-xs text-slate-500">{item.description}</p>
-                        </li>
-                      ))}
-                    </ul>
-                  )}
-                </div>
-              ))}
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100">
+                Maintenance Recommendations
+              </h3>
+              <button
+                onClick={handleGenerateRecommendations}
+                disabled={isGenerating || !vehicle}
+                className="flex items-center gap-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 disabled:opacity-60 disabled:cursor-not-allowed px-3 py-1.5 text-xs font-medium text-white transition-colors"
+              >
+                {isGenerating ? (
+                  <>
+                    <svg className="animate-spin h-3.5 w-3.5" viewBox="0 0 24 24" fill="none">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/>
+                    </svg>
+                    Generating...
+                  </>
+                ) : (
+                  <>
+                    <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                    </svg>
+                    {displayedRecommendations.length > 0 ? 'Regenerate' : 'Generate'}
+                  </>
+                )}
+              </button>
             </div>
+
+            {displayedRecommendations.length === 0 ? (
+              <p className="text-xs text-slate-400 italic">No recommendations yet. Click Generate to analyse this vehicle.</p>
+            ) : (
+              <div className="space-y-2">
+                {displayedRecommendations.map((rec, index) => (
+                  <div
+                    key={index}
+                    className={`rounded-xl border px-4 py-3 ${
+                      rec.level === 'HIGH'
+                        ? 'border-rose-200 bg-rose-50 dark:border-rose-800/40 dark:bg-rose-950/30'
+                        : rec.level === 'MEDIUM'
+                        ? 'border-amber-200 bg-amber-50 dark:border-amber-800/40 dark:bg-amber-950/30'
+                        : 'border-blue-200 bg-blue-50 dark:border-blue-800/40 dark:bg-blue-950/30'
+                    }`}
+                  >
+                    <span className={`text-[10px] font-bold uppercase tracking-widest ${
+                      rec.level === 'HIGH' ? 'text-rose-600 dark:text-rose-400'
+                      : rec.level === 'MEDIUM' ? 'text-amber-600 dark:text-amber-400'
+                      : 'text-blue-600 dark:text-blue-400'
+                    }`}>
+                      {rec.level}
+                    </span>
+                    <p className="mt-1 text-xs leading-relaxed text-slate-700 dark:text-slate-300">
+                      {rec.overview}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            )}
           </section>
+
         </div>
       )}
     </GlobalCard>

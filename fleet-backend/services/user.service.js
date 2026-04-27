@@ -194,8 +194,8 @@ export const forgotPasswordSvc = async (email) => {
   const transporter = nodemailer.createTransport({
     service: 'gmail', // you can change this
     auth: {
-      user: process.env.EMAIL_USER, 
-      pass: process.env.EMAIL_PASS, 
+      user: process.env.EMAIL_USER,
+      pass: process.env.EMAIL_PASS,
     },
   });
 
@@ -241,42 +241,76 @@ export const changePasswordSvc = async (userId, currentPassword, newPassword) =>
 
 
 export const loginUserSvc = async (email, password) => {
-  const user = await User.findOne({ where: { email } });
+
+  const user = await User.scope('withPassword').findOne({
+    where: { email },
+    attributes: [
+      'id',
+      'email',
+      'password',
+      'role',
+      'phone',
+      'avatar',
+      'isActive',
+      'name',
+      'company',
+      'country',
+      'city',
+      'postalCode',
+      'taxId',
+    ],
+  });
+
 
   if (!user) {
-    const err = new Error('Invalid email or password');
-    err.statusCode = 401;
+    throwAuthError();
+  }
+
+  // ⚡ Optional: block inactive users
+  if (!user.isActive) {
+    const err = new Error('Account disabled');
+    err.statusCode = 403;
     throw err;
   }
+
+  // ⚡ 2. Fast password compare
+
   const isMatch = await user.comparePassword(password);
 
+
   if (!isMatch) {
-    const err = new Error('Invalid email or password');
-    err.statusCode = 401;
-    throw err;
+    throwAuthError();
   }
 
+  // ⚡ 3. Minimal payload (VERY IMPORTANT)
   const payload = {
     id: user.id,
     role: user.role,
-    email: user.email,
-    phone: user.phone,
-    avatar: user.avatar,
-    assignedVehicle: user.assignedVehicle
   };
 
-  // Générer les deux tokens
+
   const accessToken = Token.generateAccessToken(payload);
   const refreshToken = Token.generateRefreshToken(payload);
 
-  const { password: _, ...userWithoutPassword } = user.toJSON();
+
+  // ⚡ 5. Safe user object (no password)
+  const safeUser = user.toSafeJSON();
+
 
   return {
     accessToken,
     refreshToken,
-    user: userWithoutPassword
+    user: safeUser,
   };
 };
+
+
+
+function throwAuthError() {
+  const err = new Error('Invalid email or password');
+  err.statusCode = 401;
+  throw err;
+}
 
 export const refreshTokenSvc = async (refreshToken) => {
   try {

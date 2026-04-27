@@ -21,6 +21,31 @@ const publishSafely = (event, payload, label) => {
     }
 };
 
+const buildSemanticCachePrompt = (vehicle) => {
+    const payload = {
+        id: vehicle?.id ?? null,
+        brand: vehicle?.brand ?? null,
+        model: vehicle?.model ?? null,
+        year: vehicle?.year ?? null,
+        mileage: vehicle?.mileage ?? null,
+        vehicle_type: vehicle?.vehicle_type ?? null,
+        transmission_type: vehicle?.transmission_type ?? null,
+        fuel_type: vehicle?.fuel_type ?? null,
+        engine_size: vehicle?.engine_size ?? null,
+        avg_daily_km: vehicle?.avg_daily_km ?? null,
+        driving_profile: vehicle?.driving_profile ?? null,
+        climate_zone: vehicle?.climate_zone ?? null,
+        accident_count: vehicle?.accident_count ?? null,
+        reported_issues_text: vehicle?.reported_issues_text ?? null,
+        last_oil_change_mileage: vehicle?.last_oil_change_mileage ?? null,
+        last_tire_change_mileage: vehicle?.last_tire_change_mileage ?? null,
+        last_brake_change_mileage: vehicle?.last_brake_change_mileage ?? null,
+    };
+
+    const prompt = JSON.stringify(payload);
+    return prompt.length <= 1024 ? prompt : prompt.slice(0, 1024);
+};
+
 /**
  * Resolves the manager ID for a vehicle.
  * Priority: vehicle.managerId → first MANAGER/ADMIN user in DB → null
@@ -192,6 +217,7 @@ export const generateMaintenanceAI = async (vehicleId) => {
     if (!vehicle) return null;
 
     const prompt = buildCarPrompt(vehicle);
+    const semanticPrompt = buildSemanticCachePrompt(vehicle);
 
     const semanticAttributes = {
         feature: 'maintenance-recommendation',
@@ -214,7 +240,7 @@ export const generateMaintenanceAI = async (vehicleId) => {
         return parsed;
     };
 
-    const cached = await semanticSearch(prompt, { attributes: semanticAttributes });
+    const cached = await semanticSearch(semanticPrompt, { attributes: semanticAttributes });
 
     if (cached?.response) {
         try {
@@ -238,7 +264,7 @@ export const generateMaintenanceAI = async (vehicleId) => {
             maintenance_recommandation_ai: parsed,
         });
 
-        await semanticSet(prompt, JSON.stringify(parsed), {
+        await semanticSet(semanticPrompt, JSON.stringify(parsed), {
             attributes: semanticAttributes,
         });
 

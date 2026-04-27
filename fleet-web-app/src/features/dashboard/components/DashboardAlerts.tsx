@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router-dom';
-import type { NotificationRecord } from '../../notifications/services/notification.api';
+import type { NotificationRecord } from '../../../shared/services/notification.api';
 import { ROUTES } from '../../../utils/constants';
 import { Badge } from '../../../shared/components';
 

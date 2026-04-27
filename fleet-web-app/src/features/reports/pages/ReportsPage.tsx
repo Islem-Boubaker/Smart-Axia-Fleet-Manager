@@ -1,14 +1,19 @@
-import { useMemo, useRef, useState } from 'react';
+import { lazy, Suspense, useMemo, useRef, useState, type ComponentType, type LazyExoticComponent } from 'react';
 import { useOutletContext } from 'react-router-dom';
-import html2canvas from 'html2canvas';
-import jsPDF from 'jspdf';
 import { FiDownload } from 'react-icons/fi';
-import { Badge, Button, Card } from '../../../shared/components';
+import { Button, Card } from '../../../shared/components';
 import { useReports } from '../hooks/useReports';
+import { useSectionVisible } from '../hooks/useSectionVisible';
 import { FUEL_PRICE_TND } from '../../../utils/constants';
 import { pageShellClasses, pageShellInnerSpacing } from '../../../shared/utils/pageShell';
+import SectionSkeleton from '../components/SectionSkeleton';
 import type { Trip } from '../../../types';
 
+const TripAnalyticsSection = lazy(() => import('../components/sections/TripAnalyticsSection'));
+const FuelSection          = lazy(() => import('../components/sections/FuelSection'));
+const MaintenanceSection   = lazy(() => import('../components/sections/MaintenanceSection'));
+const DriverSection        = lazy(() => import('../components/sections/DriverSection'));
+const UtilizationSection   = lazy(() => import('../components/sections/UtilizationSection'));
 interface ThemeContext {
   dark: boolean;
 }
@@ -21,11 +26,6 @@ const parseNumberish = (value: unknown) => {
   }
   return 0;
 };
-
-const formatNumber = (value: number) =>
-  new Intl.NumberFormat('en-US', { maximumFractionDigits: 0 }).format(Math.max(0, value));
-
-const formatCurrency = (value: number) => `${formatNumber(value)} TND`;
 
 const toDate = (value?: string) => {
   if (!value) return null;
@@ -44,6 +44,34 @@ const isOnTimeTrip = (trip: Trip) => {
   if (!scheduled || !actual) return false;
   return actual.getTime() <= scheduled.getTime();
 };
+
+// Generic wrapper — one ref per section
+function LazySection<P extends object>({
+  component: Component,
+  props,
+  dark,
+  cols = 4,
+  rows = 1,
+}: {
+  component: LazyExoticComponent<ComponentType<P>>;
+  props: P;
+  dark: boolean;
+  cols?: number;
+  rows?: number;
+}) {
+  const { ref, visible } = useSectionVisible();
+  return (
+    <div ref={ref}>
+      {visible ? (
+        <Suspense fallback={<SectionSkeleton dark={dark} cols={cols} rows={rows} />}>
+          <Component {...props} />
+        </Suspense>
+      ) : (
+        <SectionSkeleton dark={dark} cols={cols} rows={rows} />
+      )}
+    </div>
+  );
+}
 
 const ReportsPage = () => {
   const { dark } = useOutletContext<ThemeContext>();
@@ -70,37 +98,6 @@ const ReportsPage = () => {
     monthlyTrends,
   } = useReports('overview', dateRange, customRange);
 
-  const exportPDF = async () => {
-    const element = pdfRef.current;
-    if (!element) return;
-
-    const canvas = await html2canvas(element, {
-      scale: 2,
-      useCORS: true,
-      backgroundColor: null,
-    });
-
-    const imgData = canvas.toDataURL('image/png');
-    const pdf = new jsPDF({
-      orientation: 'portrait',
-      unit: 'px',
-      format: 'a4',
-    });
-
-    const pdfWidth = pdf.internal.pageSize.getWidth();
-    const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
-    pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
-    pdf.save('reports.pdf');
-  };
-
-  const sectionSubtitleClass = dark
-    ? 'flex items-center gap-2 text-sm font-semibold tracking-wide text-slate-200'
-    : 'flex items-center gap-2 text-sm font-semibold tracking-wide text-slate-800';
-
-  const sectionIndexClass = dark
-    ? 'inline-flex h-6 min-w-6 items-center justify-center rounded-full border border-slate-600 bg-slate-800 px-2 text-[11px] font-bold text-slate-200'
-    : 'inline-flex h-6 min-w-6 items-center justify-center rounded-full border border-slate-300 bg-slate-100 px-2 text-[11px] font-bold text-slate-700';
-
   const analytics = useMemo(() => {
     const totalTrips = filteredTripsRaw.length;
     const totalKm = filteredTripsRaw.reduce((sum, trip) => sum + parseNumberish(trip.distance), 0);
@@ -121,13 +118,29 @@ const ReportsPage = () => {
       label: `W${index + 1}`,
       value: 0,
     }));
-    const now = Date.now();
+    const timelineEndMs = filteredTripsRaw.reduce((maxMs, trip) => {
+      const start = toDate(trip.startTime);
+      if (!start) return maxMs;
+      return Math.max(maxMs, start.getTime());
+    }, 0);
+
+    if (timelineEndMs <= 0) {
+      return {
+        totalTrips,
+        totalKm,
+        onTimeRate,
+        cancellationRate,
+        tripDelta,
+        weeklyBuckets: buckets,
+      };
+    }
+
     const windowMs = rangeDays * 24 * 60 * 60 * 1000;
 
     filteredTripsRaw.forEach((trip) => {
       const start = toDate(trip.startTime);
       if (!start) return;
-      const age = now - start.getTime();
+      const age = timelineEndMs - start.getTime();
       if (age < 0 || age > windowMs) return;
       const ratio = age / windowMs;
       const bucketIndex = Math.min(bucketCount - 1, Math.max(0, bucketCount - 1 - Math.floor(ratio * bucketCount)));
@@ -302,6 +315,35 @@ const ReportsPage = () => {
     };
   }, [filteredTripsRaw, vehiclesRaw, rangeDays]);
 
+  const sectionSubtitleClass = dark
+    ? 'flex items-center gap-2 text-sm font-semibold tracking-wide text-slate-200'
+    : 'flex items-center gap-2 text-sm font-semibold tracking-wide text-slate-800';
+
+  const sectionIndexClass = dark
+    ? 'inline-flex h-6 min-w-6 items-center justify-center rounded-full border border-slate-600 bg-slate-800 px-2 text-[11px] font-bold text-slate-200'
+    : 'inline-flex h-6 min-w-6 items-center justify-center rounded-full border border-slate-300 bg-slate-100 px-2 text-[11px] font-bold text-slate-700';
+
+  const sharedSectionProps = { dark, sectionSubtitleClass, sectionIndexClass };
+
+  const exportPDF = async () => {
+    const element = pdfRef.current;
+    if (!element) return;
+
+    // Load heavy PDF deps on demand so they don't inflate the initial reports chunk.
+    const [{ default: html2canvas }, { default: jsPDF }] = await Promise.all([
+      import('html2canvas'),
+      import('jspdf'),
+    ]);
+
+    const canvas = await html2canvas(element, { scale: 2, useCORS: true, backgroundColor: null });
+    const imgData = canvas.toDataURL('image/png');
+    const pdf = new jsPDF({ orientation: 'portrait', unit: 'px', format: 'a4' });
+    const pdfWidth = pdf.internal.pageSize.getWidth();
+    const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+    pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+    pdf.save('reports.pdf');
+  };
+
   const periodButtons = [
     { label: 'This month', value: 'month' },
     { label: 'Last 3 months', value: 'quarter' },
@@ -416,148 +458,11 @@ const ReportsPage = () => {
           </div>
         ) : (
           <>
-            <section className="space-y-3">
-              <h2 className={sectionSubtitleClass}>
-                <span className={sectionIndexClass}>1</span>
-                <span>Trip Analytics</span>
-              </h2>
-              <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3">
-                <Card dark={dark} padding="sm"><p className={dark ? 'text-xs text-slate-400' : 'text-xs text-slate-500'}>Total trips</p><p className={`mt-1 text-2xl font-semibold ${dark ? 'text-white' : 'text-slate-900'}`}>{formatNumber(analytics.totalTrips)}</p></Card>
-                <Card dark={dark} padding="sm"><p className={dark ? 'text-xs text-slate-400' : 'text-xs text-slate-500'}>Total km driven</p><p className={`mt-1 text-2xl font-semibold ${dark ? 'text-white' : 'text-slate-900'}`}>{formatNumber(analytics.totalKm)}</p></Card>
-                <Card dark={dark} padding="sm"><p className={dark ? 'text-xs text-slate-400' : 'text-xs text-slate-500'}>On-time rate</p><p className={`mt-1 text-2xl font-semibold ${dark ? 'text-white' : 'text-slate-900'}`}>{analytics.onTimeRate.toFixed(1)}%</p></Card>
-                <Card dark={dark} padding="sm"><p className={dark ? 'text-xs text-slate-400' : 'text-xs text-slate-500'}>Cancellation rate</p><p className={`mt-1 text-2xl font-semibold ${dark ? 'text-amber-300' : 'text-amber-600'}`}>{analytics.cancellationRate.toFixed(1)}%</p></Card>
-              </div>
-              <Card dark={dark} title="Trips per week" subtitle="Volume trend across selected period" padding="sm">
-                <div className="space-y-3">
-                  <div className="flex items-end gap-1 h-16">
-                    {analytics.weeklyBuckets.map((bucket, index) => {
-                      const maxValue = Math.max(1, ...analytics.weeklyBuckets.map((item) => item.value));
-                      const height = Math.max(10, Math.round((bucket.value / maxValue) * 100));
-                      return (
-                        <div
-                          key={bucket.label}
-                          title={`${bucket.value} trips`}
-                          className={`flex-1 rounded-t ${index === analytics.weeklyBuckets.length - 1 ? 'bg-brand' : dark ? 'bg-brand/45' : 'bg-brand/35'}`}
-                          style={{ height: `${height}%` }}
-                        />
-                      );
-                    })}
-                  </div>
-                  <div className={`flex justify-between text-[11px] ${dark ? 'text-slate-500' : 'text-slate-500'}`}>
-                    {analytics.weeklyBuckets.map((bucket) => (
-                      <span key={bucket.label}>{bucket.label}</span>
-                    ))}
-                  </div>
-                </div>
-              </Card>
-            </section>
-
-            <section className="space-y-3">
-              <h2 className={sectionSubtitleClass}>
-                <span className={sectionIndexClass}>2</span>
-                <span>Fuel and Cost Analysis</span>
-              </h2>
-              <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
-                <Card dark={dark} padding="sm"><p className={dark ? 'text-xs text-slate-400' : 'text-xs text-slate-500'}>Total fuel consumed</p><p className={`mt-1 text-2xl font-semibold ${dark ? 'text-white' : 'text-slate-900'}`}>{formatNumber(fuelStats.totalFuel)} L</p></Card>
-                <Card dark={dark} padding="sm"><p className={dark ? 'text-xs text-slate-400' : 'text-xs text-slate-500'}>Avg fuel per 100km</p><p className={`mt-1 text-2xl font-semibold ${dark ? 'text-white' : 'text-slate-900'}`}>{fuelStats.avgFuelPer100.toFixed(1)} L</p></Card>
-                <Card dark={dark} padding="sm"><p className={dark ? 'text-xs text-slate-400' : 'text-xs text-slate-500'}>Total fuel cost</p><p className={`mt-1 text-2xl font-semibold ${dark ? 'text-white' : 'text-slate-900'}`}>{formatCurrency(fuelStats.totalFuelCost)}</p></Card>
-              </div>
-              <Card dark={dark} title="Top 5 vehicles by fuel consumption" subtitle="Helps identify inefficient vehicles" padding="sm">
-                <div className="space-y-2 overflow-x-auto">
-                  {fuelStats.topVehiclesFuel.map((row, idx) => {
-                    const maxFuel = Math.max(1, ...fuelStats.topVehiclesFuel.map((item) => item.fuel));
-                    const width = Math.max(10, Math.round((row.fuel / maxFuel) * 100));
-                    return (
-                      <div key={`${row.plate}-${idx}`} className="flex min-w-[700px] items-center gap-3 text-sm">
-                        <span className={`min-w-[320px] whitespace-nowrap ${dark ? 'text-slate-300' : 'text-slate-700'}`}>{row.plate}</span>
-                        <div className={`flex-1 h-2 rounded-full overflow-hidden ${dark ? 'bg-slate-800' : 'bg-slate-100'}`}>
-                          <div className={`${idx === 0 ? 'bg-brand' : dark ? 'bg-brand/50' : 'bg-brand/40'} h-full rounded-full`} style={{ width: `${width}%` }} />
-                        </div>
-                        <span className={`w-16 text-right ${dark ? 'text-slate-300' : 'text-slate-700'}`}>{formatNumber(row.fuel)} L</span>
-                      </div>
-                    );
-                  })}
-                </div>
-              </Card>
-            </section>
-
-            <section className="space-y-3">
-              <h2 className={sectionSubtitleClass}>
-                <span className={sectionIndexClass}>3</span>
-                <span>Maintenance Summary</span>
-              </h2>
-              <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
-                <Card dark={dark} padding="sm"><p className={dark ? 'text-xs text-slate-400' : 'text-xs text-slate-500'}>Jobs completed</p><p className={`mt-1 text-2xl font-semibold ${dark ? 'text-white' : 'text-slate-900'}`}>{formatNumber(maintenanceStats.jobsCompleted)}</p></Card>
-                <Card dark={dark} padding="sm"><p className={dark ? 'text-xs text-slate-400' : 'text-xs text-slate-500'}>Total cost</p><p className={`mt-1 text-2xl font-semibold ${dark ? 'text-white' : 'text-slate-900'}`}>{formatCurrency(maintenanceStats.totalCost)}</p></Card>
-                <Card dark={dark} padding="sm"><p className={dark ? 'text-xs text-slate-400' : 'text-xs text-slate-500'}>Avg downtime per job</p><p className={`mt-1 text-2xl font-semibold ${dark ? 'text-white' : 'text-slate-900'}`}>{maintenanceStats.avgDowntime.toFixed(1)} days</p></Card>
-              </div>
-              <Card dark={dark} title="Maintenance cost by vehicle" subtitle="Identify vehicles with high maintenance spend" padding="sm">
-                <div className="space-y-2 overflow-x-auto">
-                  {maintenanceStats.costByVehicle.map((row) => (
-                    <div key={row.plate} className={`flex min-w-[700px] items-center justify-between gap-3 py-2 border-b last:border-b-0 ${dark ? 'border-slate-800' : 'border-slate-100'}`}>
-                      <div>
-                        <p className={`min-w-[320px] whitespace-nowrap text-sm ${dark ? 'text-slate-200' : 'text-slate-800'}`}>{row.plate}</p>
-                        <p className={dark ? 'text-xs text-slate-500' : 'text-xs text-slate-500'}>{row.jobs} jobs{row.types.size ? ` · ${Array.from(row.types).join(', ')}` : ''}</p>
-                      </div>
-                      <span className={dark ? 'text-sm font-medium text-slate-100' : 'text-sm font-medium text-slate-900'}>{formatCurrency(row.cost)}</span>
-                    </div>
-                  ))}
-                </div>
-              </Card>
-            </section>
-
-            <section className="space-y-3">
-              <h2 className={sectionSubtitleClass}>
-                <span className={sectionIndexClass}>4</span>
-                <span>Driver Performance</span>
-              </h2>
-              <Card dark={dark} title="Driver scorecard" subtitle="Ranked by on-time rate in selected period" padding="sm">
-                <div className={`grid grid-cols-5 gap-2 px-1 pb-2 text-[11px] uppercase tracking-wide ${dark ? 'text-slate-500' : 'text-slate-500'}`}>
-                  <span>Driver</span>
-                  <span className="text-right">Trips</span>
-                  <span className="text-right">Km</span>
-                  <span className="text-right">On-time</span>
-                  <span className="text-right">Grade</span>
-                </div>
-                <div className="space-y-1">
-                  {driverScorecard.map((row) => (
-                    <div key={row.name} className={`grid grid-cols-5 gap-2 items-center py-2 px-1 border-b last:border-b-0 ${dark ? 'border-slate-800' : 'border-slate-100'}`}>
-                      <span className={dark ? 'text-sm text-slate-100' : 'text-sm text-slate-900'}>{row.name}</span>
-                      <span className={`text-right text-sm ${dark ? 'text-slate-300' : 'text-slate-700'}`}>{row.trips}</span>
-                      <span className={`text-right text-sm ${dark ? 'text-slate-300' : 'text-slate-700'}`}>{formatNumber(row.km)}</span>
-                      <span className={`text-right text-sm ${row.onTimeRate >= 90 ? 'text-emerald-500' : row.onTimeRate >= 80 ? 'text-amber-500' : 'text-rose-500'}`}>{row.onTimeRate.toFixed(0)}%</span>
-                      <span className="text-right">
-                        <Badge size="sm" variant={row.grade.variant}>{row.grade.label}</Badge>
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              </Card>
-            </section>
-
-            <section className="space-y-3">
-              <h2 className={sectionSubtitleClass}>
-                <span className={sectionIndexClass}>5</span>
-                <span>Vehicle Utilization</span>
-              </h2>
-              <Card dark={dark} title="Utilization rate by vehicle" subtitle="Percent of days in period with active trip" padding="sm">
-                <div className="space-y-2 overflow-x-auto">
-                  {utilization.rows.map((row) => {
-                    const tone = row.rate >= 70 ? 'bg-emerald-600' : row.rate >= 40 ? 'bg-amber-500' : 'bg-rose-500';
-                    const textTone = row.rate >= 70 ? 'text-emerald-500' : row.rate >= 40 ? 'text-amber-500' : 'text-rose-500';
-                    return (
-                      <div key={row.vehicle} className="flex min-w-[700px] items-center gap-3 text-sm">
-                        <span className={`min-w-[320px] whitespace-nowrap ${dark ? 'text-slate-300' : 'text-slate-700'}`}>{row.vehicle}</span>
-                        <div className={`flex-1 h-2 rounded-full overflow-hidden ${dark ? 'bg-slate-800' : 'bg-slate-100'}`}>
-                          <div className={`${tone} h-full rounded-full`} style={{ width: `${Math.max(6, row.rate)}%` }} />
-                        </div>
-                        <span className={`w-14 text-right font-medium ${textTone}`}>{row.rate.toFixed(0)}%</span>
-                      </div>
-                    );
-                  })}
-                </div>
-              </Card>
-            </section>
+            <LazySection component={TripAnalyticsSection} props={{ analytics, ...sharedSectionProps }} cols={4} rows={1} dark={dark} />
+            <LazySection component={FuelSection}          props={{ fuelStats, ...sharedSectionProps }} cols={3} rows={1} dark={dark} />
+            <LazySection component={MaintenanceSection}   props={{ maintenanceStats, ...sharedSectionProps }} cols={3} rows={1} dark={dark} />
+            <LazySection component={DriverSection}        props={{ driverScorecard, ...sharedSectionProps }} cols={1} rows={2} dark={dark} />
+            <LazySection component={UtilizationSection}   props={{ utilization, ...sharedSectionProps }} cols={1} rows={2} dark={dark} />
           </>
         )}
       </div>

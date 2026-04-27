@@ -9,7 +9,6 @@ const UserMenu = () => {
   const dropdownRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
 
-  // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
       if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
@@ -18,6 +17,14 @@ const UserMenu = () => {
     };
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  useEffect(() => {
+    const handleEsc = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setOpen(false);
+    };
+    document.addEventListener("keydown", handleEsc);
+    return () => document.removeEventListener("keydown", handleEsc);
   }, []);
 
   const handleSettings = () => {
@@ -38,31 +45,53 @@ const UserMenu = () => {
 
   return (
     <div className="relative inline-block text-left" ref={dropdownRef}>
-      {/* Trigger */}
+
+      {/* ── Trigger ─────────────────────────────────────────────────── */}
       <button
         onClick={() => setOpen((prev) => !prev)}
-        className="w-full flex items-center space-x-3 p-3 rounded-xl hover:bg-gray-100 dark:hover:bg-slate-800/80 transition-colors duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand/40"
+        aria-haspopup="true"
+        aria-expanded={open}
+        className="flex items-center  w-auto focus:outline-none focus-visible:ring-2 focus-visible:ring-brand/40 rounded-xl transition-colors duration-150 hover:bg-gray-100 dark:hover:bg-slate-800/80"
       >
-        <UserAvatar />
-        <svg
-          className={`w-4 h-4 text-gray-400 dark:text-slate-400 transition-transform duration-200 shrink-0 ${open ? "rotate-180" : ""}`}
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-        >
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-        </svg>
+        {/* Mobile/tablet: avatar only */}
+        <span className="flex lg:hidden p-1 sm:p-1.5">
+          <UserAvatar />
+        </span>
+
+        {/* Desktop: avatar + chevron */}
+        <span className="hidden lg:flex items-center space-x-3 p-3">
+          <UserAvatar />
+          <svg
+            className={`w-4 h-4 text-gray-400 dark:text-slate-400 transition-transform duration-200 shrink-0 ${
+              open ? "rotate-180" : ""
+            }`}
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+          </svg>
+        </span>
       </button>
 
-      {/* Dropdown */}
+      {/* ── Dropdown ─────────────────────────────────────────────────── */}
       {open && (
-        <div className="absolute top-full left-0 mt-1 w-56 bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl shadow-lg overflow-hidden z-50 block">
+        <div
+          className="
+            absolute mt-1 z-50
+            bg-white dark:bg-slate-900
+            border border-gray-200 dark:border-slate-700
+            rounded-xl shadow-lg overflow-hidden
+            right-0 w-36 sm:w-44
+            lg:left-0 lg:right-auto lg:w-56
+          "
+        >
           {/* Settings */}
           <button
             onClick={handleSettings}
-            className="w-full flex items-center space-x-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors duration-150"
+            className="w-full flex items-center space-x-2 sm:space-x-3 px-3 sm:px-4 py-2 sm:py-2.5 text-xs sm:text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-800 transition-colors duration-150"
           >
-            <svg className="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-gray-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path
                 strokeLinecap="round"
                 strokeLinejoin="round"
@@ -79,9 +108,9 @@ const UserMenu = () => {
           {/* Logout */}
           <button
             onClick={handleLogout}
-            className="w-full flex items-center space-x-3 px-4 py-2.5 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/40 transition-colors duration-150"
+            className="w-full flex items-center space-x-2 sm:space-x-3 px-3 sm:px-4 py-2 sm:py-2.5 text-xs sm:text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/40 transition-colors duration-150"
           >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path
                 strokeLinecap="round"
                 strokeLinejoin="round"

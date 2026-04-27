@@ -11,7 +11,6 @@ import PageHeader from '../components/PageHeader';
 import Toolbar from '../components/Toolbar';
 import VehiclesTable from '../components/VehiclesTable';
 import VehicleDetailsModal from '../components/VehicleDetailsModal';
-import { getVehicleRecommendations } from '../components/maintenanceStatic';
 
 interface ThemeContext {
   dark: boolean;
@@ -35,9 +34,11 @@ const VehiclesPage = () => {
     closeVehicleDetails,
     isDetailsLoading,
     detailsError,
+    fetchVehicles,
     createVehicle,
     updateVehicle,
     deleteVehicle,
+    generateMaintenanceRecommendations,
   } = useVehicles();
 
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
@@ -109,13 +110,6 @@ const VehiclesPage = () => {
   );
 
   const detailsVehicle = selectedVehicleDetails ?? selectedVehicleRow?.vehicle ?? null;
-  const detailsRecommendations = getVehicleRecommendations(detailsVehicle?.plaque_immatriculation);
-
-  const groupedRecommendations = {
-    high: detailsRecommendations.filter((item) => item.priority === 'high'),
-    medium: detailsRecommendations.filter((item) => item.priority === 'medium'),
-    low: detailsRecommendations.filter((item) => item.priority === 'low'),
-  };
 
   return (
     <>
@@ -185,6 +179,8 @@ const VehiclesPage = () => {
           setFormError('');
           setIsEditModalOpen(true);
         }}
+        onGenerateRecommendations={generateMaintenanceRecommendations}
+        onRecommendationsGenerated={fetchVehicles}
         vehicle={detailsVehicle}
         assignment={selectedVehicleRow?.currentAssignment ?? null}
         maintenanceHistory={
@@ -197,7 +193,6 @@ const VehiclesPage = () => {
             description: record.description,
           }))
         }
-        recommendations={groupedRecommendations}
         isLoading={isDetailsLoading}
         error={detailsError}
       />

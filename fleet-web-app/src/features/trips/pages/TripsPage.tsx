@@ -1,5 +1,6 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useOutletContext, useSearchParams } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
 import TripsHeader from '../components/TripsHeader';
 import TripsFilters from '../components/TripsFilters';
 import TripsList from '../components/TripsList';
@@ -12,6 +13,7 @@ import { vehiclesService } from '../../vehicles/services/vehicles.service';
 import { driversService } from '../../drivers/services/drivers.service';
 import type { Driver, Trip, TripStop, Vehicle } from '../../../types';
 import { pageShellClasses, pageShellInnerSpacing } from '../../../shared/utils/pageShell';
+import { queryKeys } from '../../../shared/services/queryKeys';
 
 interface ThemeContext {
   dark: boolean;
@@ -98,8 +100,18 @@ const TripsPage = () => {
   const [editStopsError, setEditStopsError] = useState<string | null>(null);
   const [editError, setEditError] = useState<string | null>(null);
   const [isEditSubmitting, setIsEditSubmitting] = useState(false);
-  const [vehicles, setVehicles] = useState<Vehicle[]>([]);
-  const [drivers, setDrivers] = useState<Driver[]>([]);
+  const vehiclesQuery = useQuery({
+    queryKey: queryKeys.vehicles.lists(),
+    queryFn: vehiclesService.getVehicles,
+  });
+
+  const driversQuery = useQuery({
+    queryKey: queryKeys.drivers.lists(),
+    queryFn: driversService.getDrivers,
+  });
+
+  const vehicles = (vehiclesQuery.data ?? []) as Vehicle[];
+  const drivers = (driversQuery.data ?? []) as Driver[];
 
   const {
     trips,
@@ -126,23 +138,6 @@ const TripsPage = () => {
       .includes(searchQuery.toLowerCase());
     return matchesSearch;
   });
-
-  const loadFormLookups = useCallback(async () => {
-    try {
-      const [vehiclesData, driversData] = await Promise.all([
-        vehiclesService.getVehicles(),
-        driversService.getDrivers(),
-      ]);
-      setVehicles(vehiclesData ?? []);
-      setDrivers(driversData ?? []);
-    } catch {
-      // Form-level errors are surfaced on submit if lookup fetch fails silently.
-    }
-  }, []);
-
-  useEffect(() => {
-    loadFormLookups();
-  }, [loadFormLookups]);
 
   const handleStart = async (tripId: string) => {
     setActionTripId(tripId);

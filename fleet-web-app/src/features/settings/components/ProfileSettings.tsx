@@ -57,6 +57,9 @@ const ProfileSettings = ({ profileData, onSave, dark = false }: Props) => {
 
   const label = dark ? 'text-slate-400' : 'text-gray-700';
 
+  // Shared class for disabled inputs — smaller text/padding on mobile, normal on md+
+  const disabledInputBase = 'rounded-xl text-xs sm:text-sm px-2.5 py-1.5 sm:px-3 sm:py-2';
+
   return (
     <Card
       title="Profile information"
@@ -68,7 +71,7 @@ const ProfileSettings = ({ profileData, onSave, dark = false }: Props) => {
       <div className="space-y-6">
         <div className="flex items-center gap-6 pb-6 border-b border-slate-200 dark:border-slate-700/50">
           <div className="shrink-0 relative">
-            <div className={`w-24 h-24 rounded-full overflow-hidden flex items-center justify-center text-white font-bold text-3|e bg-gradient-to-br from-amber-300 to-slate-700 ${
+            <div className={`w-24 h-24 rounded-full overflow-hidden flex items-center justify-center text-white font-bold text-3xl bg-gradient-to-br from-amber-300 to-slate-700 ${
               dark ? 'ring-2 ring-brand/30 shadow-lg shadow-black/20' : 'shadow-md ring-2 ring-slate-100'
             }`}>
               {previewUrl ? (
@@ -101,12 +104,12 @@ const ProfileSettings = ({ profileData, onSave, dark = false }: Props) => {
                 </Button>
               )}
             </div>
-            <input 
-              type="file" 
-              ref={fileInputRef} 
-              className="hidden" 
-              accept="image/*" 
-              onChange={handleFileChange} 
+            <input
+              type="file"
+              ref={fileInputRef}
+              className="hidden"
+              accept="image/*"
+              onChange={handleFileChange}
             />
           </div>
         </div>
@@ -122,18 +125,22 @@ const ProfileSettings = ({ profileData, onSave, dark = false }: Props) => {
             }
           />
         </div>
+
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <label className={`block text-sm font-medium mb-2 $xlabel}`}>
+            <label className={`block text-sm font-medium mb-2 ${label}`}>
               <FiMail className="inline mr-2" />
               Email
             </label>
+            {/* DISABLED — minimised on mobile */}
             <Input
               type="email"
               value={formData.email}
               disabled
               className={
-                dark ? 'border-slate-700 bg-slate-800/50 text-slate-500 rounded-xl' : 'rounded-xl bg-slate-50 text-slate-500 cursor-not-allowed'
+                dark
+                  ? `border-slate-700 bg-slate-800/50 text-slate-500 ${disabledInputBase}`
+                  : `bg-slate-50 text-slate-500 cursor-not-allowed ${disabledInputBase}`
               }
             />
           </div>
@@ -152,6 +159,7 @@ const ProfileSettings = ({ profileData, onSave, dark = false }: Props) => {
             />
           </div>
         </div>
+
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <label className={`block text-sm font-medium mb-2 ${label}`}>Company</label>
@@ -166,11 +174,16 @@ const ProfileSettings = ({ profileData, onSave, dark = false }: Props) => {
           </div>
           <div>
             <label className={`block text-sm font-medium mb-2 ${label}`}>Role</label>
+            {/* DISABLED — minimised on mobile */}
             <Input
               type="text"
               value={formData.role || ''}
               disabled
-              className={dark ? 'border-slate-700 bg-slate-800/50 text-slate-500 rounded-xl' : 'rounded-xl'}
+              className={
+                dark
+                  ? `border-slate-700 bg-slate-800/50 text-slate-500 ${disabledInputBase}`
+                  : `bg-slate-50 text-slate-500 cursor-not-allowed ${disabledInputBase}`
+              }
             />
           </div>
         </div>
@@ -222,7 +235,7 @@ const ProfileSettings = ({ profileData, onSave, dark = false }: Props) => {
         <div className="flex justify-end pt-2">
           <Button className="rounded-xl" onClick={handleSave} isLoading={isSaving}>
             <FiSave className="mr-2" />
-            {isSaving ? 'Saving..-' : 'Save changes'}
+            {isSaving ? 'Saving...' : 'Save changes'}
           </Button>
         </div>
       </div>

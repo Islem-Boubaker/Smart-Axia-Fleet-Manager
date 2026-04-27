@@ -3,6 +3,15 @@ import type { Vehicle, ApiResponse } from '../../../types';
 
 export type { Vehicle };
 
+export interface MaintenanceRecommendation {
+  overview: string;
+  level: 'HIGH' | 'MEDIUM' | 'LOW';
+}
+
+export interface MaintenanceRecommendationResponse {
+  recommendations: MaintenanceRecommendation[];
+}
+
 const normalizePhotos = (photos: unknown): string[] => {
   if (Array.isArray(photos)) {
     return photos.filter((item): item is string => typeof item === 'string' && item.length > 0);
@@ -66,6 +75,13 @@ export const vehiclesService = {
       data
     );
     return normalizeVehicle(response.data.data);
+  },
+
+  generateMaintenanceRecommendations: async (id: string): Promise<MaintenanceRecommendation[]> => {
+    const response = await api.post<ApiResponse<MaintenanceRecommendationResponse>>(
+      `/vehicle/${id}/maintenance-ai`,
+    );
+    return response.data.data?.recommendations ?? [];
   },
 
   deleteVehicle: async (id: string): Promise<void> => {

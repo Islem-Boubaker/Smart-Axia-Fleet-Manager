@@ -12,7 +12,7 @@ export interface AppTopBarProps {
 export const AppTopBar = memo(({ dark, setDark, onMenuClick }: AppTopBarProps) => {
   return (
     <header
-      className={`shrink-0 z-20 px-4 sm:px-6 lg:px-8 pt-4 pb-2 ${
+      className={`shrink-0 z-20  px-4 sm:px-6 lg:px-8 pt-4 pb-2 ${
         dark ? 'text-slate-100' : 'text-slate-900'
       }`}
     >

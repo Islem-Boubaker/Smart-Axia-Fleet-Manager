@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
-import { useOutletContext } from 'react-router-dom';
-import { FiBell, FiEdit2, FiLock, FiUser } from 'react-icons/fi';
+import { useOutletContext, useLocation } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
+import { FiEdit2 } from 'react-icons/fi';
 import { Card, Button } from '../../../shared/components';
 import ProfileSettings from '../components/ProfileSettings';
 import NotificationSettings from '../components/NotificationSettings';
@@ -12,16 +13,11 @@ import { useSettings } from '../hooks/useSettings';
 import { settingsService } from '../services/settings.service';
 import { toast } from '../../../shared/components';
 import { pageShellClasses } from '../../../shared/utils/pageShell';
+import { queryKeys } from '../../../shared/services/queryKeys';
 
 interface ThemeContext {
   dark: boolean;
 }
-
-const MENU_ITEMS = [
-  { id: 'profile', label: 'My Profile', icon: FiUser },
-  { id: 'security', label: 'Password & Security', icon: FiLock },
-  { id: 'notifications', label: 'Notifications', icon: FiBell },
-];
 
 const editBtnClass = (dark: boolean) =>
   dark
@@ -43,20 +39,20 @@ const ProfileFieldTiles = ({
   items: Array<{ label: string; value: string }>;
   dark: boolean;
 }) => (
-  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
     {items.map((item) => (
       <div
         key={item.label}
-        className={`rounded-xl px-4 py-3.5 border transition-colors ${
+        className={`rounded-xl px-3 py-2.5 sm:px-2 sm:py-3.5 border transition-colors ${
           dark
             ? 'border-slate-700/50 bg-slate-800/35 hover:bg-slate-800/55'
             : 'border-slate-200/80 bg-slate-50/80 hover:bg-white'
         }`}
       >
-        <p className={`text-[11px] font-semibold uppercase tracking-[0.1em] ${dark ? 'text-slate-500' : 'text-slate-500'}`}>
+        <p className={`text-[10px] sm:text-[11px] font-semibold uppercase tracking-[0.1em] ${dark ? 'text-slate-500' : 'text-slate-500'}`}>
           {item.label}
         </p>
-        <p className={`mt-2 text-base font-medium leading-snug ${dark ? 'text-slate-100' : 'text-slate-900'}`}>
+        <p className={`mt-1 sm:mt-2 text-xs sm:text-xs font-medium leading-snug ${dark ? 'text-slate-100' : 'text-slate-900'}`}>
           {item.value || '—'}
         </p>
       </div>
@@ -168,13 +164,27 @@ const tabTitle: Record<string, string> = {
 
 const SettingsPage = () => {
   const { dark } = useOutletContext<ThemeContext>();
+  const location = useLocation();
   const { user } = useAppSelector((state) => state.auth);
   const dispatch = useAppDispatch();
   const { changePassword, updateNotifications, isLoading: isSettingsLoading } = useSettings();
-  const [activeTab, setActiveTab] = useState('profile');
   const [isEditingProfile, setIsEditingProfile] = useState(false);
 
-  const [profileData, setProfileData] = useState<ProfileData>({
+  // Derive active tab from query parameters
+  const getActiveTab = () => {
+    const searchParams = new URLSearchParams(location.search);
+    const tab = searchParams.get('tab');
+    
+    // Return the tab if it's valid, otherwise default to 'profile'
+    if (tab === 'notifications' || tab === 'security' || tab === 'profile') {
+      return tab;
+    }
+    return 'profile';
+  };
+
+  const activeTab = getActiveTab();
+
+  const profileData: ProfileData = {
     name: user?.name || '',
     email: user?.email || '',
     phone: (user as { phone?: string } | null)?.phone || '',
@@ -185,24 +195,7 @@ const SettingsPage = () => {
     city: (user as any)?.city || '',
     postalCode: (user as any)?.postalCode || '',
     taxId: (user as any)?.taxId || '',
-  });
-
-  useEffect(() => {
-    if (user) {
-      setProfileData({
-        name: user.name || '',
-        email: user.email || '',
-        phone: (user as any)?.phone || '',
-        company: (user as any)?.company || 'AXIA Fleet Manager',
-        role: user.role || '',
-        avatar: user.avatar,
-        country: (user as any)?.country || '',
-        city: (user as any)?.city || '',
-        postalCode: (user as any)?.postalCode || '',
-        taxId: (user as any)?.taxId || '',
-      });
-    }
-  }, [user]);
+  };
 
   const handleSaveProfile = async (data: ProfileData, file: File | null) => {
     try {
@@ -227,7 +220,6 @@ const SettingsPage = () => {
 
       const newUser = { ...user, ...updatedUser };
       dispatch(setUser(newUser as any));
-      setProfileData({ ...data, avatar: newUser.avatar });
       setIsEditingProfile(false);
     } catch (error) {
       console.error('Failed to save profile:', error);
@@ -245,18 +237,15 @@ const SettingsPage = () => {
     smsAlerts: false,
   });
 
-  useEffect(() => {
-    const loadNotificationSettings = async () => {
-      try {
-        const remote = await settingsService.getNotifications();
-        setNotifications((prev) => ({ ...prev, ...remote }));
-      } catch (error) {
-        console.error('Failed to load notification settings:', error);
-      }
-    };
+  const notificationsQuery = useQuery({
+    queryKey: queryKeys.settings.notifications(),
+    queryFn: settingsService.getNotifications,
+  });
 
-    loadNotificationSettings();
-  }, []);
+  useEffect(() => {
+    if (!notificationsQuery.data) return;
+    setNotifications((prev) => ({ ...prev, ...notificationsQuery.data }));
+  }, [notificationsQuery.data]);
 
   const handleChangePassword = async (currentPassword: string, newPassword: string) => {
     const loadingId = toast.loading('Updating password...');
@@ -317,7 +306,7 @@ const SettingsPage = () => {
                 onClick={() => setIsEditingProfile(false)}
                 className={dark ? '!text-slate-300 hover:!bg-slate-800' : ''}
               >
-                Back to profile overview
+                ← Back to profile overview
               </Button>
               <ProfileSettings profileData={profileData} onSave={handleSaveProfile} dark={dark} />
             </div>
@@ -351,54 +340,11 @@ const SettingsPage = () => {
 
   return (
     <div className={`${shell} overflow-hidden animate-fade-in`}>
-      <div className="grid grid-cols-1 lg:grid-cols-[minmax(240px,280px),1fr] min-h-[70vh] gap-8 lg:gap-10 p-6 sm:p-8 lg:p-10">
-        <aside
-          className={`lg:pr-8 lg:border-r lg:pb-0 pb-8 border-b lg:border-b-0 ${
-            dark ? 'border-slate-700/80' : 'border-slate-200/80'
-          }`}
-        >
-          <p className={`text-xs font-semibold uppercase tracking-[0.12em] mb-4 ${dark ? 'text-slate-500' : 'text-slate-400'}`}>
-            Settings
-          </p>
-          <nav className="space-y-1">
-            {MENU_ITEMS.map((item) => {
-              const Icon = item.icon;
-              const isActive = activeTab === item.id;
-
-              return (
-                <button
-                  key={item.id}
-                  type="button"
-                  onClick={() => {
-                    setActiveTab(item.id);
-                    if (item.id !== 'profile') {
-                      setIsEditingProfile(false);
-                    }
-                  }}
-                  className={`w-full text-left flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 ${
-                    isActive
-                      ? dark
-                        ? 'bg-brand/15 text-brand font-semibold ring-1 ring-brand/20'
-                        : 'bg-brand-light text-brand-deep font-semibold ring-1 ring-brand/10'
-                      : dark
-                        ? 'text-slate-300 hover:bg-slate-800/80 hover:text-white'
-                        : 'text-slate-600 hover:bg-white/80 hover:text-slate-900'
-                  }`}
-                >
-                  <Icon className="text-base shrink-0" />
-                  <span className="font-medium">{item.label}</span>
-                </button>
-              );
-            })}
-          </nav>
-        </aside>
-
-        <main className="min-w-0 lg:pl-2">
-          <h2 className={`text-2xl sm:text-3xl font-extrabold tracking-tight mb-6 lg:mb-8 ${dark ? 'text-white' : 'text-slate-900'}`}>
-            {tabTitle[activeTab] ?? 'Settings'}
-          </h2>
-          <div className="space-y-6 lg:space-y-8">{renderTabContent()}</div>
-        </main>
+      <div className="max-w-5xl mx-auto p-6 sm:p-8 lg:p-10">
+        <h2 className={`text-2xl sm:text-3xl font-extrabold tracking-tight mb-6 lg:mb-8 ${dark ? 'text-white' : 'text-slate-900'}`}>
+          {tabTitle[activeTab] ?? 'Settings'}
+        </h2>
+        <div className="space-y-6 lg:space-y-8">{renderTabContent()}</div>
       </div>
     </div>
   );

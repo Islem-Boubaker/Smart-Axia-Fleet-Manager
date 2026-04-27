@@ -1,26 +1,17 @@
-import { useState, useEffect } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { fleetService, type Fleet } from '../services/fleet.service';
+import { queryKeys } from '../../../shared/services/queryKeys';
 
 export const useFleet = () => {
-  const [fleets, setFleets] = useState<Fleet[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const query = useQuery({
+    queryKey: queryKeys.fleet.lists(),
+    queryFn: fleetService.getFleets,
+  });
 
-  useEffect(() => {
-    const fetchFleets = async () => {
-      try {
-        setIsLoading(true);
-        const data = await fleetService.getFleets();
-        setFleets(data);
-      } catch (err: any) {
-        setError(err.message || 'Failed to fetch fleets');
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchFleets();
-  }, []);
-
-  return { fleets, isLoading, error };
+  return {
+    fleets: (query.data ?? []) as Fleet[],
+    isLoading: query.isLoading,
+    error: (query.error as Error | null)?.message ?? null,
+    refetch: query.refetch,
+  };
 };

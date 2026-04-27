@@ -1,11 +1,7 @@
 import { useState, type FormEvent } from 'react';
 import { FiLock } from 'react-icons/fi';
-import { Card, Button, Input } from '../../../shared/components';
+import { Button, Input } from '../../../shared/components';
 
-const cardExtra = (dark: boolean) =>
-  dark
-    ? 'rounded-2xl !border-slate-700/70 !bg-slate-900/40 shadow-soft ring-1 ring-white/[0.06] backdrop-blur-md'
-    : 'rounded-2xl !border-slate-200/90 !bg-white/75 shadow-glass backdrop-blur-sm';
 
 interface Props {
   dark?: boolean;
@@ -57,13 +53,13 @@ const SecuritySettings = ({ dark = false, isLoading = false, onChangePassword }:
   };
 
   return (
-    <Card
-      title="Security"
-      subtitle="Manage your password and security"
-      dark={dark}
-      padding="lg"
-      className={cardExtra(dark)}
-    >
+    // <Card
+    //   title="Security"
+    //   subtitle="Manage your password and security"
+    //   dark={dark}
+    //   padding="lg"
+    //   className={cardExtra(dark)}
+    // >
       <form onSubmit={handleSubmit} className="space-y-5">
         <div>
           <label className={`block text-sm font-medium mb-2 ${label}`}>Current password</label>
@@ -106,7 +102,7 @@ const SecuritySettings = ({ dark = false, isLoading = false, onChangePassword }:
           </Button>
         </div>
       </form>
-    </Card>
+    // </Card>
   );
 };
 

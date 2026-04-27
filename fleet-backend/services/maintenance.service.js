@@ -1,4 +1,4 @@
-import { Op } from "sequelize";
+import { Op, literal } from "sequelize";
 import Maintenance from "../models/maintenance.model.js";
 import Vehicle from "../models/vehicle.model.js";
 import { getPagination, getPagingData } from "../utils/pagination.js";
@@ -140,6 +140,7 @@ export const createMaintenance = async (payload, userId) => {
   });
 };
 
+
 export const getAllMaintenances = async (query = {}, callerRole = null, callerId = null, cacheKey = null) => {
   const { page, limit, offset } = getPagination(query);
   const where = {};
@@ -158,14 +159,27 @@ export const getAllMaintenances = async (query = {}, callerRole = null, callerId
   if (callerRole === "DRIVER") {
     where.createdBy = callerId;
   }
+const STATUS_ORDER = literal(`CASE "Maintenance"."status"
+  WHEN 'scheduled'   THEN 1
+  WHEN 'pending'     THEN 2
+  WHEN 'in_progress' THEN 3
+  WHEN 'completed'   THEN 4
+  WHEN 'cancelled'   THEN 5
+  ELSE 6
+END`);
 
-  const sortBy = query.sortBy || "scheduledDate";
-  const sortOrder = query.sortOrder || "ASC";
+  const allowedSortFields = ['scheduledDate', 'priority', 'createdAt', 'updatedAt'];
+  const sortBy = allowedSortFields.includes(query.sortBy) ? query.sortBy : null;
+  const sortOrder = query.sortOrder === 'DESC' ? 'DESC' : 'ASC';
+
+  const order = sortBy
+    ? [[sortBy, sortOrder]]                        // user picked a specific column
+    : [[STATUS_ORDER, 'ASC'], ['scheduledDate', 'ASC']]; // default: status order then date
 
   const { count, rows } = await Maintenance.findAndCountAll({
     where,
     include: [{ model: Vehicle, as: "vehicle" }],
-    order: [[sortBy, sortOrder]],
+    order,
     limit,
     offset,
   });

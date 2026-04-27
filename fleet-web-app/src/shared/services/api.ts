@@ -36,6 +36,19 @@ const csrfBootstrapClient = axios.create({
   },
 });
 
+const AUTH_ENDPOINTS = [
+  '/user/login',
+  '/user/signup',
+  '/user/forgot-password',
+  '/user/logout',
+  '/user/refresh-token',
+];
+
+function isAuthEndpoint(url?: string): boolean {
+  if (!url) return false;
+  return AUTH_ENDPOINTS.some((endpoint) => url.includes(endpoint));
+}
+
 async function ensureCsrfToken(): Promise<string | null> {
   const existing = getCsrfToken();
   if (existing) return existing;
@@ -58,7 +71,7 @@ function shouldAttachCsrf(config: InternalAxiosRequestConfig): boolean {
 
 api.interceptors.request.use(
   async (config: InternalAxiosRequestConfig): Promise<InternalAxiosRequestConfig> => {
-    if (shouldAttachCsrf(config)) {
+    if (shouldAttachCsrf(config) && !isAuthEndpoint(config.url)) {
       const token = getCsrfToken() || getCsrfTokenFromCookie() || (await ensureCsrfToken());
       if (token) {
         config.headers["X-CSRF-Token"] = token;
@@ -125,7 +138,7 @@ api.interceptors.response.use(
     if (
       status === 401 &&
       !originalRequest._retry &&
-      !originalRequest.url?.includes("/user/refresh-token")
+      !isAuthEndpoint(originalRequest.url)
     ) {
       if (isRefreshing) {
         return new Promise((resolve, reject) => {

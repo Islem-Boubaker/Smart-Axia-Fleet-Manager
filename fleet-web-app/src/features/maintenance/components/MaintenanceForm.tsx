@@ -1,7 +1,7 @@
 import { useState, useMemo } from "react";
 import type { FormEvent, ChangeEvent } from "react";
 import { Input, Button, Select } from "../../../shared/components";
-import { useVehicles } from "../../vehicles/hooks/useVehicles";
+import { useVehicleOptions } from "../../vehicles/hooks/useVehicles";
 
 interface MaintenanceFormProps {
   maintenance?: any;
@@ -16,7 +16,7 @@ const textareaClass =
 const labelClass = "block text-[13px] text-gray-500 dark:text-slate-400 mb-1.5";
 
 const MaintenanceForm = ({ maintenance, dark = false, onSubmit, onCancel }: MaintenanceFormProps) => {
-  const { vehicles, isLoading: vehiclesLoading } = useVehicles();
+  const { vehicles, isLoading: vehiclesLoading } = useVehicleOptions();
 
   const [formData, setFormData] = useState({
     vehicleId: maintenance?.vehicleId || "",

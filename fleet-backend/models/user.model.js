@@ -1,6 +1,9 @@
 import { DataTypes } from 'sequelize';
 import { sequelize } from '../config/connectdb.js';
-import bcrypt from 'bcryptjs';
+import bcrypt from 'bcrypt'; // ✅ use native bcrypt (faster)
+
+// 🔧 configurable salt rounds (easy to change later)
+const SALT_ROUNDS = 10;
 
 const User = sequelize.define(
   'User',
@@ -10,124 +13,115 @@ const User = sequelize.define(
       defaultValue: DataTypes.UUIDV4,
       primaryKey: true,
     },
-    avatar:{
-        type: DataTypes.STRING, // URL of the avatar image
-        allowNull: true,
+
+    avatar: {
+      type: DataTypes.STRING,
+      allowNull: true,
       defaultValue: null,
     },
+
     name: {
       type: DataTypes.STRING(100),
       allowNull: false,
-      validate: {
-        notEmpty: true,
-      },
+      validate: { notEmpty: true },
     },
+
     email: {
       type: DataTypes.STRING(150),
       allowNull: false,
       unique: true,
-      validate: {
-        isEmail: true,
-      },
+      validate: { isEmail: true },
     },
+
     password: {
       type: DataTypes.STRING,
       allowNull: false,
     },
+
     role: {
       type: DataTypes.ENUM('ADMIN', 'DRIVER', 'MANAGER'),
       allowNull: false,
       defaultValue: 'DRIVER',
     },
+
     isActive: {
       type: DataTypes.BOOLEAN,
       defaultValue: true,
     },
-    datepermi:{
+
+    datepermi: {
       type: DataTypes.DATE,
-       allowNull: true,
+      allowNull: true,
     },
+
     phone: {
       type: DataTypes.STRING(20),
       allowNull: true,
     },
+
     licenseNumber: {
       type: DataTypes.STRING(50),
       allowNull: true,
     },
+
     licenseExpiry: {
       type: DataTypes.DATEONLY,
       allowNull: true,
     },
+
     status: {
       type: DataTypes.ENUM('active', 'inactive', 'on-leave'),
       allowNull: true,
       defaultValue: 'active',
     },
+
     assignedVehicle: {
       type: DataTypes.STRING(50),
       allowNull: true,
     },
+
     rating: {
       type: DataTypes.FLOAT,
       allowNull: true,
       validate: { min: 0, max: 5 },
     },
+
     company: {
       type: DataTypes.STRING(100),
       allowNull: true,
     },
+
     country: {
       type: DataTypes.STRING(100),
       allowNull: true,
     },
+
     city: {
       type: DataTypes.STRING(100),
       allowNull: true,
     },
+
     postalCode: {
       type: DataTypes.STRING(20),
       allowNull: true,
     },
+
     taxId: {
       type: DataTypes.STRING(100),
       allowNull: true,
     },
-    emailTrips: {
-      type: DataTypes.BOOLEAN,
-      allowNull: false,
-      defaultValue: true,
-    },
-    emailMaintenance: {
-      type: DataTypes.BOOLEAN,
-      allowNull: false,
-      defaultValue: true,
-    },
-    emailDrivers: {
-      type: DataTypes.BOOLEAN,
-      allowNull: false,
-      defaultValue: false,
-    },
-    pushTrips: {
-      type: DataTypes.BOOLEAN,
-      allowNull: false,
-      defaultValue: true,
-    },
-    pushMaintenance: {
-      type: DataTypes.BOOLEAN,
-      allowNull: false,
-      defaultValue: true,
-    },
-    pushAlerts: {
-      type: DataTypes.BOOLEAN,
-      allowNull: false,
-      defaultValue: true,
-    },
-    smsAlerts: {
-      type: DataTypes.BOOLEAN,
-      allowNull: false,
-      defaultValue: false,
-    },
+
+    // 🔔 Notifications
+    emailTrips: { type: DataTypes.BOOLEAN, defaultValue: true },
+    emailMaintenance: { type: DataTypes.BOOLEAN, defaultValue: true },
+    emailDrivers: { type: DataTypes.BOOLEAN, defaultValue: false },
+
+    pushTrips: { type: DataTypes.BOOLEAN, defaultValue: true },
+    pushMaintenance: { type: DataTypes.BOOLEAN, defaultValue: true },
+    pushAlerts: { type: DataTypes.BOOLEAN, defaultValue: true },
+
+    smsAlerts: { type: DataTypes.BOOLEAN, defaultValue: false },
+
     expoPushToken: {
       type: DataTypes.STRING(255),
       allowNull: true,
@@ -136,28 +130,58 @@ const User = sequelize.define(
   {
     tableName: 'users',
     timestamps: true,
+
+    // ✅ PERFORMANCE: add DB index
+    indexes: [
+      {
+        unique: true,
+        fields: ['email'],
+      },
+    ],
+
     hooks: {
-    
+      // 🔐 hash password before create
       beforeCreate: async (user) => {
         if (user.password) {
-          const salt = await bcrypt.genSalt(10);
-          user.password = await bcrypt.hash(user.password, salt);
+          user.password = await bcrypt.hash(user.password, SALT_ROUNDS);
         }
       },
-      
+
+      // 🔐 hash password only if changed
       beforeUpdate: async (user) => {
         if (user.changed('password')) {
-          const salt = await bcrypt.genSalt(10);
-          user.password = await bcrypt.hash(user.password, salt);
+          user.password = await bcrypt.hash(user.password, SALT_ROUNDS);
         }
+      },
+    },
+
+    // 🔥 NEVER return password in JSON responses
+    defaultScope: {
+      attributes: { exclude: ['password'] },
+    },
+
+    // 🔥 used explicitly when password is needed (login)
+    scopes: {
+      withPassword: {
+        attributes: { include: ['password'] },
       },
     },
   }
 );
 
 
+// ✅ Optimized password comparison
 User.prototype.comparePassword = async function (candidatePassword) {
-  return await bcrypt.compare(candidatePassword, this.password);
+  return bcrypt.compare(candidatePassword, this.password);
 };
+
+
+// ✅ helper for safe response (optional but clean)
+User.prototype.toSafeJSON = function () {
+  const values = { ...this.get() };
+  delete values.password;
+  return values;
+};
+
 
 export default User;

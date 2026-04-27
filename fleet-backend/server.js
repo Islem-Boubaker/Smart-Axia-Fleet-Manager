@@ -4,6 +4,9 @@ import { closeRedis, sequelize } from "./config/connectdb.js";
 import "./models/index.js";
 import { closeIO, initSocket } from "./config/socket.js";
 import "./events/notification.handlers.js";
+import { connectDB, initializeRedis } from "./config/connectdb.js";
+
+
 
 const PORT = Number(process.env.PORT);
 const ENV = process.env.NODE_ENV || "development";

@@ -7,7 +7,7 @@ import DriversHeader from "../components/DriversHeader";
 import DriversSearch from "../components/DriversSearch";
 import DriversGrid from "../components/DriversGrid";
 import DriverModal from "../components/DriverModal";
-import { useVehicles } from "../../vehicles/hooks/useVehicles";
+import { useVehicleOptions } from "../../vehicles/hooks/useVehicles";
 import type { Driver } from "../../../types";
 import { pageShellClasses, pageShellInnerSpacing } from "../../../shared/utils/pageShell";
 
@@ -23,7 +23,7 @@ const DriversPage = () => {
   const [selectedDriver, setSelectedDriver] = useState<Driver | null>(null);
 
   const { drivers, isLoading, addDriver, updateDriver, deleteDriver } = useDrivers();
-  const { vehicles } = useVehicles();
+  const { vehicles } = useVehicleOptions();
 
   const filteredDrivers = drivers.filter((driver) =>
     `${driver.name} ${driver.email} ${driver.licenseNumber ?? ""}`

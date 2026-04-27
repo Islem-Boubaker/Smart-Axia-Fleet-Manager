@@ -1,6 +1,8 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { tripsService, type CreateTripRequest, type PaginationMeta, type TripFilters } from '../services/trips.service';
 import type { Trip } from '../../../types';
+import { queryKeys } from '../../../shared/services/queryKeys';
 
 const buildApiErrorMessage = (err: unknown, fallback: string): string => {
   if (!(err instanceof Object) || !("response" in err)) return fallback;
@@ -19,60 +21,42 @@ const buildApiErrorMessage = (err: unknown, fallback: string): string => {
 };
 
 export const useTrips = (filters: TripFilters = {}) => {
-  const [trips, setTrips] = useState<Trip[]>([]);
-  const [meta, setMeta] = useState<PaginationMeta>({
-    totalItems: 0,
-    totalPages: 0,
-    currentPage: filters.page ?? 1,
-    pageSize: filters.limit ?? 10,
-  });
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const queryClient = useQueryClient();
+  const [actionError, setActionError] = useState<string | null>(null);
 
-  const fetchTrips = async () => {
-    try {
-      setIsLoading(true);
-      setError(null);
-      const response = await tripsService.getTrips(filters);
-      setTrips(response.items);
-      setMeta(response.meta);
-    } catch (err: unknown) {
-      setError(buildApiErrorMessage(err, 'Failed to fetch trips.'));
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  const tripsQuery = useQuery({
+    queryKey: queryKeys.trips.list(filters),
+    queryFn: () => tripsService.getTrips(filters),
+  });
 
   const runAction = async (action: () => Promise<unknown>) => {
     try {
-      setError(null);
+      setActionError(null);
       await action();
-      await fetchTrips();
+      await queryClient.invalidateQueries({ queryKey: queryKeys.trips.lists() });
+      await queryClient.invalidateQueries({ queryKey: queryKeys.dashboard.stats() });
     } catch (err: unknown) {
-      setError(buildApiErrorMessage(err, 'Failed to update trip.'));
+      setActionError(buildApiErrorMessage(err, 'Failed to update trip.'));
+      throw err;
     }
   };
 
-  useEffect(() => {
-    fetchTrips();
-  }, [
-    filters.page,
-    filters.limit,
-    filters.status,
-    filters.vehicleId,
-    filters.userId,
-    filters.region,
-    filters.includeStops,
-  ]);
+  const createMutation = useMutation({
+    mutationFn: tripsService.createTrip,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.trips.lists() });
+      queryClient.invalidateQueries({ queryKey: queryKeys.dashboard.stats() });
+      setActionError(null);
+    },
+  });
 
   const startTrip = async (id: string) => runAction(() => tripsService.startTrip(id));
   const createTrip = async (data: CreateTripRequest) => {
     try {
-      setError(null);
-      await tripsService.createTrip(data);
-      await fetchTrips();
+      setActionError(null);
+      await createMutation.mutateAsync(data);
     } catch (err: unknown) {
-      setError(buildApiErrorMessage(err, 'Failed to create trip.'));
+      setActionError(buildApiErrorMessage(err, 'Failed to create trip.'));
       throw err;
     }
   };
@@ -89,12 +73,22 @@ export const useTrips = (filters: TripFilters = {}) => {
   const skipStop = async (tripId: string, stopId: string, notes?: string) =>
     runAction(() => tripsService.skipTripStop(tripId, stopId, notes));
 
+  const fallbackMeta: PaginationMeta = {
+    totalItems: 0,
+    totalPages: 0,
+    currentPage: filters.page ?? 1,
+    pageSize: filters.limit ?? 10,
+  };
+
+  const isLoading = tripsQuery.isLoading || createMutation.isPending;
+  const error = actionError ?? (tripsQuery.error ? buildApiErrorMessage(tripsQuery.error, 'Failed to fetch trips.') : null);
+
   return {
-    trips,
-    meta,
+    trips: (tripsQuery.data?.items ?? []) as Trip[],
+    meta: tripsQuery.data?.meta ?? fallbackMeta,
     isLoading,
     error,
-    refetch: fetchTrips,
+    refetch: tripsQuery.refetch,
     createTrip,
     updateTrip,
     startTrip,
