@@ -108,6 +108,12 @@ const Trip = sequelize.define(
       allowNull: false,
       defaultValue: "scheduled",
     },
+    requiredCapacity: {
+      type: DataTypes.INTEGER,
+      defaultValue: 0,
+      allowNull: false,
+      comment: 'Required load capacity in kg for this trip'
+    }
   },
   {
     tableName: "trips",

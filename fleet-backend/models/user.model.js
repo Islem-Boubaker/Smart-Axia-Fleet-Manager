@@ -126,7 +126,38 @@ const User = sequelize.define(
       type: DataTypes.STRING(255),
       allowNull: true,
     },
+    completedTrips: {
+      type: DataTypes.INTEGER,
+      defaultValue: 0,
+      allowNull: false,
+      comment: 'Number of successfully completed trips'
+    }, totalTrips: {
+      type: DataTypes.INTEGER,
+      defaultValue: 0,
+      allowNull: false,
+      comment: 'Total number of assigned trips (completed + cancelled + ongoing)'
+    },
+    yearsOfExperience: {
+      type: DataTypes.INTEGER,
+      defaultValue: 0,
+      allowNull: false,
+      comment: 'Years of driving experience'
+    },
+    familiarRegions: {
+      type: DataTypes.ARRAY(DataTypes.STRING),
+      defaultValue: [],
+      allowNull: false,
+      comment: 'Regions the driver is familiar with (e.g., ["Tunis", "Sfax"])'
+    },
+    preferredVehicles: {
+      type: DataTypes.ARRAY(DataTypes.UUID),
+      defaultValue: [],
+      allowNull: false,
+      comment: 'Array of vehicle IDs the driver has frequently used'
+    }
   },
+
+
   {
     tableName: 'users',
     timestamps: true,
