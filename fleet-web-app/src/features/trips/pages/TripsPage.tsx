@@ -83,6 +83,10 @@ const toEditValues = (trip: Trip): TripEditValues => ({
   notes: trip.notes || '',
 });
 
+const buildVehicleLabel = (vehicle: Vehicle) => (
+  vehicle.plaque_immatriculation ? `${vehicle.name} (${vehicle.plaque_immatriculation})` : vehicle.name
+);
+
 const TripsPage = () => {
   const { dark } = useOutletContext<ThemeContext>();
   const [searchParams] = useSearchParams();
@@ -451,35 +455,55 @@ const TripsPage = () => {
     }
   };
 
-  const vehicleOptions = [
-    { value: '', label: 'Select a vehicle' },
-    ...[...vehicles]
-      .map((vehicle) => {
-        const rec = recommendations?.vehicles?.find((v) => v.id === vehicle.id);
-        const score = (rec as any)?.ml_score;
-        return {
-          value: vehicle.id,
-          label: (vehicle.plaque_immatriculation ? `${vehicle.name} (${vehicle.plaque_immatriculation})` : vehicle.name) + (score ? ` (Score: ${Math.round(score)})` : ''),
-          score: score || 0
-        };
-      })
-      .sort((a, b) => b.score - a.score || (a.label || '').localeCompare(b.label || '')),
-  ];
+  const vehicleOptions = recommendations?.vehicles?.length
+    ? [
+        { value: '', label: 'Select a vehicle' },
+        ...[...recommendations.vehicles]
+          .map((vehicle) => {
+            const score = (vehicle as any)?.ml_score;
+            return {
+              value: vehicle.id,
+              label: (vehicle.name || 'Vehicle') + (score ? ` (Score: ${Math.round(score)})` : ''),
+              score: score || 0,
+            };
+          })
+          .sort((a, b) => b.score - a.score || (a.label || '').localeCompare(b.label || '')),
+      ]
+    : [
+        { value: '', label: 'Select a vehicle' },
+        ...[...vehicles]
+          .map((vehicle) => ({
+            value: vehicle.id,
+            label: buildVehicleLabel(vehicle),
+            score: 0,
+          }))
+          .sort((a, b) => (a.label || '').localeCompare(b.label || '')),
+      ];
 
-  const driverOptions = [
-    { value: '', label: 'Select a driver' },
-    ...[...drivers]
-      .map((driver) => {
-        const rec = recommendations?.drivers?.find((d) => d.id === driver.id);
-        const score = (rec as any)?.ml_score;
-        return {
-          value: driver.id, 
-          label: driver.name + (score ? ` (Score: ${Math.round(score)})` : ''),
-          score: score || 0
-        };
-      })
-      .sort((a, b) => b.score - a.score || (a.label || '').localeCompare(b.label || '')),
-  ];
+  const driverOptions = recommendations?.drivers?.length
+    ? [
+        { value: '', label: 'Select a driver' },
+        ...[...recommendations.drivers]
+          .map((driver) => {
+            const score = (driver as any)?.ml_score;
+            return {
+              value: driver.id,
+              label: driver.name + (score ? ` (Score: ${Math.round(score)})` : ''),
+              score: score || 0,
+            };
+          })
+          .sort((a, b) => b.score - a.score || (a.label || '').localeCompare(b.label || '')),
+      ]
+    : [
+        { value: '', label: 'Select a driver' },
+        ...[...drivers]
+          .map((driver) => ({
+            value: driver.id,
+            label: driver.name,
+            score: 0,
+          }))
+          .sort((a, b) => (a.label || '').localeCompare(b.label || '')),
+      ];
 
 
   return (

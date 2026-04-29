@@ -230,49 +230,63 @@ const TripForm = ({ vehicles, drivers, dark = false, isSubmitting = false, onSub
   };
 
   const vehicleOptions = useMemo(() => {
-    const base = [
-      { value: '', label: 'Select a vehicle' },
-      ...sortedVehicles.map((vehicle) => {
-        const rec = recommendations?.vehicles?.find((v) => v.id === vehicle.id);
-        const score = (rec as any)?.ml_score;
-        return {
-          value: vehicle.id,
-          label: buildVehicleLabel(vehicle) + (score ? ` (Score: ${Math.round(score)})` : ''),
-        };
-      }),
-    ];
-
     if (recommendations?.vehicles?.length) {
-      return base.sort((a, b) => {
-        const scoreA = (recommendations.vehicles.find(v => v.id === a.value) as any)?.ml_score || 0;
-        const scoreB = (recommendations.vehicles.find(v => v.id === b.value) as any)?.ml_score || 0;
-        return scoreB - scoreA;
+      const rankedVehicles = [...recommendations.vehicles].sort((a, b) => {
+        const scoreA = (a as any)?.ml_score || 0;
+        const scoreB = (b as any)?.ml_score || 0;
+        if (scoreB !== scoreA) return scoreB - scoreA;
+        return (a.name || '').localeCompare(b.name || '');
       });
+
+      return [
+        { value: '', label: 'Select a vehicle' },
+        ...rankedVehicles.map((vehicle) => {
+          const score = (vehicle as any)?.ml_score;
+          return {
+            value: vehicle.id,
+            label: (vehicle.name || 'Vehicle') + (score ? ` (Score: ${Math.round(score)})` : ''),
+          };
+        }),
+      ];
     }
-    return base;
+
+    return [
+      { value: '', label: 'Select a vehicle' },
+      ...sortedVehicles.map((vehicle) => ({
+        value: vehicle.id,
+        label: buildVehicleLabel(vehicle),
+      })),
+    ];
   }, [sortedVehicles, recommendations]);
 
   const driverOptions = useMemo(() => {
-    const base = [
-      { value: '', label: 'Select a driver' },
-      ...sortedDrivers.map((driver) => {
-        const rec = recommendations?.drivers?.find((d) => d.id === driver.id);
-        const score = (rec as any)?.ml_score;
-        return {
-          value: driver.id,
-          label: driver.name + (score ? ` (Score: ${Math.round(score)})` : ''),
-        };
-      }),
-    ];
-
     if (recommendations?.drivers?.length) {
-      return base.sort((a, b) => {
-        const scoreA = (recommendations.drivers.find(d => d.id === a.value) as any)?.ml_score || 0;
-        const scoreB = (recommendations.drivers.find(d => d.id === b.value) as any)?.ml_score || 0;
-        return scoreB - scoreA;
+      const rankedDrivers = [...recommendations.drivers].sort((a, b) => {
+        const scoreA = (a as any)?.ml_score || 0;
+        const scoreB = (b as any)?.ml_score || 0;
+        if (scoreB !== scoreA) return scoreB - scoreA;
+        return (a.name || '').localeCompare(b.name || '');
       });
+
+      return [
+        { value: '', label: 'Select a driver' },
+        ...rankedDrivers.map((driver) => {
+          const score = (driver as any)?.ml_score;
+          return {
+            value: driver.id,
+            label: driver.name + (score ? ` (Score: ${Math.round(score)})` : ''),
+          };
+        }),
+      ];
     }
-    return base;
+
+    return [
+      { value: '', label: 'Select a driver' },
+      ...sortedDrivers.map((driver) => ({
+        value: driver.id,
+        label: driver.name,
+      })),
+    ];
   }, [sortedDrivers, recommendations]);
 
   const handleVehicleChange = (vehicleId: string) => {
@@ -315,17 +329,21 @@ const TripForm = ({ vehicles, drivers, dark = false, isSubmitting = false, onSub
   };
 
   const handleGetRecommendations = async () => {
-    if (!values.startTime || !values.startLocation) {
-      setMapError('Please set a start time and location first to get accurate recommendations.');
+    if (!values.startLocation) {
+      setMapError('Please set a start location first to get accurate recommendations.');
       return;
     }
+
+    const startTimeIso = values.startTime
+      ? new Date(values.startTime).toISOString()
+      : new Date().toISOString();
 
     try {
       setIsFetchingRecs(true);
       setMapError(null);
       
       const recs = await tripsService.getTripRecommendations({
-        startTime: new Date(values.startTime).toISOString(),
+        startTime: startTimeIso,
         endTime: values.endTime ? new Date(values.endTime).toISOString() : undefined,
         region: values.region || values.startLocation.split(',')[0],
         distance: Number(values.distance) || 0,
@@ -998,13 +1016,6 @@ const TripForm = ({ vehicles, drivers, dark = false, isSubmitting = false, onSub
         {errors.notes && <p className="mt-1 text-sm text-red-600">{errors.notes}</p>}
       </div>
 
-      <div className={`rounded-xl border px-4 py-3 text-sm ${dark ? 'border-slate-700 bg-slate-800/60 text-slate-200' : 'border-slate-200 bg-slate-50 text-slate-700'}`}>
-        Estimated fuel consumption:{' '}
-        {estimatedFuelLiters !== null
-          ? `${estimatedFuelLiters.toFixed(1)} L${selectedVehicle?.consumption ? ` (based on ${selectedVehicle.consumption} L/100km)` : ''}`
-          : 'Select a vehicle with Consumption (L/100km) and complete route points to estimate fuel.'}
-      </div>
-
       <div className={`flex flex-col sm:flex-row items-center justify-between p-4 rounded-2xl border ${dark ? 'border-indigo-500/30 bg-indigo-500/5' : 'border-indigo-100 bg-indigo-50/50'} gap-4`}>
         <div className="flex-1">
           <p className={`text-sm font-semibold ${dark ? 'text-indigo-300' : 'text-indigo-700'}`}>Smart Recommendation</p>
@@ -1015,8 +1026,8 @@ const TripForm = ({ vehicles, drivers, dark = false, isSubmitting = false, onSub
           variant="primary"
           size="sm"
           onClick={handleGetRecommendations}
-          loading={isFetchingRecs}
-          disabled={!values.startTime || isFetchingRecs}
+          isLoading={isFetchingRecs}
+          disabled={!values.startLocation || isFetchingRecs}
           className="bg-indigo-600 hover:bg-indigo-700 text-white shadow-sm whitespace-nowrap"
         >
           {recommendations ? 'Refresh Suggestions' : 'Get ML Suggestions'}
