@@ -1,10 +1,10 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { CircleMarker, MapContainer, TileLayer, useMapEvents } from 'react-leaflet';
 import type { LeafletMouseEvent } from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { Button, Input, Select, Badge } from '../../../shared/components';
 import type { Driver, Vehicle } from '../../../types';
-import { tripsService } from '../services/trips.service';
+import { tripsService, type RankedRecommendationItem } from '../services/trips.service';
 
 import { formatLocationFromAddress } from '../utils/locationLabel';
 
@@ -37,7 +37,13 @@ interface TripFormProps {
     endLatitude?: number;
     endLongitude?: number;
     startTime: string;
+    endTime?: string;
+    region?: string;
+    requiredCapacity?: number;
+    loadType?: 'general' | 'cold' | 'fragile' | 'heavy';
     distance: number;
+    distance_in_meters?: number;
+    estimated_duration_seconds?: number;
     fuel?: number;
     revenue?: number;
     notes?: string;
@@ -81,6 +87,15 @@ type OsrmWaypoint = {
   location?: [number, number];
 };
 
+type OrsDirectionsResponse = {
+  routes?: Array<{
+    summary?: {
+      distance?: number;
+      duration?: number;
+    };
+  }>;
+};
+
 type NominatimAddress = {
   postcode?: string;
   state?: string;
@@ -96,6 +111,71 @@ type NominatimAddress = {
 };
 
 const MAP_ATTRIBUTION = '&copy; OpenStreetMap contributors';
+const ORS_API_KEY = String(import.meta.env.VITE_ORS_API_KEY || '').trim();
+const ORS_DIRECTIONS_URL = 'https://api.openrouteservice.org/v2/directions/driving-car';
+const ORS_GEOCODE_URL = 'https://api.openrouteservice.org/geocode/search';
+
+const getOrsErrorMessage = async (response: Response) => {
+  try {
+    const data = await response.json();
+    const detail = data?.error?.message || data?.message || data?.error;
+    return detail ? String(detail) : null;
+  } catch {
+    return null;
+  }
+};
+
+const fetchOrsPointFromAddress = async (query: string): Promise<MapPoint | null> => {
+  if (!ORS_API_KEY) return null;
+
+  const params = new URLSearchParams({ text: query, size: '1' });
+  const response = await fetch(`${ORS_GEOCODE_URL}?${params.toString()}`, {
+    headers: {
+      Accept: 'application/json, application/geo+json',
+      Authorization: ORS_API_KEY,
+    },
+  });
+
+  if (!response.ok) {
+    const detail = await getOrsErrorMessage(response);
+    throw new Error(detail || 'OpenRouteService geocoding failed.');
+  }
+
+  const data = (await response.json()) as {
+    features?: Array<{ geometry?: { coordinates?: [number, number] } }>;
+  };
+
+  const coords = data?.features?.[0]?.geometry?.coordinates;
+  if (!coords || coords.length < 2) return null;
+
+  const [lng, lat] = coords;
+  if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null;
+
+  return { lat, lng };
+};
+
+const fetchNominatimPointFromAddress = async (query: string): Promise<MapPoint | null> => {
+  const params = new URLSearchParams({
+    format: 'jsonv2',
+    q: query,
+    limit: '1',
+    'accept-language': 'en',
+  });
+
+  const response = await fetch(`https://nominatim.openstreetmap.org/search?${params.toString()}`);
+  if (!response.ok) {
+    throw new Error('Failed to find this stop on map.');
+  }
+
+  const data = (await response.json()) as Array<{ lat?: string; lon?: string }>;
+  if (!Array.isArray(data) || data.length === 0) return null;
+
+  const lat = Number(data[0].lat);
+  const lng = Number(data[0].lon);
+  if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null;
+
+  return { lat, lng };
+};
 
 const createEndpoint = (): Endpoint => ({
   id: `ep-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
@@ -169,9 +249,18 @@ const TripForm = ({ vehicles, drivers, dark = false, isSubmitting = false, onSub
   const [isOptimizingRoute, setIsOptimizingRoute] = useState(false);
   const [mapError, setMapError] = useState<string | null>(null);
   const [routePlan, setRoutePlan] = useState<RoutePlan | null>(null);
-  const [recommendations, setRecommendations] = useState<{ drivers: Driver[]; vehicles: Vehicle[] } | null>(null);
+  const [recommendations, setRecommendations] = useState<{
+    drivers: RankedRecommendationItem[];
+    vehicles: RankedRecommendationItem[];
+  } | null>(null);
   const [isFetchingRecs, setIsFetchingRecs] = useState(false);
   const endpointLookupTimeoutsRef = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
+  const geocodeCacheRef = useRef<Map<string, MapPoint>>(new Map());
+  const directionsCacheRef = useRef<Map<string, { distanceMeters: number; durationSeconds: number }>>(new Map());
+  const [isCalculatingDistance, setIsCalculatingDistance] = useState(false);
+  const [distanceError, setDistanceError] = useState<string | null>(null);
+  const [distanceMeters, setDistanceMeters] = useState<number | null>(null);
+  const [estimatedDurationSeconds, setEstimatedDurationSeconds] = useState<number | null>(null);
 
 
   const sortedVehicles = useMemo(
@@ -232,8 +321,8 @@ const TripForm = ({ vehicles, drivers, dark = false, isSubmitting = false, onSub
   const vehicleOptions = useMemo(() => {
     if (recommendations?.vehicles?.length) {
       const rankedVehicles = [...recommendations.vehicles].sort((a, b) => {
-        const scoreA = (a as any)?.ml_score || 0;
-        const scoreB = (b as any)?.ml_score || 0;
+        const scoreA = a.score || 0;
+        const scoreB = b.score || 0;
         if (scoreB !== scoreA) return scoreB - scoreA;
         return (a.name || '').localeCompare(b.name || '');
       });
@@ -241,7 +330,7 @@ const TripForm = ({ vehicles, drivers, dark = false, isSubmitting = false, onSub
       return [
         { value: '', label: 'Select a vehicle' },
         ...rankedVehicles.map((vehicle) => {
-          const score = (vehicle as any)?.ml_score;
+          const score = vehicle.score;
           return {
             value: vehicle.id,
             label: (vehicle.name || 'Vehicle') + (score ? ` (Score: ${Math.round(score)})` : ''),
@@ -262,8 +351,8 @@ const TripForm = ({ vehicles, drivers, dark = false, isSubmitting = false, onSub
   const driverOptions = useMemo(() => {
     if (recommendations?.drivers?.length) {
       const rankedDrivers = [...recommendations.drivers].sort((a, b) => {
-        const scoreA = (a as any)?.ml_score || 0;
-        const scoreB = (b as any)?.ml_score || 0;
+        const scoreA = a.score || 0;
+        const scoreB = b.score || 0;
         if (scoreB !== scoreA) return scoreB - scoreA;
         return (a.name || '').localeCompare(b.name || '');
       });
@@ -271,7 +360,7 @@ const TripForm = ({ vehicles, drivers, dark = false, isSubmitting = false, onSub
       return [
         { value: '', label: 'Select a driver' },
         ...rankedDrivers.map((driver) => {
-          const score = (driver as any)?.ml_score;
+          const score = driver.score;
           return {
             value: driver.id,
             label: driver.name + (score ? ` (Score: ${Math.round(score)})` : ''),
@@ -334,20 +423,31 @@ const TripForm = ({ vehicles, drivers, dark = false, isSubmitting = false, onSub
       return;
     }
 
-    const startTimeIso = values.startTime
-      ? new Date(values.startTime).toISOString()
-      : new Date().toISOString();
+    if (!values.startTime) {
+      setMapError('Please set a start time before requesting recommendations.');
+      return;
+    }
+
+    const distanceValueKm = Number(values.distance);
+    if (!Number.isFinite(distanceValueKm) || distanceValueKm <= 0) {
+      setMapError('Please provide start/end addresses so distance can be calculated.');
+      return;
+    }
+
+    const startTimeIso = new Date(values.startTime).toISOString();
 
     try {
       setIsFetchingRecs(true);
       setMapError(null);
       
       const recs = await tripsService.getTripRecommendations({
+        action: 'assignment',
         startTime: startTimeIso,
         endTime: values.endTime ? new Date(values.endTime).toISOString() : undefined,
         region: values.region || values.startLocation.split(',')[0],
-        distance: Number(values.distance) || 0,
-        requiredCapacity: Number(values.requiredCapacity) || 0
+        distance: distanceValueKm,
+        requiredCapacity: Number(values.requiredCapacity) || 0,
+        loadType: 'general',
       });
 
       setRecommendations(recs);
@@ -415,35 +515,82 @@ const TripForm = ({ vehicles, drivers, dark = false, isSubmitting = false, onSub
     return formatLocationFromAddress(data.display_name, data.address);
   };
 
-  const resolvePointFromAddress = async (addressQuery: string): Promise<MapPoint | null> => {
+  const resolvePointFromAddress = useCallback(async (addressQuery: string): Promise<MapPoint | null> => {
     const query = addressQuery.trim();
     if (query.length < 2) return null;
+    const cacheKey = query.toLowerCase();
+    const cached = geocodeCacheRef.current.get(cacheKey);
+    if (cached) return cached;
 
-    const params = new URLSearchParams({
-      format: 'jsonv2',
-      q: query,
-      limit: '1',
-      'accept-language': 'en',
-    });
+    let point: MapPoint | null = null;
 
-    const response = await fetch(`https://nominatim.openstreetmap.org/search?${params.toString()}`);
-    if (!response.ok) {
-      throw new Error('Failed to find this stop on map.');
+    if (ORS_API_KEY) {
+      try {
+        point = await fetchOrsPointFromAddress(query);
+      } catch (error) {
+        const message = error instanceof Error ? error.message : 'OpenRouteService geocoding failed.';
+        setMapError(message);
+      }
     }
 
-    const data = (await response.json()) as Array<{ lat?: string; lon?: string }>;
-    if (!Array.isArray(data) || data.length === 0) {
-      return null;
+    if (!point) {
+      point = await fetchNominatimPointFromAddress(query);
     }
 
-    const lat = Number(data[0].lat);
-    const lng = Number(data[0].lon);
-    if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
-      return null;
-    }
+    if (!point) return null;
 
-    return { lat, lng };
-  };
+    geocodeCacheRef.current.set(cacheKey, point);
+    return point;
+  }, []);
+
+  const fetchDrivingMetrics = useCallback(
+    async (from: MapPoint, to: MapPoint): Promise<{ distanceMeters: number; durationSeconds: number }> => {
+      const cacheKey = `${from.lng},${from.lat}|${to.lng},${to.lat}`;
+      const cached = directionsCacheRef.current.get(cacheKey);
+      if (cached) return cached;
+
+      if (!ORS_API_KEY) {
+        throw new Error('Missing OpenRouteService API key. Set VITE_ORS_API_KEY and restart the dev server.');
+      }
+
+      const response = await fetch(ORS_DIRECTIONS_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Accept: 'application/json, application/geo+json',
+          Authorization: ORS_API_KEY,
+        },
+        body: JSON.stringify({
+          coordinates: [
+            [from.lng, from.lat],
+            [to.lng, to.lat],
+          ],
+          instructions: false,
+          preference: 'fastest',
+        }),
+      });
+
+      if (!response.ok) {
+        const detail = await getOrsErrorMessage(response);
+        throw new Error(detail || 'Distance service is currently unavailable.');
+      }
+
+      const data = (await response.json()) as OrsDirectionsResponse;
+      const summary = data?.routes?.[0]?.summary;
+      const rawDistance = Number(summary?.distance);
+      const rawDuration = Number(summary?.duration);
+      if (!Number.isFinite(rawDistance) || rawDistance <= 0) {
+        throw new Error('Could not calculate route distance.');
+      }
+      const result = {
+        distanceMeters: rawDistance,
+        durationSeconds: Number.isFinite(rawDuration) && rawDuration > 0 ? rawDuration : 0,
+      };
+      directionsCacheRef.current.set(cacheKey, result);
+      return result;
+    },
+    []
+  );
 
   const handleEndpointLabelChange = (endpointId: string, label: string) => {
     setMapError(null);
@@ -560,7 +707,6 @@ const TripForm = ({ vehicles, drivers, dark = false, isSubmitting = false, onSub
 
     if (!startPoint || readyEndpoints.length === 0 || readyEndpoints.length !== endpoints.length) {
       setRoutePlan(null);
-      setValues((prev) => ({ ...prev, endLocation: '', distance: '' }));
       return;
     }
 
@@ -716,6 +862,67 @@ const TripForm = ({ vehicles, drivers, dark = false, isSubmitting = false, onSub
     };
   }, []);
 
+  useEffect(() => {
+    const startAddress = values.startLocation.trim();
+    const endAddress = values.endLocation.trim();
+
+    if (startAddress.length < 2 || endAddress.length < 2) {
+      setDistanceError(null);
+      setDistanceMeters(null);
+      setEstimatedDurationSeconds(null);
+      if (!routePlan) {
+        setValues((prev) => ({ ...prev, distance: '' }));
+      }
+      return;
+    }
+
+    if (!ORS_API_KEY) {
+      setDistanceError('Missing OpenRouteService API key. Set VITE_ORS_API_KEY and restart the dev server.');
+      setDistanceMeters(null);
+      setEstimatedDurationSeconds(null);
+      if (!routePlan) {
+        setValues((prev) => ({ ...prev, distance: '' }));
+      }
+      return;
+    }
+
+    const timer = setTimeout(async () => {
+      try {
+        setIsCalculatingDistance(true);
+        setDistanceError(null);
+        const [startCoords, endCoords] = await Promise.all([
+          resolvePointFromAddress(startAddress),
+          resolvePointFromAddress(endAddress),
+        ]);
+
+        if (!startCoords || !endCoords) {
+          throw new Error('Could not find one of the addresses. Please refine the address text.');
+        }
+
+        const metrics = await fetchDrivingMetrics(startCoords, endCoords);
+        setDistanceMeters(metrics.distanceMeters);
+        setEstimatedDurationSeconds(metrics.durationSeconds);
+        setValues((prev) => ({
+          ...prev,
+          distance: (metrics.distanceMeters / 1000).toFixed(1),
+        }));
+        setErrors((prev) => ({ ...prev, distance: undefined, startLocation: undefined, endLocation: undefined }));
+      } catch (error) {
+        const message =
+          error instanceof Error
+            ? error.message
+            : 'Could not calculate the distance right now. Please try again.';
+        setDistanceError(message);
+        setDistanceMeters(null);
+        setEstimatedDurationSeconds(null);
+      } finally {
+        setIsCalculatingDistance(false);
+      }
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, [values.startLocation, values.endLocation, resolvePointFromAddress, fetchDrivingMetrics, routePlan]);
+
   const validate = () => {
     const nextErrors: Partial<Record<keyof TripFormValues, string>> = {};
 
@@ -734,6 +941,12 @@ const TripForm = ({ vehicles, drivers, dark = false, isSubmitting = false, onSub
 
     if (!values.distance || Number.isNaN(distanceValue) || distanceValue <= 0) {
       nextErrors.distance = 'Distance must be a positive number.';
+    }
+    if (isCalculatingDistance) {
+      nextErrors.distance = 'Distance is still being calculated.';
+    }
+    if (distanceMeters === null) {
+      nextErrors.distance = 'Distance must be calculated from start and end addresses.';
     }
 
     if (values.revenue.trim().length > 0) {
@@ -772,10 +985,13 @@ const TripForm = ({ vehicles, drivers, dark = false, isSubmitting = false, onSub
       endTime: new Date(values.endTime).toISOString(),
       region: values.region.trim(),
       distance: Number(values.distance),
+      distance_in_meters: distanceMeters ?? undefined,
+      estimated_duration_seconds: estimatedDurationSeconds ?? undefined,
       fuel: estimatedFuelLiters !== null ? Number(estimatedFuelLiters.toFixed(2)) : undefined,
       revenue: values.revenue.trim().length > 0 ? Number(values.revenue) : undefined,
       notes: values.notes.trim() || undefined,
       requiredCapacity: Number(values.requiredCapacity),
+      loadType: 'general',
       stops:
 
         intermediateStops.map((stop, index) => ({
@@ -978,16 +1194,24 @@ const TripForm = ({ vehicles, drivers, dark = false, isSubmitting = false, onSub
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <Input
-          label="Distance (km)"
-          type="number"
-          min="1"
-          step="0.1"
-          value={values.distance}
-          error={errors.distance}
-          placeholder="Calculated automatically"
-          readOnly
-        />
+        <div>
+          <Input
+            label="Distance (km)"
+            type="number"
+            min="0"
+            step="0.1"
+            value={values.distance}
+            error={errors.distance}
+            placeholder="Calculated automatically"
+            readOnly
+          />
+          {isCalculatingDistance && (
+            <p className="mt-1 text-xs text-slate-500">Calculating driving distance...</p>
+          )}
+          {distanceError && !errors.distance && (
+            <p className="mt-1 text-xs text-red-600">{distanceError}</p>
+          )}
+        </div>
         <Input
           label="Revenue (TND)"
           type="number"
@@ -1064,7 +1288,11 @@ const TripForm = ({ vehicles, drivers, dark = false, isSubmitting = false, onSub
         <Button type="button" variant="secondary" onClick={onCancel} disabled={isSubmitting}>
           Cancel
         </Button>
-        <Button type="submit" isLoading={isSubmitting}>
+        <Button
+          type="submit"
+          isLoading={isSubmitting}
+          disabled={isCalculatingDistance || distanceMeters === null}
+        >
           Create trip
         </Button>
       </div>

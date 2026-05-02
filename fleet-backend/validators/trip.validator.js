@@ -41,8 +41,8 @@ const mapLegacyCostToRevenue = (payload = {}) => {
 };
 
 const createTripSchema = z.object({
-  vehicleId: uuid,
-  userId: uuid,
+  vehicleId: uuid.optional(),
+  userId: uuid.optional(),
   region: z.string().min(2).optional(),
   notes: z.string().optional().nullable(),
   startLocation: z.string().min(2),
@@ -54,6 +54,8 @@ const createTripSchema = z.object({
   startTime: isoDate,
   endTime: isoDate.optional().nullable(),
   distance: z.number().positive(),
+  requiredCapacity: z.number().int().nonnegative().optional(),
+  loadType: z.enum(["general", "cold", "fragile", "heavy"]).optional(),
   fuel: z.number().nonnegative().optional().nullable(),
   revenue: z.number().nonnegative().optional().nullable(),
   stops: z.array(stopSchema).optional(),
@@ -74,6 +76,8 @@ const updateTripSchema = z
     startTime: isoDate.optional(),
     endTime: isoDate.optional().nullable(),
     distance: z.number().positive().optional(),
+    requiredCapacity: z.number().int().nonnegative().optional(),
+    loadType: z.enum(["general", "cold", "fragile", "heavy"]).optional(),
     fuel: z.number().nonnegative().optional().nullable(),
     revenue: z.number().nonnegative().optional().nullable(),
     stops: z.array(stopSchema).optional(),
@@ -115,6 +119,29 @@ const reorderStopsSchema = z.object({
     })
   ).min(1),
 });
+
+const recommendationSchema = z
+  .object({
+    tripId: uuid.optional(),
+    startTime: isoDate.optional(),
+    endTime: isoDate.optional().nullable(),
+    region: z.string().min(2).optional(),
+    distance: z.number().positive().optional(),
+    requiredCapacity: z.number().int().nonnegative().optional(),
+    loadType: z.enum(["general", "cold", "fragile", "heavy"]).optional(),
+    action: z.enum(["drivers", "vehicles", "assignment", "apply"]).optional(),
+    topN: z.number().int().positive().max(20).optional(),
+  })
+  .refine(
+    (data) =>
+      Boolean(data.tripId) ||
+      (Boolean(data.startTime) && data.distance !== undefined),
+    {
+      message: "Provide tripId or (startTime + distance + optional trip fields)",
+      path: ["tripId"],
+    }
+  )
+  .strict();
 
 const parseBody = (schema, req, res, next) => {
   const parsed = schema.safeParse(req.body);
@@ -168,4 +195,8 @@ export const validateSkipStop = (req, res, next) => {
 
 export const validateReorderStops = (req, res, next) => {
   return parseBody(reorderStopsSchema, req, res, next);
+};
+
+export const validateRecommendations = (req, res, next) => {
+  return parseBody(recommendationSchema, req, res, next);
 };

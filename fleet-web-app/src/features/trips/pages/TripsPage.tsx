@@ -7,7 +7,7 @@ import TripsList from '../components/TripsList';
 import TripForm from '../components/TripForm';
 import TripDetailsView from '../components/TripDetailsView';
 import { useTrips } from '../hooks/useTrips';
-import { tripsService } from '../services/trips.service';
+import { tripsService, type RankedRecommendationItem } from '../services/trips.service';
 import { Button, GlobalCard, Input, Select } from '../../../shared/components';
 import { vehiclesService } from '../../vehicles/services/vehicles.service';
 import { driversService } from '../../drivers/services/drivers.service';
@@ -106,7 +106,7 @@ const TripsPage = () => {
   const [editStops, setEditStops] = useState<EditableStop[]>([]);
   const [editErrors, setEditErrors] = useState<Partial<Record<keyof TripEditValues, string>>>({});
   const [editStopsError, setEditStopsError] = useState<string | null>(null);
-  const [recommendations, setRecommendations] = useState<{ drivers: Driver[]; vehicles: Vehicle[] } | null>(null);
+  const [recommendations, setRecommendations] = useState<{ drivers: RankedRecommendationItem[]; vehicles: RankedRecommendationItem[] } | null>(null);
   const [isFetchingRecs, setIsFetchingRecs] = useState(false);
 
   const [editError, setEditError] = useState<string | null>(null);
@@ -190,9 +190,19 @@ const TripsPage = () => {
     vehicleId: string;
     userId: string;
     startLocation: string;
+    startLatitude?: number;
+    startLongitude?: number;
     endLocation: string;
+    endLatitude?: number;
+    endLongitude?: number;
     startTime: string;
+    endTime?: string;
+    region?: string;
+    requiredCapacity?: number;
+    loadType?: 'general' | 'cold' | 'fragile' | 'heavy';
     distance: number;
+    distance_in_meters?: number;
+    estimated_duration_seconds?: number;
     fuel?: number;
     revenue?: number;
     notes?: string;
@@ -423,7 +433,19 @@ const TripsPage = () => {
 
   const handleGetEditRecommendations = async () => {
     if (!editValues?.startTime || !editValues?.region) {
-      setEditError('Please set a start time, region, and required capacity first to get accurate recommendations.');
+      setEditError('Please set a start time and region before requesting recommendations.');
+      return;
+    }
+
+    const distanceValue = Number(editValues.distance);
+    if (!Number.isFinite(distanceValue) || distanceValue <= 0) {
+      setEditError('Please set a valid distance before requesting recommendations.');
+      return;
+    }
+
+    const capacityValue = Number(editValues.requiredCapacity);
+    if (!Number.isFinite(capacityValue) || capacityValue <= 0) {
+      setEditError('Please set a required capacity greater than 0 before requesting recommendations.');
       return;
     }
 
@@ -432,11 +454,13 @@ const TripsPage = () => {
       setEditError(null);
       
       const recs = await tripsService.getTripRecommendations({
+        action: 'assignment',
         startTime: new Date(editValues.startTime).toISOString(),
         endTime: editValues.endTime ? new Date(editValues.endTime).toISOString() : undefined,
         region: editValues.region.trim(),
-        distance: Number(editValues.distance) || 0,
-        requiredCapacity: Number(editValues.requiredCapacity) || 0
+        distance: distanceValue,
+        requiredCapacity: capacityValue,
+        loadType: 'general',
       });
 
       setRecommendations(recs);
@@ -460,7 +484,7 @@ const TripsPage = () => {
         { value: '', label: 'Select a vehicle' },
         ...[...recommendations.vehicles]
           .map((vehicle) => {
-            const score = (vehicle as any)?.ml_score;
+            const score = vehicle.score;
             return {
               value: vehicle.id,
               label: (vehicle.name || 'Vehicle') + (score ? ` (Score: ${Math.round(score)})` : ''),
@@ -485,7 +509,7 @@ const TripsPage = () => {
         { value: '', label: 'Select a driver' },
         ...[...recommendations.drivers]
           .map((driver) => {
-            const score = (driver as any)?.ml_score;
+            const score = driver.score;
             return {
               value: driver.id,
               label: driver.name + (score ? ` (Score: ${Math.round(score)})` : ''),
@@ -618,7 +642,7 @@ const TripsPage = () => {
                 variant="primary"
                 size="sm"
                 onClick={handleGetEditRecommendations}
-                loading={isFetchingRecs}
+                isLoading={isFetchingRecs}
                 disabled={!editValues.startTime || isFetchingRecs}
                 className="bg-indigo-600 hover:bg-indigo-700 text-white shadow-sm whitespace-nowrap"
               >

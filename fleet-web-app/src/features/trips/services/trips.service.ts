@@ -34,7 +34,11 @@ export interface CreateTripRequest {
   endLongitude?: number;
   startTime: string;
   distance: number;
+  distance_in_meters?: number;
+  estimated_duration_seconds?: number;
   region?: string;
+  requiredCapacity?: number;
+  loadType?: 'general' | 'cold' | 'fragile' | 'heavy';
   notes?: string;
   endTime?: string;
   fuel?: number;
@@ -47,6 +51,12 @@ export interface CreateTripRequest {
     estimatedArrival?: string;
     notes?: string;
   }>;
+}
+
+export interface RankedRecommendationItem {
+  id: string;
+  name: string;
+  score: number;
 }
 
 export const tripsService = {
@@ -165,13 +175,16 @@ export const tripsService = {
   },
 
   getTripRecommendations: async (data: {
+    action?: 'drivers' | 'vehicles' | 'assignment' | 'apply';
+    tripId?: string;
     startTime: string;
     endTime?: string;
     region?: string;
     requiredCapacity?: number;
     distance?: number;
-  }): Promise<{ drivers: Driver[]; vehicles: Vehicle[] }> => {
-    const response = await api.post<{ success: boolean; data: { drivers: Driver[]; vehicles: Vehicle[] } }>(
+    loadType?: 'general' | 'cold' | 'fragile' | 'heavy';
+  }): Promise<{ drivers: RankedRecommendationItem[]; vehicles: RankedRecommendationItem[] }> => {
+    const response = await api.post<{ success: boolean; data: { drivers: RankedRecommendationItem[]; vehicles: RankedRecommendationItem[] } }>(
       '/trips/recommendations',
       data
     );

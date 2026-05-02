@@ -192,6 +192,34 @@ const Vehicle = sequelize.define(
   maintenance_recommandation_ai: {
   type: DataTypes.JSON,
   allowNull: true,
+},
+  fuelEfficiency: {
+  type: DataTypes.ENUM('low', 'medium', 'high'),
+  allowNull: false,
+  defaultValue: 'medium',
+},
+  engineType: {
+  type: DataTypes.ENUM('diesel', 'petrol', 'hybrid', 'electric'),
+  allowNull: false,
+  defaultValue: 'diesel',
+},
+  loadType: {
+  type: DataTypes.ENUM('general', 'cold', 'fragile', 'heavy'),
+  allowNull: false,
+  defaultValue: 'general',
+},
+  lastMaintenanceDate: {
+  type: DataTypes.DATEONLY,
+  allowNull: true,
+},
+  nextMaintenanceDate: {
+  type: DataTypes.DATEONLY,
+  allowNull: true,
+},
+  isAvailable: {
+  type: DataTypes.BOOLEAN,
+  allowNull: false,
+  defaultValue: true,
 }
   },
 {

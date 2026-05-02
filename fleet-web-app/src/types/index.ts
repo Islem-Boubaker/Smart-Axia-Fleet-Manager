@@ -82,6 +82,10 @@ export interface Trip {
   startTime: string;
   endTime?: string;
   distance: number;
+  requiredCapacity?: number;
+  loadType?: 'general' | 'cold' | 'fragile' | 'heavy';
+  distance_in_meters?: number;
+  estimated_duration_seconds?: number;
   fuel?: number;
   revenue?: number;
   status: 'scheduled' | 'ongoing' | 'completed' | 'cancelled';

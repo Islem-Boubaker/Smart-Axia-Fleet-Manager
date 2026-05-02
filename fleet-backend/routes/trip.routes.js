@@ -9,6 +9,7 @@ import {
   validateUpdateTrip,
   validateUpdateStatus,
   validateCompleteTrip,
+  validateRecommendations,
 } from "../validators/trip.validator.js";
 import cacheMiddleware from "../middlewares/cache.middleware.js";
 
@@ -101,6 +102,8 @@ router.post(
 router.post(
   "/trips/recommendations",
   authorizeRoles("ADMIN", "MANAGER"),
+  csrfMiddleware.verifyCsrf,
+  validateRecommendations,
   tripController.getRecommendations
 );
 
