@@ -1,13 +1,16 @@
 import { useState, memo, useEffect } from 'react';
-import { Outlet } from 'react-router-dom';
+import { Outlet, useLocation } from 'react-router-dom';
 import { AppTopBar } from './Header/AppTopBar';
 import { Sidebar } from './Sidebar';
+import { ROUTES } from '../../../utils/constants';
 
 export const DashboardLayout = memo(() => {
   const [dark, setDark] = useState(() => {
     return localStorage.getItem('theme') === 'dark';
   });
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const location = useLocation();
+  const isReportsPage = location.pathname === ROUTES.REPORTS;
 
   useEffect(() => {
     document.documentElement.classList.toggle('dark', dark);
@@ -28,11 +31,13 @@ export const DashboardLayout = memo(() => {
         <AppTopBar dark={dark} setDark={setDark} onMenuClick={() => setSidebarOpen(true)} />
 
         <main
-          className={`flex-1 overflow-y-auto overflow-x-hidden px-4 sm:px-8 lg:px-12 py-6 lg:py-10 transition-colors ${
-            dark ? 'text-slate-100' : 'text-slate-900'
-          }`}
+          className={`flex-1 transition-colors ${
+            isReportsPage
+              ? 'min-h-0 overflow-hidden p-0'
+              : 'overflow-y-auto overflow-x-hidden px-4 py-6 sm:px-8 lg:px-12 lg:py-10'
+          } ${dark ? 'text-slate-100' : 'text-slate-900'}`}
         >
-          <div className="max-w-[1440px] mx-auto w-full">
+          <div className={isReportsPage ? 'h-full w-full' : 'mx-auto w-full max-w-[1440px]'}>
             <Outlet context={{ dark, setDark }} />
           </div>
         </main>
