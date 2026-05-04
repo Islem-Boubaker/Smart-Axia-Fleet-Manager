@@ -238,7 +238,9 @@ export default function ReclamationsScreen() {
       <TouchableOpacity
         className="absolute bottom-5 right-5 w-14 h-14 rounded-3xl bg-brand-600 items-center justify-center border border-white/20"
         style={{
-          elevation: 10,
+          position: "absolute",
+          elevation: 12,
+          zIndex: 999,
           shadowColor: "#0F172A",
           shadowOpacity: 0.3,
           shadowRadius: 16,

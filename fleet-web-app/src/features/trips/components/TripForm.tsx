@@ -2,8 +2,10 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { CircleMarker, MapContainer, TileLayer, useMapEvents } from 'react-leaflet';
 import type { LeafletMouseEvent } from 'leaflet';
 import 'leaflet/dist/leaflet.css';
-import { Button, Input, Select } from '../../../shared/components';
+import { Button, Input, Select, Badge } from '../../../shared/components';
 import type { Driver, Vehicle } from '../../../types';
+import { tripsService } from '../services/trips.service';
+
 import { formatLocationFromAddress } from '../utils/locationLabel';
 
 type TripFormValues = {
@@ -12,6 +14,9 @@ type TripFormValues = {
   startLocation: string;
   endLocation: string;
   startTime: string;
+  endTime: string;
+  region: string;
+  requiredCapacity: string;
   distance: string;
   revenue: string;
   notes: string;
@@ -146,6 +151,9 @@ const TripForm = ({ vehicles, drivers, dark = false, isSubmitting = false, onSub
     startLocation: '',
     endLocation: '',
     startTime: '',
+    endTime: '',
+    region: '',
+    requiredCapacity: '',
     distance: '',
     revenue: '',
     notes: '',
@@ -161,7 +169,10 @@ const TripForm = ({ vehicles, drivers, dark = false, isSubmitting = false, onSub
   const [isOptimizingRoute, setIsOptimizingRoute] = useState(false);
   const [mapError, setMapError] = useState<string | null>(null);
   const [routePlan, setRoutePlan] = useState<RoutePlan | null>(null);
+  const [recommendations, setRecommendations] = useState<{ drivers: Driver[]; vehicles: Vehicle[] } | null>(null);
+  const [isFetchingRecs, setIsFetchingRecs] = useState(false);
   const endpointLookupTimeoutsRef = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
+
 
   const sortedVehicles = useMemo(
     () => [...vehicles].sort((a, b) => (a.name || '').localeCompare(b.name || '')),
@@ -218,27 +229,51 @@ const TripForm = ({ vehicles, drivers, dark = false, isSubmitting = false, onSub
     return sortedDrivers.find((driver) => findVehicleFromAssignedValue(driver.assignedVehicle)?.id === vehicleId);
   };
 
-  const vehicleOptions = useMemo(
-    () => [
+  const vehicleOptions = useMemo(() => {
+    const base = [
       { value: '', label: 'Select a vehicle' },
-      ...sortedVehicles.map((vehicle) => ({
-        value: vehicle.id,
-        label: buildVehicleLabel(vehicle),
-      })),
-    ],
-    [sortedVehicles]
-  );
+      ...sortedVehicles.map((vehicle) => {
+        const rec = recommendations?.vehicles?.find((v) => v.id === vehicle.id);
+        const score = (rec as any)?.ml_score;
+        return {
+          value: vehicle.id,
+          label: buildVehicleLabel(vehicle) + (score ? ` (Score: ${Math.round(score)})` : ''),
+        };
+      }),
+    ];
 
-  const driverOptions = useMemo(
-    () => [
+    if (recommendations?.vehicles?.length) {
+      return base.sort((a, b) => {
+        const scoreA = (recommendations.vehicles.find(v => v.id === a.value) as any)?.ml_score || 0;
+        const scoreB = (recommendations.vehicles.find(v => v.id === b.value) as any)?.ml_score || 0;
+        return scoreB - scoreA;
+      });
+    }
+    return base;
+  }, [sortedVehicles, recommendations]);
+
+  const driverOptions = useMemo(() => {
+    const base = [
       { value: '', label: 'Select a driver' },
-      ...sortedDrivers.map((driver) => ({
-        value: driver.id,
-        label: driver.name,
-      })),
-    ],
-    [sortedDrivers]
-  );
+      ...sortedDrivers.map((driver) => {
+        const rec = recommendations?.drivers?.find((d) => d.id === driver.id);
+        const score = (rec as any)?.ml_score;
+        return {
+          value: driver.id,
+          label: driver.name + (score ? ` (Score: ${Math.round(score)})` : ''),
+        };
+      }),
+    ];
+
+    if (recommendations?.drivers?.length) {
+      return base.sort((a, b) => {
+        const scoreA = (recommendations.drivers.find(d => d.id === a.value) as any)?.ml_score || 0;
+        const scoreB = (recommendations.drivers.find(d => d.id === b.value) as any)?.ml_score || 0;
+        return scoreB - scoreA;
+      });
+    }
+    return base;
+  }, [sortedDrivers, recommendations]);
 
   const handleVehicleChange = (vehicleId: string) => {
     const autoDriverId = vehicleId ? findDriverAssignedToVehicle(vehicleId)?.id ?? '' : '';
@@ -278,6 +313,42 @@ const TripForm = ({ vehicles, drivers, dark = false, isSubmitting = false, onSub
     setValues((prev) => ({ ...prev, [field]: value }));
     setErrors((prev) => ({ ...prev, [field]: undefined }));
   };
+
+  const handleGetRecommendations = async () => {
+    if (!values.startTime || !values.startLocation) {
+      setMapError('Please set a start time and location first to get accurate recommendations.');
+      return;
+    }
+
+    try {
+      setIsFetchingRecs(true);
+      setMapError(null);
+      
+      const recs = await tripsService.getTripRecommendations({
+        startTime: new Date(values.startTime).toISOString(),
+        endTime: values.endTime ? new Date(values.endTime).toISOString() : undefined,
+        region: values.region || values.startLocation.split(',')[0],
+        distance: Number(values.distance) || 0,
+        requiredCapacity: Number(values.requiredCapacity) || 0
+      });
+
+      setRecommendations(recs);
+
+
+      // Auto-select the best ones if none are selected
+      setValues(prev => ({
+        ...prev,
+        vehicleId: prev.vehicleId || recs.vehicles[0]?.id || '',
+        userId: prev.userId || recs.drivers[0]?.id || ''
+      }));
+
+    } catch (err) {
+      setMapError('Failed to fetch ML recommendations. Using standard lists.');
+    } finally {
+      setIsFetchingRecs(false);
+    }
+  };
+
 
   const addEndpoint = () => {
     setEndpoints((prev) => [...prev, createEndpoint()]);
@@ -632,11 +703,17 @@ const TripForm = ({ vehicles, drivers, dark = false, isSubmitting = false, onSub
 
     if (!values.vehicleId) nextErrors.vehicleId = 'Vehicle is required.';
     if (!values.userId) nextErrors.userId = 'Driver is required.';
-    if (values.startLocation.trim().length < 2) nextErrors.startLocation = 'Start location must be at least 2 characters.';
-    if (values.endLocation.trim().length < 2) nextErrors.endLocation = 'Add at least one endpoint and pick points on the map.';
-    if (!values.startTime) nextErrors.startTime = 'Start date/time is required.';
+    if (values.startLocation.trim().length < 2) nextErrors.startLocation = 'Start location is required.';
+    if (values.endLocation.trim().length < 2) nextErrors.endLocation = 'Destination is required.';
+    if (!values.startTime) nextErrors.startTime = 'Start time is required.';
+    if (!values.endTime) nextErrors.endTime = 'End time is required.';
+    if (!values.region) nextErrors.region = 'Region is required.';
+    if (!values.requiredCapacity || Number(values.requiredCapacity) <= 0) {
+      nextErrors.requiredCapacity = 'Capacity must be greater than 0.';
+    }
 
     const distanceValue = Number(values.distance);
+
     if (!values.distance || Number.isNaN(distanceValue) || distanceValue <= 0) {
       nextErrors.distance = 'Distance must be a positive number.';
     }
@@ -674,11 +751,15 @@ const TripForm = ({ vehicles, drivers, dark = false, isSubmitting = false, onSub
       endLatitude: finalDestination?.point.lat,
       endLongitude: finalDestination?.point.lng,
       startTime: new Date(values.startTime).toISOString(),
+      endTime: new Date(values.endTime).toISOString(),
+      region: values.region.trim(),
       distance: Number(values.distance),
       fuel: estimatedFuelLiters !== null ? Number(estimatedFuelLiters.toFixed(2)) : undefined,
       revenue: values.revenue.trim().length > 0 ? Number(values.revenue) : undefined,
       notes: values.notes.trim() || undefined,
+      requiredCapacity: Number(values.requiredCapacity),
       stops:
+
         intermediateStops.map((stop, index) => ({
           locationName: stop.label,
           stopOrder: index + 1,
@@ -691,45 +772,19 @@ const TripForm = ({ vehicles, drivers, dark = false, isSubmitting = false, onSub
   return (
     <form onSubmit={handleSubmit} className="space-y-5">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div>
-          <label className="block text-[13px] text-gray-500 dark:text-slate-400 mb-1.5">Vehicle</label>
-          <Select
-            value={values.vehicleId}
-            onChange={handleVehicleChange}
-            dark={dark}
-            options={vehicleOptions}
-            className={errors.vehicleId ? '[&>button]:!border-red-500' : ''}
-          />
-          {errors.vehicleId && <p className="mt-1 text-sm text-red-600">{errors.vehicleId}</p>}
-        </div>
-
-        <div>
-          <label className="block text-[13px] text-gray-500 dark:text-slate-400 mb-1.5">Driver</label>
-          <Select
-            value={values.userId}
-            onChange={handleDriverChange}
-            dark={dark}
-            options={driverOptions}
-            className={errors.userId ? '[&>button]:!border-red-500' : ''}
-          />
-          {errors.userId && <p className="mt-1 text-sm text-red-600">{errors.userId}</p>}
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <Input
           label="Start location"
           value={values.startLocation}
+          onChange={(e) => onFieldChange('startLocation', e.target.value)}
           error={errors.startLocation}
-          placeholder="Choose start point from map"
-          readOnly
+          placeholder="Type or pick from map"
         />
         <Input
           label="Final destination"
           value={values.endLocation}
+          onChange={(e) => onFieldChange('endLocation', e.target.value)}
           error={errors.endLocation}
-          placeholder="Calculated from optimized route"
-          readOnly
+          placeholder="Type or calculated from route"
         />
       </div>
 
@@ -871,7 +926,7 @@ const TripForm = ({ vehicles, drivers, dark = false, isSubmitting = false, onSub
         )}
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <Input
           label="Start date/time"
           type="datetime-local"
@@ -879,6 +934,32 @@ const TripForm = ({ vehicles, drivers, dark = false, isSubmitting = false, onSub
           onChange={(e) => onFieldChange('startTime', e.target.value)}
           error={errors.startTime}
         />
+        <Input
+          label="End date/time"
+          type="datetime-local"
+          value={values.endTime}
+          onChange={(e) => onFieldChange('endTime', e.target.value)}
+          error={errors.endTime}
+        />
+        <Input
+          label="Region"
+          value={values.region}
+          onChange={(e) => onFieldChange('region', e.target.value)}
+          error={errors.region}
+          placeholder="e.g. Tunis, Sfax"
+        />
+        <Input
+          label="Req. Capacity (kg)"
+          type="number"
+          min="1"
+          value={values.requiredCapacity}
+          onChange={(e) => onFieldChange('requiredCapacity', e.target.value)}
+          error={errors.requiredCapacity}
+          placeholder="Min capacity"
+        />
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <Input
           label="Distance (km)"
           type="number"
@@ -922,6 +1003,50 @@ const TripForm = ({ vehicles, drivers, dark = false, isSubmitting = false, onSub
         {estimatedFuelLiters !== null
           ? `${estimatedFuelLiters.toFixed(1)} L${selectedVehicle?.consumption ? ` (based on ${selectedVehicle.consumption} L/100km)` : ''}`
           : 'Select a vehicle with Consumption (L/100km) and complete route points to estimate fuel.'}
+      </div>
+
+      <div className={`flex flex-col sm:flex-row items-center justify-between p-4 rounded-2xl border ${dark ? 'border-indigo-500/30 bg-indigo-500/5' : 'border-indigo-100 bg-indigo-50/50'} gap-4`}>
+        <div className="flex-1">
+          <p className={`text-sm font-semibold ${dark ? 'text-indigo-300' : 'text-indigo-700'}`}>Smart Recommendation</p>
+          <p className="text-xs text-gray-500 dark:text-slate-400">Rank drivers and vehicles for this specific route.</p>
+        </div>
+        <Button
+          type="button"
+          variant="primary"
+          size="sm"
+          onClick={handleGetRecommendations}
+          loading={isFetchingRecs}
+          disabled={!values.startTime || isFetchingRecs}
+          className="bg-indigo-600 hover:bg-indigo-700 text-white shadow-sm whitespace-nowrap"
+        >
+          {recommendations ? 'Refresh Suggestions' : 'Get ML Suggestions'}
+        </Button>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <label className="block text-[13px] text-gray-500 dark:text-slate-400 mb-1.5">Vehicle</label>
+          <Select
+            value={values.vehicleId}
+            onChange={handleVehicleChange}
+            dark={dark}
+            options={vehicleOptions}
+            className={errors.vehicleId ? '[&>button]:!border-red-500' : ''}
+          />
+          {errors.vehicleId && <p className="mt-1 text-sm text-red-600">{errors.vehicleId}</p>}
+        </div>
+
+        <div>
+          <label className="block text-[13px] text-gray-500 dark:text-slate-400 mb-1.5">Driver</label>
+          <Select
+            value={values.userId}
+            onChange={handleDriverChange}
+            dark={dark}
+            options={driverOptions}
+            className={errors.userId ? '[&>button]:!border-red-500' : ''}
+          />
+          {errors.userId && <p className="mt-1 text-sm text-red-600">{errors.userId}</p>}
+        </div>
       </div>
 
       <div className="flex items-center justify-end gap-3 pt-2">

@@ -29,6 +29,8 @@ type TripEditValues = {
   distance: string;
   fuel: string;
   revenue: string;
+  region: string;
+  requiredCapacity: string;
   notes: string;
 };
 
@@ -76,6 +78,8 @@ const toEditValues = (trip: Trip): TripEditValues => ({
   distance: trip.distance !== undefined && trip.distance !== null ? String(trip.distance) : '',
   fuel: trip.fuel !== undefined && trip.fuel !== null ? String(trip.fuel) : '',
   revenue: trip.revenue !== undefined && trip.revenue !== null ? String(trip.revenue) : '',
+  region: trip.region || '',
+  requiredCapacity: trip.requiredCapacity !== undefined && trip.requiredCapacity !== null ? String(trip.requiredCapacity) : '',
   notes: trip.notes || '',
 });
 
@@ -98,6 +102,9 @@ const TripsPage = () => {
   const [editStops, setEditStops] = useState<EditableStop[]>([]);
   const [editErrors, setEditErrors] = useState<Partial<Record<keyof TripEditValues, string>>>({});
   const [editStopsError, setEditStopsError] = useState<string | null>(null);
+  const [recommendations, setRecommendations] = useState<{ drivers: Driver[]; vehicles: Vehicle[] } | null>(null);
+  const [isFetchingRecs, setIsFetchingRecs] = useState(false);
+
   const [editError, setEditError] = useState<string | null>(null);
   const [isEditSubmitting, setIsEditSubmitting] = useState(false);
   const vehiclesQuery = useQuery({
@@ -230,6 +237,10 @@ const TripsPage = () => {
     if (editValues.startLocation.trim().length < 2) nextErrors.startLocation = 'Start location must be at least 2 characters.';
     if (editValues.endLocation.trim().length < 2) nextErrors.endLocation = 'End location must be at least 2 characters.';
     if (!editValues.startTime) nextErrors.startTime = 'Start date/time is required.';
+    if (!editValues.region) nextErrors.region = 'Region is required.';
+    if (!editValues.requiredCapacity || Number(editValues.requiredCapacity) <= 0) {
+      nextErrors.requiredCapacity = 'Capacity must be greater than 0.';
+    }
 
     const distance = Number(editValues.distance);
     if (Number.isNaN(distance) || distance <= 0) {
@@ -317,6 +328,8 @@ const TripsPage = () => {
         endLocation: editValues.endLocation.trim(),
         startTime: new Date(editValues.startTime).toISOString(),
         endTime: editValues.endTime ? new Date(editValues.endTime).toISOString() : undefined,
+        region: editValues.region.trim(),
+        requiredCapacity: Number(editValues.requiredCapacity),
         distance: Number(editValues.distance),
         fuel: editValues.fuel.trim().length > 0 ? Number(editValues.fuel) : undefined,
         revenue: editValues.revenue.trim().length > 0 ? Number(editValues.revenue) : undefined,
@@ -404,22 +417,70 @@ const TripsPage = () => {
     }
   };
 
+  const handleGetEditRecommendations = async () => {
+    if (!editValues?.startTime || !editValues?.region) {
+      setEditError('Please set a start time, region, and required capacity first to get accurate recommendations.');
+      return;
+    }
+
+    try {
+      setIsFetchingRecs(true);
+      setEditError(null);
+      
+      const recs = await tripsService.getTripRecommendations({
+        startTime: new Date(editValues.startTime).toISOString(),
+        endTime: editValues.endTime ? new Date(editValues.endTime).toISOString() : undefined,
+        region: editValues.region.trim(),
+        distance: Number(editValues.distance) || 0,
+        requiredCapacity: Number(editValues.requiredCapacity) || 0
+      });
+
+      setRecommendations(recs);
+
+      // Auto-select the best ones if none are selected
+      setEditValues(prev => prev ? ({
+        ...prev,
+        vehicleId: prev.vehicleId || recs.vehicles[0]?.id || '',
+        userId: prev.userId || recs.drivers[0]?.id || ''
+      }) : null);
+
+    } catch (err) {
+      setEditError('Failed to fetch ML recommendations. Using standard lists.');
+    } finally {
+      setIsFetchingRecs(false);
+    }
+  };
+
   const vehicleOptions = [
     { value: '', label: 'Select a vehicle' },
     ...[...vehicles]
-      .sort((a, b) => (a.name || '').localeCompare(b.name || ''))
-      .map((vehicle) => ({
-        value: vehicle.id,
-        label: vehicle.plaque_immatriculation ? `${vehicle.name} (${vehicle.plaque_immatriculation})` : vehicle.name,
-      })),
+      .map((vehicle) => {
+        const rec = recommendations?.vehicles?.find((v) => v.id === vehicle.id);
+        const score = (rec as any)?.ml_score;
+        return {
+          value: vehicle.id,
+          label: (vehicle.plaque_immatriculation ? `${vehicle.name} (${vehicle.plaque_immatriculation})` : vehicle.name) + (score ? ` (Score: ${Math.round(score)})` : ''),
+          score: score || 0
+        };
+      })
+      .sort((a, b) => b.score - a.score || (a.label || '').localeCompare(b.label || '')),
   ];
 
   const driverOptions = [
     { value: '', label: 'Select a driver' },
     ...[...drivers]
-      .sort((a, b) => (a.name || '').localeCompare(b.name || ''))
-      .map((driver) => ({ value: driver.id, label: driver.name })),
+      .map((driver) => {
+        const rec = recommendations?.drivers?.find((d) => d.id === driver.id);
+        const score = (rec as any)?.ml_score;
+        return {
+          value: driver.id, 
+          label: driver.name + (score ? ` (Score: ${Math.round(score)})` : ''),
+          score: score || 0
+        };
+      })
+      .sort((a, b) => b.score - a.score || (a.label || '').localeCompare(b.label || '')),
   ];
+
 
   return (
     <>
@@ -523,7 +584,26 @@ const TripsPage = () => {
 
         {editValues && (
           <div className="space-y-4">
+            <div className={`flex flex-col sm:flex-row items-center justify-between p-4 rounded-2xl border ${dark ? 'border-indigo-500/30 bg-indigo-500/5' : 'border-indigo-100 bg-indigo-50/50'} gap-4`}>
+              <div className="flex-1">
+                <p className={`text-sm font-semibold ${dark ? 'text-indigo-300' : 'text-indigo-700'}`}>Smart Recommendation</p>
+                <p className="text-xs text-gray-500 dark:text-slate-400">Rank drivers and vehicles for this specific route.</p>
+              </div>
+              <Button
+                type="button"
+                variant="primary"
+                size="sm"
+                onClick={handleGetEditRecommendations}
+                loading={isFetchingRecs}
+                disabled={!editValues.startTime || isFetchingRecs}
+                className="bg-indigo-600 hover:bg-indigo-700 text-white shadow-sm whitespace-nowrap"
+              >
+                {recommendations ? 'Refresh Suggestions' : 'Get ML Suggestions'}
+              </Button>
+            </div>
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+
               <div>
                 <label className="block text-[13px] text-gray-500 dark:text-slate-400 mb-1.5">Vehicle</label>
                 <Select
@@ -607,6 +687,20 @@ const TripsPage = () => {
                 value={editValues.revenue}
                 onChange={(e) => handleEditField('revenue', e.target.value)}
                 error={editErrors.revenue}
+              />
+              <Input
+                label="Region"
+                value={editValues.region}
+                onChange={(e) => handleEditField('region', e.target.value)}
+                error={editErrors.region}
+              />
+              <Input
+                label="Req. Capacity (kg)"
+                type="number"
+                min="1"
+                value={editValues.requiredCapacity}
+                onChange={(e) => handleEditField('requiredCapacity', e.target.value)}
+                error={editErrors.requiredCapacity}
               />
             </div>
 

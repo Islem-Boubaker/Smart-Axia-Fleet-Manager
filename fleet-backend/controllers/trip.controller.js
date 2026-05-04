@@ -131,3 +131,13 @@ export const unassignDriver = async (req, res) => {
     return handleError(res, error);
   }
 };
+
+export const getRecommendations = async (req, res) => {
+  try {
+    const result = await tripService.getTripRecommendations(req.body);
+    return successResponse(res, result, "Recommendations fetched successfully");
+  } catch (error) {
+    return handleError(res, error);
+  }
+};
+

@@ -98,4 +98,11 @@ router.post(
   tripController.unassignDriver
 );
 
+router.post(
+  "/trips/recommendations",
+  authorizeRoles("ADMIN", "MANAGER"),
+  tripController.getRecommendations
+);
+
 export default router;
+

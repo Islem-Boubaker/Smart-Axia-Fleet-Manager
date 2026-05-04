@@ -1,4 +1,6 @@
 import { Op } from "sequelize";
+import axios from "axios";
+
 import { sequelize } from "../config/connectdb.js";
 import { getPagingData } from "../utils/pagination.js";
 import Trip from "../models/trip.model.js";
@@ -203,11 +205,122 @@ const fetchTripWithStops = async (tripId) => {
 
   return enrichTripWithEstimatedFuel(trip);
 };
+/**
+ * Fetches available drivers and vehicles, then ranks them using the Python ML service.
+ */
+export const getTripRecommendations = async (tripData) => {
+  const { startTime, endTime, region, requiredCapacity, distance } = tripData;
+  const { start, end } = normalizeWindow(startTime, endTime);
+
+  // 1. Get potential candidates
+  const drivers = await User.findAll({ where: { role: 'DRIVER', isActive: true, status: 'active' } });
+  const vehicles = await Vehicle.findAll({ where: { status: 'AVAILABLE', is_active: true } });
+
+  // 2. Filter by availability (concurrency-safe checks)
+  const availableDrivers = [];
+  for (const d of drivers) {
+    try {
+      await ensureNoDriverOverlap({ userId: d.id, start, end });
+      availableDrivers.push(d);
+    } catch { /* skip */ }
+  }
+
+  const availableVehicles = [];
+  for (const v of vehicles) {
+    try {
+      await ensureNoVehicleOverlap({ vehicleId: v.id, start, end });
+      await checkVehicleAvailableForTrip(v.id, start, end);
+      availableVehicles.push(v);
+    } catch { /* skip */ }
+  }
+
+  if (availableDrivers.length === 0 && availableVehicles.length === 0) {
+    return { drivers: [], vehicles: [] };
+  }
+
+  // 3. Call ML Service
+  const mlUrl = process.env.ML_SERVICE_URL || 'http://localhost:5000';
+  const tripInfo = { 
+    region: region || "General", 
+    requiredCapacity: toFiniteNumberOrNull(requiredCapacity) || 0, 
+    distance: toFiniteNumberOrNull(distance) || 0 
+  };
+
+  try {
+    const [driverRes, vehicleRes] = await Promise.all([
+      availableDrivers.length > 0 
+        ? axios.post(`${mlUrl}/batch-predict-drivers`, {
+            drivers: availableDrivers.map(d => ({
+              id: d.id,
+              yearsOfExperience: d.yearsOfExperience,
+              rating: d.rating,
+              completedTrips: d.completedTrips,
+              totalTrips: d.totalTrips,
+              familiarRegions: d.familiarRegions || []
+            })),
+            trip: tripInfo
+          })
+        : { data: { predictions: [] } },
+      availableVehicles.length > 0
+        ? axios.post(`${mlUrl}/batch-predict-vehicles`, {
+            vehicles: availableVehicles.map(v => ({
+              id: v.id,
+              capacity: v.capacity,
+              conditionRating: v.conditionRating,
+              fuelEfficiency: v.fuelEfficiencyCategory,
+              mileage: v.mileage
+            })),
+            trip: tripInfo
+          })
+        : { data: { predictions: [] } }
+    ]);
+
+    // 4. Sort results
+    const rankedDrivers = availableDrivers.map(d => {
+      const p = driverRes.data.predictions?.find(x => x.driver_id === d.id);
+      return { ...d.toJSON(), ml_score: p ? p.predicted_score : 0 };
+    }).sort((a, b) => b.ml_score - a.ml_score);
+
+    const rankedVehicles = availableVehicles.map(v => {
+      const p = vehicleRes.data.predictions?.find(x => x.vehicle_id === v.id);
+      return { ...v.toJSON(), ml_score: p ? p.predicted_score : 0 };
+    }).sort((a, b) => b.ml_score - a.ml_score);
+
+    return { drivers: rankedDrivers, vehicles: rankedVehicles };
+  } catch (err) {
+    console.error('[ML Service] Recommendation failed:', err.message);
+    // Fallback to basic lists if ML is down
+    return { drivers: availableDrivers, vehicles: availableVehicles };
+  }
+};
 
 export const createTrip = async (data) => {
+
   const { start, end } = normalizeWindow(data.startTime, data.endTime);
 
+  // ── ML Recommendation Logic ──────────────────────────────────────────
+  // If driver or vehicle is missing, auto-pick the best available recommendation
+  if (!data.vehicleId || !data.userId) {
+    console.log('[TripService] Missing assignments, fetching recommendations...');
+    const recs = await getTripRecommendations(data);
+    
+    if (!data.vehicleId && recs.vehicles.length > 0) {
+      data.vehicleId = recs.vehicles[0].id;
+      console.log(`[TripService] Auto-assigned vehicle: ${data.vehicleId}`);
+    }
+    
+    if (!data.userId && recs.drivers.length > 0) {
+      data.userId = recs.drivers[0].id;
+      console.log(`[TripService] Auto-assigned driver: ${data.userId}`);
+    }
+    
+    if (!data.vehicleId) {
+       throw createError("No available vehicles found for this time slot", 409, "NO_VEHICLES_AVAILABLE");
+    }
+  }
+
   const vehicle = await validateVehicle(data.vehicleId);
+
   await checkVehicleAvailableForTrip(data.vehicleId, start, end);
   if (data.userId) {
     await validateDriver(data.userId);
@@ -461,3 +574,6 @@ export const unassignDriver = async (tripId) => {
   await trip.update({ userId: null });
   return trip;
 };
+
+
+

@@ -163,4 +163,19 @@ export const tripsService = {
     const response = await api.patch<{ success: boolean; data: TripStop[] }>(`/trips/${tripId}/stops/reorder`, { order: orderMap });
     return response.data.data;
   },
+
+  getTripRecommendations: async (data: {
+    startTime: string;
+    endTime?: string;
+    region?: string;
+    requiredCapacity?: number;
+    distance?: number;
+  }): Promise<{ drivers: Driver[]; vehicles: Vehicle[] }> => {
+    const response = await api.post<{ success: boolean; data: { drivers: Driver[]; vehicles: Vehicle[] } }>(
+      '/trips/recommendations',
+      data
+    );
+    return response.data.data;
+  },
 };
+
