@@ -1,5 +1,5 @@
 import { api } from '../../../shared/services/api';
-import type { Trip, TripStop } from '../../../types';
+import type { Driver, Trip, TripStop, Vehicle } from '../../../types';
 
 export interface PaginationMeta {
   totalItems: number;
@@ -35,6 +35,7 @@ export interface CreateTripRequest {
   startTime: string;
   distance: number;
   region?: string;
+  requiredCapacity?: number;
   notes?: string;
   endTime?: string;
   fuel?: number;

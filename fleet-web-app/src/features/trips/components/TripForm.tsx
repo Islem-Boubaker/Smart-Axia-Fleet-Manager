@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { CircleMarker, MapContainer, TileLayer, useMapEvents } from 'react-leaflet';
 import type { LeafletMouseEvent } from 'leaflet';
 import 'leaflet/dist/leaflet.css';
-import { Button, Input, Select, Badge } from '../../../shared/components';
+import { Button, Input, Select } from '../../../shared/components';
 import type { Driver, Vehicle } from '../../../types';
 import { tripsService } from '../services/trips.service';
 
@@ -37,6 +37,9 @@ interface TripFormProps {
     endLatitude?: number;
     endLongitude?: number;
     startTime: string;
+    endTime?: string;
+    region?: string;
+    requiredCapacity?: number;
     distance: number;
     fuel?: number;
     revenue?: number;
@@ -1015,7 +1018,7 @@ const TripForm = ({ vehicles, drivers, dark = false, isSubmitting = false, onSub
           variant="primary"
           size="sm"
           onClick={handleGetRecommendations}
-          loading={isFetchingRecs}
+          isLoading={isFetchingRecs}
           disabled={!values.startTime || isFetchingRecs}
           className="bg-indigo-600 hover:bg-indigo-700 text-white shadow-sm whitespace-nowrap"
         >

@@ -72,6 +72,7 @@ export interface Trip {
   userId?: string;
   vehicleId: string;
   region?: string;
+  requiredCapacity?: number;
   notes?: string;
   startLocation: string;
   startLatitude?: number;

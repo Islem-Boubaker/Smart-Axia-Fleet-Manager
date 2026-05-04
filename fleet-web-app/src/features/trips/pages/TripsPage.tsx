@@ -594,7 +594,7 @@ const TripsPage = () => {
                 variant="primary"
                 size="sm"
                 onClick={handleGetEditRecommendations}
-                loading={isFetchingRecs}
+                isLoading={isFetchingRecs}
                 disabled={!editValues.startTime || isFetchingRecs}
                 className="bg-indigo-600 hover:bg-indigo-700 text-white shadow-sm whitespace-nowrap"
               >
