@@ -119,7 +119,7 @@ const getOrsErrorMessage = async (response: Response) => {
   try {
     const data = await response.json();
     const detail = data?.error?.message || data?.message || data?.error;
-    return detail ? String(detail) : null;
+      return detail ? String(detail) : null;
   } catch {
     return null;
   }
