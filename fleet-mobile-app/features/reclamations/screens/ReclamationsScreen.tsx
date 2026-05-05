@@ -24,7 +24,7 @@ import MainTopHeader from "@/shared/components/layout/MainTopHeader";
 
 // ─── Types ────────────────────────────────────────────────────────
 type ReclamationStatus = "pending" | "in_progress" | "resolved";
-type ReclamationType = "damage" | "delay" | "technical" | "other";
+type ReclamationType = "general" | "vehicle" | "maintenance" | "trip" | "damage" | "delay" | "technical" | "other";
 type FilterOption = "all" | ReclamationStatus;
 
 interface Reclamation {
@@ -42,12 +42,18 @@ const toScreenReclamation = (item: any): Reclamation => ({
   title: item.subject ?? "Untitled",
   description: item.message ?? "",
   status:
-    item.status === "resolved" ||
-    item.status === "in_progress" ||
-    item.status === "pending"
-      ? item.status
+    String(item.status ?? "").toLowerCase() === "resolved"
+      ? "resolved"
+      : String(item.status ?? "").toLowerCase().replace(/\s+/g, "_") === "in_progress"
+        ? "in_progress"
+        : String(item.status ?? "").toLowerCase() === "pending"
+          ? "pending"
       : "pending",
   type:
+    item.type === "general" ||
+    item.type === "vehicle" ||
+    item.type === "maintenance" ||
+    item.type === "trip" ||
     item.type === "damage" ||
     item.type === "delay" ||
     item.type === "technical" ||
@@ -83,6 +89,10 @@ const STATUS_CONFIG = {
 };
 
 const TYPE_CONFIG = {
+  general: { label: "General", icon: "report-problem" },
+  vehicle: { label: "Vehicle", icon: "directions-car" },
+  maintenance: { label: "Maintenance", icon: "build" },
+  trip: { label: "Trip", icon: "timeline" },
   damage: { label: "Damage", icon: "directions-car" },
   delay: { label: "Delay", icon: "schedule" },
   technical: { label: "Technical", icon: "build" },
@@ -225,6 +235,7 @@ export default function ReclamationsScreen() {
                       status: item.status,
                       images: item.images,
                       createdAt: item.date,
+                      type: item.type,
                     }),
                   },
                 })
@@ -236,9 +247,11 @@ export default function ReclamationsScreen() {
 
       {/* ── FAB ── */}
       <TouchableOpacity
-        className="absolute bottom-5 right-5 w-14 h-14 rounded-3xl bg-brand-600 items-center justify-center border border-white/20"
+        className="absolute right-6 h-14 w-14 items-center justify-center rounded-3xl border border-white/20"
         style={{
           position: "absolute",
+          bottom: Platform.OS === "ios" ? 112 : 102,
+          backgroundColor: "#2563EB",
           elevation: 12,
           zIndex: 999,
           shadowColor: "#0F172A",

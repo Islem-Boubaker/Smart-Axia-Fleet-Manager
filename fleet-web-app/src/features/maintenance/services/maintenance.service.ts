@@ -42,6 +42,7 @@ export interface OverdueMaintenanceResponse {
 type BackendMaintenance = {
   id: string;
   vehicleId?: string;
+  reclamationId?: string | null;
   vehiclePlate: string;
   vehicle?: {
     id?: string;
@@ -90,6 +91,7 @@ function mapBackendToUi(record: BackendMaintenance): Maintenance {
   return {
     id: record.id,
     vehicleId: record.vehicleId,
+    reclamationId: record.reclamationId || undefined,
     vehicleName: record.vehicle?.name,
     vehiclePlate: record.vehiclePlate || record.vehicle?.plaque_immatriculation || '',
     type: record.type ?? '',
@@ -118,6 +120,12 @@ function toBackendPayload(data: Partial<Maintenance>): Partial<BackendMaintenanc
   if (typeof data.vehicleId === 'string' && data.vehicleId.length > 0) {
     payload.vehicleId = data.vehicleId;
     payload.vehiclePlate = data.vehiclePlate || data.vehicleId;
+  }
+  if (typeof data.reclamationId === 'string' && data.reclamationId.length > 0) {
+    payload.reclamationId = data.reclamationId;
+  }
+  if (!payload.vehiclePlate && typeof data.vehiclePlate === 'string' && data.vehiclePlate.length > 0) {
+    payload.vehiclePlate = data.vehiclePlate;
   }
   if (typeof data.type === 'string') payload.type = data.type;
   if (typeof data.scheduledDate === 'string' && data.scheduledDate) {

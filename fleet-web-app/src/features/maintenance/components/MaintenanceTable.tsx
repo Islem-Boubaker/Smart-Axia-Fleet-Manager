@@ -48,6 +48,7 @@ const MaintenanceTable = memo(({ data, dark = false, onUpdate, onTransition, onE
       totalResults={records.length}
       dark={dark}
       ariaLabel="Maintenance table"
+      title="Maintenance"
       pageSize={7}
     >
       {records.map((record) => (

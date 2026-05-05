@@ -15,13 +15,33 @@ export const createVehicleReclamation = [
   uploadReclamationImages.array('images', 5),
   async (req, res, next) => {
     try {
-      const { vehicleId, subject, message } = req.body;
+      const {
+        vehicleId,
+        subject,
+        message,
+        type,
+        driverName,
+        vehicleName,
+        vehiclePlate,
+        tripId,
+        metadata,
+        reclamationTypeLabel,
+      } = req.body;
       const data = await reclamationService.createVehicleReclamationSvc(
         req.user.id,
         vehicleId,
         subject,
         message,
-        req.files
+        req.files,
+        {
+          type,
+          driverName,
+          vehicleName,
+          vehiclePlate,
+          tripId,
+          metadata,
+          reclamationTypeLabel,
+        }
       );
       await invalidateReclamationCache(data?.id);
       res.status(StatusCodes.CREATED).json({ success: true, data });
@@ -33,9 +53,7 @@ export const createVehicleReclamation = [
 
 export const createReclamation = async (req, res, next) => {
   try {
-    const { subject, message } = req.body;
-
-    const result = await reclamationService.createReclamationSvc(req.user.id, subject, message);
+    const result = await reclamationService.createReclamationSvc(req.user.id, req.body);
     await invalidateReclamationCache(result?.id);
 
     res.status(StatusCodes.CREATED).json({
@@ -158,7 +176,10 @@ export const updateReclamationStatus = async (req, res, next) => {
     const { id } = req.params;
     const { status } = req.body;
 
-    const result = await reclamationService.updateReclamationStatusSvc(id, status);
+    const result = await reclamationService.updateReclamationStatusSvc(id, status, {
+      updatedBy: req.user?.id,
+      updatedByRole: req.user?.role,
+    });
     await invalidateReclamationCache(id);
 
     res.status(StatusCodes.OK).json({

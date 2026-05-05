@@ -15,6 +15,8 @@ const handleError = (res, error) => {
 
 const invalidateTripCache = async (id) => {
   await cacheMiddleware.invalidatePattern('trips:index:*');
+  await cacheMiddleware.invalidatePattern('vehicles:*');
+  await cacheMiddleware.invalidatePattern('maintenances:*');
   if (id) {
     await cacheMiddleware.invalidatePattern(`trips:show:id=${id}*`);
   }
@@ -136,6 +138,24 @@ export const getRecommendations = async (req, res) => {
   try {
     const result = await tripService.getTripRecommendations(req.body);
     return successResponse(res, result, "Recommendations fetched successfully");
+  } catch (error) {
+    return handleError(res, error);
+  }
+};
+
+export const recordLocationPing = async (req, res) => {
+  try {
+    const ping = await tripService.recordTripLocationPing(req.params.id, req.user.role, req.user.id, req.body);
+    return successResponse(res, ping, "Location ping recorded", 201);
+  } catch (error) {
+    return handleError(res, error);
+  }
+};
+
+export const getLiveLocation = async (req, res) => {
+  try {
+    const location = await tripService.getTripLiveLocation(req.params.id, req.user.role, req.user.id);
+    return successResponse(res, location, "Live location fetched");
   } catch (error) {
     return handleError(res, error);
   }

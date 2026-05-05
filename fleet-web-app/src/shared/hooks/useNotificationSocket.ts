@@ -9,9 +9,18 @@ import { queryKeys } from '../services/queryKeys';
 export interface HeaderNotificationItem {
   id: string;
   type: "maintenance" | "driver" | "vehicle" | "warning" | "success";
+  notificationType: string;
+  group?: string;
+  priority?: string;
   title: string;
   message: string;
   timestamp: string;
+  createdAt: string;
+  updatedAt?: string;
+  actionUrl?: string | null;
+  entityType?: string | null;
+  entityId?: string | null;
+  metadata?: Record<string, unknown>;
   read: boolean;
 }
 
@@ -36,9 +45,18 @@ function toHeaderNotification(notification: NotificationRecord): HeaderNotificat
   return {
     id: notification.id,
     type: toHeaderType(notification),
+    notificationType: notification.type,
+    group: notification.group,
+    priority: notification.priority,
     title: notification.title,
     message: notification.message,
     timestamp: new Date(notification.createdAt).toLocaleString(),
+    createdAt: notification.createdAt,
+    updatedAt: notification.updatedAt,
+    actionUrl: notification.actionUrl,
+    entityType: notification.entityType,
+    entityId: notification.entityId,
+    metadata: notification.metadata,
     read: Boolean(notification.read || notification.readAt),
   };
 }

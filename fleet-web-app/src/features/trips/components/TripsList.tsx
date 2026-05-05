@@ -46,6 +46,7 @@ const TripsList = ({ trips, dark = false, actionTripId = null, onViewDetails, on
       totalResults={trips.length}
       dark={dark}
       ariaLabel="Trips table"
+      title="Trips"
     >
       {trips.map((trip) => {
         const isBusy = actionTripId === trip.id;

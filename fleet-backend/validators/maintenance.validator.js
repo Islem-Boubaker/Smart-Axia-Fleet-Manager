@@ -18,6 +18,7 @@ const isBeforeToday = (value) => {
 
 export const createMaintenanceSchema = z.object({
   vehicleId: uuid.optional(),
+  reclamationId: uuid.optional(),
   vehiclePlate: z.string().min(2).max(50).optional(),
   scheduledDate: isoDate,
   technician: z.string().min(2).max(100),

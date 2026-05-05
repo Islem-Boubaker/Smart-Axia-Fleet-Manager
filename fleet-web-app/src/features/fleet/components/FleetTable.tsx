@@ -1,4 +1,5 @@
 import { memo } from 'react';
+import { AppDataTable, AppTd, AppTr } from '../../../shared/components';
 
 interface FleetTableProps {
   data: any[];
@@ -7,38 +8,26 @@ interface FleetTableProps {
 
 const FleetTable = memo(({ data, dark = false }: FleetTableProps) => {
   return (
-    <div className="overflow-x-auto rounded-xl">
-      <table className={`min-w-full divide-y ${dark ? 'divide-slate-700' : 'divide-gray-200'}`}>
-        <thead className={dark ? 'bg-slate-800/60' : 'bg-gray-50'}>
-          <tr>
-            <th className={`px-6 py-3 text-left text-xs font-medium uppercase tracking-wider ${dark ? 'text-slate-400' : 'text-gray-500'}`}>
-              Name
-            </th>
-            <th className={`px-6 py-3 text-left text-xs font-medium uppercase tracking-wider ${dark ? 'text-slate-400' : 'text-gray-500'}`}>
-              Description
-            </th>
-            <th className={`px-6 py-3 text-left text-xs font-medium uppercase tracking-wider ${dark ? 'text-slate-400' : 'text-gray-500'}`}>
-              Vehicles
-            </th>
-            <th className={`px-6 py-3 text-left text-xs font-medium uppercase tracking-wider ${dark ? 'text-slate-400' : 'text-gray-500'}`}>
-              Actions
-            </th>
-          </tr>
-        </thead>
-        <tbody className={`${dark ? 'bg-slate-900/30 divide-slate-800 text-slate-200' : 'bg-white divide-gray-200 text-slate-800'} divide-y`}>
-          {data.map((item) => (
-            <tr key={item.id} className={dark ? 'hover:bg-slate-800/40' : 'hover:bg-gray-50'}>
-              <td className="px-6 py-4 whitespace-nowrap">{item.name}</td>
-              <td className="px-6 py-4 whitespace-nowrap">{item.description}</td>
-              <td className="px-6 py-4 whitespace-nowrap">{item.vehicleCount}</td>
-              <td className="px-6 py-4 whitespace-nowrap">
-                <button className="text-blue-600 hover:text-blue-500 dark:text-blue-300 dark:hover:text-blue-200 font-medium">Edit</button>
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
+    <AppDataTable
+      columns={['Name', 'Description', 'Vehicles', 'Actions']}
+      totalResults={data.length}
+      dark={dark}
+      ariaLabel="Fleet table"
+      title="Fleet"
+    >
+      {data.map((item) => (
+        <AppTr key={item.id}>
+          <AppTd className={dark ? 'text-slate-100' : 'text-slate-950'}>{item.name}</AppTd>
+          <AppTd className={dark ? 'text-slate-300' : 'text-slate-700'}>{item.description}</AppTd>
+          <AppTd className={dark ? 'text-slate-300' : 'text-slate-700'}>{item.vehicleCount}</AppTd>
+          <AppTd>
+            <button className="rounded-full px-3 py-1.5 text-sm font-bold text-sky-600 transition-colors hover:bg-white/70 hover:text-sky-700 dark:text-cyan-200 dark:hover:bg-cyan-300/10">
+              Edit
+            </button>
+          </AppTd>
+        </AppTr>
+      ))}
+    </AppDataTable>
   );
 });
 

@@ -16,6 +16,12 @@ const Maintenance = sequelize.define(
       references: { model: 'vehicles', key: 'id' },
       onDelete: 'RESTRICT',
     },
+    reclamationId: {
+      type: DataTypes.UUID,
+      allowNull: true,
+      references: { model: 'reclamations', key: 'id' },
+      onDelete: 'SET NULL',
+    },
     vehiclePlate: {
       type: DataTypes.STRING,
       allowNull: false,

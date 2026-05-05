@@ -2,9 +2,10 @@
 //  useAuth — cookie-based auth hook (no tokens in JS)
 // ─────────────────────────────────────────────────────────────
 import { useCallback } from 'react';
-import { useMutation } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { useAppDispatch, useAppSelector } from '../../../shared/hooks';
+import { clearCsrfToken } from '../../../shared/services/csrfToken';
 import { setUser, clearUser, setLoading, setError } from '../../../store/authSlice';
 import { authAPI } from '../services/auth.service';
 import type { SignInCredentials, SignUpData } from '../services/auth.service';
@@ -12,6 +13,7 @@ import type { SignInCredentials, SignUpData } from '../services/auth.service';
 export const useAuth = () => {
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const { user, isAuthenticated, loading, error } = useAppSelector((state) => state.auth);
 
   const signInMutation = useMutation({ mutationFn: authAPI.signIn });
@@ -62,14 +64,18 @@ export const useAuth = () => {
     try {
       await signOutMutation.mutateAsync();
       dispatch(clearUser());
-      navigate('/signin');
+      clearCsrfToken();
+      queryClient.clear();
+      navigate('/signin', { replace: true });
     } catch (err) {
       console.error('Sign out error:', err);
       // Clear locally even if API call fails
       dispatch(clearUser());
-      navigate('/signin');
+      clearCsrfToken();
+      queryClient.clear();
+      navigate('/signin', { replace: true });
     }
-  }, [dispatch, navigate, signOutMutation]);
+  }, [dispatch, navigate, queryClient, signOutMutation]);
   const forgotPassword = useCallback(
     async (email: string) => {
       try {

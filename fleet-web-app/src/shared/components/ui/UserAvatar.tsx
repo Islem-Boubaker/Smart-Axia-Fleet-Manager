@@ -1,6 +1,10 @@
 import { useAppSelector } from "../../hooks";
 
-const UserAvatar = () => {
+interface UserAvatarProps {
+  compact?: boolean;
+}
+
+const UserAvatar = ({ compact = false }: UserAvatarProps) => {
   const { user } = useAppSelector((state) => state.auth);
 
   const name = user?.name || "User";
@@ -26,10 +30,12 @@ const UserAvatar = () => {
           initials
         )}
       </div>
-      <div className="flex-1 min-w-0 text-left">
-        <p className="text-xs sm:text-sm font-medium text-gray-900 dark:text-slate-100 truncate">{name}</p>
-        <p className="text-[10px] sm:text-xs text-gray-500 dark:text-slate-400 truncate">{role}</p>
-      </div>
+      {!compact && (
+        <div className="flex-1 min-w-0 text-left">
+          <p className="text-xs sm:text-sm font-medium text-gray-900 dark:text-slate-100 truncate">{name}</p>
+          <p className="text-[10px] sm:text-xs text-gray-500 dark:text-slate-400 truncate">{role}</p>
+        </div>
+      )}
     </div>
   );
 };

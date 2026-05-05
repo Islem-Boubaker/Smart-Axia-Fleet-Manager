@@ -167,7 +167,9 @@ const ReportsPage = () => {
   }, [embedUrl, isConfigured, isTableauEmbed, reportHeight]);
 
   return (
-    <div className={`relative h-full min-h-0 overflow-hidden ${dark ? 'bg-slate-950' : 'bg-slate-50'}`}>
+    <div className={`relative h-full min-h-0 overflow-hidden rounded-[30px] border shadow-soft ${
+      dark ? 'border-slate-700/70 bg-slate-950/80' : 'border-white/90 bg-white/94'
+    }`}>
       <div className="absolute right-4 top-4 z-10 flex items-center gap-2">
         <Button
           type="button"

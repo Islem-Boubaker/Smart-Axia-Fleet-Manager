@@ -2,7 +2,6 @@ import React from "react";
 import { ScrollView, StatusBar, View } from "react-native";
 
 import LoginHeader from "../components/LoginHeader";
-import { LoginFooter } from "../components/LoginFooter";
 import { LoginForm } from "../components/LoginForm";
 import { useLogin } from "../hooks/useLogin";
 
@@ -19,7 +18,6 @@ export default function SignInScreen() {
     onPasswordChange,
     onTogglePassword,
     onSubmit,
-    onLoginWithGoogle,
     onLoginWithApple,
     onForgotPassword,
   } = useLogin();
@@ -47,13 +45,11 @@ export default function SignInScreen() {
           onPasswordChange={onPasswordChange}
           onTogglePassword={onTogglePassword}
           onSubmit={onSubmit}
-          onLoginWithGoogle={onLoginWithGoogle}
           onLoginWithApple={onLoginWithApple}
           onForgotPassword={onForgotPassword}
         />
 
         <View className="h-6" />
-        <LoginFooter />
       </View>
     </ScrollView>
   );

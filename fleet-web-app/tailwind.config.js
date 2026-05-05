@@ -16,20 +16,20 @@ export default {
   theme: {
     extend: {
       fontFamily: {
-        sans: ['Inter', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+        sans: ['Nunito Sans', 'Inter', 'ui-sans-serif', 'system-ui', 'sans-serif'],
       },
       colors: {
         brand: {
-          DEFAULT: '#3B82F6',
-          light: '#EFF6FF',
-          deep: '#2563EB',
+          DEFAULT: '#1296D4',
+          light: '#E8F8FF',
+          deep: '#0677AD',
         },
         surface: '#FFFFFF',
-        canvas: '#F1F5F9',
+        canvas: '#DFF4FA',
       },
       boxShadow: {
-        soft: '0 8px 30px rgba(15, 23, 42, 0.06)',
-        glass: '0 4px 24px rgba(15, 23, 42, 0.04)',
+        soft: '0 18px 55px rgba(8, 47, 73, 0.10)',
+        glass: '0 14px 40px rgba(8, 47, 73, 0.08)',
       },
       backdropBlur: {
         xs: '2px',

@@ -3,6 +3,7 @@ import Maintenance from "../models/maintenance.model.js";
 import Vehicle from "../models/vehicle.model.js";
 import { getPagination, getPagingData } from "../utils/pagination.js";
 import { eventBus, FLEET_EVENTS } from "../events/eventBus.js";
+import { syncReclamationStatusFromMaintenance } from "./reclamation.service.js";
 
 const IN_PROGRESS_STATUS = "in progress";
 
@@ -100,12 +101,12 @@ const setVehicleAvailabilityFromMaintenance = async (vehicleId, status) => {
   if (!vehicle) return;
 
   if (normalizeStatus(status) === IN_PROGRESS_STATUS) {
-    await vehicle.update({ status: "IN_MAINTENANCE" });
+    await vehicle.update({ status: "IN_MAINTENANCE", is_active: true });
     return;
   }
 
   if (["completed", "cancelled"].includes(status) && vehicle.status === "IN_MAINTENANCE") {
-    await vehicle.update({ status: "AVAILABLE" });
+    await vehicle.update({ status: "AVAILABLE", is_active: true });
   }
 };
 
@@ -127,6 +128,7 @@ export const createMaintenance = async (payload, userId) => {
   const maintenance = await Maintenance.create({
     ...payload,
     vehicleId: vehicle.id,
+    reclamationId: payload.reclamationId || null,
     vehiclePlate: vehicle.plaque_immatriculation || payload.vehiclePlate || "N/A",
     status: "pending",
     createdBy: userId,
@@ -162,7 +164,7 @@ export const getAllMaintenances = async (query = {}, callerRole = null, callerId
 const STATUS_ORDER = literal(`CASE "Maintenance"."status"
   WHEN 'scheduled'   THEN 1
   WHEN 'pending'     THEN 2
-  WHEN 'in_progress' THEN 3
+  WHEN 'in progress' THEN 3
   WHEN 'completed'   THEN 4
   WHEN 'cancelled'   THEN 5
   ELSE 6
@@ -263,6 +265,12 @@ export const updateStatus = async (id, targetStatus, userId) => {
 
   await maintenance.update(updateData);
   await setVehicleAvailabilityFromMaintenance(maintenance.vehicleId, normalizedTargetStatus);
+
+  if (maintenance.reclamationId) {
+    await syncReclamationStatusFromMaintenance(maintenance.reclamationId, normalizedTargetStatus, {
+      maintenanceId: maintenance.id,
+    });
+  }
 
   if (normalizedTargetStatus === IN_PROGRESS_STATUS) {
     emitMaintenanceEvent(FLEET_EVENTS.MAINTENANCE_STARTED, { maintenance, vehicle: maintenance.vehicle });

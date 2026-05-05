@@ -31,6 +31,19 @@ router.get(
   tripController.getTrips
 );
 
+router.post(
+  "/trips/:id/location-pings",
+  authorizeRoles("DRIVER"),
+  csrfMiddleware.verifyCsrf,
+  tripController.recordLocationPing
+);
+
+router.get(
+  "/trips/:id/live-location",
+  authorizeRoles("ADMIN", "MANAGER", "DRIVER"),
+  tripController.getLiveLocation
+);
+
 router.get(
   "/trips/:id",
   authorizeRoles("ADMIN", "MANAGER", "DRIVER"),

@@ -25,6 +25,10 @@ type ReclamationItem = {
   subject: string;
   message: string;
   status: ReclamationStatus;
+  type?: string;
+  driverName?: string | null;
+  vehicleName?: string | null;
+  vehiclePlate?: string | null;
   images: string[];
   createdAt: string;
 };
@@ -205,6 +209,9 @@ export default function ReclamationDetailScreen({
 
   const { subject, message, status, images, createdAt } = reclamation;
   const hasImages = images.length > 0;
+  const vehicleContext = reclamation.vehicleName || reclamation.vehiclePlate
+    ? `${reclamation.vehicleName || "Vehicle"}${reclamation.vehiclePlate ? ` (${reclamation.vehiclePlate})` : ""}`
+    : null;
 
   const mapToReclamationItem = useCallback((value: any): ReclamationItem => {
     const safeImages = Array.isArray(value?.images)
@@ -230,8 +237,30 @@ export default function ReclamationDetailScreen({
         typeof value?.createdAt === "string" && value.createdAt.trim().length > 0
           ? value.createdAt
           : reclamation.createdAt,
+      type: typeof value?.type === "string" ? value.type : reclamation.type,
+      driverName:
+        typeof value?.driverName === "string"
+          ? value.driverName
+          : value?.driver?.name || reclamation.driverName,
+      vehicleName:
+        typeof value?.vehicleName === "string"
+          ? value.vehicleName
+          : value?.vehicle?.name || value?.vehicle?.model || reclamation.vehicleName,
+      vehiclePlate:
+        typeof value?.vehiclePlate === "string"
+          ? value.vehiclePlate
+          : value?.vehicle?.plaque_immatriculation || reclamation.vehiclePlate,
     };
-  }, [reclamation.createdAt, reclamation.id, reclamation.message, reclamation.subject]);
+  }, [
+    reclamation.createdAt,
+    reclamation.driverName,
+    reclamation.id,
+    reclamation.message,
+    reclamation.subject,
+    reclamation.type,
+    reclamation.vehicleName,
+    reclamation.vehiclePlate,
+  ]);
 
   const fetchDetails = useCallback(async () => {
     if (!routeId) return;
@@ -339,6 +368,26 @@ export default function ReclamationDetailScreen({
 
           {/* Divider */}
           <View className="h-px bg-slate-100 dark:bg-slate-700 mb-4" />
+
+          {(reclamation.type || reclamation.driverName || vehicleContext) ? (
+            <View className="mb-4 rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-900">
+              {reclamation.type ? (
+                <Text className="mb-2 text-xs font-bold uppercase tracking-widest text-slate-400">
+                  {String(reclamation.type).replace(/_/g, " ")}
+                </Text>
+              ) : null}
+              {reclamation.driverName ? (
+                <Text className="text-sm font-semibold text-slate-700 dark:text-slate-200">
+                  Driver: {reclamation.driverName}
+                </Text>
+              ) : null}
+              {vehicleContext ? (
+                <Text className="mt-1 text-sm font-semibold text-slate-700 dark:text-slate-200">
+                  Vehicle: {vehicleContext}
+                </Text>
+              ) : null}
+            </View>
+          ) : null}
 
           {/* Message */}
           <Text

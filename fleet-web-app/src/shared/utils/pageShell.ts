@@ -1,9 +1,9 @@
-/** Shared shell classes to match Trips / glass aesthetic in light & dark mode */
+/** Shared shell classes for the rounded workspace used across protected pages. */
 
 export function pageShellClasses(dark: boolean): string {
   return dark
-    ? "relative overflow-hidden rounded-[24px] border border-slate-700/80 bg-slate-900/45 backdrop-blur-md ring-1 ring-white/[0.04] shadow-soft before:pointer-events-none before:absolute before:inset-x-8 before:-top-16 before:h-28 before:rounded-full before:bg-gradient-to-r before:from-brand/25 before:via-cyan-400/10 before:to-indigo-400/20 before:blur-2xl"
-    : "relative overflow-hidden rounded-[24px] border border-slate-200/90 bg-white/80 backdrop-blur-md shadow-soft before:pointer-events-none before:absolute before:inset-x-8 before:-top-16 before:h-28 before:rounded-full before:bg-gradient-to-r before:from-brand-light/90 before:via-cyan-100/70 before:to-indigo-100/80 before:blur-2xl";
+    ? "relative overflow-hidden rounded-[30px] border border-cyan-200/10 bg-[#081220]/92 shadow-soft ring-1 ring-cyan-100/[0.045] before:pointer-events-none before:absolute before:inset-x-8 before:-top-20 before:h-36 before:rounded-full before:bg-gradient-to-r before:from-cyan-400/16 before:via-sky-400/10 before:to-teal-300/8 before:blur-3xl"
+    : "relative overflow-hidden rounded-[30px] border border-white/90 bg-white/94 shadow-soft ring-1 ring-sky-100/80 before:pointer-events-none before:absolute before:inset-x-8 before:-top-20 before:h-36 before:rounded-full before:bg-gradient-to-r before:from-sky-100/95 before:via-cyan-50/90 before:to-amber-50/90 before:blur-3xl";
 }
 
-export const pageShellInnerSpacing = 'p-6 sm:p-8 lg:p-10 space-y-8 lg:space-y-10';
+export const pageShellInnerSpacing = 'p-5 sm:p-7 lg:p-8 space-y-6 lg:space-y-7';

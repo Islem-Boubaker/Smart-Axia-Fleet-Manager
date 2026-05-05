@@ -75,6 +75,7 @@ type RoutePlanStop = {
 
 type RoutePlan = {
   distanceKm: number;
+  durationSeconds: number | null;
   orderedStops: RoutePlanStop[];
   source: 'optimized' | 'fallback';
 };
@@ -99,6 +100,35 @@ type NominatimAddress = {
 };
 
 const MAP_ATTRIBUTION = '&copy; OpenStreetMap contributors';
+const ETA_BUFFER_SECONDS = 60 * 60;
+const FALLBACK_AVERAGE_SPEED_KMH = 55;
+
+const formatDateTimeInputValue = (date: Date) => {
+  const pad = (value: number) => String(value).padStart(2, '0');
+
+  return [
+    date.getFullYear(),
+    pad(date.getMonth() + 1),
+    pad(date.getDate()),
+  ].join('-') + `T${pad(date.getHours())}:${pad(date.getMinutes())}`;
+};
+
+const formatDuration = (seconds?: number | null) => {
+  if (!seconds || !Number.isFinite(seconds) || seconds <= 0) return 'unknown';
+
+  const totalMinutes = Math.max(1, Math.round(seconds / 60));
+  const hours = Math.floor(totalMinutes / 60);
+  const minutes = totalMinutes % 60;
+
+  if (hours > 0 && minutes > 0) return `${hours}h ${minutes}m`;
+  if (hours > 0) return `${hours}h`;
+  return `${minutes}m`;
+};
+
+const estimateFallbackDurationSeconds = (distanceKm: number) => {
+  if (!Number.isFinite(distanceKm) || distanceKm <= 0) return null;
+  return (distanceKm / FALLBACK_AVERAGE_SPEED_KMH) * 60 * 60;
+};
 
 const createEndpoint = (): Endpoint => ({
   id: `ep-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
@@ -201,6 +231,13 @@ const TripForm = ({ vehicles, drivers, dark = false, isSubmitting = false, onSub
 
     return (distance * consumption) / 100;
   }, [values.distance, selectedVehicle?.consumption]);
+
+  const etaHelperText = useMemo(() => {
+    if (!values.startTime) return 'Set a start time to calculate ETA.';
+    if (!routePlan?.durationSeconds) return 'Complete the route points to calculate ETA from the map.';
+
+    return `Map route time ${formatDuration(routePlan.durationSeconds)} + 1h spare time.`;
+  }, [routePlan?.durationSeconds, values.startTime]);
 
   const buildVehicleLabel = (vehicle: Vehicle) => (
     vehicle.plaque_immatriculation ? `${vehicle.name} (${vehicle.plaque_immatriculation})` : vehicle.name
@@ -545,7 +582,7 @@ const TripForm = ({ vehicles, drivers, dark = false, isSubmitting = false, onSub
 
     if (!startPoint || readyEndpoints.length === 0 || readyEndpoints.length !== endpoints.length) {
       setRoutePlan(null);
-      setValues((prev) => ({ ...prev, endLocation: '', distance: '' }));
+      setValues((prev) => ({ ...prev, endLocation: '', distance: '', endTime: '' }));
       return;
     }
 
@@ -574,7 +611,7 @@ const TripForm = ({ vehicles, drivers, dark = false, isSubmitting = false, onSub
         const data = (await response.json()) as {
           code?: string;
           message?: string;
-          trips?: Array<{ distance: number }>;
+          trips?: Array<{ distance: number; duration?: number }>;
           waypoints?: OsrmWaypoint[];
         };
 
@@ -643,8 +680,12 @@ const TripForm = ({ vehicles, drivers, dark = false, isSubmitting = false, onSub
         }
 
         const distanceKm = data.trips[0].distance / 1000;
+        const durationSeconds = Number.isFinite(data.trips[0].duration)
+          ? Number(data.trips[0].duration)
+          : null;
         const nextPlan: RoutePlan = {
           distanceKm,
+          durationSeconds,
           orderedStops,
           source: 'optimized',
         };
@@ -669,6 +710,7 @@ const TripForm = ({ vehicles, drivers, dark = false, isSubmitting = false, onSub
 
         const fallbackPlan: RoutePlan = {
           distanceKm: fallbackDistance,
+          durationSeconds: estimateFallbackDurationSeconds(fallbackDistance),
           orderedStops: fallbackOrderedStops,
           source: 'fallback',
         };
@@ -701,6 +743,25 @@ const TripForm = ({ vehicles, drivers, dark = false, isSubmitting = false, onSub
     };
   }, []);
 
+  useEffect(() => {
+    if (!values.startTime || !routePlan?.durationSeconds) {
+      setValues((prev) => (prev.endTime ? { ...prev, endTime: '' } : prev));
+      return;
+    }
+
+    const startDate = new Date(values.startTime);
+    if (Number.isNaN(startDate.getTime())) {
+      setValues((prev) => (prev.endTime ? { ...prev, endTime: '' } : prev));
+      return;
+    }
+
+    const etaDate = new Date(startDate.getTime() + (routePlan.durationSeconds + ETA_BUFFER_SECONDS) * 1000);
+    const nextEndTime = formatDateTimeInputValue(etaDate);
+
+    setValues((prev) => (prev.endTime === nextEndTime ? prev : { ...prev, endTime: nextEndTime }));
+    setErrors((prev) => ({ ...prev, endTime: undefined }));
+  }, [routePlan?.durationSeconds, values.startTime]);
+
   const validate = () => {
     const nextErrors: Partial<Record<keyof TripFormValues, string>> = {};
 
@@ -709,10 +770,22 @@ const TripForm = ({ vehicles, drivers, dark = false, isSubmitting = false, onSub
     if (values.startLocation.trim().length < 2) nextErrors.startLocation = 'Start location is required.';
     if (values.endLocation.trim().length < 2) nextErrors.endLocation = 'Destination is required.';
     if (!values.startTime) nextErrors.startTime = 'Start time is required.';
-    if (!values.endTime) nextErrors.endTime = 'End time is required.';
+    if (!values.endTime) nextErrors.endTime = 'ETA is calculated after route points and start time are set.';
     if (!values.region) nextErrors.region = 'Region is required.';
     if (!values.requiredCapacity || Number(values.requiredCapacity) <= 0) {
       nextErrors.requiredCapacity = 'Capacity must be greater than 0.';
+    }
+
+    if (values.startTime && values.endTime) {
+      const startDate = new Date(values.startTime);
+      const endDate = new Date(values.endTime);
+      if (
+        Number.isNaN(startDate.getTime()) ||
+        Number.isNaN(endDate.getTime()) ||
+        endDate <= startDate
+      ) {
+        nextErrors.endTime = 'ETA must be after the start time.';
+      }
     }
 
     const distanceValue = Number(values.distance);
@@ -919,6 +992,11 @@ const TripForm = ({ vehicles, drivers, dark = false, isSubmitting = false, onSub
                 {' '}• Final destination: {routePlan.orderedStops[routePlan.orderedStops.length - 1]?.label}
               </span>
             )}
+            {routePlan.durationSeconds && (
+              <span>
+                {' '}• ETA uses {formatDuration(routePlan.durationSeconds)} route time + 1h buffer
+              </span>
+            )}
           </div>
         )}
 
@@ -938,11 +1016,14 @@ const TripForm = ({ vehicles, drivers, dark = false, isSubmitting = false, onSub
           error={errors.startTime}
         />
         <Input
-          label="End date/time"
+          label="ETA time"
           type="datetime-local"
           value={values.endTime}
-          onChange={(e) => onFieldChange('endTime', e.target.value)}
+          readOnly
           error={errors.endTime}
+          helperText={etaHelperText}
+          placeholder="Calculated from route + 1h"
+          className="cursor-not-allowed"
         />
         <Input
           label="Region"

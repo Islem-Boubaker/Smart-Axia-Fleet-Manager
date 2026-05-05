@@ -7,22 +7,22 @@ interface TripsHeaderProps {
   onAdd?: () => void;
 }
 
-const TripsHeader = ({ dark = false, tripCount, onAdd }: TripsHeaderProps) => (
-  <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-6">
+const TripsHeader = ({ tripCount, onAdd }: TripsHeaderProps) => (
+  <div className="fleet-hero flex flex-col sm:flex-row sm:items-end sm:justify-between gap-6">
     <div className="space-y-1">
-      <p className={`text-xs font-semibold uppercase tracking-[0.12em] ${dark ? 'text-slate-500' : 'text-slate-400'}`}>
+      <p className="fleet-hero-kicker">
         Operations
       </p>
-      <h1 className={`text-3xl sm:text-4xl font-extrabold tracking-tight ${dark ? 'text-white' : 'text-slate-900'}`}>
+      <h1 className="fleet-hero-title">
         My trips
       </h1>
       {tripCount !== undefined && (
-        <p className={`text-sm ${dark ? 'text-slate-400' : 'text-slate-500'}`}>
+        <p className="fleet-hero-subtitle">
           {tripCount} trip{tripCount !== 1 ? 's' : ''} in view
         </p>
       )}
     </div>
-    <Button className="rounded-xl shadow-soft shrink-0" onClick={onAdd}>
+    <Button className="rounded-full shadow-soft shrink-0" onClick={onAdd}>
       <FiPlus className="mr-2" />
       Schedule trip
     </Button>

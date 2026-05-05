@@ -8,6 +8,7 @@ interface AppDataTableProps {
   dark?: boolean;
   ariaLabel?: string;
   pageSize?: number;
+  title?: string;
 }
 
 interface AppTdProps {
@@ -26,6 +27,7 @@ const AppDataTable = ({
   dark = false,
   ariaLabel = "Data table",
   pageSize = 7,
+  title,
 }: AppDataTableProps) => {
   const rowNodes = useMemo(() => Children.toArray(children), [children]);
   const [currentPage, setCurrentPage] = useState(1);
@@ -46,6 +48,7 @@ const AppDataTable = ({
 
   const resultsCount =
     typeof totalResults === "number" ? totalResults : rowNodes.length;
+  void title;
 
   const pageButtons = useMemo(() => {
     if (totalPages <= 5) {
@@ -187,10 +190,10 @@ const AppDataTable = ({
 
   return (
     <div
-      className={`overflow-hidden rounded-2xl border ${
+      className={`overflow-hidden rounded-[24px] border p-4 shadow-[0_18px_50px_rgba(8,47,73,0.08)] ${
         dark
-          ? "border-slate-700/80 bg-slate-900/40"
-          : "border-slate-200/90 bg-white/90 shadow-glass"
+          ? "border-cyan-200/10 bg-[linear-gradient(115deg,rgba(15,27,45,0.96),rgba(10,22,39,0.94)_52%,rgba(21,33,56,0.96))]"
+          : "border-white/80 bg-[linear-gradient(105deg,#eefaff_0%,#f8fdff_48%,#edf7ff_100%)]"
       }`}
     >
       {/* Table Container with Custom Scrollbar */}
@@ -203,17 +206,17 @@ const AppDataTable = ({
         }}
       >
         <table
-          className="min-w-full text-sm"
+          className="min-w-full border-separate border-spacing-0 text-sm"
           role="table"
           aria-label={ariaLabel}
         >
           <thead>
-            <tr className={dark ? "bg-slate-800/60" : "bg-slate-100/90"}>
+            <tr>
               {columns.map((column) => (
                 <th
                   key={column}
                   scope="col"
-                  className={`px-5 py-3 text-left text-[11px] font-semibold uppercase tracking-wider ${
+                  className={`px-5 py-3 text-left text-[12px] font-bold normal-case tracking-normal ${
                     dark ? "text-slate-400" : "text-slate-500"
                   }`}
                 >
@@ -224,7 +227,7 @@ const AppDataTable = ({
           </thead>
           <tbody
             className={
-              dark ? "divide-y divide-slate-800" : "divide-y divide-slate-200"
+              dark ? "text-slate-200" : "text-slate-950"
             }
           >
             {paginatedRows}
@@ -236,7 +239,7 @@ const AppDataTable = ({
       {showScrollbar && (
         <div
           className={`scrollbar-track relative h-3 px-2 py-1 cursor-pointer ${
-            dark ? "bg-slate-900/60" : "bg-slate-100/60"
+            dark ? "bg-slate-950/30" : "bg-white/35"
           }`}
           onClick={handleTrackClick}
         >
@@ -260,10 +263,10 @@ const AppDataTable = ({
       {/* Pagination Footer */}
       {resultsCount > 0 && (
         <div
-          className={`flex items-center justify-between border-t px-5 py-3 text-xs ${
+          className={`mt-4 flex items-center justify-between border-t px-1 pt-4 text-xs ${
             dark
-              ? "border-slate-800 text-slate-400"
-              : "border-slate-200 text-slate-500"
+              ? "border-cyan-200/10 text-slate-400"
+              : "border-white/70 text-slate-500"
           }`}
         >
           <span>
@@ -274,10 +277,10 @@ const AppDataTable = ({
             <div className="flex items-center gap-1">
               <button
                 type="button"
-                className={`h-8 px-2 rounded-md transition-colors ${
-                  dark
-                    ? "text-slate-300 hover:bg-slate-800"
-                    : "text-slate-600 hover:bg-slate-100"
+                  className={`h-8 px-2 rounded-md transition-colors ${
+                    dark
+                    ? "text-slate-300 hover:bg-cyan-300/10"
+                    : "text-slate-600 hover:bg-white/80"
                 } disabled:opacity-40 disabled:cursor-not-allowed`}
                 onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
                 disabled={safeCurrentPage === 1}
@@ -292,11 +295,11 @@ const AppDataTable = ({
                   className={`h-8 w-8 rounded-md text-sm font-medium transition-colors ${
                     page === safeCurrentPage
                       ? dark
-                        ? "bg-blue-500 text-white"
-                        : "bg-blue-600 text-white"
+                        ? "bg-cyan-300/20 text-cyan-100 ring-1 ring-cyan-200/20"
+                        : "bg-slate-950 text-white"
                       : dark
-                        ? "text-slate-300 hover:bg-slate-800"
-                        : "text-slate-600 hover:bg-slate-100"
+                        ? "text-slate-300 hover:bg-cyan-300/10"
+                        : "text-slate-600 hover:bg-white/80"
                   }`}
                   onClick={() => setCurrentPage(page)}
                   aria-label={`Go to page ${page}`}
@@ -307,10 +310,10 @@ const AppDataTable = ({
 
               <button
                 type="button"
-                className={`h-8 px-2 rounded-md transition-colors ${
+                  className={`h-8 px-2 rounded-md transition-colors ${
                   dark
-                    ? "text-slate-300 hover:bg-slate-800"
-                    : "text-slate-600 hover:bg-slate-100"
+                    ? "text-slate-300 hover:bg-cyan-300/10"
+                    : "text-slate-600 hover:bg-white/80"
                 } disabled:opacity-40 disabled:cursor-not-allowed`}
                 onClick={() =>
                   setCurrentPage((prev) => Math.min(totalPages, prev + 1))
@@ -328,11 +331,11 @@ const AppDataTable = ({
 };
 
 export const AppTd = ({ children, className = "" }: AppTdProps) => (
-  <td className={`px-5 py-3.5 align-middle ${className}`}>{children}</td>
+  <td className={`px-5 py-4 align-middle ${className}`}>{children}</td>
 );
 
 export const AppTr = ({ children }: AppTrProps) => (
-  <tr className="group transition-colors hover:bg-slate-50/80 dark:hover:bg-slate-800/45">
+  <tr className="group rounded-2xl transition-colors hover:bg-white/45 dark:hover:bg-cyan-300/[0.045]">
     {children}
   </tr>
 );

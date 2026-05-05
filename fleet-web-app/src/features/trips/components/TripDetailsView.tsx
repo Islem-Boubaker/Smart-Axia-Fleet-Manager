@@ -1,9 +1,10 @@
 import { useEffect, useMemo, useState } from 'react';
-import { CircleMarker, MapContainer, Polyline, TileLayer, useMap } from 'react-leaflet';
+import { CircleMarker, MapContainer, Polyline, Popup, TileLayer, useMap } from 'react-leaflet';
 import type { LatLngExpression } from 'leaflet';
 import type { Trip } from '../../../types';
 import 'leaflet/dist/leaflet.css';
 import { compactLocationLabel } from '../utils/locationLabel';
+import { tripsService, type TripLiveLocation } from '../services/trips.service';
 
 type TripDetailsViewProps = {
   trip: Trip;
@@ -42,6 +43,22 @@ const formatDateTime = (value?: string) => {
 const formatNumber = (value?: number, suffix = '') => {
   if (typeof value !== 'number' || !Number.isFinite(value)) return 'N/A';
   return `${value.toFixed(1)}${suffix}`;
+};
+
+const formatRelativeTime = (value?: string) => {
+  if (!value) return 'unknown time';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return 'unknown time';
+
+  const diffSeconds = Math.max(0, Math.round((Date.now() - date.getTime()) / 1000));
+  if (diffSeconds < 10) return 'just now';
+  if (diffSeconds < 60) return `${diffSeconds}s ago`;
+
+  const diffMinutes = Math.round(diffSeconds / 60);
+  if (diffMinutes < 60) return `${diffMinutes}m ago`;
+
+  const diffHours = Math.round(diffMinutes / 60);
+  return `${diffHours}h ago`;
 };
 
 const geocodeLocation = async (query: string, signal: AbortSignal): Promise<GeoPoint | null> => {
@@ -118,6 +135,10 @@ const TripDetailsView = ({ trip, dark = false }: TripDetailsViewProps) => {
   const [roadPath, setRoadPath] = useState<LatLngExpression[] | null>(null);
   const [isRouting, setIsRouting] = useState(false);
   const [isRoadFallback, setIsRoadFallback] = useState(false);
+  const [liveLocation, setLiveLocation] = useState<TripLiveLocation | null>(null);
+  const [isLiveLocationLoading, setIsLiveLocationLoading] = useState(false);
+  const [liveLocationError, setLiveLocationError] = useState<string | null>(null);
+  const isOngoingTrip = trip.status === 'ongoing';
 
   const orderedStops = useMemo(
     () => (Array.isArray(trip.stops) ? [...trip.stops].sort((a, b) => a.stopOrder - b.stopOrder) : []),
@@ -251,13 +272,85 @@ const TripDetailsView = ({ trip, dark = false }: TripDetailsViewProps) => {
     };
   }, [routingPoints]);
 
+  useEffect(() => {
+    if (!isOngoingTrip) {
+      setLiveLocation(null);
+      setIsLiveLocationLoading(false);
+      setLiveLocationError(null);
+      return;
+    }
+
+    let isMounted = true;
+
+    const fetchLiveLocation = async (showLoading = false) => {
+      try {
+        if (showLoading) setIsLiveLocationLoading(true);
+        const nextLocation = await tripsService.getLiveLocation(trip.id);
+        if (!isMounted) return;
+        setLiveLocation(nextLocation);
+        setLiveLocationError(null);
+      } catch (error) {
+        if (!isMounted) return;
+        const message =
+          (error as { response?: { data?: { message?: string } }; message?: string })?.response?.data?.message ||
+          (error as Error)?.message ||
+          'Unable to load driver location.';
+        setLiveLocationError(message);
+      } finally {
+        if (isMounted) setIsLiveLocationLoading(false);
+      }
+    };
+
+    void fetchLiveLocation(true);
+    const intervalId = window.setInterval(() => {
+      void fetchLiveLocation(false);
+    }, 10_000);
+
+    return () => {
+      isMounted = false;
+      window.clearInterval(intervalId);
+    };
+  }, [isOngoingTrip, trip.id]);
+
   const fallbackPath = useMemo<LatLngExpression[]>(
     () => routingPoints.map((point) => [point.lat, point.lng]),
     [routingPoints]
   );
 
+  const driverLivePoint = useMemo<GeoPoint | null>(() => {
+    if (!liveLocation) return null;
+    const lat = Number(liveLocation.latitude);
+    const lng = Number(liveLocation.longitude);
+    if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null;
+    return { lat, lng };
+  }, [liveLocation]);
+
   const displayPath = roadPath && roadPath.length > 1 ? roadPath : fallbackPath;
-  const mapCenter: LatLngExpression = routingPoints.length > 0 ? [routingPoints[0].lat, routingPoints[0].lng] : DEFAULT_MAP_CENTER;
+  const mapFitPoints = useMemo<LatLngExpression[]>(() => {
+    const points = displayPath.length > 0 ? [...displayPath] : [...fallbackPath];
+    if (driverLivePoint) points.push([driverLivePoint.lat, driverLivePoint.lng]);
+    return points;
+  }, [displayPath, driverLivePoint, fallbackPath]);
+
+  const mapCenter: LatLngExpression =
+    routingPoints.length > 0
+      ? [routingPoints[0].lat, routingPoints[0].lng]
+      : driverLivePoint
+        ? [driverLivePoint.lat, driverLivePoint.lng]
+        : DEFAULT_MAP_CENTER;
+
+  const liveLocationStatus = useMemo(() => {
+    if (!isOngoingTrip) return null;
+    if (liveLocation) {
+      const accuracy = typeof liveLocation.accuracy === 'number' ? ` • accuracy ~${Math.round(liveLocation.accuracy)}m` : '';
+      const stale = liveLocation.isStale ? ' • signal is old' : '';
+      return `Driver phone location updated ${formatRelativeTime(liveLocation.recordedAt)}${accuracy}${stale}`;
+    }
+    if (isLiveLocationLoading) return 'Waiting for the driver phone location...';
+    if (liveLocationError) return liveLocationError;
+    return 'No driver phone location has been received yet. Ask the driver to open live navigation.';
+  }, [isLiveLocationLoading, isOngoingTrip, liveLocation, liveLocationError]);
+
 
   const summaryItems: Array<[string, string]> = [
     ['Status', trip.status],
@@ -321,7 +414,19 @@ const TripDetailsView = ({ trip, dark = false }: TripDetailsViewProps) => {
           Route Map
         </p>
 
-        {routingPoints.length === 0 ? (
+        {liveLocationStatus ? (
+          <div
+            className={`mb-3 rounded-xl border px-3 py-2 text-xs ${
+              dark
+                ? 'border-cyan-400/20 bg-cyan-400/10 text-cyan-100'
+                : 'border-cyan-100 bg-cyan-50 text-cyan-800'
+            }`}
+          >
+            {liveLocationStatus}
+          </div>
+        ) : null}
+
+        {routingPoints.length === 0 && !driverLivePoint ? (
           <p className={`text-sm ${dark ? 'text-slate-400' : 'text-slate-600'}`}>
             {isGeocoding
               ? 'Resolving start and destination markers...'
@@ -339,8 +444,44 @@ const TripDetailsView = ({ trip, dark = false }: TripDetailsViewProps) => {
             <div className="overflow-hidden rounded-xl border border-slate-200/70 dark:border-slate-700/70">
               <MapContainer center={mapCenter} zoom={10} style={{ width: '100%', height: '300px' }} className="z-0">
                 <TileLayer attribution={MAP_ATTRIBUTION} url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
-                <MapAutoFit points={displayPath.length > 0 ? displayPath : fallbackPath} />
+                <MapAutoFit points={mapFitPoints} />
                 {displayPath.length > 1 && <Polyline positions={displayPath} pathOptions={{ color: '#0ea5e9', weight: 4, opacity: 0.8 }} />}
+                {driverLivePoint && (
+                  <>
+                    <CircleMarker
+                      center={[driverLivePoint.lat, driverLivePoint.lng]}
+                      radius={22}
+                      pathOptions={{
+                        color: liveLocation?.isStale ? '#f59e0b' : '#06b6d4',
+                        fillColor: liveLocation?.isStale ? '#f59e0b' : '#06b6d4',
+                        fillOpacity: 0.14,
+                        opacity: 0.35,
+                        weight: 2,
+                      }}
+                    />
+                    <CircleMarker
+                      center={[driverLivePoint.lat, driverLivePoint.lng]}
+                      radius={9}
+                      pathOptions={{
+                        color: liveLocation?.isStale ? '#f59e0b' : '#06b6d4',
+                        fillColor: liveLocation?.isStale ? '#f59e0b' : '#06b6d4',
+                        fillOpacity: 0.95,
+                        weight: 3,
+                      }}
+                    >
+                      <Popup>
+                        <div className="space-y-1">
+                          <p className="font-semibold">Driver location</p>
+                          <p>{liveLocation?.driver?.name || trip.driver?.name || 'Assigned driver'}</p>
+                          <p>Updated {formatRelativeTime(liveLocation?.recordedAt)}</p>
+                          {typeof liveLocation?.accuracy === 'number' ? (
+                            <p>Accuracy ~{Math.round(liveLocation.accuracy)}m</p>
+                          ) : null}
+                        </div>
+                      </Popup>
+                    </CircleMarker>
+                  </>
+                )}
                 {startMarker && (
                   <CircleMarker
                     center={[startMarker.lat, startMarker.lng]}

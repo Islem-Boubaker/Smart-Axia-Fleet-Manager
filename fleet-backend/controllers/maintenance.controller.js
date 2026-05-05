@@ -15,6 +15,8 @@ const handleError = (res, error) => {
 
 const invalidateMaintenanceCache = async (id) => {
   await cacheMiddleware.invalidatePattern('maintenances:*');
+  await cacheMiddleware.invalidatePattern('vehicles:*');
+  await cacheMiddleware.invalidatePattern('reclamations:*');
   if (id) {
     await cacheMiddleware.invalidatePattern(`maintenances:show:id=${id}*`);
   }

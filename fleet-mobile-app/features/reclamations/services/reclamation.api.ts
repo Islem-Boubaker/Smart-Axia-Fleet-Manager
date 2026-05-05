@@ -52,10 +52,21 @@ export const reclamationApi = {
   ): Promise<Reclamation> => {
     const hasImages = Boolean(data.images && data.images.length > 0);
     const endpoint = data.vehicleId || hasImages ? "/reclamations/vehicle" : "/reclamations";
+    const contextPayload = {
+      ...(data.type ? { type: data.type } : {}),
+      ...(data.vehicleId ? { vehicleId: data.vehicleId } : {}),
+      ...(data.vehicleName ? { vehicleName: data.vehicleName } : {}),
+      ...(data.vehiclePlate ? { vehiclePlate: data.vehiclePlate } : {}),
+      ...(data.driverName ? { driverName: data.driverName } : {}),
+      ...(data.tripId ? { tripId: data.tripId } : {}),
+      ...(data.reclamationTypeLabel ? { reclamationTypeLabel: data.reclamationTypeLabel } : {}),
+      ...(data.metadata ? { metadata: data.metadata } : {}),
+    };
 
     console.log("📝 Creating reclamation:", {
       subject: data.subject,
       message: data.message,
+      type: data.type,
       vehicleId: data.vehicleId,
       imageCount: data.images?.length || 0,
       endpoint,
@@ -66,7 +77,7 @@ export const reclamationApi = {
       const payload = {
         subject: data.subject,
         message: data.message,
-        ...(data.vehicleId ? { vehicleId: data.vehicleId } : {}),
+        ...contextPayload,
       };
       console.log("📤 Sending JSON payload:", payload);
       const response = await api.post<ApiResponse<Reclamation>>(endpoint, payload);
@@ -76,10 +87,12 @@ export const reclamationApi = {
     const formData = new FormData();
     formData.append("subject", data.subject);
     formData.append("message", data.message);
-
-    if (data.vehicleId) {
-      formData.append("vehicleId", data.vehicleId);
-    }
+    Object.entries(contextPayload).forEach(([key, value]) => {
+      formData.append(
+        key,
+        typeof value === "object" ? JSON.stringify(value) : String(value),
+      );
+    });
 
     data.images?.forEach((img, index) => {
       console.log(`📷 Adding image ${index}:`, {

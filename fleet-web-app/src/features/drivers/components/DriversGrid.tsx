@@ -40,6 +40,7 @@ const DriversGrid = ({ drivers, isLoading, onEdit, onDelete, dark = false }: Pro
       totalResults={drivers.length}
       dark={dark}
       ariaLabel="Drivers table"
+      title="Drivers"
     >
       {drivers.map((driver) => (
         <AppTr key={driver.id}>

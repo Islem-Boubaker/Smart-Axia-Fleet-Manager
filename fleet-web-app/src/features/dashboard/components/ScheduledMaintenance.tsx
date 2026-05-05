@@ -17,12 +17,12 @@ const dayDiff = (dateValue: string) => {
 };
 
 const ScheduledMaintenance = ({ items, onOpenAll }: ScheduledMaintenanceProps) => (
-  <div className="bg-white/90 dark:bg-gray-900/70 rounded-2xl border border-gray-200/70 dark:border-gray-700/60 shadow-sm p-5">
+  <div className="learning-card p-5">
     <div className="mb-3 flex items-center justify-between">
       <button
         type="button"
         onClick={onOpenAll}
-        className="text-sm font-medium text-gray-700 dark:text-gray-300 inline-flex items-center gap-1 hover:text-blue-600 dark:hover:text-blue-300 transition-colors"
+        className="text-sm font-black text-gray-800 dark:text-gray-200 inline-flex items-center gap-1 hover:text-sky-600 dark:hover:text-sky-300 transition-colors"
       >
         Upcoming maintenance
         <FiArrowUpRight className="w-4 h-4" />

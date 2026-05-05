@@ -50,6 +50,24 @@ export interface CreateTripRequest {
   }>;
 }
 
+export interface TripLiveLocation {
+  id: string;
+  tripId: string;
+  userId: string;
+  driver?: {
+    id: string;
+    name?: string;
+    email?: string;
+  } | null;
+  latitude: number;
+  longitude: number;
+  accuracy?: number | null;
+  speed?: number | null;
+  heading?: number | null;
+  recordedAt: string;
+  isStale?: boolean;
+}
+
 export const tripsService = {
   // Trips Core
   getTrips: async (filters?: TripFilters): Promise<TripListResponse> => {
@@ -81,6 +99,11 @@ export const tripsService = {
 
   getTripById: async (id: string) => {
     const response = await api.get<{ success: boolean; data: Trip }>(`/trips/${id}`);
+    return response.data.data;
+  },
+
+  getLiveLocation: async (id: string) => {
+    const response = await api.get<{ success: boolean; data: TripLiveLocation | null }>(`/trips/${id}/live-location`);
     return response.data.data;
   },
 

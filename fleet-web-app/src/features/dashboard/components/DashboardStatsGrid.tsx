@@ -1,4 +1,4 @@
-import { FiActivity, FiCalendar, FiDroplet, FiTool } from 'react-icons/fi';
+import { FiCalendar, FiDroplet, FiTool, FiTruck } from 'react-icons/fi';
 import DashboardCard from './DashboardCard';
 import type { DashboardStats } from '../hooks/useDashboard';
 
@@ -14,7 +14,7 @@ const DashboardStatsGrid = ({ stats }: DashboardStatsGridProps) => {
       <DashboardCard
         label="Active vehicles"
         value={stats.activeVehicles.toLocaleString('en-TN')}
-        icon={<FiActivity className="h-4 w-4" />}
+        icon={<FiTruck className="h-4 w-4" />}
         accentClassName="bg-gradient-to-r from-emerald-500 to-teal-500"
       />
       <DashboardCard

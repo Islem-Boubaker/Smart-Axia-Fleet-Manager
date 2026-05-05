@@ -115,9 +115,14 @@ const User = sequelize.define(
     emailTrips: { type: DataTypes.BOOLEAN, defaultValue: true },
     emailMaintenance: { type: DataTypes.BOOLEAN, defaultValue: true },
     emailDrivers: { type: DataTypes.BOOLEAN, defaultValue: false },
+    emailAI: { type: DataTypes.BOOLEAN, defaultValue: true },
+    emailSystem: { type: DataTypes.BOOLEAN, defaultValue: true },
 
     pushTrips: { type: DataTypes.BOOLEAN, defaultValue: true },
     pushMaintenance: { type: DataTypes.BOOLEAN, defaultValue: true },
+    pushDrivers: { type: DataTypes.BOOLEAN, defaultValue: true },
+    pushAI: { type: DataTypes.BOOLEAN, defaultValue: true },
+    pushSystem: { type: DataTypes.BOOLEAN, defaultValue: true },
     pushAlerts: { type: DataTypes.BOOLEAN, defaultValue: true },
 
     smsAlerts: { type: DataTypes.BOOLEAN, defaultValue: false },

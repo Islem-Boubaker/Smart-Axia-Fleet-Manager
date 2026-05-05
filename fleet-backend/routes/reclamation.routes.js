@@ -72,33 +72,6 @@ router.get(
   reclamationController.getAllReclamations
 );
 
-// Get reclamation by ID
-router.get(
-  "/reclamations/:id",
-  authMiddleware.authenticate,
-  authMiddleware.authorizeRoles("ADMIN", "MANAGER"),
-  cacheMiddleware("reclamations", "show", { requireAuth: true }),
-  reclamationController.getReclamationById
-);
-
-// Update status
-router.patch(
-  "/reclamations/:id/status",
-  authMiddleware.authenticate,
-  authMiddleware.authorizeRoles("ADMIN"),
-  reclamationController.updateReclamationStatus
-);
-
-
-
-// Delete reclamation
-router.delete(
-  "/reclamations/:id",
-  authMiddleware.authenticate,
-  authMiddleware.authorizeRoles("ADMIN"),
-  reclamationController.deleteReclamation
-);
-
 /**
  * =========================
  * 📊 FILTER & SEARCH
@@ -121,6 +94,33 @@ router.get(
   authMiddleware.authorizeRoles("ADMIN", "MANAGER"),
   cacheMiddleware("reclamations", "search", { requireAuth: true }),
   reclamationController.searchReclamations
+);
+
+// Get reclamation by ID
+router.get(
+  "/reclamations/:id",
+  authMiddleware.authenticate,
+  authMiddleware.authorizeRoles("ADMIN", "MANAGER"),
+  cacheMiddleware("reclamations", "show", { requireAuth: true }),
+  reclamationController.getReclamationById
+);
+
+// Update status
+router.patch(
+  "/reclamations/:id/status",
+  authMiddleware.authenticate,
+  authMiddleware.authorizeRoles("ADMIN", "MANAGER"),
+  reclamationController.updateReclamationStatus
+);
+
+
+
+// Delete reclamation
+router.delete(
+  "/reclamations/:id",
+  authMiddleware.authenticate,
+  authMiddleware.authorizeRoles("ADMIN"),
+  reclamationController.deleteReclamation
 );
 
 

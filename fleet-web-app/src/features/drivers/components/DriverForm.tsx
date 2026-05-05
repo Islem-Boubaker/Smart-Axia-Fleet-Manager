@@ -94,15 +94,15 @@ const DriverForm = ({ driver, vehicles = [], dark = false, onSubmit, onCancel }:
       : assignedVehicleOptions;
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6">
+    <form onSubmit={handleSubmit} className="space-y-4">
       {/* Profile Header Section */}
-      <div className="flex items-center gap-4 mb-2">
+      <div className="flex items-center gap-3">
         <div className="relative">
-          <div className="w-20 h-20 rounded-full bg-brand/10 flex items-center justify-center text-brand relative overflow-hidden ring-[3px] ring-white dark:ring-slate-800 shadow-md">
+          <div className="w-16 h-16 rounded-2xl bg-brand/10 flex items-center justify-center text-brand relative overflow-hidden ring-[3px] ring-white dark:ring-slate-800 shadow-md">
             {previewUrl ? (
               <img src={previewUrl} alt="Driver avatar" className="w-full h-full object-cover" />
             ) : (
-              <FiUser className="w-8 h-8" />
+              <FiUser className="w-7 h-7" />
             )}
           </div>
           
@@ -132,7 +132,7 @@ const DriverForm = ({ driver, vehicles = [], dark = false, onSubmit, onCancel }:
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-5">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-4">
         <div className="md:col-span-2">
           <Input
             label="Name"
@@ -246,7 +246,7 @@ const DriverForm = ({ driver, vehicles = [], dark = false, onSubmit, onCancel }:
         </div>
       </div>
 
-      <div className="flex items-center justify-between pt-6 mt-4">
+      <div className="flex items-center justify-between pt-3">
         <button
           type="button"
           onClick={onCancel}

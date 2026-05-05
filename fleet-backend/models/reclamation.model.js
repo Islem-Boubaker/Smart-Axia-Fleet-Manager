@@ -22,6 +22,11 @@ const Reclamation = sequelize.define(
       allowNull: false,
       defaultValue: "PENDING",
     },
+    type: {
+      type: DataTypes.STRING,
+      allowNull: false,
+      defaultValue: "general",
+    },
     userId: {
       type: DataTypes.UUID,
       allowNull: false,
@@ -30,10 +35,27 @@ const Reclamation = sequelize.define(
       type: DataTypes.UUID,
       allowNull: true,
     },
+    driverName: {
+      type: DataTypes.STRING(150),
+      allowNull: true,
+    },
+    vehicleName: {
+      type: DataTypes.STRING(150),
+      allowNull: true,
+    },
+    vehiclePlate: {
+      type: DataTypes.STRING(50),
+      allowNull: true,
+    },
     images: {
       type: DataTypes.ARRAY(DataTypes.STRING), // Array of image URLs
       allowNull: false,
       defaultValue: [],
+    },
+    metadata: {
+      type: DataTypes.JSONB,
+      allowNull: false,
+      defaultValue: {},
     },
   },
   {

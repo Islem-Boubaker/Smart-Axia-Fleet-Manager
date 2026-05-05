@@ -1,10 +1,24 @@
-import { useState, useMemo } from "react";
+import { useEffect, useState, useMemo } from "react";
 import type { FormEvent, ChangeEvent } from "react";
 import { Input, Button, Select } from "../../../shared/components";
 import { useVehicleOptions } from "../../vehicles/hooks/useVehicles";
+import type { Vehicle } from "../../../types";
 
 interface MaintenanceFormProps {
   maintenance?: any;
+  initialValues?: Partial<{
+    vehicleId: string;
+    reclamationId: string;
+    vehiclePlate: string;
+    type: string;
+    scheduledDate: string;
+    technician: string;
+    priority: string;
+    status: string;
+    cost: string | number;
+    mileage: string | number;
+    description: string;
+  }>;
   dark?: boolean;
   onSubmit: (data: any) => void;
   onCancel: () => void;
@@ -15,21 +29,34 @@ const textareaClass =
 
 const labelClass = "block text-[13px] text-gray-500 dark:text-slate-400 mb-1.5";
 
-const MaintenanceForm = ({ maintenance, dark = false, onSubmit, onCancel }: MaintenanceFormProps) => {
+const MaintenanceForm = ({ maintenance, initialValues, dark = false, onSubmit, onCancel }: MaintenanceFormProps) => {
   const { vehicles, isLoading: vehiclesLoading } = useVehicleOptions();
+  const source = maintenance || initialValues || {};
 
   const [formData, setFormData] = useState({
-    vehicleId: maintenance?.vehicleId || "",
-    vehiclePlate: maintenance?.vehiclePlate || "",
-    type: maintenance?.type || "",
-    scheduledDate: maintenance?.scheduledDate || "",
-    technician: maintenance?.technician || "",
-    priority: maintenance?.priority || "medium",
-    status: maintenance?.status || "scheduled",
-    cost: maintenance?.cost || "",
-    mileage: maintenance?.mileage || "",
-    description: maintenance?.description || "",
+    vehicleId: source?.vehicleId || "",
+    reclamationId: source?.reclamationId || "",
+    vehiclePlate: source?.vehiclePlate || "",
+    type: source?.type || "",
+    scheduledDate: source?.scheduledDate || "",
+    technician: source?.technician || "",
+    priority: source?.priority || "medium",
+    status: source?.status || "scheduled",
+    cost: source?.cost ?? "",
+    mileage: source?.mileage ?? "",
+    description: source?.description || "",
   });
+
+  const selectableVehicles = useMemo(() => vehicles, [vehicles]);
+
+  useEffect(() => {
+    if (maintenance || vehiclesLoading || !formData.vehicleId) return;
+
+    const stillSelectable = selectableVehicles.some((vehicle) => vehicle.id === formData.vehicleId);
+    if (!stillSelectable) {
+      setFormData((prev) => ({ ...prev, vehicleId: "", vehiclePlate: "" }));
+    }
+  }, [formData.vehicleId, maintenance, selectableVehicles, vehiclesLoading]);
 
   const handleChange = (
     e: ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>
@@ -37,7 +64,7 @@ const MaintenanceForm = ({ maintenance, dark = false, onSubmit, onCancel }: Main
     const { name, value } = e.target;
 
     if (name === 'vehicleId') {
-      const selectedVehicle = vehicles.find((v: any) => v.id === value);
+      const selectedVehicle = selectableVehicles.find((v: Vehicle) => v.id === value);
       const selectedPlate = selectedVehicle?.plaque_immatriculation || '';
       setFormData((p) => ({ ...p, vehicleId: value, vehiclePlate: selectedPlate }));
       return;
@@ -57,6 +84,7 @@ const MaintenanceForm = ({ maintenance, dark = false, onSubmit, onCancel }: Main
         cost: formData.cost,
         mileage: formData.mileage,
         description: formData.description,
+        reclamationId: formData.reclamationId,
       });
       return;
     }
@@ -66,7 +94,7 @@ const MaintenanceForm = ({ maintenance, dark = false, onSubmit, onCancel }: Main
 
   const handleSelectChange = (name: string, value: string) => {
     if (name === 'vehicleId') {
-      const selectedVehicle = vehicles.find((v: any) => v.id === value);
+      const selectedVehicle = selectableVehicles.find((v: Vehicle) => v.id === value);
       const selectedPlate = selectedVehicle?.plaque_immatriculation || '';
       setFormData((p) => ({ ...p, vehicleId: value, vehiclePlate: selectedPlate }));
       return;
@@ -76,9 +104,9 @@ const MaintenanceForm = ({ maintenance, dark = false, onSubmit, onCancel }: Main
   };
 
   const vehicleLabel = useMemo(
-    () => (v: any) => {
-      const plate = v.plate || v.vehiclePlate || "";
-      const name = v.name || v.model || "Vehicle";
+    () => (v: Vehicle) => {
+      const plate = v.plaque_immatriculation || "";
+      const name = v.name || v.Vehicle_Model || "Vehicle";
       return plate ? `${name} (${plate})` : name;
     },
     []
@@ -94,9 +122,15 @@ const MaintenanceForm = ({ maintenance, dark = false, onSubmit, onCancel }: Main
             value={formData.vehicleId}
             onChange={(value) => handleSelectChange('vehicleId', value)}
             dark={dark}
-            disabled={vehiclesLoading}
-            placeholder={vehiclesLoading ? "Loading vehicles..." : "Select vehicle"}
-            options={vehicles.map((v: any) => ({
+            disabled={vehiclesLoading || selectableVehicles.length === 0}
+            placeholder={
+              vehiclesLoading
+                ? "Loading vehicles..."
+                : selectableVehicles.length > 0
+                  ? "Select vehicle"
+                  : "No vehicles found"
+            }
+            options={selectableVehicles.map((v: Vehicle) => ({
               value: v.id,
               label: vehicleLabel(v),
             }))}
@@ -120,6 +154,8 @@ const MaintenanceForm = ({ maintenance, dark = false, onSubmit, onCancel }: Main
               "Engine Tune-up",
               "Battery Replacement",
               "General Inspection",
+              "Technical Visit",
+              "Insurance Renewal",
               "Other",
             ].map((t) => ({ value: t, label: t }))}
           />

@@ -26,6 +26,13 @@ const typeToVehicleModel: Record<string, Vehicle['Vehicle_Model']> = {
   motorcycle: 'Motorcycle',
 };
 
+const resolveInitialStatus = (vehicle?: Partial<Vehicle>): Vehicle['status'] => {
+  if (vehicle?.status) return vehicle.status;
+  if (vehicle?.Need_Maintenance) return 'IN_MAINTENANCE';
+  if (vehicle?.Active === false) return 'OUT_OF_SERVICE';
+  return 'AVAILABLE';
+};
+
 const firstPhoto = (photos: unknown): string | null => {
   if (Array.isArray(photos) && photos.length > 0 && typeof photos[0] === 'string') {
     return photos[0];
@@ -44,6 +51,7 @@ const VehicleForm = ({ vehicle, dark = false, onSubmit, onCancel, error }: Vehic
     vin: vehicle?.vin || '',
     plaque_immatriculation: vehicle?.plaque_immatriculation || '',
     type: vehicle?.type || 'car',
+    status: resolveInitialStatus(vehicle),
     Active: vehicle?.Active ?? true,
     Vehicle_Model: vehicle?.Vehicle_Model || typeToVehicleModel[vehicle?.type || 'car'] || 'Car',
     Mileage: vehicle?.Mileage ?? 0,
@@ -79,6 +87,8 @@ const VehicleForm = ({ vehicle, dark = false, onSubmit, onCancel, error }: Vehic
     payload.Engine_Size = payload.Engine_Size === '' ? null : Number(payload.Engine_Size);
     payload.consumption = payload.consumption === '' ? null : Number(payload.consumption);
     payload.Vehicle_Model = typeToVehicleModel[String(payload.type || 'car')] || 'Car';
+    payload.Active = payload.status !== 'OUT_OF_SERVICE';
+    payload.Need_Maintenance = payload.status === 'IN_MAINTENANCE';
     payload.max_load = payload.max_load === '' || payload.max_load === null ? null : Number(payload.max_load);
     payload.insurance_expiry_date = payload.insurance_expiry_date === '' ? null : payload.insurance_expiry_date;
     payload.tech_visit_expiry_date = payload.tech_visit_expiry_date === '' ? null : payload.tech_visit_expiry_date;
@@ -131,7 +141,7 @@ const VehicleForm = ({ vehicle, dark = false, onSubmit, onCancel, error }: Vehic
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6 max-h-[70vh] overflow-y-auto pr-2 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+    <form onSubmit={handleSubmit} className="space-y-4">
       {error && (
         <div className="bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/20 text-red-700 dark:text-red-400 px-4 py-3 rounded-xl text-sm shadow-sm mb-4">
           {error}
@@ -139,13 +149,13 @@ const VehicleForm = ({ vehicle, dark = false, onSubmit, onCancel, error }: Vehic
       )}
 
       {/* Header Section */}
-      <div className="flex items-center gap-4 mb-2">
+      <div className="flex items-center gap-3">
         <div className="relative">
-          <div className="w-20 h-20 rounded-full bg-brand/10 flex items-center justify-center text-brand relative overflow-hidden ring-[3px] ring-white dark:ring-slate-800 shadow-md">
+          <div className="w-16 h-16 rounded-2xl bg-brand/10 flex items-center justify-center text-brand relative overflow-hidden ring-[3px] ring-white dark:ring-slate-800 shadow-md">
             {previewUrl ? (
               <img src={previewUrl} alt="Vehicle photo" className="w-full h-full object-cover" />
             ) : (
-              <FiTruck className="w-8 h-8" />
+              <FiTruck className="w-7 h-7" />
             )}
           </div>
           
@@ -175,7 +185,7 @@ const VehicleForm = ({ vehicle, dark = false, onSubmit, onCancel, error }: Vehic
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-5">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-4">
         {/* Name */}
         <div className="md:col-span-2">
           <Input label="Name" name="name" value={formData.name} onChange={handleChange} placeholder="Vehicle name" required />
@@ -211,6 +221,21 @@ const VehicleForm = ({ vehicle, dark = false, onSubmit, onCancel, error }: Vehic
         {/* Max Load */}
         <div>
           <Input label="Max Load (kg)" type="number" name="max_load" value={formData.max_load ?? ''} onChange={handleChange} min="0" />
+        </div>
+
+        {/* Operational Status */}
+        <div className="md:col-span-2">
+          <label className={labelClass}>Operational Status</label>
+          <Select
+            value={formData.status}
+            onChange={(value) => handleSelectChange('status', value)}
+            dark={dark}
+            options={[
+              { value: 'AVAILABLE', label: 'Active' },
+              { value: 'OUT_OF_SERVICE', label: 'Inactive' },
+              { value: 'IN_MAINTENANCE', label: 'Maintenance' },
+            ]}
+          />
         </div>
 
         {/* Mileage */}
@@ -297,33 +322,9 @@ const VehicleForm = ({ vehicle, dark = false, onSubmit, onCancel, error }: Vehic
           />
         </div>
 
-        {/* Checkboxes */}
-        <div className="md:col-span-2 flex items-center gap-6 pt-2">
-          <label className="flex items-center gap-2 cursor-pointer group">
-            <div className="relative flex items-center justify-center">
-              <input type="checkbox" name="Active" checked={formData.Active} onChange={handleChange} className="peer sr-only" />
-              <div className="w-5 h-5 border-2 border-gray-300 dark:border-slate-600 rounded peer-checked:bg-gray-900 dark:peer-checked:bg-brand peer-checked:border-gray-900 dark:peer-checked:border-brand transition-colors"></div>
-              <svg className="absolute w-3.5 h-3.5 text-white opacity-0 peer-checked:opacity-100 pointer-events-none transition-opacity" viewBox="0 0 14 10" fill="none">
-                <path d="M1 5L4.5 8.5L13 1" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-              </svg>
-            </div>
-            <span className="text-[13px] font-medium text-gray-700 dark:text-slate-300 group-hover:text-gray-900 dark:group-hover:text-white transition-colors">Active Status</span>
-          </label>
-          
-          <label className="flex items-center gap-2 cursor-pointer group">
-            <div className="relative flex items-center justify-center">
-              <input type="checkbox" name="Need_Maintenance" checked={formData.Need_Maintenance} onChange={handleChange} className="peer sr-only" />
-              <div className="w-5 h-5 border-2 border-gray-300 dark:border-slate-600 rounded peer-checked:bg-brand peer-checked:border-brand transition-colors"></div>
-              <svg className="absolute w-3.5 h-3.5 text-white opacity-0 peer-checked:opacity-100 pointer-events-none transition-opacity" viewBox="0 0 14 10" fill="none">
-                <path d="M1 5L4.5 8.5L13 1" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-              </svg>
-            </div>
-            <span className="text-[13px] font-medium text-gray-700 dark:text-slate-300 group-hover:text-gray-900 dark:group-hover:text-white transition-colors">Needs Maintenance</span>
-          </label>
-        </div>
       </div>
 
-      <div className="flex items-center justify-between pt-6 mt-4">
+      <div className="flex items-center justify-between pt-3">
         <button
           type="button"
           onClick={onCancel}

@@ -15,12 +15,21 @@ import {
 /* ─────────────────────────────────────────────
    Types
 ───────────────────────────────────────────── */
-interface Notification {
+export interface Notification {
   id: string;
   type: 'info' | 'success' | 'warning' | 'maintenance' | 'driver' | 'vehicle';
+  notificationType?: string;
+  group?: string;
+  priority?: string;
   title: string;
   message: string;
   timestamp: string;
+  createdAt?: string;
+  updatedAt?: string;
+  actionUrl?: string | null;
+  entityType?: string | null;
+  entityId?: string | null;
+  metadata?: Record<string, unknown>;
   read: boolean;
 }
 
@@ -31,6 +40,7 @@ interface NotificationPopupProps {
   loading?: boolean;
   error?: string | null;
   onMarkAsRead?: (id: string) => void;
+  onNotificationClick?: (notification: Notification) => void;
   onMarkAllAsRead?: () => void;
   triggerRef?: React.RefObject<HTMLElement | null>;
 }
@@ -85,15 +95,23 @@ const getIconBg = (type: Notification['type']) => {
 const NotificationItem = ({
   notification,
   onMarkAsRead,
+  onNotificationClick,
 }: {
   notification: Notification;
   onMarkAsRead?: (id: string) => void;
+  onNotificationClick?: (notification: Notification) => void;
 }) => (
   <div
     className={`px-4 py-3 hover:bg-gray-50 dark:hover:bg-slate-800/60 transition-colors cursor-pointer ${
       !notification.read ? 'bg-blue-50 dark:bg-blue-900/20' : ''
     }`}
-    onClick={() => onMarkAsRead?.(notification.id)}
+    onClick={() => {
+      if (onNotificationClick) {
+        onNotificationClick(notification);
+        return;
+      }
+      onMarkAsRead?.(notification.id);
+    }}
   >
     <div className="flex gap-3">
       <div
@@ -157,6 +175,7 @@ export const NotificationPopup = ({
   loading = false,
   error = null,
   onMarkAsRead,
+  onNotificationClick,
   onMarkAllAsRead,
   triggerRef,
 }: NotificationPopupProps) => {
@@ -230,7 +249,12 @@ export const NotificationPopup = ({
     if (notifications.length === 0) return <EmptyState />;
 
     return notifications.map((n) => (
-      <NotificationItem key={n.id} notification={n} onMarkAsRead={onMarkAsRead} />
+      <NotificationItem
+        key={n.id}
+        notification={n}
+        onMarkAsRead={onMarkAsRead}
+        onNotificationClick={onNotificationClick}
+      />
     ));
   };
 

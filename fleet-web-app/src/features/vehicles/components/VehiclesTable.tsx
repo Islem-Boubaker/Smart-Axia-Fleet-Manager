@@ -106,6 +106,8 @@ const VehiclesTable = memo(
         columns={["Vehicle", "Status", "Driver", "Last Trip", "Maintenance Recommendation", "Actions"]}
         totalResults={rows.length}
         dark={dark}
+        ariaLabel="Vehicles table"
+        title="Vehicles"
       >
         {rows.map((row) => {
           const vehicleImage = row.vehicle.photos?.[0] ?? null;

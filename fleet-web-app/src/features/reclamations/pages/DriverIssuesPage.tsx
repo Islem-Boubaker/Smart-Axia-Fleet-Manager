@@ -1,9 +1,10 @@
 import { useCallback, useMemo, useState } from 'react';
-import { useOutletContext, useSearchParams } from 'react-router-dom';
+import { useNavigate, useOutletContext, useSearchParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { driversService } from '../../drivers/services/drivers.service';
 import { vehiclesService } from '../../vehicles/services/vehicles.service';
 import type { Driver, Vehicle } from '../../../types';
+import { buildMaintenancePrefillUrl } from '../../maintenance/utils/maintenancePrefill';
 import { pageShellClasses, pageShellInnerSpacing } from '../../../shared/utils/pageShell';
 import DriverIssuesFilters from '../components/DriverIssuesFilters';
 import DriverIssueDetailsModal from '../components/DriverIssueDetailsModal';
@@ -13,6 +14,7 @@ import reclamationsService, {
   type ReclamationStatus,
 } from '../services/reclamations.service';
 import { queryKeys } from '../../../shared/services/queryKeys';
+import { useUpdateReclamationStatus } from '../hooks/useReclamations';
 
 interface ThemeContext {
   dark: boolean;
@@ -26,6 +28,18 @@ const statusLabel: Record<ReclamationStatus, string> = {
 };
 
 const normalize = (value?: string | null) => String(value ?? '').trim().toLowerCase();
+
+const metadataString = (metadata: Record<string, unknown> | undefined, key: string) => {
+  const value = metadata?.[key];
+  if (typeof value === 'string') return value.trim();
+  if (typeof value === 'number' && Number.isFinite(value)) return String(value);
+  return '';
+};
+
+const normalizePriority = (value: string) => {
+  const normalized = value.trim().toLowerCase();
+  return ['low', 'medium', 'high'].includes(normalized) ? normalized : 'high';
+};
 
 const buildVehicleLabel = (vehicle: Vehicle) =>
   vehicle.plaque_immatriculation ? `${vehicle.name} - ${vehicle.plaque_immatriculation}` : vehicle.name;
@@ -51,6 +65,7 @@ const findVehicleFromAssignedValue = (assignedValue: string | undefined, vehicle
 
 const DriverIssuesPage = () => {
   const { dark } = useOutletContext<ThemeContext>();
+  const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
 
   const [statusFilter, setStatusFilter] = useState<'all' | ReclamationStatus>('all');
@@ -58,6 +73,8 @@ const DriverIssuesPage = () => {
   const [driverFilter, setDriverFilter] = useState('all');
   const [vehicleFilter, setVehicleFilter] = useState('all');
   const [selected, setSelected] = useState<ReclamationRecord | null>(null);
+  const [statusError, setStatusError] = useState<string | null>(null);
+  const updateStatusMutation = useUpdateReclamationStatus();
 
   const requestedId = searchParams.get('reclamationId');
 
@@ -87,6 +104,20 @@ const DriverIssuesPage = () => {
     (queryError as Error | null)?.message ||
     null;
 
+  const handleUpdateStatus = useCallback(async (item: ReclamationRecord, status: ReclamationStatus) => {
+    try {
+      setStatusError(null);
+      const updated = await updateStatusMutation.mutateAsync({ id: item.id, status });
+      setSelected(updated);
+    } catch (err) {
+      const message =
+        (err as { response?: { data?: { message?: string } } })?.response?.data?.message ||
+        (err as Error)?.message ||
+        'Failed to update issue status.';
+      setStatusError(message);
+    }
+  }, [updateStatusMutation]);
+
   const selectedIssue = useMemo(() => {
     if (selected) return selected;
     if (!requestedId || items.length === 0) return null;
@@ -94,11 +125,23 @@ const DriverIssuesPage = () => {
   }, [selected, requestedId, items]);
 
   const getDriverLabel = useCallback((item: ReclamationRecord) => {
+    if (item.driverName) return item.driverName;
+    if (item.driver?.name || item.driver?.email) return item.driver.name || item.driver.email || item.userId;
     const driver = drivers.find((d) => String(d.id) === String(item.userId));
     return driver?.name || item.userId;
   }, [drivers]);
 
   const getVehicleLabel = useCallback((item: ReclamationRecord) => {
+    if (item.vehicleName || item.vehiclePlate) {
+      return item.vehicleName && item.vehiclePlate
+        ? `${item.vehicleName} (${item.vehiclePlate})`
+        : item.vehicleName || item.vehiclePlate || 'N/A';
+    }
+    if (item.vehicle?.name || item.vehicle?.plaque_immatriculation || item.vehicle?.model) {
+      const name = item.vehicle.name || item.vehicle.model || 'Vehicle';
+      const plate = item.vehicle.plaque_immatriculation;
+      return plate ? `${name} (${plate})` : name;
+    }
     const byVehicleId = item.vehicleId
       ? vehicles.find((v) => String(v.id) === String(item.vehicleId))
       : undefined;
@@ -110,6 +153,62 @@ const DriverIssuesPage = () => {
 
     return item.vehicleId || 'N/A';
   }, [drivers, vehicles]);
+
+  const handleScheduleFromIssue = useCallback((item: ReclamationRecord) => {
+    const matchedVehicle =
+      (item.vehicleId ? vehicles.find((v) => String(v.id) === String(item.vehicleId)) : undefined) ||
+      (item.vehiclePlate ? vehicles.find((v) => normalize(v.plaque_immatriculation) === normalize(item.vehiclePlate)) : undefined) ||
+      findVehicleFromAssignedValue(
+        drivers.find((d) => String(d.id) === String(item.userId))?.assignedVehicle,
+        vehicles
+      );
+    const vehicleId = item.vehicleId || matchedVehicle?.id || item.vehicle?.id || '';
+    const vehiclePlate =
+      item.vehiclePlate ||
+      matchedVehicle?.plaque_immatriculation ||
+      item.vehicle?.plaque_immatriculation ||
+      '';
+    const vehicleName =
+      item.vehicleName ||
+      matchedVehicle?.name ||
+      item.vehicle?.name ||
+      item.vehicle?.model ||
+      '';
+
+    const metadata = item.metadata ?? {};
+    const maintenanceType = metadataString(metadata, 'maintenanceType') || 'General Inspection';
+    const priority = normalizePriority(metadataString(metadata, 'maintenancePriority'));
+    const estimatedCost = metadataString(metadata, 'estimatedCost') || '0';
+    const currentMileage = metadataString(metadata, 'currentMileage');
+    const maintenanceNotes = metadataString(metadata, 'maintenanceNotes');
+
+    navigate(buildMaintenancePrefillUrl({
+      source: 'reclamation',
+      reclamationId: item.id,
+      vehicleId,
+      vehiclePlate,
+      vehicleName,
+      type: maintenanceType,
+      priority,
+      technician: 'Pending assignment',
+      cost: estimatedCost,
+      mileage: currentMileage,
+      description: [
+        `Created from driver issue: ${item.subject}`,
+        '',
+        `Requested maintenance: ${maintenanceType}`,
+        `Priority: ${priority}`,
+        estimatedCost ? `Estimated cost: ${estimatedCost} TND` : '',
+        currentMileage ? `Current mileage: ${currentMileage} km` : '',
+        maintenanceNotes ? `Maintenance notes: ${maintenanceNotes}` : '',
+        '',
+        item.message,
+        '',
+        `Driver: ${getDriverLabel(item)}`,
+        `Vehicle: ${getVehicleLabel(item)}`,
+      ].filter(Boolean).join('\n'),
+    }));
+  }, [drivers, getDriverLabel, getVehicleLabel, navigate, vehicles]);
 
   const filteredItems = useMemo(() => {
     const normalizedSearch = searchQuery.trim().toLowerCase();
@@ -163,12 +262,12 @@ const DriverIssuesPage = () => {
 
   return (
     <div className={`${pageShellClasses(dark)} ${pageShellInnerSpacing} animate-fade-in`}>
-      <div className="space-y-1 px-1">
-        <p className={`text-xs font-semibold uppercase tracking-[0.12em] ${dark ? 'text-slate-500' : 'text-slate-400'}`}>
+      <div className="fleet-hero space-y-1">
+        <p className="fleet-hero-kicker">
           Operations
         </p>
-        <h1 className={`text-2xl font-bold tracking-tight ${dark ? 'text-white' : 'text-slate-900'}`}>Driver Issue Reports</h1>
-        <p className={`text-sm ${dark ? 'text-slate-400' : 'text-slate-600'}`}>
+        <h1 className="fleet-hero-title">Driver Issue Reports</h1>
+        <p className="fleet-hero-subtitle">
           Monitor vehicle issues submitted by drivers.
         </p>
       </div>
@@ -188,9 +287,9 @@ const DriverIssuesPage = () => {
         statusLabel={statusLabel}
       />
 
-      {error && (
+      {(error || statusError) && (
         <div className={`rounded-xl border px-4 py-3 text-sm ${dark ? 'border-red-900/50 bg-red-950/30 text-red-200' : 'border-red-200 bg-red-50 text-red-700'}`}>
-          {error}
+          {error || statusError}
         </div>
       )}
 
@@ -221,6 +320,9 @@ const DriverIssuesPage = () => {
         statusLabel={statusLabel}
         getDriverLabel={getDriverLabel}
         getVehicleLabel={getVehicleLabel}
+        onScheduleMaintenance={handleScheduleFromIssue}
+        onUpdateStatus={handleUpdateStatus}
+        isUpdatingStatus={updateStatusMutation.isPending}
       />
     </div>
   );

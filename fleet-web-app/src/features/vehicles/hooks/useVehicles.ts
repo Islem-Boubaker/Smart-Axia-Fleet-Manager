@@ -5,10 +5,11 @@ import { tripsService } from '../../trips/services/trips.service';
 import { maintenanceService } from '../../maintenance/services/maintenance.service';
 import type { Maintenance, Trip, Vehicle } from '../../../types';
 import { queryKeys } from '../../../shared/services/queryKeys';
+import { getVehicleStatusLabel, type VehicleStatusLabel } from '../utils/vehicleStatus';
 
 export type VehicleStatusFilter = 'all' | 'available' | 'in_use' | 'maintenance' | 'inactive';
 export type VehicleTypeFilter = Vehicle['type'] | 'all';
-export type VehicleStatusLabel = 'Available' | 'In Use' | 'Maintenance' | 'Inactive';
+export type { VehicleStatusLabel };
 
 export interface MaintenanceRecommendation {
   overview: string;
@@ -84,12 +85,6 @@ const formatTripLabel = (date?: string): string => {
   if (diffDays < 7) return `${diffDays} days ago`;
 
   return parsed.toLocaleDateString();
-};
-
-const resolveStatus = (vehicle: Vehicle, activeTrip: Trip | undefined): VehicleStatusLabel => {
-  if (vehicle.Need_Maintenance) return 'Maintenance';
-  if (activeTrip) return 'In Use';
-  return vehicle.Active ? 'Available' : 'Inactive';
 };
 
 const applyMaintenanceRecommendationsToVehicle = (
@@ -285,7 +280,7 @@ export const useVehicles = () => {
         .filter((trip) => matchesVehicleTrip(vehicle, trip))
         .sort((a, b) => toTimestamp(b.startTime) - toTimestamp(a.startTime));
 
-      const activeTrip = relatedTrips.find((trip) => trip.status === 'ongoing' || trip.status === 'scheduled');
+      const activeTrip = relatedTrips.find((trip) => trip.status === 'ongoing');
       const latestTrip = relatedTrips[0];
 
       const driverName =
@@ -307,7 +302,7 @@ export const useVehicles = () => {
 
       return {
         vehicle,
-        statusLabel: resolveStatus(vehicle, activeTrip),
+        statusLabel: getVehicleStatusLabel(vehicle),
         driverName,
         lastTripLabel: formatTripLabel(latestTrip?.startTime),
         lastTripTime: latestTrip?.startTime,

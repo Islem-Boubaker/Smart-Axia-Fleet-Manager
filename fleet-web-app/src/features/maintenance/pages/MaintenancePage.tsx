@@ -1,5 +1,5 @@
-import { useState, useCallback } from 'react';
-import { useOutletContext } from 'react-router-dom';
+import { useState, useCallback, useEffect, useMemo } from 'react';
+import { useOutletContext, useSearchParams } from 'react-router-dom';
 
 import { GlobalCard } from '../../../shared/components';
 import MaintenanceTable from '../components/MaintenanceTable';
@@ -16,6 +16,7 @@ interface ThemeContext {
 
 const MaintenancePage = () => {
   const { dark } = useOutletContext<ThemeContext>();
+  const [searchParams, setSearchParams] = useSearchParams();
   const {
     records,
     isLoading,
@@ -34,12 +35,51 @@ const MaintenancePage = () => {
   const [editError, setEditError] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
 
+  const prefilledMaintenance = useMemo(() => {
+    if (searchParams.get('schedule') !== '1') return undefined;
+
+    return {
+      vehicleId: searchParams.get('vehicleId') || '',
+      reclamationId: searchParams.get('reclamationId') || '',
+      vehiclePlate: searchParams.get('vehiclePlate') || '',
+      type: searchParams.get('type') || 'General Inspection',
+      scheduledDate: '',
+      technician: searchParams.get('technician') || 'Pending assignment',
+      priority: searchParams.get('priority') || 'high',
+      status: 'scheduled',
+      cost: searchParams.get('cost') || '0',
+      mileage: searchParams.get('mileage') || '',
+      description: searchParams.get('description') || '',
+    };
+  }, [searchParams]);
+
+  const clearPrefillParams = useCallback(() => {
+    if (searchParams.get('source') !== 'reclamation' && searchParams.get('schedule') !== '1') return;
+    setSearchParams(new URLSearchParams(), { replace: true });
+  }, [searchParams, setSearchParams]);
+
+  useEffect(() => {
+    if (prefilledMaintenance) {
+      setSubmitError(null);
+      setIsScheduleModalOpen(true);
+    }
+  }, [prefilledMaintenance]);
+
+  const normalizeMaintenanceErrorMessage = useCallback((message?: string | null, fallback?: string) => {
+    const normalized = String(message || '').trim().toLowerCase();
+    if (normalized.includes('only available vehicles can be scheduled for maintenance')) {
+      return fallback || 'Failed to schedule maintenance.';
+    }
+    return message || fallback || 'Failed to schedule maintenance.';
+  }, []);
+
   const handleScheduleMaintenance = useCallback(async (data: Record<string, unknown>) => {
     try {
       setSubmitError(null);
       await maintenanceService.create(data);
       await refetch();
       setIsScheduleModalOpen(false);
+      clearPrefillParams();
     } catch (err: unknown) {
       const response = (err as { response?: { status?: number; data?: { message?: string } } })?.response;
       const status = Number(response?.status);
@@ -55,7 +95,7 @@ const MaintenancePage = () => {
       }
 
       if (status === 409) {
-        setSubmitError(message || 'Conflict: maintenance schedule overlaps or transition is invalid.');
+        setSubmitError(normalizeMaintenanceErrorMessage(message, 'Conflict: maintenance schedule overlaps or transition is invalid.'));
         return;
       }
 
@@ -65,13 +105,13 @@ const MaintenancePage = () => {
       }
 
       if (status === 404) {
-        setSubmitError(message || 'Vehicle not found.');
+        setSubmitError(normalizeMaintenanceErrorMessage(message, 'Vehicle not found.'));
         return;
       }
 
-      setSubmitError(message || 'Failed to schedule maintenance.');
+      setSubmitError(normalizeMaintenanceErrorMessage(message, 'Failed to schedule maintenance.'));
     }
-  }, [refetch]);
+  }, [clearPrefillParams, normalizeMaintenanceErrorMessage, refetch]);
 
   const handleTransition = useCallback(async (record: Maintenance) => {
     if (record.status === 'scheduled' || record.status === 'pending') {
@@ -150,13 +190,6 @@ const MaintenancePage = () => {
           </div>
         )}
 
-        <div className="space-y-3">
-          <h2 className={`text-lg font-bold ${dark ? 'text-white' : 'text-slate-900'}`}>Maintenance records</h2>
-          <p className={`text-sm ${dark ? 'text-slate-400' : 'text-slate-500'}`}>
-            All maintenance records in one table.
-          </p>
-        </div>
-
         {isLoading ? (
           <div className={`text-center py-16 rounded-2xl border ${dark ? 'border-slate-700 text-slate-400' : 'border-slate-200 text-slate-500'}`}>
             Loading…
@@ -175,7 +208,10 @@ const MaintenancePage = () => {
 
       <GlobalCard
         isOpen={isScheduleModalOpen}
-        onClose={() => setIsScheduleModalOpen(false)}
+        onClose={() => {
+          setIsScheduleModalOpen(false);
+          clearPrefillParams();
+        }}
         title="Schedule maintenance"
         maxWidth="2xl"
       >
@@ -184,7 +220,15 @@ const MaintenancePage = () => {
             {submitError}
           </div>
         )}
-        <MaintenanceForm dark={dark} onSubmit={handleScheduleMaintenance} onCancel={() => setIsScheduleModalOpen(false)} />
+        <MaintenanceForm
+          dark={dark}
+          initialValues={prefilledMaintenance}
+          onSubmit={handleScheduleMaintenance}
+          onCancel={() => {
+            setIsScheduleModalOpen(false);
+            clearPrefillParams();
+          }}
+        />
       </GlobalCard>
 
       <GlobalCard

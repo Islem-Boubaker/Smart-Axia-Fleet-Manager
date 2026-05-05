@@ -1,6 +1,7 @@
 import { Op } from "sequelize";
 import Reclamation from "../models/reclamation.model.js";
 import User from "../models/user.model.js";
+import Vehicle from "../models/vehicle.model.js";
 import { eventBus, FLEET_EVENTS } from "../events/eventBus.js";
 
 // ─────────────────────────────────────────────
@@ -46,6 +47,120 @@ const buildRecipientsWithOwner = async (ownerId) => {
   return buildRecipients(ownerId); // same logic, clearer call-site intent
 };
 
+const getUserDisplayName = async (userId) => {
+  if (!userId) return "the user";
+  const user = await User.findByPk(userId, { attributes: ["id", "name", "email"] });
+  return user?.name || user?.email || "the user";
+};
+
+const normalizeType = (type) => {
+  const normalized = String(type || "general").trim().toLowerCase();
+  const allowed = new Set(["general", "vehicle", "maintenance", "trip", "delay", "technical", "other"]);
+  return allowed.has(normalized) ? normalized : "general";
+};
+
+const parseMetadata = (value) => {
+  if (!value) return {};
+  if (typeof value === "object" && !Array.isArray(value)) return value;
+  if (typeof value !== "string") return {};
+  try {
+    const parsed = JSON.parse(value);
+    return parsed && typeof parsed === "object" && !Array.isArray(parsed) ? parsed : {};
+  } catch {
+    return {};
+  }
+};
+
+const RECLAMATION_STATUS_MAP = {
+  PENDING: "PENDING",
+  IN_PROGRESS: "IN_PROGRESS",
+  RESOLVED: "RESOLVED",
+  REJECTED: "REJECTED",
+};
+
+const normalizeReclamationStatus = (value) => {
+  const normalized = String(value || "")
+    .trim()
+    .toUpperCase()
+    .replace(/[\s-]+/g, "_");
+
+  if (!RECLAMATION_STATUS_MAP[normalized]) {
+    const error = new Error(`Invalid reclamation status: ${value}`);
+    error.status = 400;
+    error.statusCode = 400;
+    error.code = "BAD_REQUEST";
+    throw error;
+  }
+
+  return RECLAMATION_STATUS_MAP[normalized];
+};
+
+const vehicleLabel = ({ vehicleName, vehiclePlate }) => {
+  if (vehicleName && vehiclePlate) return `${vehicleName} (${vehiclePlate})`;
+  if (vehicleName) return vehicleName;
+  if (vehiclePlate) return `vehicle ${vehiclePlate}`;
+  return "vehicle";
+};
+
+const buildContext = async (userId, payload = {}) => {
+  const user = await User.findByPk(userId, { attributes: ["id", "name", "email"] });
+  const driverName = payload.driverName || user?.name || user?.email || "the driver";
+  let vehicle = null;
+
+  if (payload.vehicleId) {
+    vehicle = await Vehicle.findByPk(payload.vehicleId, {
+      attributes: ["id", "name", "plaque_immatriculation", "model"],
+    });
+  }
+
+  const vehicleName =
+    payload.vehicleName ||
+    vehicle?.name ||
+    vehicle?.model ||
+    null;
+  const vehiclePlate =
+    payload.vehiclePlate ||
+    vehicle?.plaque_immatriculation ||
+    null;
+  const metadata = {
+    ...parseMetadata(payload.metadata),
+    driverName,
+    vehicleName,
+    vehiclePlate,
+  };
+
+  if (payload.tripId) metadata.tripId = payload.tripId;
+  if (payload.reclamationTypeLabel) metadata.reclamationTypeLabel = payload.reclamationTypeLabel;
+  if (payload.vehicleId || vehicle?.id) metadata.vehicleId = payload.vehicleId || vehicle.id;
+
+  return {
+    driverName,
+    vehicleName,
+    vehiclePlate,
+    metadata,
+  };
+};
+
+const reclamationInclude = [
+  { model: User, as: "driver", attributes: ["id", "name", "email"] },
+  { model: Vehicle, as: "vehicle", attributes: ["id", "name", "plaque_immatriculation", "model"] },
+];
+
+const hydrateReclamation = async (reclamation) => {
+  if (!reclamation?.id) return reclamation;
+  return Reclamation.findByPk(reclamation.id, { include: reclamationInclude });
+};
+
+const buildSubmittedMessage = ({ submittedBy, type, subject, vehicleName, vehiclePlate }) => {
+  if (type === "maintenance") {
+    return `${submittedBy} submitted a maintenance reclamation for ${vehicleLabel({ vehicleName, vehiclePlate })}: "${subject}".`;
+  }
+  if (type === "vehicle" || vehicleName || vehiclePlate) {
+    return `${submittedBy} submitted a vehicle reclamation for ${vehicleLabel({ vehicleName, vehiclePlate })}: "${subject}".`;
+  }
+  return `${submittedBy} submitted a new reclamation: "${subject}".`;
+};
+
 // ─────────────────────────────────────────────
 // USER SERVICES
 // ─────────────────────────────────────────────
@@ -55,9 +170,12 @@ export const createVehicleReclamationSvc = async (
   vehicleId,
   subject,
   message,
-  files = []
+  files = [],
+  options = {}
 ) => {
   const imageUrls = files.map((f) => f.path);
+  const type = normalizeType(options.type || "vehicle");
+  const context = await buildContext(userId, { ...options, vehicleId });
 
   const reclamation = await Reclamation.create({
     userId,
@@ -65,50 +183,91 @@ export const createVehicleReclamationSvc = async (
     subject,
     message,
     images: imageUrls,
+    type,
+    ...context,
   });
 
   const recipientIds = await buildRecipients(userId);
+  const submittedBy = await getUserDisplayName(userId);
+  const alertMessage = buildSubmittedMessage({
+    submittedBy,
+    type,
+    subject,
+    vehicleName: context.vehicleName,
+    vehiclePlate: context.vehiclePlate,
+  });
 
   publishSafely(
     FLEET_EVENTS.SYSTEM_ALERT,
     {
       recipientIds,
       title: 'Reclamation Submitted',
-      message: `A vehicle reclamation was submitted by user ${userId}: "${subject}".`,
+      message: alertMessage,
       metadata: {
         reclamationId: reclamation.id,
         vehicleId: reclamation.vehicleId ?? null,
+        vehicleName: context.vehicleName,
+        vehiclePlate: context.vehiclePlate,
+        type,
         status: reclamation.status,
         submittedBy: userId,
+        submittedByName: submittedBy,
       },
     },
     'SYSTEM_ALERT'
   );
 
-  return reclamation;
+  return hydrateReclamation(reclamation);
 };
 
-export const createReclamationSvc = async (userId, subject, message) => {
-  const reclamation = await Reclamation.create({ userId, subject, message });
+export const createReclamationSvc = async (userId, payloadOrSubject, maybeMessage) => {
+  const payload =
+    typeof payloadOrSubject === "object" && payloadOrSubject !== null
+      ? payloadOrSubject
+      : { subject: payloadOrSubject, message: maybeMessage };
+  const type = normalizeType(payload.type);
+  const context = await buildContext(userId, payload);
+
+  const reclamation = await Reclamation.create({
+    userId,
+    subject: payload.subject,
+    message: payload.message,
+    vehicleId: payload.vehicleId || null,
+    type,
+    ...context,
+  });
 
   const recipientIds = await buildRecipients(userId);
+  const submittedBy = await getUserDisplayName(userId);
+  const alertMessage = buildSubmittedMessage({
+    submittedBy,
+    type,
+    subject: payload.subject,
+    vehicleName: context.vehicleName,
+    vehiclePlate: context.vehiclePlate,
+  });
 
   publishSafely(
     FLEET_EVENTS.SYSTEM_ALERT,
     {
       recipientIds,
       title: "Reclamation Submitted",
-      message: `A new reclamation was submitted by user ${userId}: "${subject}".`,
+      message: alertMessage,
       metadata: {
         reclamationId: reclamation.id,
+        vehicleId: reclamation.vehicleId ?? null,
+        vehicleName: context.vehicleName,
+        vehiclePlate: context.vehiclePlate,
+        type,
         status: reclamation.status,
         submittedBy: userId,
+        submittedByName: submittedBy,
       },
     },
     "SYSTEM_ALERT"
   );
 
-  return reclamation;
+  return hydrateReclamation(reclamation);
 };
 
 export const getUserReclamationsSvc = async (userId, query, cacheKey = null) => {
@@ -117,6 +276,7 @@ export const getUserReclamationsSvc = async (userId, query, cacheKey = null) => 
 
   const { count, rows } = await Reclamation.findAndCountAll({
     where: { userId },
+    include: reclamationInclude,
     limit: parseInt(limit),
     offset: parseInt(offset),
     order: [["createdAt", "DESC"]],
@@ -131,7 +291,7 @@ export const getUserReclamationsSvc = async (userId, query, cacheKey = null) => 
 };
 
 export const getMyReclamationByIdSvc = async (userId, id, cacheKey = null) => {
-  const reclamation = await Reclamation.findOne({ where: { id, userId } });
+  const reclamation = await Reclamation.findOne({ where: { id, userId }, include: reclamationInclude });
   if (!reclamation) throw new Error("Reclamation not found or unauthorized");
   return reclamation;
 };
@@ -145,17 +305,19 @@ export const updateMyReclamationSvc = async (userId, id, body) => {
   await reclamation.update(body);
 
   const recipientIds = await buildRecipients(userId);
+  const updatedBy = await getUserDisplayName(userId);
 
   publishSafely(
     FLEET_EVENTS.SYSTEM_UPDATE,
     {
       recipientIds,
       title: "Reclamation Updated",
-      message: `Reclamation "${reclamation.subject}" was updated by user ${userId}.`,
+      message: `${updatedBy} updated reclamation "${reclamation.subject}".`,
       metadata: {
         reclamationId: reclamation.id,
         status: reclamation.status,
         updatedBy: userId,
+        updatedByName: updatedBy,
       },
     },
     "SYSTEM_UPDATE"
@@ -193,6 +355,7 @@ export const getAllReclamationsSvc = async (query, cacheKey = null) => {
   const offset = (page - 1) * limit;
 
   const { count, rows } = await Reclamation.findAndCountAll({
+    include: reclamationInclude,
     limit: parseInt(limit),
     offset: parseInt(offset),
     order: [["createdAt", "DESC"]],
@@ -207,36 +370,67 @@ export const getAllReclamationsSvc = async (query, cacheKey = null) => {
 };
 
 export const getReclamationByIdSvc = async (id, cacheKey = null) => {
-  const reclamation = await Reclamation.findByPk(id);
+  const reclamation = await Reclamation.findByPk(id, { include: reclamationInclude });
   if (!reclamation) throw new Error("Reclamation not found");
   return reclamation;
 };
 
-export const updateReclamationStatusSvc = async (id, status) => {
+export const updateReclamationStatusSvc = async (id, status, options = {}) => {
   const reclamation = await Reclamation.findByPk(id);
   if (!reclamation) throw new Error("Reclamation not found");
 
-  await reclamation.update({ status });
+  const normalizedStatus = normalizeReclamationStatus(status);
+  await reclamation.update({ status: normalizedStatus });
 
   // Notify the owner + all admins
   const recipientIds = await buildRecipientsWithOwner(reclamation.userId);
+  const triggerSource = options.source === "maintenance" ? "maintenance workflow" : "driver issues";
+  const message =
+    options.message ||
+    `Reclamation "${reclamation.subject}" status changed to ${normalizedStatus.replace(/_/g, " ")}.`;
 
   publishSafely(
     FLEET_EVENTS.SYSTEM_ALERT,
     {
       recipientIds,
       title: "Reclamation Status Updated",
-      message: `Reclamation "${reclamation.subject}" status changed to ${status}.`,
+      message,
       metadata: {
         reclamationId: reclamation.id,
-        status,
+        status: normalizedStatus,
         ownerId: reclamation.userId,
+        source: triggerSource,
+        maintenanceId: options.maintenanceId || null,
       },
     },
     "SYSTEM_ALERT"
   );
 
-  return reclamation;
+  return hydrateReclamation(reclamation);
+};
+
+export const syncReclamationStatusFromMaintenance = async (reclamationId, maintenanceStatus, options = {}) => {
+  if (!reclamationId) return null;
+
+  const normalizedMaintenanceStatus = String(maintenanceStatus || "").trim().toLowerCase();
+
+  if (normalizedMaintenanceStatus === "in progress" || normalizedMaintenanceStatus === "in_progress") {
+    return updateReclamationStatusSvc(reclamationId, "IN_PROGRESS", {
+      ...options,
+      source: "maintenance",
+      message: options.message || 'The linked maintenance has started, so this issue was moved to In Progress.',
+    });
+  }
+
+  if (normalizedMaintenanceStatus === "completed") {
+    return updateReclamationStatusSvc(reclamationId, "RESOLVED", {
+      ...options,
+      source: "maintenance",
+      message: options.message || 'The linked maintenance was completed, so this issue was marked as Resolved.',
+    });
+  }
+
+  return null;
 };
 
 export const deleteReclamationSvc = async (id) => {
@@ -266,6 +460,7 @@ export const deleteReclamationSvc = async (id) => {
 export const getReclamationsByStatusSvc = async (status, cacheKey = null) => {
   return await Reclamation.findAll({
     where: { status },
+    include: reclamationInclude,
     order: [["createdAt", "DESC"]],
   });
 };
@@ -304,6 +499,7 @@ export const searchReclamationsSvc = async (query, cacheKey = null) => {
 
   const { count, rows } = await Reclamation.findAndCountAll({
     where,
+    include: reclamationInclude,
     limit: parseInt(limit),
     offset: parseInt(offset),
     order: [["createdAt", "DESC"]],

@@ -1,5 +1,5 @@
 import { memo, useMemo, useState } from "react";
-import { Link, useLocation, useNavigate } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import UserAvatar from "../ui/UserAvatar";
 import {
   FiHome,
@@ -16,8 +16,11 @@ import {
   FiUser,
   FiBell,
   FiShield,
+  FiChevronRight,
 } from "react-icons/fi";
 import { ROUTES } from "../../../utils/constants";
+
+const BRAND_LOGO_SRC = "/images/OFFICIAL%20LOGO.png";
 
 interface SidebarProps {
   isOpen: boolean;
@@ -52,7 +55,7 @@ export const Sidebar = memo(
     const [settingsOpen, setSettingsOpen] = useState(
       location.pathname.startsWith(ROUTES.SETTINGS),
     );
-    useNavigate();
+    const [expanded, setExpanded] = useState(false);
 
     const menuItems = useMemo(
       () => [
@@ -99,30 +102,33 @@ export const Sidebar = memo(
       [],
     );
 
+    const primaryItems = menuItems.slice(0, 7);
+    const settingsItem = menuItems[7];
+
     const base = dark
       ? {
-          bg: "bg-slate-900",
-          border: "border-slate-700/60",
+          bg: "bg-[#07111F]/95",
+          border: "border-cyan-200/10",
           text: "text-slate-100",
           sub: "text-slate-400",
-          hover: "hover:bg-slate-800/70 hover:text-white",
-          activeBg: "bg-slate-800 text-white",
+          hover: "hover:bg-cyan-300/10 hover:text-cyan-50",
+          activeBg: "bg-white text-slate-950 shadow-sm",
           overlay: "bg-slate-950/70",
-          divider: "border-slate-700/60",
-          subitemHover: "hover:bg-slate-800/60 hover:text-white",
-          subitemActive: "bg-slate-800 text-white font-medium",
+          divider: "border-cyan-200/10",
+          subitemHover: "hover:bg-cyan-300/10 hover:text-cyan-50",
+          subitemActive: "bg-cyan-300/15 text-cyan-50 font-medium ring-1 ring-cyan-200/20",
         }
       : {
-          bg: "bg-white",
-          border: "border-slate-100",
+          bg: "bg-[#111827]",
+          border: "border-white/10",
           text: "text-slate-800",
           sub: "text-slate-400",
-          hover: "hover:bg-slate-50 hover:text-slate-900",
-          activeBg: "bg-slate-100 text-slate-900",
+          hover: "hover:bg-white/10 hover:text-white",
+          activeBg: "bg-white text-slate-950",
           overlay: "bg-black/40",
-          divider: "border-slate-100",
-          subitemHover: "hover:bg-slate-50 hover:text-slate-800",
-          subitemActive: "bg-slate-100 text-slate-900 font-medium",
+          divider: "border-white/10",
+          subitemHover: "hover:bg-white/10 hover:text-white",
+          subitemActive: "bg-white/15 text-white font-medium",
         };
 
     // Helper to check if a settings sub-item is active
@@ -143,39 +149,53 @@ export const Sidebar = memo(
           />
         )}
 
+        <div
+          aria-hidden="true"
+          className={`hidden shrink-0 transition-[width] duration-300 ease-out lg:block ${
+            expanded ? "w-[236px]" : "w-[64px]"
+          }`}
+        />
+
         {/* Sidebar */}
         <aside
           className={`
-          fixed lg:static inset-y-0 left-0 z-30
-          w-[240px] lg:w-[240px]
+          fixed inset-y-0 left-0 z-30
+          ${expanded ? "w-[236px] lg:w-[236px]" : "w-[64px] lg:w-[64px]"}
           transform transition-transform duration-300 ease-out
           ${isOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"}
           ${base.bg} border-r ${base.border}
-          flex flex-col h-full
+          flex h-screen flex-col overflow-visible
         `}
         >
+          <button
+            type="button"
+            onClick={() => setExpanded((value) => !value)}
+            className="absolute -right-[18px] top-[30px] z-50 hidden h-9 w-9 items-center justify-center rounded-full border-2 border-white bg-[#07111F] text-white shadow-[0_10px_24px_rgba(2,6,23,0.38)] transition-transform hover:scale-105 lg:flex"
+            aria-label={expanded ? "Collapse sidebar" : "Expand sidebar"}
+            aria-expanded={expanded}
+            title={expanded ? "Collapse sidebar" : "Expand sidebar"}
+          >
+            <FiChevronRight className={`h-4 w-4 transition-transform ${expanded ? "rotate-180" : ""}`} />
+          </button>
+
           {/* ── Logo ── */}
           <div
-            className={`flex items-center justify-between px-5 py-5 border-b ${base.divider}`}
+            className="flex items-center justify-center px-3 pb-5 pt-6"
           >
             <Link
               to={ROUTES.DASHBOARD}
-              className="flex items-center gap-3 min-w-0"
+              className={`flex items-center min-w-0 ${expanded ? "w-full justify-start gap-3 px-2" : "justify-center"}`}
               onClick={() => setIsOpen(false)}
             >
-              <div className="w-9 h-9 rounded-xl bg-blue-50 flex items-center justify-center shrink-0">
-                <FiTruck className="text-blue-600 w-4 h-4" />
+              <div className="w-10 h-10 overflow-hidden rounded-2xl flex items-center justify-center shrink-0 bg-slate-950 ring-1 ring-sky-300/20">
+                <img src={BRAND_LOGO_SRC} alt="AXIA Fleet Manager" className="h-full w-full object-cover" />
               </div>
-              <div className="min-w-0">
-                <h2
-                  className={`text-[13px] font-bold tracking-widest truncate uppercase ${dark ? "text-white" : "text-slate-900"}`}
-                >
-                  Smart Axia
-                </h2>
-                <p className="text-[11px] font-medium text-blue-500 truncate">
-                  Fleet Manager
-                </p>
-              </div>
+              {expanded && (
+                <div className="min-w-0">
+                  <p className="truncate text-xs font-black uppercase tracking-[0.18em] text-white">Smart Axia</p>
+                  <p className="truncate text-[11px] font-bold text-sky-400">Fleet Manager</p>
+                </div>
+              )}
             </Link>
             <button
               type="button"
@@ -188,8 +208,9 @@ export const Sidebar = memo(
           </div>
 
           {/* ── Navigation ── */}
-          <nav className="flex-1 overflow-y-auto px-3 py-3 space-y-0.5">
-            {menuItems.map((item) => {
+          <nav className="flex-1 overflow-hidden px-2 py-3">
+            <div className="space-y-3">
+            {primaryItems.map((item) => {
               const isActive = location.pathname === item.path;
               const isSettingsItem = item.label === "Settings";
               const Icon = item.icon;
@@ -200,14 +221,12 @@ export const Sidebar = memo(
                   {isSettingsItem ? (
                     <Link
                       to={item.path}
-                      type="button"
                       onClick={() => {
-      
                         setSettingsOpen((o) => !o);
                       }}
                       className={`
                       group w-full flex items-center justify-between
-                      px-3 py-2 rounded-lg text-left
+                      px-0 py-0 rounded-2xl text-left
                       transition-colors duration-150
                       ${
                         isActive || location.pathname.startsWith(item.path)
@@ -216,15 +235,16 @@ export const Sidebar = memo(
                       }
                     `}
                     >
-                      <div className="flex items-center gap-3">
-                        <Icon className="text-base shrink-0" />
-                        <span className="text-[13px] font-medium">
-                          {item.label}
-                        </span>
+                      <div className="flex h-10 w-full items-center justify-center">
+                        <Icon className="text-[15px] shrink-0" />
                       </div>
                       <span
-                        className={`transition-colors ${dark ? "text-slate-600 group-hover:text-slate-400" : "text-slate-300 group-hover:text-slate-500"}`}
+                        className="hidden"
                       >
+                        {item.label}
+                      </span>
+                      <span className="sr-only">{item.label}</span>
+                      <span className="hidden">
                         {settingsOpen ? (
                           <FiMinus size={13} />
                         ) : (
@@ -237,26 +257,24 @@ export const Sidebar = memo(
                       to={item.path}
                       onClick={() => setIsOpen(false)}
                       className={`
-                      group flex items-center justify-between
-                      px-3 py-2 rounded-lg
+                      group flex items-center
+                      ${expanded ? "justify-start gap-3 px-3 py-2.5" : "justify-center px-0 py-0"}
+                      rounded-2xl
                       transition-colors duration-150
                       ${isActive ? base.activeBg : `${base.sub} ${base.hover}`}
                     `}
                     >
-                      <div className="flex items-center gap-3">
-                        <Icon className="text-base shrink-0" />
-                        <span className="text-[13px] font-medium">
-                          {item.label}
-                        </span>
+                      <div className={`${expanded ? "h-6 w-6" : "h-12 w-full"} flex items-center justify-center`}>
+                        <Icon className="text-[15px] shrink-0" />
+                        <span className="sr-only">{item.label}</span>
                       </div>
+                      {expanded && <span className="truncate text-sm font-bold">{item.label}</span>}
                     </Link>
                   )}
 
                   {/* Settings sub-items */}
                   {isSettingsItem && settingsOpen && item.children && (
-                    <div
-                      className={`ml-4 mt-0.5 pl-3 border-l ${dark ? "border-slate-700/60" : "border-slate-100"} space-y-0.5 pb-1`}
-                    >
+                    <div className="mt-2 space-y-2 pb-1">
                       {item.children.map((child) => {
                         const isChildActive = isSubItemActive(child.tab);
                         const ChildIcon = child.icon;
@@ -266,7 +284,7 @@ export const Sidebar = memo(
                             to={child.path}
                             onClick={() => setIsOpen(false)}
                             className={`
-                            flex items-center gap-2.5 px-3 py-1.5 rounded-lg text-[13px]
+                            flex h-9 items-center justify-center rounded-xl text-[13px]
                             transition-colors duration-100
                             ${
                               isChildActive
@@ -275,8 +293,8 @@ export const Sidebar = memo(
                             }
                           `}
                           >
-                            <ChildIcon size={13} className="shrink-0" />
-                            {child.label}
+                            <ChildIcon size={14} className="shrink-0" />
+                            <span className="sr-only">{child.label}</span>
                           </Link>
                         );
                       })}
@@ -285,11 +303,66 @@ export const Sidebar = memo(
                 </div>
               );
             })}
+            </div>
+
+            {settingsItem ? (
+              <div className="mt-8">
+                {(() => {
+                  const item = settingsItem;
+                  const isActive = location.pathname === item.path;
+                  const Icon = item.icon;
+                  return (
+                    <Link
+                      to={item.path}
+                      onClick={() => {
+                        setSettingsOpen((o) => !o);
+                      }}
+                      className={`group flex w-full items-center rounded-2xl text-left transition-colors duration-150 ${
+                        expanded ? "justify-start gap-3 px-3 py-2.5" : "justify-center px-0 py-0"
+                      } ${
+                        isActive || location.pathname.startsWith(item.path)
+                          ? base.activeBg
+                          : `${base.sub} ${base.hover}`
+                      }`}
+                    >
+                      <div className={`${expanded ? "h-6 w-6" : "h-12 w-full"} flex items-center justify-center`}>
+                        <Icon className="text-[15px] shrink-0" />
+                      </div>
+                      <span className="sr-only">{item.label}</span>
+                      {expanded && <span className="truncate text-sm font-bold">{item.label}</span>}
+                    </Link>
+                  );
+                })()}
+                {expanded && settingsOpen && settingsItem.children ? (
+                  <div className="mt-2 space-y-1 pl-4">
+                    {settingsItem.children.map((child) => {
+                      const ChildIcon = child.icon;
+                      const isChildActive = isSubItemActive(child.tab);
+                      return (
+                        <Link
+                          key={child.path}
+                          to={child.path}
+                          onClick={() => setIsOpen(false)}
+                          className={`flex items-center gap-2 rounded-xl px-3 py-2 text-xs font-bold transition-colors ${
+                            isChildActive ? base.subitemActive : `${base.sub} ${base.subitemHover}`
+                          }`}
+                        >
+                          <ChildIcon size={13} />
+                          {child.label}
+                        </Link>
+                      );
+                    })}
+                  </div>
+                ) : null}
+              </div>
+            ) : null}
           </nav>
 
           {/* ── User Avatar ── */}
-          <div className={`px-4 py-4 border-t ${base.divider} shrink-0`}>
-            <UserAvatar />
+          <div
+            className={`px-3 pb-5 pt-3 shrink-0 flex ${expanded ? "justify-start [&_p:first-child]:!text-slate-100 [&_p:last-child]:!text-slate-400" : "justify-center"}`}
+          >
+            <UserAvatar compact={!expanded} />
           </div>
         </aside>
       </>

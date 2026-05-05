@@ -6,8 +6,8 @@ interface TopDriversCardProps {
 }
 
 const TopDriversCard = ({ drivers }: TopDriversCardProps) => (
-  <div className="bg-white/90 dark:bg-gray-900/70 rounded-2xl border border-gray-200/70 dark:border-gray-700/60 shadow-sm p-5">
-    <h2 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">Top drivers — this month</h2>
+  <div className="learning-card p-5">
+    <h2 className="text-sm font-black text-gray-800 dark:text-gray-200 mb-3">Top drivers — this month</h2>
 
     {drivers.length === 0 ? (
       <p className="text-sm text-gray-500 dark:text-gray-400">No driver data for this month.</p>

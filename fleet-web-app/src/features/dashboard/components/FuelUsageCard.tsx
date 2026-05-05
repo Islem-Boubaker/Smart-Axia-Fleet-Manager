@@ -13,8 +13,8 @@ const FuelUsageCard = ({ fuelByDay, activeVehicles }: FuelUsageCardProps) => {
   const cost = total * FUEL_PRICE_TND;
 
   return (
-    <div className="bg-white/90 dark:bg-gray-900/70 rounded-2xl border border-gray-200/70 dark:border-gray-700/60 shadow-sm p-5">
-      <h2 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">Fuel usage — last 7 days</h2>
+    <div className="learning-card p-5">
+      <h2 className="text-sm font-black text-gray-800 dark:text-gray-200 mb-3">Fuel usage — last 7 days</h2>
 
       <div className="flex items-end gap-1 h-14 mb-1 rounded-lg bg-gray-50 dark:bg-gray-800/60 px-2 pt-2">
         {fuelByDay.map((item, index) => {

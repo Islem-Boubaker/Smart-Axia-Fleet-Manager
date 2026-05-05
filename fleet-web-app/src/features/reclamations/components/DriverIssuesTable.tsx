@@ -37,6 +37,7 @@ const DriverIssuesTable = ({
       totalResults={items.length}
       dark={dark}
       ariaLabel="Driver issues table"
+      title="Driver issues"
       pageSize={7}
     >
       {items.map((item) => (

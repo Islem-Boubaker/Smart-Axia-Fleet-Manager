@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import { useNavigate, useOutletContext } from 'react-router-dom';
 import { FiPlus } from 'react-icons/fi';
 import { Button, GlobalCard } from '../../../shared/components';
+import { pageShellClasses, pageShellInnerSpacing } from '../../../shared/utils/pageShell';
 import { ROUTES } from '../../../utils/constants';
 import type { Trip } from '../../../types';
 import DashboardAlerts from '../components/DashboardAlerts';
@@ -13,6 +14,10 @@ import RecentTripsCard from '../components/RecentTripsCard';
 import ScheduledMaintenance from '../components/ScheduledMaintenance';
 import TopDriversCard from '../components/TopDriversCard';
 import TripDetailsView from '../../trips/components/TripDetailsView';
+import {
+  buildMaintenancePrefillUrlFromAlert,
+  isMaintenanceDocumentAlert,
+} from '../../maintenance/utils/maintenancePrefill';
 import { useDashboard } from '../hooks/useDashboard';
 import type { NotificationRecord } from '../../../shared/services/notification.api';
 
@@ -52,6 +57,16 @@ const DashboardPage = () => {
 
   const handleAlertClick = async (alert: NotificationRecord) => {
     await dismissAlert(alert);
+
+    if (isMaintenanceDocumentAlert(alert)) {
+      navigate(alert.actionUrl || buildMaintenancePrefillUrlFromAlert(alert));
+      return;
+    }
+
+    if (alert.actionUrl?.startsWith('/')) {
+      navigate(alert.actionUrl);
+      return;
+    }
 
     if (isDriverIssueAlert(alert)) {
       const reclamationId = getReclamationId(alert);
@@ -107,19 +122,15 @@ const DashboardPage = () => {
   }
 
   return (
-    <div className="relative px-6 py-6 space-y-6">
-      <div
-        aria-hidden="true"
-        className="pointer-events-none absolute inset-x-6 top-4 h-36 rounded-3xl bg-gradient-to-r from-blue-100/80 via-cyan-100/60 to-indigo-100/80 blur-2xl dark:from-blue-950/50 dark:via-cyan-900/20 dark:to-indigo-950/40"
-      />
-
-      <div className="relative grid grid-cols-1 lg:grid-cols-2 gap-4 items-center rounded-2xl border border-gray-200/70 dark:border-gray-800/70 bg-white/80 dark:bg-gray-900/60 backdrop-blur-sm shadow-soft px-5 py-4">
+    <div className={`${pageShellClasses(dark)} ${pageShellInnerSpacing} animate-fade-in`}>
+      <div className="fleet-hero relative grid grid-cols-1 lg:grid-cols-2 gap-4 items-center">
         <div>
-          <h1 className="text-xl md:text-2xl font-semibold tracking-tight text-gray-900 dark:text-white">Dashboard</h1>
-          <p className="text-gray-500 dark:text-gray-400 text-sm">Operations center overview for {todayLabel}</p>
+          <p className="fleet-hero-kicker">Operations</p>
+          <h1 className="fleet-hero-title">Fleet Dashboard</h1>
+          <p className="fleet-hero-subtitle">Operations center overview for {todayLabel}</p>
         </div>
         <div className="justify-self-start lg:justify-self-end">
-          <Button onClick={() => navigate(ROUTES.TRIPS)} className="shadow-sm">
+          <Button onClick={() => navigate(ROUTES.TRIPS)} className="rounded-full shadow-sm">
             <FiPlus className="mr-1.5 h-4 w-4" />
             New Trip
           </Button>
@@ -161,7 +172,7 @@ const DashboardPage = () => {
       <GlobalCard
         isOpen={Boolean(selectedTrip)}
         onClose={() => setSelectedTrip(null)}
-        title={selectedTrip ? `Trip details #${selectedTrip.id}` : 'Trip details'}
+        title="Trip details"
         maxWidth="2xl"
       >
         {selectedTrip ? <TripDetailsView trip={selectedTrip} dark={dark} /> : null}
