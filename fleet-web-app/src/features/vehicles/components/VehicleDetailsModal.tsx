@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Button, GlobalCard } from '../../../shared/components';
 import type { Vehicle } from '../../../types';
 import type { VehicleAssignmentSummary } from '../hooks/useVehicles';
@@ -29,11 +30,11 @@ interface VehicleDetailsModalProps {
   error?: string | null;
 }
 
-const prettyDate = (value?: string): string => {
-  if (!value) return 'N/A';
+const prettyDate = (value: string | undefined, locale: string, fallback: string): string => {
+  if (!value) return fallback;
   const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return 'N/A';
-  return date.toLocaleDateString();
+  if (Number.isNaN(date.getTime())) return fallback;
+  return date.toLocaleDateString(locale);
 };
 
 const VehicleDetailsModal = ({
@@ -49,6 +50,7 @@ const VehicleDetailsModal = ({
   isLoading = false,
   error = null,
 }: VehicleDetailsModalProps) => {
+  const { t, i18n } = useTranslation();
   const [isGenerating, setIsGenerating] = useState(false);
   const [liveRecommendations, setLiveRecommendations] = useState<MaintenanceRecommendation[] | null>(null);
 
@@ -144,30 +146,30 @@ const VehicleDetailsModal = ({
     <GlobalCard
       isOpen={isOpen}
       onClose={onClose}
-      title="Vehicle details"
+      title={t('vehicles.details.title')}
       maxWidth="2xl"
       footer={
         <div className="flex items-center justify-end gap-2">
           <Button
             variant="secondary"
             onClick={onClose}
-            aria-label="Close vehicle details"
+            aria-label={t('vehicles.details.closeAria')}
             className={secondaryButtonClass}
           >
-            Close
+            {t('common.close')}
           </Button>
           <Button
             onClick={onEdit}
             disabled={!vehicle || isLoading}
-            aria-label="Edit this vehicle"
+            aria-label={t('vehicles.details.editAria')}
             className={primaryButtonClass}
           >
-            Edit
+            {t('common.edit')}
           </Button>
         </div>
       }
     >
-      {isLoading && <p className={dark ? 'text-sm text-slate-400' : 'text-sm text-slate-500'}>Loading vehicle details...</p>}
+      {isLoading && <p className={dark ? 'text-sm text-slate-400' : 'text-sm text-slate-500'}>{t('vehicles.details.loading')}</p>}
 
       {error && !isLoading && (
         <div className={dark ? 'rounded-xl border border-rose-500/25 bg-rose-950/35 px-4 py-3 text-sm text-rose-200' : 'rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700'}>{error}</div>
@@ -183,54 +185,63 @@ const VehicleDetailsModal = ({
               />
             ) : null}
             <div className={identityItemClass}>
-              <p className={detailLabelClass}>Name</p>
+              <p className={detailLabelClass}>{t('common.name')}</p>
               <p className={detailValueClass}>{vehicle.name}</p>
             </div>
             <div className={identityItemClass}>
-              <p className={detailLabelClass}>Plate</p>
-              <p className={detailValueClass}>{vehicle.plaque_immatriculation || 'N/A'}</p>
+              <p className={detailLabelClass}>{t('common.plate')}</p>
+              <p className={detailValueClass}>{vehicle.plaque_immatriculation || t('common.na')}</p>
             </div>
             <div className={identityItemClass}>
-              <p className={detailLabelClass}>Model</p>
+              <p className={detailLabelClass}>{t('common.model')}</p>
               <p className={detailValueClass}>{vehicle.Vehicle_Model}</p>
             </div>
           </section>
 
           <section>
-            <h3 className={sectionTitleClass}>Current Assignment</h3>
+            <h3 className={sectionTitleClass}>{t('vehicles.details.assignmentTitle')}</h3>
             {assignment ? (
               <div className={detailPanelClass}>
                 <p className={detailTextClass}>
-                  Driver: <span className={detailStrongClass}>{assignment.driverName}</span>
+                  {t('vehicles.details.assignmentDriver')} <span className={detailStrongClass}>{assignment.driverName}</span>
                 </p>
                 <p className={detailTextClass}>
-                  Route: <span className={detailStrongClass}>{assignment.startLocation} {'->'} {assignment.endLocation}</span>
+                  {t('vehicles.details.assignmentRoute')} <span className={detailStrongClass}>{assignment.startLocation} {'->'} {assignment.endLocation}</span>
                 </p>
                 <p className={detailTextClass}>
-                  Status: <span className={`capitalize ${detailStrongClass}`}>{assignment.tripStatus}</span>
+                  {t('vehicles.details.assignmentStatus')} <span className={`capitalize ${detailStrongClass}`}>{t(`status.${String(assignment.tripStatus || '').toLowerCase().replace(/\s+/g, '_')}`)}</span>
                 </p>
                 <p className={detailTextClass}>
-                  Start: <span className={detailStrongClass}>{prettyDate(assignment.startTime)}</span>
+                  {t('vehicles.details.assignmentStart')} <span className={detailStrongClass}>{prettyDate(assignment.startTime, i18n.language, t('common.na'))}</span>
                 </p>
               </div>
             ) : (
-              <p className={mutedPanelClass}>No active assignment for this vehicle.</p>
+              <p className={mutedPanelClass}>{t('vehicles.details.noAssignment')}</p>
             )}
           </section>
 
           <section>
-            <h3 className={sectionTitleClass}>Maintenance History</h3>
+            <h3 className={sectionTitleClass}>{t('vehicles.details.maintenanceHistoryTitle')}</h3>
             {maintenanceHistory.length === 0 ? (
-              <p className={mutedPanelClass}>No maintenance records found.</p>
+              <p className={mutedPanelClass}>{t('vehicles.details.noMaintenance')}</p>
             ) : (
               <div className="mt-2 space-y-2">
                 {maintenanceHistory.slice(0, 6).map((record) => (
                   <div key={record.id} className={maintenanceCardClass}>
-                    <p className={dark ? 'text-sm font-bold text-white' : 'text-sm font-semibold text-slate-900'}>{record.description || 'Maintenance task'}</p>
+                    <p className={dark ? 'text-sm font-bold text-white' : 'text-sm font-semibold text-slate-900'}>{record.description || t('common.maintenanceTask')}</p>
                     <p className={dark ? 'text-xs text-slate-400' : 'text-xs text-slate-500'}>
-                      {prettyDate(record.scheduledDate)} • {record.status} • Priority {record.priority}
+                      {t('vehicles.details.maintenanceLine', {
+                        date: prettyDate(record.scheduledDate, i18n.language, t('common.na')),
+                        status: t(`status.${String(record.status || '').toLowerCase().replace(/\s+/g, '_')}`),
+                        priority: t(`priority.${String(record.priority || '').toLowerCase()}`),
+                      })}
                     </p>
-                    <p className={dark ? 'text-xs text-slate-400' : 'text-xs text-slate-500'}>Cost: {record.cost.toLocaleString()} DZD</p>
+                    <p className={dark ? 'text-xs text-slate-400' : 'text-xs text-slate-500'}>
+                      {t('vehicles.details.costLine', {
+                        cost: record.cost.toLocaleString(i18n.language),
+                        currency: t('common.currencyDzd'),
+                      })}
+                    </p>
                   </div>
                 ))}
               </div>
@@ -240,7 +251,7 @@ const VehicleDetailsModal = ({
           <section>
             <div className="flex items-center justify-between mb-3">
               <h3 className={sectionTitleClass}>
-                Maintenance Recommendations
+                {t('vehicles.details.recommendationsHeading')}
               </h3>
               <button
                 onClick={handleGenerateRecommendations}
@@ -253,21 +264,21 @@ const VehicleDetailsModal = ({
                       <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
                       <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/>
                     </svg>
-                    Generating...
+                    {t('vehicles.details.generating')}
                   </>
                 ) : (
                   <>
                     <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
                     </svg>
-                    {displayedRecommendations.length > 0 ? 'Regenerate' : 'Generate'}
+                    {displayedRecommendations.length > 0 ? t('vehicles.details.regenerate') : t('vehicles.details.generate')}
                   </>
                 )}
               </button>
             </div>
 
             {displayedRecommendations.length === 0 ? (
-              <p className={dark ? 'text-xs italic text-slate-500' : 'text-xs italic text-slate-400'}>No recommendations yet. Click Generate to analyse this vehicle.</p>
+              <p className={dark ? 'text-xs italic text-slate-500' : 'text-xs italic text-slate-400'}>{t('common.noRecommendationsYet')}</p>
             ) : (
               <div className="space-y-2">
                 {displayedRecommendations.map((rec, index) => (

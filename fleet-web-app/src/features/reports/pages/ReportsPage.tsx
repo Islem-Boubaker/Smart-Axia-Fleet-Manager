@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { FiExternalLink, FiRefreshCw } from 'react-icons/fi';
 import { useOutletContext } from 'react-router-dom';
 import { Button } from '../../../shared/components';
@@ -7,8 +8,6 @@ interface ThemeContext {
   dark: boolean;
 }
 
-const DEFAULT_REPORT_TITLE = 'Tableau Fleet Reports';
-const DEFAULT_REPORT_SUBTITLE = 'Live business intelligence embedded from Tableau.';
 const DEFAULT_REPORT_HEIGHT = 1100;
 const DEFAULT_REPORT_WIDTH = 1300;
 
@@ -56,6 +55,7 @@ const parseWidth = (value?: string) => {
 
 const ReportsPage = () => {
   const { dark } = useOutletContext<ThemeContext>();
+  const { t } = useTranslation();
   const viewerRef = useRef<HTMLDivElement | null>(null);
   const reportFrameRef = useRef<HTMLDivElement | null>(null);
   const tableauContainerRef = useRef<HTMLDivElement | null>(null);
@@ -65,8 +65,8 @@ const ReportsPage = () => {
   const reportTitle =
     import.meta.env.VITE_TABLEAU_REPORT_TITLE?.trim() ||
     import.meta.env.VITE_POWER_BI_REPORT_TITLE?.trim() ||
-    DEFAULT_REPORT_TITLE;
-  const reportSubtitle = import.meta.env.VITE_TABLEAU_REPORT_SUBTITLE?.trim() || DEFAULT_REPORT_SUBTITLE;
+    t('reports.title');
+  const reportSubtitle = import.meta.env.VITE_TABLEAU_REPORT_SUBTITLE?.trim() || t('reports.subtitle');
   const embedUrl = normalizeEmbedUrl(
     import.meta.env.VITE_TABLEAU_EMBED_URL || import.meta.env.VITE_POWER_BI_EMBED_URL
   );
@@ -176,20 +176,20 @@ const ReportsPage = () => {
           variant="secondary"
           className="rounded-full shadow-lg"
           onClick={() => window.location.reload()}
-          title="Refresh report"
+          title={t('reports.embed.refreshReport')}
         >
           <FiRefreshCw className="mr-1.5" />
-          Refresh
+          {t('common.refresh')}
         </Button>
         {isConfigured && (
           <Button
             type="button"
             className="rounded-full shadow-lg"
             onClick={() => window.open(embedUrl, '_blank', 'noopener,noreferrer')}
-            title="Open report in new tab"
+            title={t('reports.embed.openInNewTab')}
           >
             <FiExternalLink className="mr-1.5" />
-            Open
+            {t('reports.embed.open')}
           </Button>
         )}
       </div>
@@ -199,6 +199,8 @@ const ReportsPage = () => {
           ref={viewerRef}
           className="grid h-full w-full place-items-center overflow-hidden"
           aria-label={reportTitle}
+          dir="ltr"
+          style={{ direction: 'ltr' }}
         >
           {isTableauEmbed ? (
             <div
@@ -213,6 +215,8 @@ const ReportsPage = () => {
                   width: `${reportWidth}px`,
                   minHeight: `${reportHeight}px`,
                   transform: `scale(${embedScale})`,
+                  transformOrigin: 'top left',
+                  direction: 'ltr',
                 }}
               />
             </div>
@@ -230,6 +234,7 @@ const ReportsPage = () => {
                   width: `${reportWidth}px`,
                   height: `${reportHeight}px`,
                   transform: `scale(${embedScale})`,
+                  transformOrigin: 'top left',
                 }}
                 loading="lazy"
                 allowFullScreen
@@ -241,13 +246,13 @@ const ReportsPage = () => {
         <div className="grid h-full place-items-center px-5">
           <div className={`max-w-2xl rounded-xl border border-dashed px-5 py-6 ${dark ? 'border-slate-700 bg-slate-900/60' : 'border-slate-300 bg-white'}`}>
             <h2 className={`text-lg font-semibold ${dark ? 'text-slate-100' : 'text-slate-900'}`}>
-              Tableau is not configured yet
+              {t('reports.embed.notConfigured')}
             </h2>
             <p className={`mt-2 text-sm leading-6 ${dark ? 'text-slate-400' : 'text-slate-600'}`}>
               {reportSubtitle}
             </p>
             <div className={`mt-4 rounded-xl px-4 py-3 font-mono text-xs ${dark ? 'bg-slate-950 text-slate-300' : 'bg-slate-900 text-slate-100'}`}>
-              VITE_TABLEAU_EMBED_URL=https://public.tableau.com/views/your-workbook/your-view?:showVizHome=no
+              {t('reports.embed.configExample')}
             </div>
           </div>
         </div>

@@ -1,8 +1,10 @@
 import { memo, useEffect, useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { FiMenu, FiMoon, FiSun } from 'react-icons/fi';
 import { useAppSelector } from '../../../hooks';
 import { HeaderNotifications } from './HeaderNotifications';
 import UserMenu from '../../ui/UserMenu';
+import { LanguageSelector } from '../../LanguageSelector';
 
 export interface AppTopBarProps {
   dark: boolean;
@@ -11,14 +13,16 @@ export interface AppTopBarProps {
 }
 
 export const AppTopBar = memo(({ dark, setDark, onMenuClick }: AppTopBarProps) => {
+  const { t, i18n } = useTranslation();
   const user = useAppSelector((state) => state.auth.user);
   const [now, setNow] = useState(() => new Date());
+  const isRtl = (i18n.language || 'en').split('-')[0] === 'ar';
   const greeting = useMemo(() => {
     const hour = now.getHours();
-    if (hour < 12) return 'Good Morning';
-    if (hour < 18) return 'Good Afternoon';
-    return 'Good Evening';
-  }, [now]);
+    if (hour < 12) return t('header.goodMorning');
+    if (hour < 18) return t('header.goodAfternoon');
+    return t('header.goodEvening');
+  }, [now, t]);
 
   useEffect(() => {
     const timer = window.setInterval(() => setNow(new Date()), 60_000);
@@ -44,21 +48,23 @@ export const AppTopBar = memo(({ dark, setDark, onMenuClick }: AppTopBarProps) =
           className={`lg:hidden p-2.5 rounded-xl transition-colors ${
             dark ? 'hover:bg-slate-800 text-slate-200' : 'hover:bg-slate-100 text-slate-600'
           }`}
-          aria-label="Open menu"
+          aria-label={t('header.openMenu')}
         >
           <FiMenu className="w-5 h-5" />
         </button>
 
-        <div className="min-w-0">
+        <div className={`min-w-0 ${isRtl ? 'text-right' : ''}`}>
           <h1 className={`truncate text-2xl font-black tracking-tight ${dark ? 'text-slate-50' : 'text-slate-950'}`}>
             {greeting}, {user?.name?.split(' ')[0] || 'there'}
           </h1>
           <p className={`hidden sm:block truncate text-sm font-bold ${dark ? 'text-slate-400' : 'text-slate-500'}`}>
-            Check your fleet's latest operational activity.
+            {t('header.activitySubtitle')}
           </p>
         </div>
 
-        <div className="flex items-center gap-1 sm:gap-2 ml-auto">
+        <div className={`flex items-center gap-1 sm:gap-2 ${isRtl ? 'mr-auto flex-row-reverse' : 'ml-auto'}`}>
+          <LanguageSelector dark={dark} />
+
           <div
             className={`flex rounded-full p-0.5 border ${
               dark ? 'border-cyan-200/10 bg-[#081220]/90' : 'border-slate-200 bg-slate-100/80'
@@ -70,7 +76,7 @@ export const AppTopBar = memo(({ dark, setDark, onMenuClick }: AppTopBarProps) =
               className={`p-2 rounded-full transition-all ${
                 !dark ? 'bg-white text-amber-500 shadow-sm' : 'text-slate-500 hover:text-slate-300'
               }`}
-              title="Light mode"
+              title={t('header.lightMode')}
             >
               <FiSun className="w-4 h-4" />
             </button>
@@ -80,7 +86,7 @@ export const AppTopBar = memo(({ dark, setDark, onMenuClick }: AppTopBarProps) =
               className={`p-2 rounded-full transition-all ${
                 dark ? 'bg-cyan-300/12 text-cyan-200 shadow-sm ring-1 ring-cyan-200/10' : 'text-slate-500 hover:text-slate-700'
               }`}
-              title="Dark mode"
+              title={t('header.darkMode')}
             >
               <FiMoon className="w-4 h-4" />
             </button>
@@ -89,7 +95,9 @@ export const AppTopBar = memo(({ dark, setDark, onMenuClick }: AppTopBarProps) =
           <HeaderNotifications />
 
           <div
-            className={`pl-2 border-l ${dark ? 'border-cyan-200/10' : 'border-slate-200'} [&_button]:py-1.5 [&_button]:px-2`}
+            className={`${
+              isRtl ? 'pr-2 border-r' : 'pl-2 border-l'
+            } ${dark ? 'border-cyan-200/10' : 'border-slate-200'} [&_button]:py-1.5 [&_button]:px-2`}
           >
             <UserMenu />
           </div>

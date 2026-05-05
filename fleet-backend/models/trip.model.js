@@ -113,6 +113,11 @@ const Trip = sequelize.define(
       defaultValue: 0,
       allowNull: false,
       comment: 'Required load capacity in kg for this trip'
+    },
+    loadType: {
+      type: DataTypes.ENUM("general", "cold", "fragile", "heavy"),
+      allowNull: false,
+      defaultValue: "general",
     }
   },
   {

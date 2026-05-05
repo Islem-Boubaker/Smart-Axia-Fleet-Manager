@@ -1,6 +1,7 @@
 import * as tripService from "../services/trip.service.js";
 import { successResponse, errorResponse } from "../utils/response.js";
 import cacheMiddleware from "../middlewares/cache.middleware.js";
+import { dispatchRecommendations } from "./recommendation.controller.js";
 
 const handleError = (res, error) => {
   const status = error?.status || error?.statusCode || 500;
@@ -135,12 +136,7 @@ export const unassignDriver = async (req, res) => {
 };
 
 export const getRecommendations = async (req, res) => {
-  try {
-    const result = await tripService.getTripRecommendations(req.body);
-    return successResponse(res, result, "Recommendations fetched successfully");
-  } catch (error) {
-    return handleError(res, error);
-  }
+  return dispatchRecommendations(req, res);
 };
 
 export const recordLocationPing = async (req, res) => {

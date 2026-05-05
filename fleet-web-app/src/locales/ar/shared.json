@@ -1,0 +1,26 @@
+{
+  "shared": {
+    "userMenu": {
+      "settings": "الإعدادات",
+      "logout": "تسجيل الخروج"
+    },
+    "notifications": {
+      "title": "الإشعارات",
+      "unread": "{{count}} غير مقروء",
+      "markAllAsRead": "تعليم الكل كمقروء",
+      "closeAria": "إغلاق الإشعارات",
+      "dialogAria": "الإشعارات",
+      "allCaughtUp": "لا جديد",
+      "empty": "لا إشعارات بعد",
+      "loading": "جاري تحميل الإشعارات...",
+      "errorTitle": "تعذّر تحميل الإشعارات"
+    }
+  },
+  "dataTable": {
+    "aria": "جدول البيانات",
+    "showing_one": "عرض {{count}} نتيجة",
+    "showing_other": "عرض {{count}} نتائج",
+    "prev": "الصفحة السابقة",
+    "next": "الصفحة التالية"
+  }
+}

@@ -1,4 +1,5 @@
 import { FiCalendar, FiChevronDown, FiExternalLink, FiFilter } from 'react-icons/fi';
+import { useTranslation } from 'react-i18next';
 
 interface DashboardWeekDay {
   date: Date;
@@ -34,6 +35,7 @@ const PlannedTripsCalendar = ({
   onSelectDay,
   onOpenTrip,
 }: PlannedTripsCalendarProps) => {
+  const { t, i18n } = useTranslation();
 
   const panel = dark ? 'bg-slate-900 border-slate-700' : 'bg-white border-gray-200';
   const muted = dark ? 'text-slate-300' : 'text-gray-700';
@@ -44,7 +46,7 @@ const PlannedTripsCalendar = ({
   return (
     <section className={`rounded-3xl border shadow-sm overflow-hidden ${panel}`}>
       <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3 px-6 pt-6 pb-4">
-        <h2 className={`text-4xl font-semibold tracking-tight ${dark ? 'text-white' : 'text-gray-900'}`}>Planned Trips</h2>
+        <h2 className={`text-4xl font-semibold tracking-tight ${dark ? 'text-white' : 'text-gray-900'}`}>{t('dashboard.plannedTrips.title')}</h2>
 
         <div className="flex items-center gap-2 flex-wrap">
           <button className={`flex items-center gap-2 px-3 py-2 rounded-full border text-sm transition-colors ${dark ? 'border-slate-600 text-slate-200 hover:bg-slate-800' : 'border-gray-200 text-gray-700 hover:bg-gray-50'}`}>
@@ -55,12 +57,12 @@ const PlannedTripsCalendar = ({
 
           <button className={`flex items-center gap-2 px-3 py-2 rounded-full border text-sm transition-colors ${dark ? 'border-slate-600 text-slate-200 hover:bg-slate-800' : 'border-gray-200 text-gray-700 hover:bg-gray-50'}`}>
             <FiFilter className={`w-4 h-4 ${dark ? 'text-slate-400' : 'text-gray-500'}`} />
-            Filter
+            {t('common.filter')}
           </button>
 
           <button className={`flex items-center gap-2 px-3 py-2 rounded-full border text-sm transition-colors ${dark ? 'border-slate-600 text-slate-200 hover:bg-slate-800' : 'border-gray-200 text-gray-700 hover:bg-gray-50'}`}>
             <FiExternalLink className={`w-4 h-4 ${dark ? 'text-slate-400' : 'text-gray-500'}`} />
-            View all
+            {t('dashboard.plannedTrips.viewAll')}
           </button>
         </div>
       </div>
@@ -90,9 +92,9 @@ const PlannedTripsCalendar = ({
           <div className="grid grid-cols-1 md:grid-cols-7 gap-3 mt-4">
             {weekDays.map((day) => (
               <div key={`count-${day.date.toISOString()}`} className={`rounded-2xl border p-4 ${tripsCard}`}>
-                <div className={`text-xs uppercase tracking-wider mb-2 ${muted}`}>Trips</div>
+                <div className={`text-xs uppercase tracking-wider mb-2 ${muted}`}>{t('common.trips')}</div>
                 <div className="text-3xl font-extrabold leading-none">{day.tripsCount}</div>
-                <div className={`text-xs mt-2 ${muted}`}>scheduled on {day.dayLabel}</div>
+                <div className={`text-xs mt-2 ${muted}`}>{t('dashboard.plannedTrips.scheduledOn', { day: day.dayLabel })}</div>
                 <div className={`mt-4 h-2 w-full rounded-full ${dark ? 'bg-slate-700' : 'bg-gray-100'}`}>
                   <div
                     className="h-2 rounded-full bg-brand"
@@ -105,12 +107,12 @@ const PlannedTripsCalendar = ({
 
           <div className={`mt-4 rounded-2xl border p-4 ${tripsCard}`}>
             <div className="flex items-center justify-between gap-3">
-              <h3 className="text-sm font-bold">Scheduled trips on selected day</h3>
-              <span className={`text-xs ${muted}`}>{selectedDayTrips.length} trips</span>
+              <h3 className="text-sm font-bold">{t('dashboard.plannedTrips.selectedDayTitle')}</h3>
+              <span className={`text-xs ${muted}`}>{t('dashboard.plannedTrips.tripCount', { count: selectedDayTrips.length })}</span>
             </div>
 
             {selectedDayTrips.length === 0 ? (
-              <p className={`mt-3 text-sm ${muted}`}>No scheduled trips for this day.</p>
+              <p className={`mt-3 text-sm ${muted}`}>{t('dashboard.plannedTrips.emptySelectedDay')}</p>
             ) : (
               <ul className="mt-3 space-y-2">
                 {selectedDayTrips.map((trip) => (
@@ -122,7 +124,7 @@ const PlannedTripsCalendar = ({
                       </div>
                       <div className="flex items-center gap-2">
                         <span className={`text-xs ${muted}`}>
-                          {new Date(trip.startTime).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
+                          {new Date(trip.startTime).toLocaleTimeString(i18n.language, { hour: '2-digit', minute: '2-digit' })}
                         </span>
                         <button
                           type="button"
@@ -133,7 +135,7 @@ const PlannedTripsCalendar = ({
                               : 'border-gray-200 text-gray-700 hover:bg-gray-50'
                           }`}
                         >
-                          Open
+                          {t('dashboard.plannedTrips.open')}
                         </button>
                       </div>
                     </div>

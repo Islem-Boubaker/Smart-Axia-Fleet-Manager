@@ -1,0 +1,26 @@
+{
+  "shared": {
+    "userMenu": {
+      "settings": "Paramètres",
+      "logout": "Déconnexion"
+    },
+    "notifications": {
+      "title": "Notifications",
+      "unread": "{{count}} non lues",
+      "markAllRead": "Tout marquer comme lu",
+      "closeAria": "Fermer les notifications",
+      "dialogAria": "Notifications",
+      "allCaughtUp": "Tout est à jour",
+      "empty": "Aucune notification",
+      "loading": "Chargement des notifications...",
+      "errorTitle": "Impossible de charger les notifications"
+    }
+  },
+  "dataTable": {
+    "aria": "Tableau de données",
+    "showing_one": "Affichage de {{count}} résultat",
+    "showing_other": "Affichage de {{count}} résultats",
+    "prev": "Page précédente",
+    "next": "Page suivante"
+  }
+}

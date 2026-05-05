@@ -1,4 +1,5 @@
 import { FiDownload } from "react-icons/fi";
+import { useTranslation } from 'react-i18next';
 import { Button } from "../../../shared/components";
 
 interface ReportsHeaderProps {
@@ -6,6 +7,7 @@ interface ReportsHeaderProps {
 }
 
 const ReportsHeader = ({ dark = false }: ReportsHeaderProps) => {
+  const { t } = useTranslation();
   const exportPDF = async () => {
     const element = document.getElementById("pdf-content");
 
@@ -40,18 +42,18 @@ const ReportsHeader = ({ dark = false }: ReportsHeaderProps) => {
     <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-6 sm:gap-8">
       <div className="space-y-2">
         <p className={`text-xs font-semibold uppercase tracking-[0.12em] ${dark ? 'text-slate-500' : 'text-slate-400'}`}>
-          Intelligence
+          {t('reports.section_label')}
         </p>
         <h1 className={`text-3xl sm:text-4xl font-extrabold tracking-tight ${dark ? 'text-white' : 'text-slate-900'}`}>
-          Reports
+          {t('reports.title')}
         </h1>
         <p className={`text-sm sm:text-base leading-relaxed max-w-xl ${dark ? 'text-slate-400' : 'text-slate-600'}`}>
-          View fleet analytics and reports
+          {t('reports.subtitle')}
         </p>
       </div>
       <Button onClick={() => exportPDF()} className="rounded-xl shrink-0">
         <FiDownload className="mr-2" />
-        Export report
+        {t('reports.export_pdf')}
       </Button>
     </div>
   );

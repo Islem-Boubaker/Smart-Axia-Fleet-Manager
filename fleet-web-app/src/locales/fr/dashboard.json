@@ -1,0 +1,62 @@
+{
+  "dashboard": {
+    "title": "Tableau de bord",
+    "overviewLine": "Vue d'ensemble des opérations pour le {{date}}",
+    "newTrip": "Nouveau trajet",
+    "tripDetails": "Détails du trajet",
+    "tripDetailsWithId": "Détails du trajet #{{id}}",
+    "alerts": {
+      "title": "Alertes actives",
+      "none": "Aucune alerte active.",
+      "viewAll": "Tout voir"
+    },
+    "fleetOverview": {
+      "title": "État de la flotte",
+      "onTrip": "En trajet",
+      "available": "Disponible",
+      "inMaintenance": "En maintenance",
+      "outOfService": "Hors service"
+    },
+    "stats": {
+      "activeVehicles": "Véhicules actifs",
+      "tripsToday": "Trajets aujourd'hui",
+      "maintenanceDue": "Maintenance due",
+      "fuelCostMonth": "Coût carburant ce mois-ci",
+      "tnd": "{{n}} TND"
+    },
+    "recentTrips": {
+      "title": "Trajets récents",
+      "none": "Aucun trajet récent."
+    },
+    "topDrivers": {
+      "title": "Meilleurs conducteurs — ce mois-ci",
+      "none": "Aucune donnée conducteur ce mois-ci.",
+      "kmOnTime": "{{km}} km · {{pct}}% à l'heure"
+    },
+    "fuel": {
+      "title": "Consommation carburant — 7 derniers jours",
+      "totalWeek": "Total cette semaine",
+      "avgVehicle": "Moy. par véhicule",
+      "cost": "Coût"
+    },
+    "quickActions": {
+      "title": "Actions rapides",
+      "newTrip": " Nouveau trajet",
+      "addVehicle": "Ajouter un véhicule",
+      "scheduleMaintenance": "Planifier une maintenance",
+      "generateReport": "Générer un rapport"
+    },
+    "maintenance": {
+      "title": "Maintenance à venir",
+      "none": "Aucune maintenance prévue dans les 14 prochains jours.",
+      "scheduledLine": "Planifié : {{date}}",
+      "typePlate": "{{type}} — {{plate}}"
+    },
+    "tripItem": {
+      "statusCompleted": "terminé",
+      "statusOngoing": "en cours",
+      "statusCancelled": "annulé",
+      "statusScheduled": "planifié"
+    }
+  }
+}

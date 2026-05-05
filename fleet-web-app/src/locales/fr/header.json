@@ -1,0 +1,17 @@
+{
+  "header": {
+    "search": "Rechercher",
+    "searchPlaceholder": "Rechercher flotte, trajets, conducteurs…",
+    "notifications": "Notifications",
+    "language": "Langue",
+    "goodMorning": "Bonjour",
+    "goodAfternoon": "Bon après-midi",
+    "goodEvening": "Bonsoir",
+    "activitySubtitle": "Consultez la dernière activité opérationnelle de votre flotte.",
+    "openMenu": "Ouvrir le menu",
+    "lightMode": "Mode clair",
+    "darkMode": "Mode sombre",
+    "closeMenu": "Fermer le menu",
+    "searchVehiclesDriversTrips": "Rechercher véhicules, conducteurs, trajets..."
+  }
+}

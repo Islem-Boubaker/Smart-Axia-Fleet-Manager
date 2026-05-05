@@ -1,0 +1,23 @@
+{
+  "reports": {
+    "title": "Reports",
+    "subtitle": "Fleet analytics and operational insights.",
+    "filters": {
+      "dateRange": "Date range",
+      "export": "Export",
+      "apply": "Apply"
+    },
+    "sections": {
+      "overview": "Overview",
+      "fuel": "Fuel analysis",
+      "drivers": "Driver insights",
+      "maintenance": "Maintenance summary",
+      "trips": "Trip analytics",
+      "vehicles": "Vehicle performance",
+      "monthly": "Monthly trends",
+      "utilization": "Utilization"
+    },
+    "loadingSection": "Loading section...",
+    "errorSection": "Could not load this section."
+  }
+}

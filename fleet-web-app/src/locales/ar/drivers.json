@@ -1,0 +1,23 @@
+{
+  "drivers": {
+    "title": "السائقون",
+    "description": "إدارة الملفات والرخص وتعيين المركبات.",
+    "addNew": "إضافة سائق",
+    "edit": "تعديل السائق",
+    "searchPlaceholder": "ابحث بالاسم أو البريد أو الرخصة…",
+    "addAria": "إضافة سائق",
+    "addButton": "إضافة سائق",
+    "form": {
+      "submitCreate": "إنشاء السائق",
+      "submitUpdate": "تحديث السائق",
+      "statusActive": "نشط",
+      "statusInactive": "غير نشط"
+    },
+    "card": {
+      "license": "الرخصة",
+      "vehicle": "المركبة",
+      "rating": "التقييم",
+      "since": "منذ"
+    }
+  }
+}

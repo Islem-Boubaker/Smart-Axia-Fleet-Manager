@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import type { FormEvent } from 'react';
 import { FiTruck, FiPlus } from 'react-icons/fi';
+import { useTranslation } from 'react-i18next';
 import { Input, Select } from '../../../shared/components';
 import type { Vehicle } from '../../../types';
 
@@ -46,6 +47,7 @@ const firstPhoto = (photos: unknown): string | null => {
 };
 
 const VehicleForm = ({ vehicle, dark = false, onSubmit, onCancel, error }: VehicleFormProps) => {
+  const { t } = useTranslation();
   const [formData, setFormData] = useState({
     name: vehicle?.name || '',
     vin: vehicle?.vin || '',
@@ -153,7 +155,7 @@ const VehicleForm = ({ vehicle, dark = false, onSubmit, onCancel, error }: Vehic
         <div className="relative">
           <div className="w-16 h-16 rounded-2xl bg-brand/10 flex items-center justify-center text-brand relative overflow-hidden ring-[3px] ring-white dark:ring-slate-800 shadow-md">
             {previewUrl ? (
-              <img src={previewUrl} alt="Vehicle photo" className="w-full h-full object-cover" />
+              <img src={previewUrl} alt={t('common.vehiclePhotoAlt')} className="w-full h-full object-cover" />
             ) : (
               <FiTruck className="w-7 h-7" />
             )}
@@ -169,7 +171,7 @@ const VehicleForm = ({ vehicle, dark = false, onSubmit, onCancel, error }: Vehic
           <label
             htmlFor="vehicle-photo-upload"
             className="absolute bottom-0 right-0 w-7 h-7 bg-brand text-white rounded-full flex items-center justify-center cursor-pointer border-2 border-white dark:border-slate-800 shadow-sm hover:bg-brand-deep transition-colors"
-            title="Upload photo"
+            title={t('common.uploadPhoto')}
           >
             <FiPlus className="w-4 h-4" />
           </label>
@@ -179,145 +181,145 @@ const VehicleForm = ({ vehicle, dark = false, onSubmit, onCancel, error }: Vehic
           {formData.name ? (
             <h3 className="text-xl font-bold text-gray-900 dark:text-white leading-tight">{formData.name}</h3>
           ) : (
-            <h3 className="text-lg font-medium text-gray-400 dark:text-slate-500 italic leading-tight">New Vehicle</h3>
+            <h3 className="text-lg font-medium text-gray-400 dark:text-slate-500 italic leading-tight">{t('vehicles.form.newTitle')}</h3>
           )}
-          <p className="text-sm text-gray-500 dark:text-slate-400 mt-0.5">Vehicle Profile</p>
+          <p className="text-sm text-gray-500 dark:text-slate-400 mt-0.5">{t('common.vehicleProfile')}</p>
         </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-4">
         {/* Name */}
         <div className="md:col-span-2">
-          <Input label="Name" name="name" value={formData.name} onChange={handleChange} placeholder="Vehicle name" required />
+          <Input label={t('common.name')} name="name" value={formData.name} onChange={handleChange} placeholder={t('common.vehicleName')} required />
         </div>
 
         {/* VIN */}
         <div>
-          <Input label="VIN" name="vin" value={formData.vin} onChange={handleChange} placeholder="17-char VIN" maxLength={17} />
+          <Input label={t('common.vin')} name="vin" value={formData.vin} onChange={handleChange} placeholder={t('common.vinPlaceholder')} maxLength={17} />
         </div>
 
         {/* License Plate */}
         <div>
-          <Input label="License Plate" name="plaque_immatriculation" value={formData.plaque_immatriculation} onChange={handleChange} placeholder="e.g., 123 TU 4567" />
+          <Input label={t('common.licensePlate')} name="plaque_immatriculation" value={formData.plaque_immatriculation} onChange={handleChange} placeholder={t('common.platePlaceholder')} />
         </div>
 
         {/* Type */}
         <div>
-          <label className={labelClass}>Type</label>
+          <label className={labelClass}>{t('common.type')}</label>
           <Select
             value={formData.type}
             onChange={(value) => handleSelectChange('type', value)}
             dark={dark}
             options={[
-              { value: 'car', label: 'Car' },
-              { value: 'suv', label: 'SUV' },
-              { value: 'truck', label: 'Truck' },
-              { value: 'motorcycle', label: 'Motorcycle' },
-              { value: 'van', label: 'Van' },
+              { value: 'car', label: t('vehicles.types.car') },
+              { value: 'suv', label: t('vehicles.types.suv') },
+              { value: 'truck', label: t('vehicles.types.truck') },
+              { value: 'motorcycle', label: t('vehicles.types.motorcycle') },
+              { value: 'van', label: t('vehicles.types.van') },
             ]}
           />
         </div>
 
         {/* Max Load */}
         <div>
-          <Input label="Max Load (kg)" type="number" name="max_load" value={formData.max_load ?? ''} onChange={handleChange} min="0" />
+          <Input label={t('common.maxLoadKg')} type="number" name="max_load" value={formData.max_load ?? ''} onChange={handleChange} min="0" />
         </div>
 
         {/* Operational Status */}
         <div className="md:col-span-2">
-          <label className={labelClass}>Operational Status</label>
+          <label className={labelClass}>{t('vehicles.form.operationalStatus')}</label>
           <Select
             value={formData.status}
             onChange={(value) => handleSelectChange('status', value)}
             dark={dark}
             options={[
-              { value: 'AVAILABLE', label: 'Active' },
-              { value: 'OUT_OF_SERVICE', label: 'Inactive' },
-              { value: 'IN_MAINTENANCE', label: 'Maintenance' },
+              { value: 'AVAILABLE', label: t('status.available') },
+              { value: 'OUT_OF_SERVICE', label: t('status.inactive') },
+              { value: 'IN_MAINTENANCE', label: t('status.maintenance') },
             ]}
           />
         </div>
 
         {/* Mileage */}
         <div>
-          <Input label="Mileage (km)" type="number" name="Mileage" value={formData.Mileage} onChange={handleChange} min="0" />
+          <Input label={t('common.mileageKm')} type="number" name="Mileage" value={formData.Mileage} onChange={handleChange} min="0" />
         </div>
 
         {/* Vehicle Age */}
         <div>
-          <Input label="Vehicle Age (years)" type="number" name="Vehicle_Age" value={formData.Vehicle_Age} onChange={handleChange} min="0" />
+          <Input label={t('common.vehicleAgeYears')} type="number" name="Vehicle_Age" value={formData.Vehicle_Age} onChange={handleChange} min="0" />
         </div>
 
         {/* Engine Size */}
         <div>
-          <Input label="Engine Size (cc)" type="number" name="Engine_Size" value={formData.Engine_Size} onChange={handleChange} min="0" />
+          <Input label={t('common.engineSizeCc')} type="number" name="Engine_Size" value={formData.Engine_Size} onChange={handleChange} min="0" />
         </div>
 
         {/* Consumption */}
         <div>
           <Input
-            label="Consumption (L/100km)"
+            label={t('common.consumptionL100km')}
             type="number"
             name="consumption"
             value={formData.consumption}
             onChange={handleChange}
             min="0"
             step="0.1"
-            placeholder="e.g. 7.5"
+            placeholder={t('common.consumptionExample')}
           />
         </div>
 
         {/* Insurance Expiry Date */}
         <div>
-          <Input label="Insurance Expiry Date" type="date" name="insurance_expiry_date" value={formData.insurance_expiry_date} onChange={handleChange} />
+          <Input label={t('common.insuranceExpiry')} type="date" name="insurance_expiry_date" value={formData.insurance_expiry_date} onChange={handleChange} />
         </div>
 
         {/* Tech Visit Expiry Date */}
         <div>
-          <Input label="Tech Visit Expiry Date" type="date" name="tech_visit_expiry_date" value={formData.tech_visit_expiry_date} onChange={handleChange} />
+          <Input label={t('common.techVisitExpiry')} type="date" name="tech_visit_expiry_date" value={formData.tech_visit_expiry_date} onChange={handleChange} />
         </div>
 
         {/* Tire Condition */}
         <div>
-          <label className={labelClass}>Tire Condition</label>
+          <label className={labelClass}>{t('vehicles.form.tireCondition')}</label>
           <Select
             value={formData.Tire_Condition}
             onChange={(value) => handleSelectChange('Tire_Condition', value)}
             dark={dark}
             options={[
-              { value: 'New', label: 'New' },
-              { value: 'Good', label: 'Good' },
-              { value: 'Worn Out', label: 'Worn Out' },
+              { value: 'New', label: t('vehicles.form.conditionNew') },
+              { value: 'Good', label: t('vehicles.form.conditionGood') },
+              { value: 'Worn Out', label: t('vehicles.form.conditionWornOut') },
             ]}
           />
         </div>
 
         {/* Brake Condition */}
         <div>
-          <label className={labelClass}>Brake Condition</label>
+          <label className={labelClass}>{t('vehicles.form.brakeCondition')}</label>
           <Select
             value={formData.Brake_Condition}
             onChange={(value) => handleSelectChange('Brake_Condition', value)}
             dark={dark}
             options={[
-              { value: 'New', label: 'New' },
-              { value: 'Good', label: 'Good' },
-              { value: 'Worn Out', label: 'Worn Out' },
+              { value: 'New', label: t('vehicles.form.conditionNew') },
+              { value: 'Good', label: t('vehicles.form.conditionGood') },
+              { value: 'Worn Out', label: t('vehicles.form.conditionWornOut') },
             ]}
           />
         </div>
 
         {/* Battery Status */}
         <div>
-          <label className={labelClass}>Battery Status</label>
+          <label className={labelClass}>{t('vehicles.form.batteryStatus')}</label>
           <Select
             value={formData.Battery_Status}
             onChange={(value) => handleSelectChange('Battery_Status', value)}
             dark={dark}
             options={[
-              { value: 'New', label: 'New' },
-              { value: 'Good', label: 'Good' },
-              { value: 'Weak', label: 'Weak' },
+              { value: 'New', label: t('vehicles.form.conditionNew') },
+              { value: 'Good', label: t('vehicles.form.conditionGood') },
+              { value: 'Weak', label: t('vehicles.form.conditionWeak') },
             ]}
           />
         </div>
@@ -330,13 +332,13 @@ const VehicleForm = ({ vehicle, dark = false, onSubmit, onCancel, error }: Vehic
           onClick={onCancel}
           className="px-5 py-2.5 text-sm font-medium text-gray-600 dark:text-slate-300 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl hover:bg-gray-50 dark:hover:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-offset-2 dark:focus:ring-offset-slate-900 focus:ring-gray-200 dark:focus:ring-slate-700 transition-all shadow-sm"
         >
-          Cancel
+          {t('common.cancel')}
         </button>
         <button
           type="submit"
           className="px-6 py-2.5 text-sm font-medium text-white bg-gray-900 dark:bg-brand rounded-xl hover:bg-black dark:hover:bg-brand-deep focus:outline-none focus:ring-2 focus:ring-offset-2 dark:focus:ring-offset-slate-900 focus:ring-gray-900 dark:focus:ring-brand transition-all shadow-md"
         >
-          Save
+          {t('common.save')}
         </button>
       </div>
     </form>

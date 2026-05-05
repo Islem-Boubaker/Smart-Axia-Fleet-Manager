@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { FiMail, FiPhone, FiSave, FiUpload, FiTrash2 } from 'react-icons/fi';
 import { Card, Button, Input } from '../../../shared/components';
 import type { ProfileData } from '../settings.types';
@@ -15,6 +16,7 @@ const cardExtra = (dark: boolean) =>
     : 'rounded-2xl !border-slate-200/90 !bg-white/75 shadow-glass backdrop-blur-sm';
 
 const ProfileSettings = ({ profileData, onSave, dark = false }: Props) => {
+  const { t } = useTranslation();
   const [formData, setFormData] = useState<ProfileData>(profileData);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(profileData.avatar || null);
@@ -62,8 +64,8 @@ const ProfileSettings = ({ profileData, onSave, dark = false }: Props) => {
 
   return (
     <Card
-      title="Profile information"
-      subtitle="Update your personal information"
+      title={t('settings.profile.personal_info')}
+      subtitle={t('settings.profile.subtitle')}
       dark={dark}
       padding="lg"
       className={cardExtra(dark)}
@@ -75,9 +77,9 @@ const ProfileSettings = ({ profileData, onSave, dark = false }: Props) => {
               dark ? 'ring-2 ring-brand/30 shadow-lg shadow-black/20' : 'shadow-md ring-2 ring-slate-100'
             }`}>
               {previewUrl ? (
-                <img src={previewUrl} alt="Avatar Preview" className="w-full h-full object-cover" />
+                <img src={previewUrl} alt={t('common.avatarPreview')} className="w-full h-full object-cover" />
               ) : (
-                (formData.name || 'User')
+                (formData.name || t('settings.profile.default_user'))
                   .split(' ')
                   .filter(Boolean)
                   .map((p) => p[0])
@@ -88,19 +90,19 @@ const ProfileSettings = ({ profileData, onSave, dark = false }: Props) => {
             </div>
           </div>
           <div className="flex-1 space-y-2">
-            <p className={`text-sm font-medium ${dark ? 'text-white' : 'text-slate-900'}`}>Profile Photo</p>
+            <p className={`text-sm font-medium ${dark ? 'text-white' : 'text-slate-900'}`}>{t('settings.profile.profile_photo')}</p>
             <p className={`text-xs ${dark ? 'text-slate-400' : 'text-slate-500'}`}>
-              Recommended: Square image, max 2MB.
+              {t('settings.profile.photo_hint')}
             </p>
             <div className="flex items-center gap-3 pt-2">
               <Button type="button" variant="secondary" onClick={() => fileInputRef.current?.click()} className="text-xs px-3 py-1.5 h-auto">
                 <FiUpload className="mr-1.5" />
-                Upload new
+                {t('settings.profile.upload_new')}
               </Button>
               {selectedFile && (
                 <Button type="button" variant="ghost" onClick={clearFile} className="text-xs px-3 py-1.5 h-auto text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20">
                   <FiTrash2 className="mr-1.5" />
-                  Remove
+                  {t('common.remove')}
                 </Button>
               )}
             </div>
@@ -115,7 +117,7 @@ const ProfileSettings = ({ profileData, onSave, dark = false }: Props) => {
         </div>
 
         <div>
-          <label className={`block text-sm font-medium mb-2 ${label}`}>Full name</label>
+          <label className={`block text-sm font-medium mb-2 ${label}`}>{t('settings.profile.full_name')}</label>
           <Input
             type="text"
             value={formData.name}
@@ -130,7 +132,7 @@ const ProfileSettings = ({ profileData, onSave, dark = false }: Props) => {
           <div>
             <label className={`block text-sm font-medium mb-2 ${label}`}>
               <FiMail className="inline mr-2" />
-              Email
+              {t('common.email')}
             </label>
             {/* DISABLED — minimised on mobile */}
             <Input
@@ -147,7 +149,7 @@ const ProfileSettings = ({ profileData, onSave, dark = false }: Props) => {
           <div>
             <label className={`block text-sm font-medium mb-2 ${label}`}>
               <FiPhone className="inline mr-2" />
-              Phone
+              {t('common.phone')}
             </label>
             <Input
               type="tel"
@@ -162,7 +164,7 @@ const ProfileSettings = ({ profileData, onSave, dark = false }: Props) => {
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <label className={`block text-sm font-medium mb-2 ${label}`}>Company</label>
+            <label className={`block text-sm font-medium mb-2 ${label}`}>{t('settings.profile.company')}</label>
             <Input
               type="text"
               value={formData.company}
@@ -173,7 +175,7 @@ const ProfileSettings = ({ profileData, onSave, dark = false }: Props) => {
             />
           </div>
           <div>
-            <label className={`block text-sm font-medium mb-2 ${label}`}>Role</label>
+            <label className={`block text-sm font-medium mb-2 ${label}`}>{t('settings.profile.role')}</label>
             {/* DISABLED — minimised on mobile */}
             <Input
               type="text"
@@ -189,10 +191,10 @@ const ProfileSettings = ({ profileData, onSave, dark = false }: Props) => {
         </div>
 
         <div className="border-t border-slate-200 dark:border-slate-700/50 pt-6 mt-6">
-          <h4 className={`text-lg font-bold mb-4 ${dark ? 'text-white' : 'text-slate-900'}`} id="address-section">Address</h4>
+          <h4 className={`text-lg font-bold mb-4 ${dark ? 'text-white' : 'text-slate-900'}`} id="address-section">{t('common.address')}</h4>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className={`block text-sm font-medium mb-2 ${label}`}>Country</label>
+              <label className={`block text-sm font-medium mb-2 ${label}`}>{t('common.country')}</label>
               <Input
                 type="text"
                 value={formData.country || ''}
@@ -201,7 +203,7 @@ const ProfileSettings = ({ profileData, onSave, dark = false }: Props) => {
               />
             </div>
             <div>
-              <label className={`block text-sm font-medium mb-2 ${label}`}>City / State</label>
+              <label className={`block text-sm font-medium mb-2 ${label}`}>{t('common.cityState')}</label>
               <Input
                 type="text"
                 value={formData.city || ''}
@@ -212,7 +214,7 @@ const ProfileSettings = ({ profileData, onSave, dark = false }: Props) => {
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
             <div>
-              <label className={`block text-sm font-medium mb-2 ${label}`}>Postal code</label>
+              <label className={`block text-sm font-medium mb-2 ${label}`}>{t('common.postalCode')}</label>
               <Input
                 type="text"
                 value={formData.postalCode || ''}
@@ -221,7 +223,7 @@ const ProfileSettings = ({ profileData, onSave, dark = false }: Props) => {
               />
             </div>
             <div>
-              <label className={`block text-sm font-medium mb-2 ${label}`}>TAX ID</label>
+              <label className={`block text-sm font-medium mb-2 ${label}`}>{t('common.taxId')}</label>
               <Input
                 type="text"
                 value={formData.taxId || ''}
@@ -235,7 +237,7 @@ const ProfileSettings = ({ profileData, onSave, dark = false }: Props) => {
         <div className="flex justify-end pt-2">
           <Button className="rounded-xl" onClick={handleSave} isLoading={isSaving}>
             <FiSave className="mr-2" />
-            {isSaving ? 'Saving...' : 'Save changes'}
+            {isSaving ? t('common.saving') : t('settings.profile.save_changes')}
           </Button>
         </div>
       </div>

@@ -1,5 +1,6 @@
 ﻿import { memo, useState } from "react";
 import type { Vehicle } from "../../../types";
+import { useTranslation } from "react-i18next";
 import type { VehicleTableRow } from "../hooks/useVehicles";
 import { AppDataTable, AppStatusBadge, AppTd, AppTr } from '../../../shared/components';
 import RowActions from "./RowActions";
@@ -53,7 +54,13 @@ const VehiclesTable = memo(
     onEdit,
     onDelete,
   }: VehiclesTableProps) => {
+    const { t } = useTranslation();
     const [expandedRows, setExpandedRows] = useState<Record<string, boolean>>({});
+    const normalizeStatusKey = (value: string) => value.toLowerCase().replace(/\s+/g, '_').replace(/-+/g, '_');
+    const translatePriority = (value: VehicleTableRow['maintenanceRecommendations'][number]['level']) => {
+      const key = value.toLowerCase();
+      return ['high', 'medium', 'low'].includes(key) ? t(`priority.${key}`) : value;
+    };
 
     const toggleRow = (vehicleId: string) => {
       setExpandedRows((current) => ({
@@ -71,7 +78,7 @@ const VehiclesTable = memo(
               : "border-slate-200 text-slate-500"
           }`}
         >
-          Loading vehicles...
+          {t('vehicles.table.loading')}
         </div>
       );
     }
@@ -96,18 +103,25 @@ const VehiclesTable = memo(
               : "border-slate-200 text-slate-500"
           }`}
         >
-          No vehicles found for the selected filters.
+          {t('vehicles.table.empty')}
         </div>
       );
     }
 
     return (
       <AppDataTable
-        columns={["Vehicle", "Status", "Driver", "Last Trip", "Maintenance Recommendation", "Actions"]}
+        columns={[
+          t('vehicles.table.vehicle'),
+          t('vehicles.table.status'),
+          t('vehicles.table.driver'),
+          t('vehicles.table.last_trip'),
+          t('vehicles.table.maintenance_recommendation'),
+          t('vehicles.table.actions'),
+        ]}
         totalResults={rows.length}
         dark={dark}
-        ariaLabel="Vehicles table"
-        title="Vehicles"
+        ariaLabel={t('vehicles.table.dataTableAria')}
+        title={t('vehicles.title')}
       >
         {rows.map((row) => {
           const vehicleImage = row.vehicle.photos?.[0] ?? null;
@@ -140,7 +154,7 @@ const VehiclesTable = memo(
                       />
                     ) : (
                       <span className={`text-[10px] font-medium ${dark ? 'text-slate-500' : 'text-slate-400'}`}>
-                        No image
+                        {t('vehicles.table.noImage')}
                       </span>
                     )}
                   </div>
@@ -158,7 +172,7 @@ const VehiclesTable = memo(
               {/* ── Status ── */}
               <AppTd>
                 <AppStatusBadge variant={statusVariant(row.statusLabel)}>
-                  {row.statusLabel}
+                  {t(`status.${normalizeStatusKey(row.statusLabel)}`)}
                 </AppStatusBadge>
               </AppTd>
 
@@ -170,25 +184,25 @@ const VehiclesTable = memo(
                     : dark ? 'text-slate-100' : 'text-slate-900'
                 }
               >
-                {row.driverName}
+                {row.driverName === 'Unassigned' ? t('common.unassigned') : row.driverName}
               </AppTd>
 
               {/* ── Last Trip ── */}
               <AppTd className={dark ? 'text-slate-300' : 'text-slate-500'}>
-                {row.lastTripLabel}
+                {row.lastTripLabel === 'No trips' ? t('common.no_trips') : row.lastTripLabel}
               </AppTd>
 
               {/* ── Maintenance ── */}
               <AppTd className="min-w-[18rem] align-top">
                 {primaryRecommendation === null ? (
                   <span className={`text-xs italic ${dark ? 'text-slate-500' : 'text-slate-400'}`}>
-                    No recommendations
+                    {t('vehicles.table.noRecommendations')}
                   </span>
                 ) : (
                   <div className="space-y-2 max-w-sm">
                     <div className="flex flex-wrap items-start gap-2">
                       <AppStatusBadge variant={priorityVariant(primaryRecommendation.level)}>
-                        {primaryRecommendation.level}
+                        {translatePriority(primaryRecommendation.level)}
                       </AppStatusBadge>
                       <p
                         className={`min-w-0 flex-1 text-xs leading-relaxed line-clamp-2 ${levelStyle(primaryRecommendation.level)}`}
@@ -204,14 +218,20 @@ const VehiclesTable = memo(
                           type="button"
                           onClick={() => toggleRow(row.vehicle.id)}
                           aria-expanded={isExpanded}
-                          aria-label={isExpanded ? `Hide additional recommendations for ${row.vehicle.name}` : `Show additional recommendations for ${row.vehicle.name}`}
+                          aria-label={
+                            isExpanded
+                              ? t('vehicles.table.hideRecAria', { name: row.vehicle.name })
+                              : t('vehicles.table.showRecAria', { name: row.vehicle.name })
+                          }
                           className={`text-xs font-medium transition-colors ${
                             dark
                               ? 'text-slate-400 hover:text-slate-200'
                               : 'text-slate-500 hover:text-slate-800'
                           }`}
                         >
-                          {isExpanded ? 'Hide' : `Show ${recommendations.length - 1} more`}
+                          {isExpanded
+                            ? t('vehicles.table.hide')
+                            : t('vehicles.table.showMore', { n: recommendations.length - 1 })}
                         </button>
 
                         {isExpanded && (
@@ -219,7 +239,7 @@ const VehiclesTable = memo(
                             {recommendations.slice(1).map((rec, index) => (
                               <div key={`${row.vehicle.id}-rec-${index}`} className="flex flex-wrap items-start gap-2">
                                 <AppStatusBadge variant={priorityVariant(rec.level)}>
-                                  {rec.level}
+                                  {translatePriority(rec.level)}
                                 </AppStatusBadge>
                                 <p
                                   className={`min-w-0 flex-1 text-xs leading-relaxed line-clamp-2 ${levelStyle(rec.level)}`}

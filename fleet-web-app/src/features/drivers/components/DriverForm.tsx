@@ -1,6 +1,7 @@
 import { useState } from "react";
 import type { FormEvent } from "react";
 import { FiUser, FiPlus } from "react-icons/fi";
+import { useTranslation } from 'react-i18next';
 import { Select } from "../../../shared/components";
 import { Input } from "../../../shared/components/ui/Input";
 import type { Vehicle } from "../../../types";
@@ -26,6 +27,7 @@ interface DriverFormProps {
 }
 
 const DriverForm = ({ driver, vehicles = [], dark = false, onSubmit, onCancel }: DriverFormProps) => {
+  const { t } = useTranslation();
   const [formData, setFormData] = useState<DriverFormData>({
     name: driver?.name || "",
     email: driver?.email || "",
@@ -72,7 +74,7 @@ const DriverForm = ({ driver, vehicles = [], dark = false, onSubmit, onCancel }:
   };
 
   const assignedVehicleOptions = [
-    { value: '', label: 'Unassigned' },
+    { value: '', label: t('common.unassigned') },
     ...vehicles.map((vehicle) => {
       const vehicleLabel = vehicle.plaque_immatriculation
         ? `${vehicle.name} (${vehicle.plaque_immatriculation})`
@@ -100,7 +102,7 @@ const DriverForm = ({ driver, vehicles = [], dark = false, onSubmit, onCancel }:
         <div className="relative">
           <div className="w-16 h-16 rounded-2xl bg-brand/10 flex items-center justify-center text-brand relative overflow-hidden ring-[3px] ring-white dark:ring-slate-800 shadow-md">
             {previewUrl ? (
-              <img src={previewUrl} alt="Driver avatar" className="w-full h-full object-cover" />
+              <img src={previewUrl} alt={t('common.driverAvatarAlt')} className="w-full h-full object-cover" />
             ) : (
               <FiUser className="w-7 h-7" />
             )}
@@ -116,7 +118,7 @@ const DriverForm = ({ driver, vehicles = [], dark = false, onSubmit, onCancel }:
           <label
             htmlFor="driver-photo-upload"
             className="absolute bottom-0 right-0 w-7 h-7 bg-brand text-white rounded-full flex items-center justify-center cursor-pointer border-2 border-white dark:border-slate-800 shadow-sm hover:bg-brand-deep transition-colors"
-            title="Upload photo"
+            title={t('common.uploadPhoto')}
           >
             <FiPlus className="w-4 h-4" />
           </label>
@@ -126,57 +128,57 @@ const DriverForm = ({ driver, vehicles = [], dark = false, onSubmit, onCancel }:
           {formData.name ? (
             <h3 className="text-xl font-bold text-gray-900 dark:text-white leading-tight">{formData.name}</h3>
           ) : (
-            <h3 className="text-lg font-medium text-gray-400 dark:text-slate-500 italic leading-tight">New Driver</h3>
+            <h3 className="text-lg font-medium text-gray-400 dark:text-slate-500 italic leading-tight">{t('drivers.addNew')}</h3>
           )}
-          <p className="text-sm text-gray-500 dark:text-slate-400 mt-0.5">Driver Profile</p>
+          <p className="text-sm text-gray-500 dark:text-slate-400 mt-0.5">{t('common.driverProfile')}</p>
         </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-4">
         <div className="md:col-span-2">
           <Input
-            label="Name"
+            label={t('common.name')}
             type="text"
             name="name"
             value={formData.name}
             onChange={handleChange}
-            placeholder="e.g., Mohamed Ben Salah"
+            placeholder={t('common.driverNamePlaceholder')}
             required
           />
         </div>
 
         <div>
           <Input
-            label="Email"
+            label={t('common.email')}
             type="email"
             name="email"
             value={formData.email}
             onChange={handleChange}
-            placeholder="driver@example.com"
+            placeholder={t('common.driverEmailPlaceholder')}
             required
           />
         </div>
         
         <div>
           <Input
-            label="Phone"
+            label={t('common.phone')}
             type="tel"
             name="phone"
             value={formData.phone}
             onChange={handleChange}
-            placeholder="+216 XX XXX XXX"
+            placeholder={t('common.phonePlaceholder')}
             required
           />
         </div>
 
         <div>
           <Input
-            label="Password"
+            label={t('common.password')}
             type="password"
             name="password"
             value={formData.password}
             onChange={handleChange}
-            placeholder="Minimum 6 characters"
+            placeholder={t('common.passwordMinPlaceholder')}
             required={!driver}
             minLength={6}
           />
@@ -184,19 +186,19 @@ const DriverForm = ({ driver, vehicles = [], dark = false, onSubmit, onCancel }:
 
         <div>
           <Input
-            label="License Number"
+            label={t('common.licenseNumber')}
             type="text"
             name="licenseNumber"
             value={formData.licenseNumber}
             onChange={handleChange}
-            placeholder="License number"
+            placeholder={t('common.licensePlaceholder')}
             required
           />
         </div>
 
         <div>
           <Input
-            label="Date Applied / Expiry"
+            label={t('common.dateAppliedExpiry')}
             type="date"
             name="licenseExpiry"
             value={formData.licenseExpiry}
@@ -207,34 +209,34 @@ const DriverForm = ({ driver, vehicles = [], dark = false, onSubmit, onCancel }:
 
         <div>
           <div className="w-full">
-            <label className="block text-[13px] text-gray-500 dark:text-slate-400 mb-1.5">Status</label>
+            <label className="block text-[13px] text-gray-500 dark:text-slate-400 mb-1.5">{t('common.status')}</label>
             <Select
               value={formData.status}
               onChange={(value) => handleSelectChange('status', value)}
               dark={dark}
               options={[
-                { value: 'active', label: 'Active' },
-                { value: 'inactive', label: 'Inactive' },
-                { value: 'on-leave', label: 'On Leave' },
+                { value: 'active', label: t('common.active') },
+                { value: 'inactive', label: t('common.inactive') },
+                { value: 'on-leave', label: t('common.onLeave') },
               ]}
             />
           </div>
         </div>
 
         <div>
-          <label className="block text-[13px] text-gray-500 dark:text-slate-400 mb-1.5">Assigned Vehicle</label>
+          <label className="block text-[13px] text-gray-500 dark:text-slate-400 mb-1.5">{t('common.assignedVehicle')}</label>
           <Select
             value={formData.assignedVehicle}
             onChange={(value) => handleSelectChange('assignedVehicle', value)}
             dark={dark}
-            placeholder="Select vehicle"
+            placeholder={t('common.selectVehicle')}
             options={assignedVehicleOptionsWithLegacy}
           />
         </div>
 
         <div>
           <Input
-             label="Rating"
+             label={t('common.rating')}
              type="number"
              name="rating"
              value={formData.rating}
@@ -252,13 +254,13 @@ const DriverForm = ({ driver, vehicles = [], dark = false, onSubmit, onCancel }:
           onClick={onCancel}
           className="px-5 py-2.5 text-sm font-medium text-gray-600 dark:text-slate-300 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl hover:bg-gray-50 dark:hover:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-offset-2 dark:focus:ring-offset-slate-900 focus:ring-gray-200 dark:focus:ring-slate-700 transition-all shadow-sm"
         >
-          Cancel
+          {t('common.cancel')}
         </button>
         <button
           type="submit"
           className="px-6 py-2.5 text-sm font-medium text-white bg-gray-900 dark:bg-brand rounded-xl hover:bg-black dark:hover:bg-brand-deep focus:outline-none focus:ring-2 focus:ring-offset-2 dark:focus:ring-offset-slate-900 focus:ring-gray-900 dark:focus:ring-brand transition-all shadow-md"
         >
-          Save
+          {t('common.save')}
         </button>
       </div>
     </form>

@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { AppDataTable, AppRowActions, AppStatusBadge, AppTd, AppTr } from '../../../shared/components';
 import type { ReclamationRecord, ReclamationStatus } from '../services/reclamations.service';
 
@@ -17,12 +18,6 @@ const statusVariant: Record<ReclamationStatus, 'warning' | 'info' | 'success' | 
   REJECTED: 'danger',
 };
 
-const formatDateTime = (value: string) => {
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return value;
-  return date.toLocaleString('en-GB');
-};
-
 const DriverIssuesTable = ({
   items,
   dark = false,
@@ -31,13 +26,28 @@ const DriverIssuesTable = ({
   getVehicleLabel,
   statusLabel,
 }: DriverIssuesTableProps) => {
+  const { t, i18n } = useTranslation();
+
+  const formatDateTime = (value: string) => {
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return value;
+    return date.toLocaleString(i18n.language);
+  };
+
   return (
     <AppDataTable
-      columns={['Subject', 'Driver', 'Vehicle', 'Status', 'Submitted', 'Actions']}
+      columns={[
+        t('reclamations.table.subject'),
+        t('reclamations.table.driver'),
+        t('reclamations.table.vehicle'),
+        t('reclamations.table.status'),
+        t('reclamations.table.submitted'),
+        t('reclamations.table.actions'),
+      ]}
       totalResults={items.length}
       dark={dark}
-      ariaLabel="Driver issues table"
-      title="Driver issues"
+      ariaLabel={t('reclamations.table.aria')}
+      title={t('reclamations.title')}
       pageSize={7}
     >
       {items.map((item) => (

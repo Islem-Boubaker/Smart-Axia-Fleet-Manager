@@ -1,0 +1,17 @@
+{
+  "reclamations": {
+    "title": "Driver issues",
+    "subtitle": "Review and resolve driver-submitted vehicle issues.",
+    "filters": {
+      "searchPlaceholder": "Quick search: subject, message, driver, vehicle"
+    },
+    "table": {
+      "empty": "No issues match your filters.",
+      "loading": "Loading issues..."
+    },
+    "details": {
+      "title": "Issue details",
+      "close": "Close"
+    }
+  }
+}

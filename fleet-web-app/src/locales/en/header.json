@@ -1,0 +1,17 @@
+{
+  "header": {
+    "search": "Search",
+    "searchPlaceholder": "Search fleet, trips, drivers…",
+    "notifications": "Notifications",
+    "language": "Language",
+    "goodMorning": "Good Morning",
+    "goodAfternoon": "Good Afternoon",
+    "goodEvening": "Good Evening",
+    "activitySubtitle": "Check your fleet's latest operational activity.",
+    "openMenu": "Open menu",
+    "lightMode": "Light mode",
+    "darkMode": "Dark mode",
+    "closeMenu": "Close menu",
+    "searchVehiclesDriversTrips": "Search vehicles, drivers, trips..."
+  }
+}

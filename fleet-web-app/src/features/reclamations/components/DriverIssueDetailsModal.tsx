@@ -1,4 +1,5 @@
 import { FiCalendar, FiFileText, FiTool, FiTruck, FiUser } from 'react-icons/fi';
+import { useTranslation } from 'react-i18next';
 import { Badge, Button, GlobalCard } from '../../../shared/components';
 import type { ReclamationRecord, ReclamationStatus } from '../services/reclamations.service';
 
@@ -22,14 +23,14 @@ const statusVariant: Record<ReclamationStatus, 'warning' | 'info' | 'success' | 
   REJECTED: 'error',
 };
 
-const formatDateTime = (value: string) => {
+const formatDateTime = (value: string, locale: string) => {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return value;
-  return date.toLocaleString('en-GB');
+  return date.toLocaleString(locale);
 };
 
-const formatIssueType = (value?: string) => {
-  if (!value) return 'General';
+const formatIssueType = (value: string | undefined, fallback: string) => {
+  if (!value) return fallback;
   return value
     .replace(/[_-]+/g, ' ')
     .replace(/\b\w/g, (char) => char.toUpperCase());
@@ -47,6 +48,7 @@ const DriverIssueDetailsModal = ({
   onUpdateStatus,
   isUpdatingStatus = false,
 }: DriverIssueDetailsModalProps) => {
+  const { t, i18n } = useTranslation();
   if (!isOpen || !issue) return null;
 
   const panelClass = dark
@@ -62,12 +64,12 @@ const DriverIssueDetailsModal = ({
   const nextStatuses: ReclamationStatus[] = ['PENDING', 'IN_PROGRESS', 'RESOLVED', 'REJECTED'];
 
   return (
-    <GlobalCard isOpen={isOpen} onClose={onClose} title="Driver Issue Report" maxWidth="2xl">
+    <GlobalCard isOpen={isOpen} onClose={onClose} title={t('reclamations.title')} maxWidth="2xl">
       <div className="space-y-4">
         <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
           <div className="min-w-0">
             <p className={`text-xs font-semibold uppercase tracking-[0.16em] ${subtleClass}`}>
-              Issue subject
+              {t('common.subject')}
             </p>
             <h3 className={`mt-1 text-2xl font-black tracking-tight ${titleClass}`}>
               {issue.subject}
@@ -82,7 +84,7 @@ const DriverIssueDetailsModal = ({
         <section className={`rounded-[18px] border p-4 ${panelClass}`}>
           <div className="mb-2 flex items-center gap-2">
             <FiFileText className={dark ? 'text-slate-400' : 'text-slate-500'} />
-            <p className={`text-sm font-semibold ${dark ? 'text-slate-200' : 'text-slate-800'}`}>Issue Description</p>
+            <p className={`text-sm font-semibold ${dark ? 'text-slate-200' : 'text-slate-800'}`}>{t('reclamations.details.issue_description')}</p>
           </div>
           <p className={`whitespace-pre-wrap text-sm leading-6 ${bodyClass}`}>{issue.message}</p>
         </section>
@@ -90,7 +92,7 @@ const DriverIssueDetailsModal = ({
         <section className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <div className={`rounded-[18px] border p-4 ${cardClass}`}>
             <p className={`mb-2 text-xs font-semibold uppercase tracking-wide ${subtleClass}`}>
-              Status
+              {t('common.status')}
             </p>
             <div className="flex flex-wrap gap-2">
               {nextStatuses.map((status) => (
@@ -117,17 +119,17 @@ const DriverIssueDetailsModal = ({
 
           <div className={`rounded-[18px] border p-4 ${cardClass}`}>
             <p className={`mb-2 text-xs font-semibold uppercase tracking-wide ${subtleClass}`}>
-              Type
+              {t('common.type')}
             </p>
             <p className={`flex items-center gap-2 text-sm font-medium ${dark ? 'text-slate-200' : 'text-slate-800'}`}>
               <FiTool className={dark ? 'text-slate-500' : 'text-slate-500'} />
-              {formatIssueType(issue.type)}
+              {formatIssueType(issue.type, t('common.unknown'))}
             </p>
           </div>
 
           <div className={`rounded-[18px] border p-4 ${cardClass}`}>
             <p className={`mb-2 text-xs font-semibold uppercase tracking-wide ${subtleClass}`}>
-              Driver
+              {t('common.driver')}
             </p>
             <p className={`flex items-center gap-2 text-sm font-medium ${dark ? 'text-slate-200' : 'text-slate-800'}`}>
               <FiUser className={dark ? 'text-slate-500' : 'text-slate-500'} />
@@ -137,7 +139,7 @@ const DriverIssueDetailsModal = ({
 
           <div className={`rounded-[18px] border p-4 ${cardClass}`}>
             <p className={`mb-2 text-xs font-semibold uppercase tracking-wide ${subtleClass}`}>
-              Vehicle
+              {t('common.vehicle')}
             </p>
             <p className={`flex items-center gap-2 text-sm font-medium ${dark ? 'text-slate-200' : 'text-slate-800'}`}>
               <FiTruck className={dark ? 'text-slate-500' : 'text-slate-500'} />
@@ -147,21 +149,21 @@ const DriverIssueDetailsModal = ({
 
           <div className={`rounded-[18px] border p-4 ${cardClass}`}>
             <p className={`mb-2 text-xs font-semibold uppercase tracking-wide ${subtleClass}`}>
-              Created At
+              {t('common.created')}
             </p>
             <p className={`flex items-center gap-2 text-sm ${bodyClass}`}>
               <FiCalendar className={dark ? 'text-slate-500' : 'text-slate-500'} />
-              {formatDateTime(issue.createdAt)}
+              {formatDateTime(issue.createdAt, i18n.language)}
             </p>
           </div>
 
           <div className={`rounded-[18px] border p-4 ${cardClass}`}>
             <p className={`mb-2 text-xs font-semibold uppercase tracking-wide ${subtleClass}`}>
-              Updated At
+              {t('common.updated')}
             </p>
             <p className={`flex items-center gap-2 text-sm ${bodyClass}`}>
               <FiCalendar className={dark ? 'text-slate-500' : 'text-slate-500'} />
-              {formatDateTime(issue.updatedAt)}
+              {formatDateTime(issue.updatedAt, i18n.language)}
             </p>
           </div>
         </section>
@@ -169,8 +171,8 @@ const DriverIssueDetailsModal = ({
         {(issue.images?.length ?? 0) > 0 ? (
           <section>
             <div className="mb-3 flex items-center justify-between">
-              <p className={`text-sm font-semibold ${dark ? 'text-slate-200' : 'text-slate-800'}`}>Attachments</p>
-              <p className={`text-xs ${dark ? 'text-slate-500' : 'text-slate-500'}`}>{issue.images?.length} file(s)</p>
+              <p className={`text-sm font-semibold ${dark ? 'text-slate-200' : 'text-slate-800'}`}>{t('reclamations.details.attachments')}</p>
+              <p className={`text-xs ${dark ? 'text-slate-500' : 'text-slate-500'}`}>{t('reclamations.details.files', { count: issue.images?.length ?? 0 })}</p>
             </div>
 
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
@@ -186,11 +188,11 @@ const DriverIssueDetailsModal = ({
                 >
                   <img
                     src={image}
-                    alt={`Issue attachment ${index + 1}`}
+                    alt={t('reclamations.details.attachment_alt', { index: index + 1 })}
                     className="h-36 w-full object-cover transition-transform duration-300 group-hover:scale-105"
                   />
                   <div className="absolute inset-0 flex items-end bg-gradient-to-t from-black/45 via-transparent to-transparent p-3 opacity-0 transition-opacity duration-300 group-hover:opacity-100">
-                    <span className="rounded-md bg-white/90 px-2 py-1 text-xs font-medium text-slate-900">Open preview</span>
+                    <span className="rounded-md bg-white/90 px-2 py-1 text-xs font-medium text-slate-900">{t('reclamations.details.open_preview')}</span>
                   </div>
                 </a>
               ))}
@@ -206,7 +208,7 @@ const DriverIssueDetailsModal = ({
               className="inline-flex items-center justify-center gap-2"
             >
               <FiTool />
-              Schedule maintenance
+              {t('maintenance.add')}
             </Button>
           ) : null}
           <Button
@@ -215,7 +217,7 @@ const DriverIssueDetailsModal = ({
             onClick={onClose}
             className={dark ? 'border-slate-700 bg-slate-800 text-slate-100 hover:bg-slate-700' : ''}
           >
-            Close
+            {t('common.close')}
           </Button>
         </div>
       </div>

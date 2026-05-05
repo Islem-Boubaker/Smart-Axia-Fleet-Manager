@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { FiSearch } from 'react-icons/fi';
 import { Input, Select } from '../../../shared/components';
 
@@ -15,7 +16,9 @@ const TripsFilters = ({
   statusFilter,
   onStatusChange,
   dark = false,
-}: Props) => (
+}: Props) => {
+  const { t } = useTranslation();
+  return (
   <div
     className={`relative z-20 flex flex-col lg:flex-row gap-4 rounded-2xl border p-4 ${
       dark ? 'border-slate-700/80 bg-slate-900/40' : 'border-slate-200/90 bg-white/70 backdrop-blur-sm shadow-glass'
@@ -27,7 +30,7 @@ const TripsFilters = ({
       />
       <Input
         type="text"
-        placeholder="Search drivers, vehicles, cities…"
+        placeholder={t('trips.search_placeholder')}
         value={searchQuery}
         onChange={(e) => onSearchChange(e.target.value)}
         className={`pl-10 rounded-xl border ${
@@ -42,15 +45,16 @@ const TripsFilters = ({
         onChange={onStatusChange}
         dark={dark}
         options={[
-          { value: 'all', label: 'All statuses' },
-          { value: 'scheduled', label: 'Scheduled' },
-          { value: 'ongoing', label: 'Ongoing' },
-          { value: 'completed', label: 'Completed' },
-          { value: 'cancelled', label: 'Cancelled' },
+          { value: 'all', label: t('trips.all_statuses') },
+          { value: 'scheduled', label: t('status.scheduled') },
+          { value: 'ongoing', label: t('status.ongoing') },
+          { value: 'completed', label: t('status.completed') },
+          { value: 'cancelled', label: t('status.cancelled') },
         ]}
       />
     </div>
   </div>
-);
+  );
+};
 
 export default TripsFilters;

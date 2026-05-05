@@ -1,4 +1,5 @@
 import { AppDataTable, AppRowActions, AppStatusBadge, AppTd, AppTr } from '../../../shared/components';
+import { useTranslation } from 'react-i18next';
 import type { Driver } from '../../../types';
 
 interface Props {
@@ -10,10 +11,13 @@ interface Props {
 }
 
 const DriversGrid = ({ drivers, isLoading, onEdit, onDelete, dark = false }: Props) => {
+  const { t } = useTranslation();
+  const normalizeStatusKey = (value: string) => value.toLowerCase().replace(/\s+/g, '_').replace(/-+/g, '_');
+
   if (isLoading)
     return (
       <div className={`text-center py-16 rounded-2xl border ${dark ? 'border-slate-700 text-slate-400' : 'border-slate-200 text-slate-500'}`}>
-        Loading…
+        {t('drivers.table.loading')}
       </div>
     );
 
@@ -24,7 +28,7 @@ const DriversGrid = ({ drivers, isLoading, onEdit, onDelete, dark = false }: Pro
           dark ? 'border-slate-700/80 bg-slate-900/40' : 'border-slate-200/90 bg-white/60 backdrop-blur-sm'
         }`}
       >
-        <p className={dark ? 'text-slate-400' : 'text-slate-500'}>No drivers available.</p>
+        <p className={dark ? 'text-slate-400' : 'text-slate-500'}>{t('drivers.table.empty')}</p>
       </div>
     );
 
@@ -36,11 +40,20 @@ const DriversGrid = ({ drivers, isLoading, onEdit, onDelete, dark = false }: Pro
 
   return (
     <AppDataTable
-      columns={['Avatar', 'Driver', 'Email', 'Phone', 'Status', 'Assigned Vehicle', 'Trips', 'Actions']}
+      columns={[
+        t('drivers.table.avatar'),
+        t('drivers.table.driver'),
+        t('drivers.table.email'),
+        t('drivers.table.phone'),
+        t('drivers.table.status'),
+        t('drivers.table.assigned_vehicle'),
+        t('drivers.table.trips'),
+        t('drivers.table.actions'),
+      ]}
       totalResults={drivers.length}
       dark={dark}
-      ariaLabel="Drivers table"
-      title="Drivers"
+      ariaLabel={t('drivers.table.aria')}
+      title={t('drivers.title')}
     >
       {drivers.map((driver) => (
         <AppTr key={driver.id}>
@@ -79,19 +92,19 @@ const DriversGrid = ({ drivers, isLoading, onEdit, onDelete, dark = false }: Pro
             <div>
               <p className="font-semibold">{driver.name}</p>
               <p className={`text-xs ${dark ? 'text-slate-400' : 'text-slate-500'}`}>
-                {driver.licenseNumber || 'No license number'}
+                {driver.licenseNumber || t('drivers.table.noLicense')}
               </p>
             </div>
           </AppTd>
 
           <AppTd className={dark ? 'text-slate-200' : 'text-slate-700'}>{driver.email}</AppTd>
-          <AppTd className={dark ? 'text-slate-300' : 'text-slate-600'}>{driver.phone || 'N/A'}</AppTd>
+          <AppTd className={dark ? 'text-slate-300' : 'text-slate-600'}>{driver.phone || t('common.na')}</AppTd>
 
           <AppTd>
-            <AppStatusBadge variant={statusVariant(driver.status)}>{driver.status}</AppStatusBadge>
+            <AppStatusBadge variant={statusVariant(driver.status)}>{t(`status.${normalizeStatusKey(driver.status)}`)}</AppStatusBadge>
           </AppTd>
 
-          <AppTd className={dark ? 'text-slate-300' : 'text-slate-600'}>{driver.assignedVehicle || 'Unassigned'}</AppTd>
+          <AppTd className={dark ? 'text-slate-300' : 'text-slate-600'}>{driver.assignedVehicle || t('common.unassigned')}</AppTd>
           <AppTd className={dark ? 'text-slate-300' : 'text-slate-600'}>{driver.totalTrips ?? 0}</AppTd>
 
           <AppTd>

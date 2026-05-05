@@ -1,4 +1,5 @@
 import { FiSearch, FiChevronDown } from 'react-icons/fi';
+import { useTranslation } from 'react-i18next';
 import { Input, Select } from '../../../shared/components';
 import type { VehicleStatusFilter, VehicleTypeFilter } from '../hooks/useVehicles';
 
@@ -37,6 +38,7 @@ const Toolbar = ({
   onTypeChange,
   dark = false,
 }: ToolbarProps) => {
+  const { t } = useTranslation();
   return (
     <div
       className={`flex flex-col gap-3 rounded-2xl border p-4 sm:flex-row sm:items-center ${
@@ -51,11 +53,11 @@ const Toolbar = ({
           aria-hidden="true"
         />
         <Input
-          aria-label="Search vehicles"
+          aria-label={t('common.search')}
           type="text"
           value={searchValue}
           onChange={(event) => onSearchChange(event.target.value)}
-          placeholder="Search vehicles by name or ID..."
+          placeholder={t('vehicles.search_placeholder')}
           className={`pl-10 ${dark ? 'border-slate-700 bg-slate-800/70 text-slate-100' : 'border-slate-200 bg-white'}`}
         />
       </div>
@@ -67,12 +69,12 @@ const Toolbar = ({
             onChange={(value) => onTypeChange(value as VehicleTypeFilter)}
             dark={dark}
             options={[
-              { value: 'all', label: 'Type: All' },
-              { value: 'car', label: 'Type: Car' },
-              { value: 'suv', label: 'Type: SUV' },
-              { value: 'truck', label: 'Type: Truck' },
-              { value: 'motorcycle', label: 'Type: Motorcycle' },
-              { value: 'van', label: 'Type: Van' },
+              { value: 'all', label: t('vehicles.filter_type', { value: t('vehicles.types.all') }) },
+              { value: 'car', label: t('vehicles.filter_type', { value: t('vehicles.types.car') }) },
+              { value: 'suv', label: t('vehicles.filter_type', { value: t('vehicles.types.suv') }) },
+              { value: 'truck', label: t('vehicles.filter_type', { value: t('vehicles.types.truck') }) },
+              { value: 'motorcycle', label: t('vehicles.filter_type', { value: t('vehicles.types.motorcycle') }) },
+              { value: 'van', label: t('vehicles.filter_type', { value: t('vehicles.types.van') }) },
             ]}
           />
         </div>
@@ -83,11 +85,11 @@ const Toolbar = ({
             onChange={(value) => onStatusChange(value as VehicleStatusFilter)}
             dark={dark}
             options={[
-              { value: 'all', label: 'Status: All' },
-              { value: 'available', label: 'Status: Available' },
-              { value: 'in_use', label: 'Status: In Use' },
-              { value: 'maintenance', label: 'Status: Maintenance' },
-              { value: 'inactive', label: 'Status: Inactive' },
+              { value: 'all', label: t('vehicles.filter_status', { value: t('common.all') }) },
+              { value: 'available', label: t('vehicles.filter_status', { value: t('status.available') }) },
+              { value: 'in_use', label: t('vehicles.filter_status', { value: t('status.in_use') }) },
+              { value: 'maintenance', label: t('vehicles.filter_status', { value: t('status.maintenance') }) },
+              { value: 'inactive', label: t('vehicles.filter_status', { value: t('status.inactive') }) },
             ]}
           />
         </div>

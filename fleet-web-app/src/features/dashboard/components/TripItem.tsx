@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { Badge } from '../../../shared/components';
 import type { Trip } from '../../../types';
 
@@ -15,8 +16,13 @@ const toBadgeVariant = (status: Trip['status']) => {
 };
 
 const TripItem = ({ trip, onClick }: TripItemProps) => {
-  const plate = trip.vehicle?.plaque_immatriculation || 'No plate';
-  const driverName = trip.driver?.name || 'Unassigned';
+  const { t } = useTranslation();
+  const plate = trip.vehicle?.plaque_immatriculation || t('common.noPlate');
+  const driverName = trip.driver?.name || t('common.unassigned');
+  const statusKey = trip.status as 'scheduled' | 'ongoing' | 'completed' | 'cancelled';
+  const statusLabel = ['scheduled', 'ongoing', 'completed', 'cancelled'].includes(statusKey)
+    ? t(`trips.status.${statusKey}`)
+    : trip.status;
 
   return (
     <li
@@ -39,9 +45,9 @@ const TripItem = ({ trip, onClick }: TripItemProps) => {
     >
       <div>
         <p className="text-sm text-gray-800 dark:text-gray-200 font-medium">{trip.startLocation} → {trip.endLocation}</p>
-        <p className="text-xs text-gray-400">{plate} · {driverName}</p>
+        <p className="text-xs text-gray-400">{plate}{t('common.dashBullet')}{driverName}</p>
       </div>
-      <Badge variant={toBadgeVariant(trip.status)}>{trip.status}</Badge>
+      <Badge variant={toBadgeVariant(trip.status)}>{statusLabel}</Badge>
     </li>
   );
 };

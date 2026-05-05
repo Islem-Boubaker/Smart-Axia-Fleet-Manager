@@ -1,0 +1,60 @@
+{
+  "vehicles": {
+    "title": "Véhicules",
+    "description": "Gérez les véhicules, les affectations et les signaux de maintenance.",
+    "addNew": "Ajouter un véhicule",
+    "edit": "Modifier le véhicule",
+    "searchPlaceholder": "Rechercher par nom ou ID...",
+    "status": {
+      "available": "Disponible",
+      "inUse": "En utilisation",
+      "maintenance": "Maintenance",
+      "inactive": "Inactif",
+      "filterAvailable": "Statut : Disponible",
+      "filterInUse": "Statut : En utilisation",
+      "filterMaintenance": "Statut : Maintenance",
+      "filterInactive": "Statut : Inactif",
+      "filterAll": "Tous les statuts"
+    },
+    "table": {
+      "loading": "Chargement des véhicules...",
+      "empty": "Aucun véhicule pour les filtres sélectionnés.",
+      "colVehicle": "Véhicule",
+      "colStatus": "Statut",
+      "colDriver": "Conducteur",
+      "colLastTrip": "Dernier trajet",
+      "colMaintenance": "Recommandation maintenance",
+      "colActions": "Actions",
+      "noImage": "Pas d'image",
+      "noRecommendations": "Aucune recommandation",
+      "showMore": "Afficher {{n}} de plus",
+      "hide": "Masquer",
+      "hideRecAria": "Masquer les recommandations supplémentaires pour {{name}}",
+      "showRecAria": "Afficher les recommandations supplémentaires pour {{name}}",
+      "rowActions": "Actions de ligne",
+      "viewDetails": "Voir les détails du véhicule",
+      "editVehicle": "Modifier le véhicule",
+      "deleteVehicle": "Supprimer le véhicule",
+      "dataTableAria": "Table des véhicules"
+    },
+    "details": {
+      "title": "Détails du véhicule",
+      "loading": "Chargement des détails...",
+      "closeAria": "Fermer les détails",
+      "editAria": "Modifier ce véhicule",
+      "vehicleId": "ID véhicule",
+      "assignmentDriver": "Conducteur :",
+      "assignmentRoute": "Itinéraire :",
+      "assignmentStatus": "Statut :",
+      "assignmentStart": "Début :",
+      "recommendationsHeading": "Recommandations maintenance IA",
+      "generate": "Générer"
+    },
+    "form": {
+      "submitCreate": "Créer le véhicule",
+      "submitUpdate": "Mettre à jour le véhicule",
+      "activeLabel": "Véhicule actif",
+      "needsMaintenanceLabel": "Nécessite une maintenance"
+    }
+  }
+}

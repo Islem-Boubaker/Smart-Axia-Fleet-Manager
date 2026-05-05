@@ -1,0 +1,26 @@
+{
+  "shared": {
+    "userMenu": {
+      "settings": "Settings",
+      "logout": "Logout"
+    },
+    "notifications": {
+      "title": "Notifications",
+      "unread": "{{count}} unread",
+      "markAllRead": "Mark all as read",
+      "closeAria": "Close notifications",
+      "dialogAria": "Notifications",
+      "allCaughtUp": "All caught up",
+      "empty": "No notifications yet",
+      "loading": "Loading notifications...",
+      "errorTitle": "Unable to load notifications"
+    }
+  },
+  "dataTable": {
+    "aria": "Data table",
+    "showing_one": "Showing {{count}} result",
+    "showing_other": "Showing {{count}} results",
+    "prev": "Previous page",
+    "next": "Next page"
+  }
+}

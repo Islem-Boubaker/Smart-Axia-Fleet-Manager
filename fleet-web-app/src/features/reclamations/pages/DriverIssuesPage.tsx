@@ -1,6 +1,7 @@
 import { useCallback, useMemo, useState } from 'react';
 import { useNavigate, useOutletContext, useSearchParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 import { driversService } from '../../drivers/services/drivers.service';
 import { vehiclesService } from '../../vehicles/services/vehicles.service';
 import type { Driver, Vehicle } from '../../../types';
@@ -19,13 +20,6 @@ import { useUpdateReclamationStatus } from '../hooks/useReclamations';
 interface ThemeContext {
   dark: boolean;
 }
-
-const statusLabel: Record<ReclamationStatus, string> = {
-  PENDING: 'Pending',
-  IN_PROGRESS: 'In Progress',
-  RESOLVED: 'Resolved',
-  REJECTED: 'Rejected',
-};
 
 const normalize = (value?: string | null) => String(value ?? '').trim().toLowerCase();
 
@@ -65,6 +59,7 @@ const findVehicleFromAssignedValue = (assignedValue: string | undefined, vehicle
 
 const DriverIssuesPage = () => {
   const { dark } = useOutletContext<ThemeContext>();
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
 
@@ -75,6 +70,15 @@ const DriverIssuesPage = () => {
   const [selected, setSelected] = useState<ReclamationRecord | null>(null);
   const [statusError, setStatusError] = useState<string | null>(null);
   const updateStatusMutation = useUpdateReclamationStatus();
+  const statusLabel = useMemo<Record<ReclamationStatus, string>>(
+    () => ({
+      PENDING: t('status.pending'),
+      IN_PROGRESS: t('status.in_progress'),
+      RESOLVED: t('status.resolved'),
+      REJECTED: t('status.rejected'),
+    }),
+    [t],
+  );
 
   const requestedId = searchParams.get('reclamationId');
 
@@ -113,10 +117,10 @@ const DriverIssuesPage = () => {
       const message =
         (err as { response?: { data?: { message?: string } } })?.response?.data?.message ||
         (err as Error)?.message ||
-        'Failed to update issue status.';
+        t('common.unexpectedError');
       setStatusError(message);
     }
-  }, [updateStatusMutation]);
+  }, [t, updateStatusMutation]);
 
   const selectedIssue = useMemo(() => {
     if (selected) return selected;
@@ -135,10 +139,10 @@ const DriverIssuesPage = () => {
     if (item.vehicleName || item.vehiclePlate) {
       return item.vehicleName && item.vehiclePlate
         ? `${item.vehicleName} (${item.vehiclePlate})`
-        : item.vehicleName || item.vehiclePlate || 'N/A';
+        : item.vehicleName || item.vehiclePlate || t('common.na');
     }
     if (item.vehicle?.name || item.vehicle?.plaque_immatriculation || item.vehicle?.model) {
-      const name = item.vehicle.name || item.vehicle.model || 'Vehicle';
+      const name = item.vehicle.name || item.vehicle.model || t('common.vehicleDefaultName');
       const plate = item.vehicle.plaque_immatriculation;
       return plate ? `${name} (${plate})` : name;
     }
@@ -151,8 +155,8 @@ const DriverIssuesPage = () => {
     const assignedMatch = findVehicleFromAssignedValue(driver?.assignedVehicle, vehicles);
     if (assignedMatch) return buildVehicleLabel(assignedMatch);
 
-    return item.vehicleId || 'N/A';
-  }, [drivers, vehicles]);
+    return item.vehicleId || t('common.na');
+  }, [drivers, t, vehicles]);
 
   const handleScheduleFromIssue = useCallback((item: ReclamationRecord) => {
     const matchedVehicle =
@@ -190,7 +194,7 @@ const DriverIssuesPage = () => {
       vehicleName,
       type: maintenanceType,
       priority,
-      technician: 'Pending assignment',
+      technician: t('maintenance.table.tbd'),
       cost: estimatedCost,
       mileage: currentMileage,
       description: [
@@ -208,7 +212,7 @@ const DriverIssuesPage = () => {
         `Vehicle: ${getVehicleLabel(item)}`,
       ].filter(Boolean).join('\n'),
     }));
-  }, [drivers, getDriverLabel, getVehicleLabel, navigate, vehicles]);
+  }, [drivers, getDriverLabel, getVehicleLabel, navigate, t, vehicles]);
 
   const filteredItems = useMemo(() => {
     const normalizedSearch = searchQuery.trim().toLowerCase();
@@ -242,13 +246,13 @@ const DriverIssuesPage = () => {
   }, [items, getVehicleLabel]);
 
   const driverSelectOptions = useMemo(
-    () => driverFilterOptions.map((option) => ({ value: option, label: option === 'all' ? 'All drivers' : option })),
-    [driverFilterOptions]
+    () => driverFilterOptions.map((option) => ({ value: option, label: option === 'all' ? t('reclamations.filters.all_drivers') : option })),
+    [driverFilterOptions, t]
   );
 
   const vehicleSelectOptions = useMemo(
-    () => vehicleFilterOptions.map((option) => ({ value: option, label: option === 'all' ? 'All vehicles' : option })),
-    [vehicleFilterOptions]
+    () => vehicleFilterOptions.map((option) => ({ value: option, label: option === 'all' ? t('reclamations.filters.all_vehicles') : option })),
+    [t, vehicleFilterOptions]
   );
 
   const closeDetails = () => {
@@ -263,13 +267,9 @@ const DriverIssuesPage = () => {
   return (
     <div className={`${pageShellClasses(dark)} ${pageShellInnerSpacing} animate-fade-in`}>
       <div className="fleet-hero space-y-1">
-        <p className="fleet-hero-kicker">
-          Operations
-        </p>
-        <h1 className="fleet-hero-title">Driver Issue Reports</h1>
-        <p className="fleet-hero-subtitle">
-          Monitor vehicle issues submitted by drivers.
-        </p>
+        <p className="fleet-hero-kicker">{t('reclamations.section_label')}</p>
+        <h1 className="fleet-hero-title">{t('reclamations.title')}</h1>
+        <p className="fleet-hero-subtitle">{t('reclamations.subtitle')}</p>
       </div>
 
       <DriverIssuesFilters
@@ -295,11 +295,11 @@ const DriverIssuesPage = () => {
 
       {loading ? (
         <div className={`rounded-2xl border px-6 py-16 text-center text-sm ${dark ? 'border-slate-700/80 bg-slate-900/30 text-slate-400' : 'border-slate-200/90 bg-white/75 text-slate-500'}`}>
-          Loading driver issue reports...
+          {t('reclamations.table.loading')}
         </div>
       ) : filteredItems.length === 0 ? (
         <div className={`rounded-2xl border px-6 py-16 text-center text-sm ${dark ? 'border-slate-700/80 bg-slate-900/30 text-slate-400' : 'border-slate-200/90 bg-white/75 text-slate-500'}`}>
-          No issue reports found.
+          {t('reclamations.table.empty')}
         </div>
       ) : (
         <DriverIssuesTable

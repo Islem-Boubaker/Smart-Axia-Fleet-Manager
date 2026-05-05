@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { FiArrowUpRight } from 'react-icons/fi';
 import type { Trip } from '../../../types';
@@ -10,6 +11,7 @@ interface RecentTripsCardProps {
 }
 
 const RecentTripsCard = ({ trips, onTripClick }: RecentTripsCardProps) => {
+  const { t } = useTranslation();
   const navigate = useNavigate();
 
   return (
@@ -20,13 +22,13 @@ const RecentTripsCard = ({ trips, onTripClick }: RecentTripsCardProps) => {
           onClick={() => navigate(ROUTES.TRIPS)}
           className="text-sm font-black text-gray-800 dark:text-gray-200 inline-flex items-center gap-1 hover:text-sky-600 dark:hover:text-sky-300 transition-colors"
         >
-          Recent trips
+          {t('dashboard.recentTrips.title')}
           <FiArrowUpRight className="w-4 h-4" />
         </button>
       </div>
 
       {trips.length === 0 ? (
-        <p className="text-sm text-gray-500 dark:text-gray-400">No recent trips.</p>
+        <p className="text-sm text-gray-500 dark:text-gray-400">{t('dashboard.recentTrips.none')}</p>
       ) : (
         <ul>
           {trips.map((trip) => (

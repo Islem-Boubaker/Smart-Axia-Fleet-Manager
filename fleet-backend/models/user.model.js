@@ -154,12 +154,51 @@ const User = sequelize.define(
       allowNull: false,
       comment: 'Regions the driver is familiar with (e.g., ["Tunis", "Sfax"])'
     },
-    preferredVehicles: {
-      type: DataTypes.ARRAY(DataTypes.UUID),
-      defaultValue: [],
+    experienceYears: {
+      type: DataTypes.INTEGER,
       allowNull: false,
-      comment: 'Array of vehicle IDs the driver has frequently used'
-    }
+      defaultValue: 1,
+      comment: "Recommendation compatibility alias for yearsOfExperience",
+    },
+    driverRating: {
+      type: DataTypes.FLOAT,
+      allowNull: false,
+      defaultValue: 3.5,
+      validate: { min: 0, max: 5 },
+    },
+    failedTrips: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      defaultValue: 0,
+    },
+    successRate: {
+      type: DataTypes.FLOAT,
+      allowNull: false,
+      defaultValue: 0.75,
+      validate: { min: 0, max: 1 },
+    },
+    licenseType: {
+      type: DataTypes.ENUM("B", "C", "D", "CE"),
+      allowNull: false,
+      defaultValue: "B",
+    },
+    licenseExpiryDate: {
+      type: DataTypes.DATEONLY,
+      allowNull: true,
+    },
+    medicalCheckExpiryDate: {
+      type: DataTypes.DATEONLY,
+      allowNull: true,
+    },
+    preferredRegion: {
+      type: DataTypes.STRING(120),
+      allowNull: true,
+    },
+    isAvailable: {
+      type: DataTypes.BOOLEAN,
+      allowNull: false,
+      defaultValue: true,
+    },
   },
 
 

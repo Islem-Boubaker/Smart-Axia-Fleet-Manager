@@ -1,0 +1,62 @@
+{
+  "dashboard": {
+    "title": "لوحة التحكم",
+    "overviewLine": "نظرة عامة على العمليات ليوم {{date}}",
+    "newTrip": "رحلة جديدة",
+    "tripDetails": "تفاصيل الرحلة",
+    "tripDetailsWithId": "تفاصيل الرحلة #{{id}}",
+    "alerts": {
+      "title": "تنبيهات نشطة",
+      "none": "لا توجد تنبيهات نشطة.",
+      "viewAll": "عرض الكل"
+    },
+    "fleetOverview": {
+      "title": "حالة الأسطول",
+      "onTrip": "في رحلة",
+      "available": "متاح",
+      "inMaintenance": "قيد الصيانة",
+      "outOfService": "خارج الخدمة"
+    },
+    "stats": {
+      "activeVehicles": "مركبات نشطة",
+      "tripsToday": "رحلات اليوم",
+      "maintenanceDue": "صيانة مستحقة",
+      "fuelCostMonth": "كلفة الوقود هذا الشهر",
+      "tnd": "{{n}} د.ت"
+    },
+    "recentTrips": {
+      "title": "الرحلات الأخيرة",
+      "none": "لا توجد رحلات حديثة."
+    },
+    "topDrivers": {
+      "title": "أفضل السائقين — هذا الشهر",
+      "none": "لا بيانات للسائقين هذا الشهر.",
+      "kmOnTime": "{{km}} كم · {{pct}}% في الوقت"
+    },
+    "fuel": {
+      "title": "استهلاك الوقود — آخر 7 أيام",
+      "totalWeek": "الإجمالي هذا الأسبوع",
+      "avgVehicle": "المتوسط لكل مركبة",
+      "cost": "التكلفة"
+    },
+    "quickActions": {
+      "title": "إجراءات سريعة",
+      "newTrip": "رحلة جديدة",
+      "addVehicle": "إضافة مركبة",
+      "scheduleMaintenance": "جدولة صيانة",
+      "generateReport": "إنشاء تقرير"
+    },
+    "maintenance": {
+      "title": "صيانة قادمة",
+      "none": "لا صيانة مجدولة خلال 14 يوماً.",
+      "scheduledLine": "مجدول: {{date}}",
+      "typePlate": "{{type}} — {{plate}}"
+    },
+    "tripItem": {
+      "statusCompleted": "مكتمل",
+      "statusOngoing": "جاري",
+      "statusCancelled": "ملغى",
+      "statusScheduled": "مجدول"
+    }
+  }
+}

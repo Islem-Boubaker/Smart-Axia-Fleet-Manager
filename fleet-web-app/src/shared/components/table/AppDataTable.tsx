@@ -1,5 +1,6 @@
 import { Children, useMemo, useState, useRef, useEffect } from "react";
 import type { ReactNode } from "react";
+import { useTranslation } from "react-i18next";
 
 interface AppDataTableProps {
   columns: string[];
@@ -25,10 +26,11 @@ const AppDataTable = ({
   children,
   totalResults,
   dark = false,
-  ariaLabel = "Data table",
+  ariaLabel,
   pageSize = 7,
   title,
 }: AppDataTableProps) => {
+  const { t } = useTranslation();
   const rowNodes = useMemo(() => Children.toArray(children), [children]);
   const [currentPage, setCurrentPage] = useState(1);
   const tableContainerRef = useRef<HTMLDivElement>(null);
@@ -49,6 +51,7 @@ const AppDataTable = ({
   const resultsCount =
     typeof totalResults === "number" ? totalResults : rowNodes.length;
   void title;
+  const resolvedAriaLabel = ariaLabel || t('dataTable.aria');
 
   const pageButtons = useMemo(() => {
     if (totalPages <= 5) {
@@ -208,7 +211,7 @@ const AppDataTable = ({
         <table
           className="min-w-full border-separate border-spacing-0 text-sm"
           role="table"
-          aria-label={ariaLabel}
+          aria-label={resolvedAriaLabel}
         >
           <thead>
             <tr>
@@ -270,7 +273,7 @@ const AppDataTable = ({
           }`}
         >
           <span>
-            Showing {resultsCount} result{resultsCount === 1 ? "" : "s"}
+            {t('common.showing_results', { count: resultsCount })}
           </span>
 
           {rowNodes.length > pageSize && (
@@ -285,7 +288,7 @@ const AppDataTable = ({
                 onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
                 disabled={safeCurrentPage === 1}
               >
-                {"‹ Prev"}
+                {t('dataTable.prev')}
               </button>
 
               {pageButtons.map((page) => (
@@ -302,7 +305,7 @@ const AppDataTable = ({
                         : "text-slate-600 hover:bg-white/80"
                   }`}
                   onClick={() => setCurrentPage(page)}
-                  aria-label={`Go to page ${page}`}
+                  aria-label={t('dataTable.page', { page })}
                 >
                   {page}
                 </button>
@@ -320,7 +323,7 @@ const AppDataTable = ({
                 }
                 disabled={safeCurrentPage === totalPages}
               >
-                {"Next ›"}
+                {t('dataTable.next')}
               </button>
             </div>
           )}

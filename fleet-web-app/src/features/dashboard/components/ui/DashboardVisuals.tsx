@@ -1,3 +1,5 @@
+import { useTranslation } from 'react-i18next';
+
 interface DataVizProps {
   data: number[];
   color?: string;
@@ -87,6 +89,7 @@ export function Ring({ pct = 60, size = 36, stroke = 4, color = '#8b5cf6' }: Rin
 }
 
 export function Speedometer({ value = 65, max = 120 }: SpeedometerProps) {
+  const { t } = useTranslation();
   const ratio = value / max;
   const totalArcs = 32;
 
@@ -118,7 +121,7 @@ export function Speedometer({ value = 65, max = 120 }: SpeedometerProps) {
 
       <div className="absolute bottom-0 text-center">
         <div className="text-3xl font-extrabold text-gray-900">{value}</div>
-        <div className="text-xs text-gray-400 font-medium">miles / hour</div>
+        <div className="text-xs text-gray-400 font-medium">{t('dashboard.visuals.milesPerHour')}</div>
       </div>
     </div>
   );

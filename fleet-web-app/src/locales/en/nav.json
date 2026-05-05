@@ -1,0 +1,24 @@
+{
+  "nav": {
+    "dashboard": "Dashboard",
+    "vehicles": "Vehicles",
+    "drivers": "Drivers",
+    "trips": "Trips",
+    "maintenance": "Maintenance",
+    "reports": "Reports",
+    "reclamations": "Driver Issues",
+    "settings": "Settings",
+    "fleet": "Fleet",
+    "profile": "Profile",
+    "notifications": "Notifications",
+    "security": "Security",
+    "expandSidebar": "Expand sidebar",
+    "collapseSidebar": "Collapse sidebar"
+  },
+  "brand": {
+    "axia": "Smart Axia",
+    "fleetManager": "Fleet Manager",
+    "heroProduct": "Smart AXIA",
+    "heroTitleFleet": "Fleet Manager"
+  }
+}

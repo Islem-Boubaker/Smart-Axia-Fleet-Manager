@@ -1,16 +1,20 @@
-import { useState, memo, useEffect } from 'react';
+import { useState, memo, useEffect, type CSSProperties } from 'react';
 import { Outlet, useLocation } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { AppTopBar } from './Header/AppTopBar';
 import { Sidebar } from './Sidebar';
 import { ROUTES } from '../../../utils/constants';
 
 export const DashboardLayout = memo(() => {
+  const { i18n } = useTranslation();
   const [dark, setDark] = useState(() => {
     return localStorage.getItem('theme') === 'dark';
   });
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [sidebarExpanded, setSidebarExpanded] = useState(false);
   const location = useLocation();
   const isReportsPage = location.pathname === ROUTES.REPORTS;
+  const isRtl = (i18n.language || 'en').split('-')[0] === 'ar';
 
   useEffect(() => {
     document.documentElement.classList.toggle('dark', dark);
@@ -24,6 +28,7 @@ export const DashboardLayout = memo(() => {
           ? 'bg-[radial-gradient(circle_at_12%_0%,#123A5A_0%,#081321_38%,#050A12_100%)] text-slate-100'
           : 'bg-[radial-gradient(circle_at_top_left,#bfefff_0%,#e9f8fb_36%,#35a8db_100%)] text-slate-900'
       }`}
+      dir={isRtl ? 'rtl' : 'ltr'}
     >
       <div
         aria-hidden="true"
@@ -33,9 +38,20 @@ export const DashboardLayout = memo(() => {
             : 'bg-[linear-gradient(120deg,rgba(255,255,255,0.40),transparent_34%,rgba(255,255,255,0.18))]'
         }`}
       />
-      <Sidebar isOpen={sidebarOpen} setIsOpen={setSidebarOpen} dark={dark} />
+      <Sidebar
+        isOpen={sidebarOpen}
+        setIsOpen={setSidebarOpen}
+        expanded={sidebarExpanded}
+        setExpanded={setSidebarExpanded}
+        dark={dark}
+      />
 
-      <div className="relative z-10 flex-1 flex flex-col min-w-0 min-h-0 overflow-hidden p-2 sm:p-3 lg:pl-0">
+      <div
+        className={`relative z-10 flex-1 flex flex-col min-w-0 min-h-0 overflow-hidden p-2 transition-[margin] duration-300 ease-out sm:p-3 ${
+          isRtl ? 'lg:mr-[var(--sidebar-offset)]' : 'lg:ml-[var(--sidebar-offset)]'
+        }`}
+        style={{ '--sidebar-offset': `${sidebarExpanded ? 236 : 64}px` } as CSSProperties}
+      >
         <AppTopBar dark={dark} setDark={setDark} onMenuClick={() => setSidebarOpen(true)} />
 
         <main

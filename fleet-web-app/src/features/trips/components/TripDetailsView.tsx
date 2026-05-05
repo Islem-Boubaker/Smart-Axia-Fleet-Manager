@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { CircleMarker, MapContainer, Polyline, Popup, TileLayer, useMap } from 'react-leaflet';
 import type { LatLngExpression } from 'leaflet';
 import type { Trip } from '../../../types';
@@ -33,32 +34,32 @@ type OsrmRouteResponse = {
   }>;
 };
 
-const formatDateTime = (value?: string) => {
-  if (!value) return 'N/A';
+const formatDateTime = (value: string | undefined, locale: string, fallback: string) => {
+  if (!value) return fallback;
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return value;
-  return date.toLocaleString();
+  return date.toLocaleString(locale);
 };
 
-const formatNumber = (value?: number, suffix = '') => {
-  if (typeof value !== 'number' || !Number.isFinite(value)) return 'N/A';
+const formatNumber = (value: number | undefined, suffix: string, fallback: string) => {
+  if (typeof value !== 'number' || !Number.isFinite(value)) return fallback;
   return `${value.toFixed(1)}${suffix}`;
 };
 
-const formatRelativeTime = (value?: string) => {
-  if (!value) return 'unknown time';
+const formatRelativeTime = (value: string | undefined, t: (key: string, options?: Record<string, unknown>) => string) => {
+  if (!value) return t('trips.details.live.unknownTime');
   const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return 'unknown time';
+  if (Number.isNaN(date.getTime())) return t('trips.details.live.unknownTime');
 
   const diffSeconds = Math.max(0, Math.round((Date.now() - date.getTime()) / 1000));
-  if (diffSeconds < 10) return 'just now';
-  if (diffSeconds < 60) return `${diffSeconds}s ago`;
+  if (diffSeconds < 10) return t('trips.details.live.justNow');
+  if (diffSeconds < 60) return t('trips.details.live.secondsAgo', { count: diffSeconds });
 
   const diffMinutes = Math.round(diffSeconds / 60);
-  if (diffMinutes < 60) return `${diffMinutes}m ago`;
+  if (diffMinutes < 60) return t('trips.details.live.minutesAgo', { count: diffMinutes });
 
   const diffHours = Math.round(diffMinutes / 60);
-  return `${diffHours}h ago`;
+  return t('trips.details.live.hoursAgo', { count: diffHours });
 };
 
 const geocodeLocation = async (query: string, signal: AbortSignal): Promise<GeoPoint | null> => {
@@ -129,6 +130,7 @@ const MapAutoFit = ({ points }: MapAutoFitProps) => {
 };
 
 const TripDetailsView = ({ trip, dark = false }: TripDetailsViewProps) => {
+  const { t, i18n } = useTranslation();
   const [startMarker, setStartMarker] = useState<GeoPoint | null>(null);
   const [endMarker, setEndMarker] = useState<GeoPoint | null>(null);
   const [isGeocoding, setIsGeocoding] = useState(false);
@@ -342,34 +344,34 @@ const TripDetailsView = ({ trip, dark = false }: TripDetailsViewProps) => {
   const liveLocationStatus = useMemo(() => {
     if (!isOngoingTrip) return null;
     if (liveLocation) {
-      const accuracy = typeof liveLocation.accuracy === 'number' ? ` • accuracy ~${Math.round(liveLocation.accuracy)}m` : '';
-      const stale = liveLocation.isStale ? ' • signal is old' : '';
-      return `Driver phone location updated ${formatRelativeTime(liveLocation.recordedAt)}${accuracy}${stale}`;
+      const accuracy = typeof liveLocation.accuracy === 'number' ? ` ${t('common.dashBullet')}${t('trips.details.live.accuracy', { count: Math.round(liveLocation.accuracy) })}` : '';
+      const stale = liveLocation.isStale ? ` ${t('common.dashBullet')}${t('trips.details.live.signalOld')}` : '';
+      return `${t('trips.details.live.updated', { when: formatRelativeTime(liveLocation.recordedAt, t) })}${accuracy}${stale}`;
     }
-    if (isLiveLocationLoading) return 'Waiting for the driver phone location...';
+    if (isLiveLocationLoading) return t('trips.details.live.waiting');
     if (liveLocationError) return liveLocationError;
-    return 'No driver phone location has been received yet. Ask the driver to open live navigation.';
-  }, [isLiveLocationLoading, isOngoingTrip, liveLocation, liveLocationError]);
+    return t('trips.details.live.notReceived');
+  }, [isLiveLocationLoading, isOngoingTrip, liveLocation, liveLocationError, t]);
 
 
   const summaryItems: Array<[string, string]> = [
-    ['Status', trip.status],
-    ['Driver', trip.driver?.name || 'Unassigned'],
-    ['Vehicle', [trip.vehicle?.name, trip.vehicle?.plaque_immatriculation].filter(Boolean).join(' - ') || 'Unknown vehicle'],
-    ['Distance', formatNumber(trip.distance, ' km')],
-    ['Fuel', formatNumber(trip.fuel, ' L')],
-    ['Revenue', typeof trip.revenue === 'number' ? `${trip.revenue.toFixed(1)} TND` : 'N/A'],
-    ['Started', formatDateTime(trip.startTime)],
-    ['Ended', formatDateTime(trip.endTime)],
+    [t('common.status'), t(`status.${String(trip.status || '').toLowerCase().replace(/\s+/g, '_')}`)],
+    [t('common.driver'), trip.driver?.name || t('common.unassigned')],
+    [t('common.vehicle'), [trip.vehicle?.name, trip.vehicle?.plaque_immatriculation].filter(Boolean).join(' - ') || t('common.unknownVehicle')],
+    [t('common.distance'), formatNumber(trip.distance, ` ${t('common.kmUnit')}`, t('common.na'))],
+    [t('common.fuel'), formatNumber(trip.fuel, ` ${t('common.liters')}`, t('common.na'))],
+    [t('common.revenue'), typeof trip.revenue === 'number' ? `${trip.revenue.toFixed(1)} ${t('common.currencyTnd')}` : t('common.na')],
+    [t('common.start'), formatDateTime(trip.startTime, i18n.language, t('common.na'))],
+    [t('common.end'), formatDateTime(trip.endTime, i18n.language, t('common.na'))],
   ];
 
   return (
     <div className="space-y-6">
       <div className={`rounded-2xl border p-4 ${dark ? 'border-slate-700/80 bg-slate-900/45' : 'border-slate-200/90 bg-white/80'}`}>
-        <p className={`text-xs font-semibold uppercase tracking-wide ${dark ? 'text-slate-400' : 'text-slate-500'}`}>Route</p>
+        <p className={`text-xs font-semibold uppercase tracking-wide ${dark ? 'text-slate-400' : 'text-slate-500'}`}>{t('common.route')}</p>
         <p className={`mt-2 text-base font-semibold ${dark ? 'text-white' : 'text-slate-900'}`}>
           {compactLocationLabel(trip.startLocation)}
-          <span className="mx-2 opacity-60">→</span>
+          <span className="mx-2 opacity-60">{t('common.arrow')}</span>
           {compactLocationLabel(trip.endLocation)}
         </p>
       </div>
@@ -388,11 +390,11 @@ const TripDetailsView = ({ trip, dark = false }: TripDetailsViewProps) => {
 
       <div className={`rounded-2xl border p-4 ${dark ? 'border-slate-700/80 bg-slate-900/45' : 'border-slate-200/90 bg-white/80'}`}>
         <p className={`text-xs font-semibold uppercase tracking-wide mb-3 ${dark ? 'text-slate-400' : 'text-slate-500'}`}>
-          Stops ({orderedStops.length})
+          {t('trips.details.stopsCount', { count: orderedStops.length })}
         </p>
 
         {orderedStops.length === 0 ? (
-          <p className={`text-sm ${dark ? 'text-slate-400' : 'text-slate-600'}`}>No stops recorded for this trip.</p>
+          <p className={`text-sm ${dark ? 'text-slate-400' : 'text-slate-600'}`}>{t('trips.details.noStops')}</p>
         ) : (
           <div className="space-y-2">
             {orderedStops.map((stop) => (
@@ -401,7 +403,7 @@ const TripDetailsView = ({ trip, dark = false }: TripDetailsViewProps) => {
                   {compactLocationLabel(stop.locationName)}
                 </p>
                 <p className={`text-xs ${dark ? 'text-slate-400' : 'text-slate-600'}`}>
-                  Status: {stop.status} {stop.arrivalTime ? `• ${formatDateTime(stop.arrivalTime)}` : ''}
+                  {t('common.status')}: {t(`trips.stopStatus.${String(stop.status || '').toLowerCase()}`)} {stop.arrivalTime ? `${t('common.dashBullet')}${formatDateTime(stop.arrivalTime, i18n.language, t('common.na'))}` : ''}
                 </p>
               </div>
             ))}
@@ -411,7 +413,7 @@ const TripDetailsView = ({ trip, dark = false }: TripDetailsViewProps) => {
 
       <div className={`rounded-2xl border p-4 ${dark ? 'border-slate-700/80 bg-slate-900/45' : 'border-slate-200/90 bg-white/80'}`}>
         <p className={`text-xs font-semibold uppercase tracking-wide mb-3 ${dark ? 'text-slate-400' : 'text-slate-500'}`}>
-          Route Map
+          {t('trips.details.routeMap')}
         </p>
 
         {liveLocationStatus ? (
@@ -429,16 +431,16 @@ const TripDetailsView = ({ trip, dark = false }: TripDetailsViewProps) => {
         {routingPoints.length === 0 && !driverLivePoint ? (
           <p className={`text-sm ${dark ? 'text-slate-400' : 'text-slate-600'}`}>
             {isGeocoding
-              ? 'Resolving start and destination markers...'
-                  : 'Map is unavailable for this trip because no mappable coordinates were found.'}
+              ? t('trips.details.resolvingMarkers')
+                  : t('trips.details.mapUnavailable')}
           </p>
         ) : (
           <div className="space-y-2">
             {(isRouting || isRoadFallback) && (
               <p className={`text-xs ${dark ? 'text-slate-400' : 'text-slate-600'}`}>
                 {isRouting
-                  ? 'Calculating road route...'
-                  : 'Road route unavailable right now. Showing direct links between points.'}
+                  ? t('trips.details.calculatingRoute')
+                  : t('trips.details.routeFallback')}
               </p>
             )}
             <div className="overflow-hidden rounded-xl border border-slate-200/70 dark:border-slate-700/70">
@@ -471,11 +473,11 @@ const TripDetailsView = ({ trip, dark = false }: TripDetailsViewProps) => {
                     >
                       <Popup>
                         <div className="space-y-1">
-                          <p className="font-semibold">Driver location</p>
-                          <p>{liveLocation?.driver?.name || trip.driver?.name || 'Assigned driver'}</p>
-                          <p>Updated {formatRelativeTime(liveLocation?.recordedAt)}</p>
+                          <p className="font-semibold">{t('trips.details.live.driverLocation')}</p>
+                          <p>{liveLocation?.driver?.name || trip.driver?.name || t('common.driverLabel')}</p>
+                          <p>{t('trips.details.live.updated', { when: formatRelativeTime(liveLocation?.recordedAt, t) })}</p>
                           {typeof liveLocation?.accuracy === 'number' ? (
-                            <p>Accuracy ~{Math.round(liveLocation.accuracy)}m</p>
+                            <p>{t('trips.details.live.accuracy', { count: Math.round(liveLocation.accuracy) })}</p>
                           ) : null}
                         </div>
                       </Popup>

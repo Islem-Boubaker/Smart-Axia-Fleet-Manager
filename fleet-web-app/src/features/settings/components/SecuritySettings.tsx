@@ -1,4 +1,5 @@
 import { useState, type FormEvent } from 'react';
+import { useTranslation } from 'react-i18next';
 import { FiLock } from 'react-icons/fi';
 import { Button, Input } from '../../../shared/components';
 
@@ -10,6 +11,7 @@ interface Props {
 }
 
 const SecuritySettings = ({ dark = false, isLoading = false, onChangePassword }: Props) => {
+  const { t } = useTranslation();
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -22,22 +24,22 @@ const SecuritySettings = ({ dark = false, isLoading = false, onChangePassword }:
     event.preventDefault();
 
     if (!currentPassword || !newPassword || !confirmPassword) {
-      setFormError('Please fill in all password fields.');
+      setFormError(t('settings.security.errors.fill_all_fields'));
       return;
     }
 
     if (newPassword.length < 8) {
-      setFormError('New password must be at least 8 characters.');
+      setFormError(t('settings.security.errors.min_length'));
       return;
     }
 
     if (newPassword !== confirmPassword) {
-      setFormError('New password and confirmation do not match.');
+      setFormError(t('settings.security.errors.mismatch'));
       return;
     }
 
     if (!onChangePassword) {
-      setFormError('Password change is not available right now.');
+      setFormError(t('settings.security.errors.unavailable'));
       return;
     }
 
@@ -62,10 +64,10 @@ const SecuritySettings = ({ dark = false, isLoading = false, onChangePassword }:
     // >
       <form onSubmit={handleSubmit} className="space-y-5">
         <div>
-          <label className={`block text-sm font-medium mb-2 ${label}`}>Current password</label>
+          <label className={`block text-sm font-medium mb-2 ${label}`}>{t('settings.security.current_password')}</label>
           <Input
             type="password"
-            placeholder="Enter current password"
+            placeholder={t('settings.security.current_password_placeholder')}
             className={input}
             value={currentPassword}
             onChange={(event) => setCurrentPassword(event.target.value)}
@@ -73,10 +75,10 @@ const SecuritySettings = ({ dark = false, isLoading = false, onChangePassword }:
           />
         </div>
         <div>
-          <label className={`block text-sm font-medium mb-2 ${label}`}>New password</label>
+          <label className={`block text-sm font-medium mb-2 ${label}`}>{t('settings.security.new_password')}</label>
           <Input
             type="password"
-            placeholder="Enter new password"
+            placeholder={t('settings.security.new_password_placeholder')}
             className={input}
             value={newPassword}
             onChange={(event) => setNewPassword(event.target.value)}
@@ -84,10 +86,10 @@ const SecuritySettings = ({ dark = false, isLoading = false, onChangePassword }:
           />
         </div>
         <div>
-          <label className={`block text-sm font-medium mb-2 ${label}`}>Confirm new password</label>
+          <label className={`block text-sm font-medium mb-2 ${label}`}>{t('settings.security.confirm_password')}</label>
           <Input
             type="password"
-            placeholder="Confirm new password"
+            placeholder={t('settings.security.confirm_password_placeholder')}
             className={input}
             value={confirmPassword}
             onChange={(event) => setConfirmPassword(event.target.value)}
@@ -98,7 +100,7 @@ const SecuritySettings = ({ dark = false, isLoading = false, onChangePassword }:
         <div className="flex justify-end pt-2">
           <Button type="submit" className="rounded-xl" isLoading={isLoading}>
             <FiLock className="mr-2" />
-            Change password
+            {t('settings.security.change_button')}
           </Button>
         </div>
       </form>

@@ -1,4 +1,5 @@
 import { Input, Select } from '../../../shared/components';
+import { useTranslation } from 'react-i18next';
 import type { ReclamationStatus } from '../services/reclamations.service';
 
 interface DriverIssuesFiltersProps {
@@ -30,6 +31,7 @@ const DriverIssuesFilters = ({
   vehicleOptions,
   statusLabel,
 }: DriverIssuesFiltersProps) => {
+  const { t } = useTranslation();
   return (
     <div
       className={`rounded-2xl border p-4 ${
@@ -39,7 +41,7 @@ const DriverIssuesFilters = ({
       <div className="flex flex-wrap gap-2">
         {(['all', 'PENDING', 'IN_PROGRESS', 'RESOLVED', 'REJECTED'] as const).map((status) => {
           const active = statusFilter === status;
-          const label = status === 'all' ? 'All' : statusLabel[status];
+          const label = status === 'all' ? t('reclamations.filters.all') : statusLabel[status];
           return (
             <button
               key={status}
@@ -63,19 +65,19 @@ const DriverIssuesFilters = ({
 
       <div className="mt-4 grid grid-cols-1 gap-3 lg:grid-cols-3">
         <Input
-          label="Search"
+          label={t('reclamations.filters.search_label')}
           value={searchQuery}
           onChange={(event) => onSearchChange(event.target.value)}
-          placeholder="Quick search: subject, message, driver, vehicle"
+          placeholder={t('reclamations.filters.search_placeholder')}
         />
 
         <div>
-          <label className="mb-1.5 block text-[13px] text-gray-500 dark:text-slate-400">Driver</label>
+          <label className="mb-1.5 block text-[13px] text-gray-500 dark:text-slate-400">{t('reclamations.filters.driver_label')}</label>
           <Select dark={dark} value={driverFilter} onChange={onDriverChange} options={driverOptions} />
         </div>
 
         <div>
-          <label className="mb-1.5 block text-[13px] text-gray-500 dark:text-slate-400">Vehicle</label>
+          <label className="mb-1.5 block text-[13px] text-gray-500 dark:text-slate-400">{t('reclamations.filters.vehicle_label')}</label>
           <Select dark={dark} value={vehicleFilter} onChange={onVehicleChange} options={vehicleOptions} />
         </div>
       </div>

@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { CircleMarker, MapContainer, TileLayer, useMapEvents } from 'react-leaflet';
 import type { LeafletMouseEvent } from 'leaflet';
+import { useTranslation } from 'react-i18next';
 import 'leaflet/dist/leaflet.css';
 import { Button, Input, Select } from '../../../shared/components';
 import type { Driver, Vehicle } from '../../../types';
@@ -178,6 +179,7 @@ const squaredDistance = (a: MapPoint, b: MapPoint) => {
 };
 
 const TripForm = ({ vehicles, drivers, dark = false, isSubmitting = false, onSubmit, onCancel }: TripFormProps) => {
+  const { t } = useTranslation();
   const [values, setValues] = useState<TripFormValues>({
     vehicleId: '',
     userId: '',
@@ -233,11 +235,11 @@ const TripForm = ({ vehicles, drivers, dark = false, isSubmitting = false, onSub
   }, [values.distance, selectedVehicle?.consumption]);
 
   const etaHelperText = useMemo(() => {
-    if (!values.startTime) return 'Set a start time to calculate ETA.';
-    if (!routePlan?.durationSeconds) return 'Complete the route points to calculate ETA from the map.';
+    if (!values.startTime) return t('trips.form.startTimeForEta');
+    if (!routePlan?.durationSeconds) return t('trips.form.completeRouteForEta');
 
-    return `Map route time ${formatDuration(routePlan.durationSeconds)} + 1h spare time.`;
-  }, [routePlan?.durationSeconds, values.startTime]);
+    return t('trips.form.etaHelper', { duration: formatDuration(routePlan.durationSeconds) });
+  }, [routePlan?.durationSeconds, t, values.startTime]);
 
   const buildVehicleLabel = (vehicle: Vehicle) => (
     vehicle.plaque_immatriculation ? `${vehicle.name} (${vehicle.plaque_immatriculation})` : vehicle.name
@@ -271,13 +273,13 @@ const TripForm = ({ vehicles, drivers, dark = false, isSubmitting = false, onSub
 
   const vehicleOptions = useMemo(() => {
     const base = [
-      { value: '', label: 'Select a vehicle' },
+      { value: '', label: t('common.selectVehicle') },
       ...sortedVehicles.map((vehicle) => {
         const rec = recommendations?.vehicles?.find((v) => v.id === vehicle.id);
         const score = (rec as any)?.ml_score;
         return {
           value: vehicle.id,
-          label: buildVehicleLabel(vehicle) + (score ? ` (Score: ${Math.round(score)})` : ''),
+          label: buildVehicleLabel(vehicle) + (score ? t('common.scoreLabel', { score: Math.round(score) }) : ''),
         };
       }),
     ];
@@ -290,17 +292,17 @@ const TripForm = ({ vehicles, drivers, dark = false, isSubmitting = false, onSub
       });
     }
     return base;
-  }, [sortedVehicles, recommendations]);
+  }, [recommendations, sortedVehicles, t]);
 
   const driverOptions = useMemo(() => {
     const base = [
-      { value: '', label: 'Select a driver' },
+      { value: '', label: t('common.selectDriver') },
       ...sortedDrivers.map((driver) => {
         const rec = recommendations?.drivers?.find((d) => d.id === driver.id);
         const score = (rec as any)?.ml_score;
         return {
           value: driver.id,
-          label: driver.name + (score ? ` (Score: ${Math.round(score)})` : ''),
+          label: driver.name + (score ? t('common.scoreLabel', { score: Math.round(score) }) : ''),
         };
       }),
     ];
@@ -313,7 +315,7 @@ const TripForm = ({ vehicles, drivers, dark = false, isSubmitting = false, onSub
       });
     }
     return base;
-  }, [sortedDrivers, recommendations]);
+  }, [recommendations, sortedDrivers, t]);
 
   const handleVehicleChange = (vehicleId: string) => {
     const autoDriverId = vehicleId ? findDriverAssignedToVehicle(vehicleId)?.id ?? '' : '';
@@ -356,7 +358,7 @@ const TripForm = ({ vehicles, drivers, dark = false, isSubmitting = false, onSub
 
   const handleGetRecommendations = async () => {
     if (!values.startTime || !values.startLocation) {
-      setMapError('Please set a start time and location first to get accurate recommendations.');
+      setMapError(t('trips.form.recMapErrorStartLocation'));
       return;
     }
 
@@ -383,7 +385,7 @@ const TripForm = ({ vehicles, drivers, dark = false, isSubmitting = false, onSub
       }));
 
     } catch (err) {
-      setMapError('Failed to fetch ML recommendations. Using standard lists.');
+      setMapError(t('trips.form.recFetchError'));
     } finally {
       setIsFetchingRecs(false);
     }
@@ -421,7 +423,7 @@ const TripForm = ({ vehicles, drivers, dark = false, isSubmitting = false, onSub
 
     const response = await fetch(`https://nominatim.openstreetmap.org/reverse?${params.toString()}`);
     if (!response.ok) {
-      throw new Error('Failed to resolve location from map.');
+      throw new Error(t('trips.form.tech.resolveFromMapFail'));
     }
 
     const data = (await response.json()) as {
@@ -431,7 +433,7 @@ const TripForm = ({ vehicles, drivers, dark = false, isSubmitting = false, onSub
     };
 
     if (data.error || !data.display_name) {
-      throw new Error(data.error || 'No address found for selected point.');
+      throw new Error(data.error || t('trips.form.tech.noAddressForPoint'));
     }
 
     return formatLocationFromAddress(data.display_name, data.address);
@@ -450,7 +452,7 @@ const TripForm = ({ vehicles, drivers, dark = false, isSubmitting = false, onSub
 
     const response = await fetch(`https://nominatim.openstreetmap.org/search?${params.toString()}`);
     if (!response.ok) {
-      throw new Error('Failed to find this stop on map.');
+      throw new Error(t('trips.form.tech.stopNotOnMap'));
     }
 
     const data = (await response.json()) as Array<{ lat?: string; lon?: string }>;
@@ -495,7 +497,7 @@ const TripForm = ({ vehicles, drivers, dark = false, isSubmitting = false, onSub
         setIsResolvingLocation(true);
         const point = await resolvePointFromAddress(label);
         if (!point) {
-          setMapError(`Could not locate "${label}" on map.`);
+          setMapError(t('trips.form.tech.couldNotLocateOnMap', { label }));
           setEndpoints((prev) =>
             prev.map((endpoint) => (endpoint.id === endpointId ? { ...endpoint, point: null } : endpoint))
           );
@@ -508,7 +510,7 @@ const TripForm = ({ vehicles, drivers, dark = false, isSubmitting = false, onSub
         );
         setErrors((prev) => ({ ...prev, endLocation: undefined }));
       } catch (error) {
-        const message = error instanceof Error ? error.message : 'Could not locate this stop on map.';
+        const message = error instanceof Error ? error.message : t('trips.form.tech.couldNotLocateStop');
         setMapError(message);
         setEndpoints((prev) =>
           prev.map((endpoint) => (endpoint.id === endpointId ? { ...endpoint, point: null } : endpoint))
@@ -537,7 +539,7 @@ const TripForm = ({ vehicles, drivers, dark = false, isSubmitting = false, onSub
         onFieldChange('startLocation', address);
         setErrors((prev) => ({ ...prev, startLocation: undefined }));
       } catch (error) {
-        const message = error instanceof Error ? error.message : 'Could not resolve the selected point.';
+        const message = error instanceof Error ? error.message : t('trips.form.tech.couldNotResolvePoint');
         setMapError(message);
       } finally {
         setIsResolvingLocation(false);
@@ -547,7 +549,7 @@ const TripForm = ({ vehicles, drivers, dark = false, isSubmitting = false, onSub
     }
 
     if (!activeEndpointId) {
-      setMapError('Choose an endpoint row first, then click on the map.');
+      setMapError(t('trips.form.tech.chooseEndpointFirst'));
       return;
     }
 
@@ -570,7 +572,7 @@ const TripForm = ({ vehicles, drivers, dark = false, isSubmitting = false, onSub
 
       setErrors((prev) => ({ ...prev, endLocation: undefined }));
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'Could not resolve the selected point.';
+      const message = error instanceof Error ? error.message : t('trips.form.tech.couldNotResolvePoint');
       setMapError(message);
     } finally {
       setIsResolvingLocation(false);
@@ -605,7 +607,7 @@ const TripForm = ({ vehicles, drivers, dark = false, isSubmitting = false, onSub
 
         const response = await fetch(`https://router.project-osrm.org/trip/v1/driving/${coordinateString}?${params.toString()}`);
         if (!response.ok) {
-          throw new Error('Failed to optimize route.');
+          throw new Error(t('trips.form.tech.optimizeRouteFail'));
         }
 
         const data = (await response.json()) as {
@@ -616,7 +618,7 @@ const TripForm = ({ vehicles, drivers, dark = false, isSubmitting = false, onSub
         };
 
         if (data.code !== 'Ok' || !data.trips?.length || !data.waypoints?.length) {
-          throw new Error(data.message || 'Could not compute route for selected points.');
+          throw new Error(data.message || t('trips.form.tech.couldNotComputeRoute'));
         }
 
         const remainingEndpoints = [...readyEndpoints];
@@ -676,7 +678,7 @@ const TripForm = ({ vehicles, drivers, dark = false, isSubmitting = false, onSub
           .map(({ endpointId, label, point }) => ({ endpointId, label, point }));
 
         if (orderedStops.length !== readyEndpoints.length) {
-          throw new Error('Could not resolve optimized stop order.');
+          throw new Error(t('trips.form.tech.couldNotResolveOrder'));
         }
 
         const distanceKm = data.trips[0].distance / 1000;
@@ -722,7 +724,7 @@ const TripForm = ({ vehicles, drivers, dark = false, isSubmitting = false, onSub
           distance: fallbackDistance > 0 ? fallbackDistance.toFixed(1) : '',
         }));
         setErrors((prev) => ({ ...prev, endLocation: undefined, distance: undefined }));
-        setMapError('Routing service unavailable. Using endpoint order as entered with estimated distance.');
+        setMapError(t('trips.form.tech.routingFallback'));
       } finally {
         if (!cancelled) {
           setIsOptimizingRoute(false);
@@ -765,15 +767,15 @@ const TripForm = ({ vehicles, drivers, dark = false, isSubmitting = false, onSub
   const validate = () => {
     const nextErrors: Partial<Record<keyof TripFormValues, string>> = {};
 
-    if (!values.vehicleId) nextErrors.vehicleId = 'Vehicle is required.';
-    if (!values.userId) nextErrors.userId = 'Driver is required.';
-    if (values.startLocation.trim().length < 2) nextErrors.startLocation = 'Start location is required.';
-    if (values.endLocation.trim().length < 2) nextErrors.endLocation = 'Destination is required.';
-    if (!values.startTime) nextErrors.startTime = 'Start time is required.';
-    if (!values.endTime) nextErrors.endTime = 'ETA is calculated after route points and start time are set.';
-    if (!values.region) nextErrors.region = 'Region is required.';
+    if (!values.vehicleId) nextErrors.vehicleId = t('trips.form.errors.vehicleRequired');
+    if (!values.userId) nextErrors.userId = t('trips.form.errors.driverRequired');
+    if (values.startLocation.trim().length < 2) nextErrors.startLocation = t('trips.form.errors.startRequired');
+    if (values.endLocation.trim().length < 2) nextErrors.endLocation = t('trips.form.errors.destinationRequired');
+    if (!values.startTime) nextErrors.startTime = t('trips.form.errors.startTimeRequired');
+    if (!values.endTime) nextErrors.endTime = t('trips.form.errors.etaRequired');
+    if (!values.region) nextErrors.region = t('trips.form.errors.regionRequired');
     if (!values.requiredCapacity || Number(values.requiredCapacity) <= 0) {
-      nextErrors.requiredCapacity = 'Capacity must be greater than 0.';
+      nextErrors.requiredCapacity = t('trips.form.errors.capacityPositive');
     }
 
     if (values.startTime && values.endTime) {
@@ -784,25 +786,25 @@ const TripForm = ({ vehicles, drivers, dark = false, isSubmitting = false, onSub
         Number.isNaN(endDate.getTime()) ||
         endDate <= startDate
       ) {
-        nextErrors.endTime = 'ETA must be after the start time.';
+        nextErrors.endTime = t('trips.form.errors.etaAfterStart');
       }
     }
 
     const distanceValue = Number(values.distance);
 
     if (!values.distance || Number.isNaN(distanceValue) || distanceValue <= 0) {
-      nextErrors.distance = 'Distance must be a positive number.';
+      nextErrors.distance = t('trips.form.errors.distancePositive');
     }
 
     if (values.revenue.trim().length > 0) {
       const revenueValue = Number(values.revenue);
       if (Number.isNaN(revenueValue) || revenueValue < 0) {
-        nextErrors.revenue = 'Revenue must be a valid non-negative number.';
+        nextErrors.revenue = t('trips.form.errors.revenueInvalid');
       }
     }
 
     if (values.notes.trim().length === 1) {
-      nextErrors.notes = 'Notes must be at least 2 characters if provided.';
+      nextErrors.notes = t('trips.form.errors.notesLength');
     }
 
     setErrors(nextErrors);
@@ -849,27 +851,27 @@ const TripForm = ({ vehicles, drivers, dark = false, isSubmitting = false, onSub
     <form onSubmit={handleSubmit} className="space-y-5">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <Input
-          label="Start location"
+          label={t('trips.form.startLocation')}
           value={values.startLocation}
           onChange={(e) => onFieldChange('startLocation', e.target.value)}
           error={errors.startLocation}
-          placeholder="Type or pick from map"
+          placeholder={t('trips.form.startPlaceholder')}
         />
         <Input
-          label="Final destination"
+          label={t('trips.form.finalDestination')}
           value={values.endLocation}
           onChange={(e) => onFieldChange('endLocation', e.target.value)}
           error={errors.endLocation}
-          placeholder="Type or calculated from route"
+          placeholder={t('trips.form.endPlaceholder')}
         />
       </div>
 
       <div className={`rounded-2xl border p-4 space-y-3 ${dark ? 'border-slate-700/80 bg-slate-900/30' : 'border-slate-200/90 bg-white/70'}`}>
         <div className="flex items-center justify-between gap-3">
           <div>
-            <p className={`text-sm font-semibold ${dark ? 'text-slate-100' : 'text-slate-900'}`}>Endpoints</p>
+            <p className={`text-sm font-semibold ${dark ? 'text-slate-100' : 'text-slate-900'}`}>{t('trips.form.endpointsTitle')}</p>
             <p className={`text-xs ${dark ? 'text-slate-400' : 'text-slate-500'}`}>
-              Add endpoints on the map. The final endpoint becomes the destination, and earlier endpoints are stored as stops.
+              {t('trips.form.endpointsHint')}
             </p>
           </div>
           <Button
@@ -879,7 +881,7 @@ const TripForm = ({ vehicles, drivers, dark = false, isSubmitting = false, onSub
             onClick={addEndpoint}
             disabled={isResolvingLocation || isOptimizingRoute}
           >
-            Add stop
+            {t('trips.form.addStop')}
           </Button>
         </div>
 
@@ -892,7 +894,7 @@ const TripForm = ({ vehicles, drivers, dark = false, isSubmitting = false, onSub
               <Input
                 value={endpoint.label}
                 onChange={(e) => handleEndpointLabelChange(endpoint.id, e.target.value)}
-                placeholder="Type stop name/address or set from map"
+                placeholder={t('trips.form.stopPlaceholder')}
                 className="flex-1"
               />
               <Button
@@ -902,7 +904,7 @@ const TripForm = ({ vehicles, drivers, dark = false, isSubmitting = false, onSub
                 onClick={() => beginEndpointPick(endpoint.id)}
                 disabled={isResolvingLocation || isOptimizingRoute}
               >
-                Set
+                {t('common.set')}
               </Button>
               <Button
                 type="button"
@@ -910,7 +912,7 @@ const TripForm = ({ vehicles, drivers, dark = false, isSubmitting = false, onSub
                 onClick={() => removeEndpoint(endpoint.id)}
                 disabled={endpoints.length === 1 || isResolvingLocation || isOptimizingRoute}
               >
-                Remove
+                {t('common.remove')}
               </Button>
             </div>
           ))}
@@ -920,9 +922,9 @@ const TripForm = ({ vehicles, drivers, dark = false, isSubmitting = false, onSub
       <div className={`rounded-2xl border p-4 space-y-3 ${dark ? 'border-slate-700/80 bg-slate-900/30' : 'border-slate-200/90 bg-white/70'}`}>
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           <div>
-            <p className={`text-sm font-semibold ${dark ? 'text-slate-100' : 'text-slate-900'}`}>Pick locations on map</p>
+            <p className={`text-sm font-semibold ${dark ? 'text-slate-100' : 'text-slate-900'}`}>{t('trips.form.mapSectionTitle')}</p>
             <p className={`text-xs ${dark ? 'text-slate-400' : 'text-slate-500'}`}>
-              Pick Start for the departure point, then choose endpoint rows and click map to set each stop.
+              {t('trips.form.mapSectionHint')}
             </p>
           </div>
           <div className="flex items-center gap-2">
@@ -936,7 +938,7 @@ const TripForm = ({ vehicles, drivers, dark = false, isSubmitting = false, onSub
               }}
               disabled={isResolvingLocation}
             >
-              Set start
+              {t('trips.form.setStart')}
             </Button>
           </div>
         </div>
@@ -969,7 +971,7 @@ const TripForm = ({ vehicles, drivers, dark = false, isSubmitting = false, onSub
                       fillOpacity: 0.85,
                     }}
                   >
-                    <title>{`Endpoint ${index + 1}`}</title>
+                    <title>{t('common.endpointTitle', { n: index + 1 })}</title>
                   </CircleMarker>
                 )
             )}
@@ -984,17 +986,17 @@ const TripForm = ({ vehicles, drivers, dark = false, isSubmitting = false, onSub
                 : 'border-emerald-200 bg-emerald-50 text-emerald-700'
               : dark
                 ? 'border-amber-900/40 bg-amber-950/20 text-amber-200'
-                : 'border-amber-200 bg-amber-50 text-amber-700'
+              : 'border-amber-200 bg-amber-50 text-amber-700'
           }`}>
-            {routePlan.source === 'optimized' ? 'Optimized route order' : 'Fallback route order'}: {routePlan.orderedStops.map((stop, i) => `${i + 1}. ${stop.label}`).join(' -> ')}
+            {routePlan.source === 'optimized' ? t('trips.form.optimizedOrder') : t('trips.form.fallbackOrder')}: {routePlan.orderedStops.map((stop, i) => `${i + 1}. ${stop.label}`).join(t('common.rangeArrow'))}
             {routePlan.orderedStops.length > 0 && (
               <span>
-                {' '}• Final destination: {routePlan.orderedStops[routePlan.orderedStops.length - 1]?.label}
+                {` ${t('trips.form.finalDestInline', { label: routePlan.orderedStops[routePlan.orderedStops.length - 1]?.label })}`}
               </span>
             )}
             {routePlan.durationSeconds && (
               <span>
-                {' '}• ETA uses {formatDuration(routePlan.durationSeconds)} route time + 1h buffer
+                {` ${t('trips.form.etaHelper', { duration: formatDuration(routePlan.durationSeconds) })}`}
               </span>
             )}
           </div>
@@ -1002,77 +1004,77 @@ const TripForm = ({ vehicles, drivers, dark = false, isSubmitting = false, onSub
 
         {(isResolvingLocation || isOptimizingRoute || mapError) && (
           <div className={`rounded-xl border px-4 py-3 text-sm ${mapError ? (dark ? 'border-red-900/50 bg-red-950/30 text-red-200' : 'border-red-200 bg-red-50 text-red-700') : (dark ? 'border-slate-700 bg-slate-800/70 text-slate-200' : 'border-slate-200 bg-slate-50 text-slate-700')}`}>
-            {mapError || (isOptimizingRoute ? 'Optimizing best route and total distance...' : 'Resolving selected location...')}
+            {mapError || (isOptimizingRoute ? t('trips.form.optimizing') : t('trips.form.resolving'))}
           </div>
         )}
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <Input
-          label="Start date/time"
+          label={t('trips.form.startDateTime')}
           type="datetime-local"
           value={values.startTime}
           onChange={(e) => onFieldChange('startTime', e.target.value)}
           error={errors.startTime}
         />
         <Input
-          label="ETA time"
+          label={t('trips.form.etaLabel')}
           type="datetime-local"
           value={values.endTime}
           readOnly
           error={errors.endTime}
           helperText={etaHelperText}
-          placeholder="Calculated from route + 1h"
+          placeholder={t('trips.form.etaPlaceholder')}
           className="cursor-not-allowed"
         />
         <Input
-          label="Region"
+          label={t('common.region')}
           value={values.region}
           onChange={(e) => onFieldChange('region', e.target.value)}
           error={errors.region}
-          placeholder="e.g. Tunis, Sfax"
+          placeholder={t('trips.form.regionPlaceholder')}
         />
         <Input
-          label="Req. Capacity (kg)"
+          label={t('trips.form.reqCapacity')}
           type="number"
           min="1"
           value={values.requiredCapacity}
           onChange={(e) => onFieldChange('requiredCapacity', e.target.value)}
           error={errors.requiredCapacity}
-          placeholder="Min capacity"
+          placeholder={t('trips.form.minCapacityPh')}
         />
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <Input
-          label="Distance (km)"
+          label={t('trips.form.distanceKm')}
           type="number"
           min="1"
           step="0.1"
           value={values.distance}
           error={errors.distance}
-          placeholder="Calculated automatically"
+          placeholder={t('trips.form.distanceAutoPh')}
           readOnly
         />
         <Input
-          label="Revenue (TND)"
+          label={t('trips.form.revenueTnd')}
           type="number"
           min="0"
           step="0.1"
           value={values.revenue}
           onChange={(e) => onFieldChange('revenue', e.target.value)}
           error={errors.revenue}
-          placeholder="Optional"
+          placeholder={t('common.optional')}
         />
       </div>
 
       <div>
-        <label className="block text-[13px] text-gray-500 dark:text-slate-400 mb-1.5">Notes (optional)</label>
+        <label className="block text-[13px] text-gray-500 dark:text-slate-400 mb-1.5">{t('trips.form.notesOptional')}</label>
         <textarea
           value={values.notes}
           onChange={(e) => onFieldChange('notes', e.target.value)}
           rows={3}
-          placeholder="Trip instructions, cargo details, or anything important for the driver..."
+          placeholder={t('trips.form.notesPlaceholder')}
           className={`w-full px-4 py-2.5 border text-sm rounded-xl shadow-[0_1px_2px_rgba(0,0,0,0.02)] transition-all focus:outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand ${
             dark
               ? 'bg-slate-800/50 border-slate-700 text-white placeholder:text-slate-500 hover:border-slate-600'
@@ -1083,16 +1085,19 @@ const TripForm = ({ vehicles, drivers, dark = false, isSubmitting = false, onSub
       </div>
 
       <div className={`rounded-xl border px-4 py-3 text-sm ${dark ? 'border-slate-700 bg-slate-800/60 text-slate-200' : 'border-slate-200 bg-slate-50 text-slate-700'}`}>
-        Estimated fuel consumption:{' '}
+        {`${t('trips.form.estimatedFuel')}: `}
         {estimatedFuelLiters !== null
-          ? `${estimatedFuelLiters.toFixed(1)} L${selectedVehicle?.consumption ? ` (based on ${selectedVehicle.consumption} L/100km)` : ''}`
-          : 'Select a vehicle with Consumption (L/100km) and complete route points to estimate fuel.'}
+          ? t('trips.form.estimatedFuelFromConsumption', {
+              fuel: estimatedFuelLiters.toFixed(1),
+              consumption: selectedVehicle?.consumption ?? '',
+            })
+          : t('trips.form.estimatedFuelHint')}
       </div>
 
       <div className={`flex flex-col sm:flex-row items-center justify-between p-4 rounded-2xl border ${dark ? 'border-indigo-500/30 bg-indigo-500/5' : 'border-indigo-100 bg-indigo-50/50'} gap-4`}>
         <div className="flex-1">
-          <p className={`text-sm font-semibold ${dark ? 'text-indigo-300' : 'text-indigo-700'}`}>Smart Recommendation</p>
-          <p className="text-xs text-gray-500 dark:text-slate-400">Rank drivers and vehicles for this specific route.</p>
+          <p className={`text-sm font-semibold ${dark ? 'text-indigo-300' : 'text-indigo-700'}`}>{t('trips.form.smartRecTitle')}</p>
+          <p className="text-xs text-gray-500 dark:text-slate-400">{t('trips.form.smartRecHint')}</p>
         </div>
         <Button
           type="button"
@@ -1103,13 +1108,13 @@ const TripForm = ({ vehicles, drivers, dark = false, isSubmitting = false, onSub
           disabled={!values.startTime || isFetchingRecs}
           className="bg-indigo-600 hover:bg-indigo-700 text-white shadow-sm whitespace-nowrap"
         >
-          {recommendations ? 'Refresh Suggestions' : 'Get ML Suggestions'}
+          {recommendations ? t('trips.form.refreshSuggestions') : t('trips.form.getMlSuggestions')}
         </Button>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
-          <label className="block text-[13px] text-gray-500 dark:text-slate-400 mb-1.5">Vehicle</label>
+          <label className="block text-[13px] text-gray-500 dark:text-slate-400 mb-1.5">{t('trips.form.vehicleLabel')}</label>
           <Select
             value={values.vehicleId}
             onChange={handleVehicleChange}
@@ -1121,7 +1126,7 @@ const TripForm = ({ vehicles, drivers, dark = false, isSubmitting = false, onSub
         </div>
 
         <div>
-          <label className="block text-[13px] text-gray-500 dark:text-slate-400 mb-1.5">Driver</label>
+          <label className="block text-[13px] text-gray-500 dark:text-slate-400 mb-1.5">{t('trips.form.driverLabel')}</label>
           <Select
             value={values.userId}
             onChange={handleDriverChange}
@@ -1135,10 +1140,10 @@ const TripForm = ({ vehicles, drivers, dark = false, isSubmitting = false, onSub
 
       <div className="flex items-center justify-end gap-3 pt-2">
         <Button type="button" variant="secondary" onClick={onCancel} disabled={isSubmitting}>
-          Cancel
+          {t('common.cancel')}
         </Button>
         <Button type="submit" isLoading={isSubmitting}>
-          Create trip
+          {t('trips.form.createTrip')}
         </Button>
       </div>
     </form>

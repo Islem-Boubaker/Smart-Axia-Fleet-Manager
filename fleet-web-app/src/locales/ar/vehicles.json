@@ -1,0 +1,60 @@
+{
+  "vehicles": {
+    "title": "المركبات",
+    "description": "إدارة المركبات والتعيينات وإشارات الصيانة.",
+    "addNew": "إضافة مركبة",
+    "edit": "تعديل المركبة",
+    "searchPlaceholder": "ابحث بالاسم أو المعرف...",
+    "status": {
+      "available": "متاح",
+      "inUse": "قيد الاستخدام",
+      "maintenance": "صيانة",
+      "inactive": "غير نشط",
+      "filterAvailable": "الحالة: متاح",
+      "filterInUse": "الحالة: قيد الاستخدام",
+      "filterMaintenance": "الحالة: صيانة",
+      "filterInactive": "الحالة: غير نشط",
+      "filterAll": "كل الحالات"
+    },
+    "table": {
+      "loading": "جاري تحميل المركبات...",
+      "empty": "لا مركبات للفلاتر المحددة.",
+      "colVehicle": "المركبة",
+      "colStatus": "الحالة",
+      "colDriver": "السائق",
+      "colLastTrip": "آخر رحلة",
+      "colMaintenance": "توصية الصيانة",
+      "colActions": "إجراءات",
+      "noImage": "لا صورة",
+      "noRecommendations": "لا توصيات",
+      "showMore": "عرض {{n}} إضافية",
+      "hide": "إخفاء",
+      "hideRecAria": "إخفاء التوصيات الإضافية لـ {{name}}",
+      "showRecAria": "عرض التوصيات الإضافية لـ {{name}}",
+      "rowActions": "إجراءات الصف",
+      "viewDetails": "عرض تفاصيل المركبة",
+      "editVehicle": "تعديل المركبة",
+      "deleteVehicle": "حذف المركبة",
+      "dataTableAria": "جدول المركبات"
+    },
+    "details": {
+      "title": "تفاصيل المركبة",
+      "loading": "جاري التحميل...",
+      "closeAria": "إغلاق التفاصيل",
+      "editAria": "تعديل هذه المركبة",
+      "vehicleId": "معرف المركبة",
+      "assignmentDriver": "السائق:",
+      "assignmentRoute": "المسار:",
+      "assignmentStatus": "الحالة:",
+      "assignmentStart": "البداية:",
+      "recommendationsHeading": "توصيات الصيانة بالذكاء الاصطناعي",
+      "generate": "إنشاء"
+    },
+    "form": {
+      "submitCreate": "إنشاء المركبة",
+      "submitUpdate": "تحديث المركبة",
+      "activeLabel": "المركبة نشطة",
+      "needsMaintenanceLabel": "تحتاج صيانة"
+    }
+  }
+}

@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useNavigate, useOutletContext } from 'react-router-dom';
 import { FiPlus } from 'react-icons/fi';
 import { Button, GlobalCard } from '../../../shared/components';
@@ -27,6 +28,7 @@ interface ThemeContext {
 
 const DashboardPage = () => {
   const { dark } = useOutletContext<ThemeContext>();
+  const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const [selectedTrip, setSelectedTrip] = useState<Trip | null>(null);
   const {
@@ -83,13 +85,13 @@ const DashboardPage = () => {
 
   const todayLabel = useMemo(
     () =>
-      new Date().toLocaleDateString('en-GB', {
+      new Date().toLocaleDateString(i18n.language || 'en', {
         weekday: 'long',
         day: 'numeric',
         month: 'long',
         year: 'numeric',
       }),
-    []
+    [i18n.language]
   );
 
   if (loading) {
@@ -125,14 +127,14 @@ const DashboardPage = () => {
     <div className={`${pageShellClasses(dark)} ${pageShellInnerSpacing} animate-fade-in`}>
       <div className="fleet-hero relative grid grid-cols-1 lg:grid-cols-2 gap-4 items-center">
         <div>
-          <p className="fleet-hero-kicker">Operations</p>
-          <h1 className="fleet-hero-title">Fleet Dashboard</h1>
-          <p className="fleet-hero-subtitle">Operations center overview for {todayLabel}</p>
+          <p className="fleet-hero-kicker">{t('dashboard.sectionLabel')}</p>
+          <h1 className="fleet-hero-title">{t('dashboard.title')}</h1>
+          <p className="fleet-hero-subtitle">{t('dashboard.overviewLine', { date: todayLabel })}</p>
         </div>
         <div className="justify-self-start lg:justify-self-end">
           <Button onClick={() => navigate(ROUTES.TRIPS)} className="rounded-full shadow-sm">
             <FiPlus className="mr-1.5 h-4 w-4" />
-            New Trip
+            {t('dashboard.newTrip')}
           </Button>
         </div>
       </div>
@@ -172,7 +174,7 @@ const DashboardPage = () => {
       <GlobalCard
         isOpen={Boolean(selectedTrip)}
         onClose={() => setSelectedTrip(null)}
-        title="Trip details"
+        title={t('dashboard.tripDetails')}
         maxWidth="2xl"
       >
         {selectedTrip ? <TripDetailsView trip={selectedTrip} dark={dark} /> : null}

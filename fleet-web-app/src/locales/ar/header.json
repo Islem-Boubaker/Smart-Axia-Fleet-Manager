@@ -1,0 +1,17 @@
+{
+  "header": {
+    "search": "بحث",
+    "searchPlaceholder": "ابحث في الأسطول والرحلات والسائقين…",
+    "notifications": "الإشعارات",
+    "language": "اللغة",
+    "goodMorning": "صباح الخير",
+    "goodAfternoon": "مساء الخير",
+    "goodEvening": "مساء الخير",
+    "activitySubtitle": "اطّلع على أحدث نشاطات أسطولك التشغيلية.",
+    "openMenu": "فتح القائمة",
+    "lightMode": "الوضع الفاتح",
+    "darkMode": "الوضع الداكن",
+    "closeMenu": "إغلاق القائمة",
+    "searchVehiclesDriversTrips": "ابحث عن مركبات وسائقين ورحلات..."
+  }
+}

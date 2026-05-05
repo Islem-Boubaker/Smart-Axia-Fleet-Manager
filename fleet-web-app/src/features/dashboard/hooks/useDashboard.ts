@@ -1,5 +1,6 @@
 import { useCallback, useMemo, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 import { driversService } from '../../drivers/services/drivers.service';
 import { maintenanceService } from '../../maintenance/services/maintenance.service';
 import { buildMaintenancePrefillUrl } from '../../maintenance/utils/maintenancePrefill';
@@ -97,10 +98,10 @@ const normalizeNotifications = (payload: unknown): NotificationRecord[] => {
   return [];
 };
 
-const formatDateLabel = (value?: string): string => {
+const formatDateLabel = (value?: string, locale = 'en', fallback = 'Unknown'): string => {
   const date = toDate(value);
-  if (!date) return 'Unknown date';
-  return date.toLocaleDateString('en-GB');
+  if (!date) return fallback;
+  return date.toLocaleDateString(locale);
 };
 
 const daysUntilDate = (value?: string): number | null => {
@@ -118,12 +119,26 @@ const daysUntilDate = (value?: string): number | null => {
   return Math.floor(diffMs / (24 * 60 * 60 * 1000));
 };
 
-const vehicleLabel = (vehicle: Vehicle): string => {
-  const name = vehicle.name || 'Vehicle';
+const vehicleLabel = (vehicle: Vehicle, fallbackLabel: string): string => {
+  const name = vehicle.name || fallbackLabel;
   return vehicle.plaque_immatriculation ? `${name} - ${vehicle.plaque_immatriculation}` : name;
 };
 
-const buildExpiryAlerts = (vehicles: Vehicle[]): NotificationRecord[] => {
+const translateOr = (
+  t: (key: string, options?: Record<string, unknown>) => string,
+  key: string,
+  fallback: string,
+  options?: Record<string, unknown>
+) => {
+  const translated = t(key, options);
+  return translated === key ? fallback : translated;
+};
+
+const buildExpiryAlerts = (
+  vehicles: Vehicle[],
+  locale: string,
+  t: (key: string, options?: Record<string, unknown>) => string
+): NotificationRecord[] => {
   const nowIso = new Date().toISOString();
   const expiryAlerts: NotificationRecord[] = [];
 
@@ -131,7 +146,44 @@ const buildExpiryAlerts = (vehicles: Vehicle[]): NotificationRecord[] => {
     const insuranceDays = daysUntilDate(vehicle.insurance_expiry_date || undefined);
     if (insuranceDays !== null && insuranceDays <= 7) {
       const overdue = insuranceDays < 0;
-      const whenText = overdue ? `${Math.abs(insuranceDays)} day(s) overdue` : `due in ${insuranceDays} day(s)`;
+      const labeledVehicle = vehicleLabel(vehicle, t('common.vehicle'));
+      const whenText = overdue
+        ? translateOr(
+            t,
+            'dashboard.alerts.daysOverdue',
+            `${Math.abs(insuranceDays)} day(s) overdue`,
+            { count: Math.abs(insuranceDays) }
+          )
+        : translateOr(
+            t,
+            'dashboard.alerts.dueInDays',
+            `due in ${insuranceDays} day(s)`,
+            { count: insuranceDays }
+          );
+      const formattedDate = formatDateLabel(vehicle.insurance_expiry_date || undefined, locale, t('common.unknown'));
+      const title = overdue
+        ? translateOr(
+            t,
+            'dashboard.alerts.insuranceOverdueTitle',
+            `Insurance overdue - ${labeledVehicle}`,
+            { vehicle: labeledVehicle }
+          )
+        : translateOr(
+            t,
+            'dashboard.alerts.insuranceDueSoonTitle',
+            `Insurance due soon - ${labeledVehicle}`,
+            { vehicle: labeledVehicle }
+          );
+      const message = translateOr(
+        t,
+        'dashboard.alerts.insuranceMessage',
+        `${labeledVehicle} insurance expires on ${formattedDate} (${whenText}).`,
+        {
+          vehicle: labeledVehicle,
+          date: formattedDate,
+          whenText,
+        }
+      );
 
       expiryAlerts.push({
         id: `dashboard-insurance-expiry-${vehicle.id}`,
@@ -139,10 +191,8 @@ const buildExpiryAlerts = (vehicles: Vehicle[]): NotificationRecord[] => {
         type: 'vehicle_insurance_expiry',
         group: 'vehicle',
         priority: overdue ? 'high' : 'medium',
-        title: overdue
-          ? `Insurance overdue - ${vehicleLabel(vehicle)}`
-          : `Insurance due soon - ${vehicleLabel(vehicle)}`,
-        message: `${vehicleLabel(vehicle)} insurance expires on ${formatDateLabel(vehicle.insurance_expiry_date || undefined)} (${whenText}).`,
+        title,
+        message,
         entityType: 'vehicle',
         entityId: vehicle.id,
         actionUrl: buildMaintenancePrefillUrl({
@@ -153,11 +203,11 @@ const buildExpiryAlerts = (vehicles: Vehicle[]): NotificationRecord[] => {
           type: 'Insurance Renewal',
           priority: overdue ? 'high' : 'medium',
           description: [
-            'Created from insurance expiry alert.',
+            translateOr(t, 'dashboard.alerts.prefillInsurance', 'Created from insurance expiry alert.'),
             '',
-            `${vehicleLabel(vehicle)} insurance expires on ${formatDateLabel(vehicle.insurance_expiry_date || undefined)} (${whenText}).`,
+            message,
             '',
-            `Vehicle: ${vehicleLabel(vehicle)}`,
+            translateOr(t, 'dashboard.alerts.vehicleLine', `Vehicle: ${labeledVehicle}`, { vehicle: labeledVehicle }),
           ].join('\n'),
         }),
         metadata: {
@@ -181,7 +231,44 @@ const buildExpiryAlerts = (vehicles: Vehicle[]): NotificationRecord[] => {
     const techVisitDays = daysUntilDate(vehicle.tech_visit_expiry_date || undefined);
     if (techVisitDays !== null && techVisitDays <= 7) {
       const overdue = techVisitDays < 0;
-      const whenText = overdue ? `${Math.abs(techVisitDays)} day(s) overdue` : `due in ${techVisitDays} day(s)`;
+      const labeledVehicle = vehicleLabel(vehicle, t('common.vehicle'));
+      const whenText = overdue
+        ? translateOr(
+            t,
+            'dashboard.alerts.daysOverdue',
+            `${Math.abs(techVisitDays)} day(s) overdue`,
+            { count: Math.abs(techVisitDays) }
+          )
+        : translateOr(
+            t,
+            'dashboard.alerts.dueInDays',
+            `due in ${techVisitDays} day(s)`,
+            { count: techVisitDays }
+          );
+      const formattedDate = formatDateLabel(vehicle.tech_visit_expiry_date || undefined, locale, t('common.unknown'));
+      const title = overdue
+        ? translateOr(
+            t,
+            'dashboard.alerts.techVisitOverdueTitle',
+            `Tech visit overdue - ${labeledVehicle}`,
+            { vehicle: labeledVehicle }
+          )
+        : translateOr(
+            t,
+            'dashboard.alerts.techVisitDueSoonTitle',
+            `Tech visit due soon - ${labeledVehicle}`,
+            { vehicle: labeledVehicle }
+          );
+      const message = translateOr(
+        t,
+        'dashboard.alerts.techVisitMessage',
+        `${labeledVehicle} technical visit expires on ${formattedDate} (${whenText}).`,
+        {
+          vehicle: labeledVehicle,
+          date: formattedDate,
+          whenText,
+        }
+      );
 
       expiryAlerts.push({
         id: `dashboard-techvisit-expiry-${vehicle.id}`,
@@ -189,10 +276,8 @@ const buildExpiryAlerts = (vehicles: Vehicle[]): NotificationRecord[] => {
         type: 'vehicle_tech_visit_expiry',
         group: 'vehicle',
         priority: overdue ? 'high' : 'medium',
-        title: overdue
-          ? `Tech visit overdue - ${vehicleLabel(vehicle)}`
-          : `Tech visit due soon - ${vehicleLabel(vehicle)}`,
-        message: `${vehicleLabel(vehicle)} technical visit expires on ${formatDateLabel(vehicle.tech_visit_expiry_date || undefined)} (${whenText}).`,
+        title,
+        message,
         entityType: 'vehicle',
         entityId: vehicle.id,
         actionUrl: buildMaintenancePrefillUrl({
@@ -203,11 +288,11 @@ const buildExpiryAlerts = (vehicles: Vehicle[]): NotificationRecord[] => {
           type: 'Technical Visit',
           priority: overdue ? 'high' : 'medium',
           description: [
-            'Created from technical visit expiry alert.',
+            translateOr(t, 'dashboard.alerts.prefillTechVisit', 'Created from technical visit expiry alert.'),
             '',
-            `${vehicleLabel(vehicle)} technical visit expires on ${formatDateLabel(vehicle.tech_visit_expiry_date || undefined)} (${whenText}).`,
+            message,
             '',
-            `Vehicle: ${vehicleLabel(vehicle)}`,
+            translateOr(t, 'dashboard.alerts.vehicleLine', `Vehicle: ${labeledVehicle}`, { vehicle: labeledVehicle }),
           ].join('\n'),
         }),
         metadata: {
@@ -255,6 +340,7 @@ const fallbackDriver = (id: string, name: string): Driver => ({
 });
 
 export const useDashboard = () => {
+  const { t, i18n } = useTranslation();
   const queryClient = useQueryClient();
   const [alerts, setAlerts] = useState<NotificationRecord[]>([]);
 
@@ -284,9 +370,10 @@ export const useDashboard = () => {
   const drivers = dashboardQuery.data?.drivers ?? [];
   const trips = dashboardQuery.data?.trips ?? [];
   const maintenances = dashboardQuery.data?.maintenances ?? [];
+  const locale = i18n.language || 'en';
 
   const computedAlerts = useMemo(() => {
-    const expiryAlerts = buildExpiryAlerts(vehicles);
+    const expiryAlerts = buildExpiryAlerts(vehicles, locale, t);
     return (dashboardQuery.data?.notifications ?? [])
       .filter((n) => !n.read && !n.isArchived)
       .concat(expiryAlerts)
@@ -295,7 +382,7 @@ export const useDashboard = () => {
         if (severity !== 0) return severity;
         return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
       });
-  }, [dashboardQuery.data?.notifications, vehicles]);
+  }, [dashboardQuery.data?.notifications, locale, t, vehicles]);
 
   const visibleAlerts = alerts.length > 0 ? alerts : computedAlerts;
 

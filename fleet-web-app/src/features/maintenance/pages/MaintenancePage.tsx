@@ -1,4 +1,5 @@
 import { useState, useCallback, useEffect, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useOutletContext, useSearchParams } from 'react-router-dom';
 
 import { GlobalCard } from '../../../shared/components';
@@ -16,6 +17,7 @@ interface ThemeContext {
 
 const MaintenancePage = () => {
   const { dark } = useOutletContext<ThemeContext>();
+  const { t, i18n } = useTranslation();
   const [searchParams, setSearchParams] = useSearchParams();
   const {
     records,
@@ -34,6 +36,7 @@ const MaintenancePage = () => {
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [editError, setEditError] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
+  const locale = i18n.language || 'en';
 
   const prefilledMaintenance = useMemo(() => {
     if (searchParams.get('schedule') !== '1') return undefined;
@@ -68,10 +71,10 @@ const MaintenancePage = () => {
   const normalizeMaintenanceErrorMessage = useCallback((message?: string | null, fallback?: string) => {
     const normalized = String(message || '').trim().toLowerCase();
     if (normalized.includes('only available vehicles can be scheduled for maintenance')) {
-      return fallback || 'Failed to schedule maintenance.';
+      return fallback || t('maintenance.errors.scheduleFailed');
     }
-    return message || fallback || 'Failed to schedule maintenance.';
-  }, []);
+    return message || fallback || t('maintenance.errors.scheduleFailed');
+  }, [t]);
 
   const handleScheduleMaintenance = useCallback(async (data: Record<string, unknown>) => {
     try {
@@ -90,28 +93,28 @@ const MaintenancePage = () => {
         : null;
 
       if (status === 422) {
-        setSubmitError(detailed || message || 'Validation error: please complete all required fields.');
+        setSubmitError(detailed || message || t('maintenance.errors.validation'));
         return;
       }
 
       if (status === 409) {
-        setSubmitError(normalizeMaintenanceErrorMessage(message, 'Conflict: maintenance schedule overlaps or transition is invalid.'));
+        setSubmitError(normalizeMaintenanceErrorMessage(message, t('maintenance.errors.conflict')));
         return;
       }
 
       if (status === 401 || status === 403) {
-        setSubmitError(message || 'You are not authorized to create maintenance records.');
+        setSubmitError(message || t('maintenance.errors.unauthorizedCreate'));
         return;
       }
 
       if (status === 404) {
-        setSubmitError(normalizeMaintenanceErrorMessage(message, 'Vehicle not found.'));
+        setSubmitError(normalizeMaintenanceErrorMessage(message, t('maintenance.errors.vehicleNotFound')));
         return;
       }
 
-      setSubmitError(normalizeMaintenanceErrorMessage(message, 'Failed to schedule maintenance.'));
+      setSubmitError(normalizeMaintenanceErrorMessage(message, t('maintenance.errors.scheduleFailed')));
     }
-  }, [clearPrefillParams, normalizeMaintenanceErrorMessage, refetch]);
+  }, [clearPrefillParams, normalizeMaintenanceErrorMessage, refetch, t]);
 
   const handleTransition = useCallback(async (record: Maintenance) => {
     if (record.status === 'scheduled' || record.status === 'pending') {
@@ -146,13 +149,13 @@ const MaintenancePage = () => {
       const detailed = Array.isArray(response?.data?.errors) ? response?.data?.errors.join(' | ') : null;
 
       if (status === 422) {
-        setEditError(detailed || message || 'Validation error while updating maintenance.');
+        setEditError(detailed || message || t('maintenance.errors.updateValidation'));
         return;
       }
 
-      setEditError(message || 'Failed to update maintenance.');
+      setEditError(message || t('maintenance.errors.updateFailed'));
     }
-  }, [recordToEdit, refetch]);
+  }, [recordToEdit, refetch, t]);
 
   const handleAskRemoveMaintenance = useCallback((record: Maintenance) => {
     setActionError(null);
@@ -173,11 +176,18 @@ const MaintenancePage = () => {
     } catch (err: unknown) {
       const response = (err as { response?: { status?: number; data?: { message?: string } } })?.response;
       const message = response?.data?.message;
-      setActionError(message || 'Failed to remove maintenance record.');
+      setActionError(message || t('maintenance.errors.removeFailed'));
     } finally {
       setIsRemoving(false);
     }
-  }, [recordToRemove, refetch]);
+  }, [recordToRemove, refetch, t]);
+
+  const formatDate = (value?: string | null) => {
+    if (!value) return t('common.na');
+    const parsed = new Date(value);
+    if (Number.isNaN(parsed.getTime())) return value;
+    return parsed.toLocaleDateString(locale);
+  };
 
   return (
     <>
@@ -192,7 +202,7 @@ const MaintenancePage = () => {
 
         {isLoading ? (
           <div className={`text-center py-16 rounded-2xl border ${dark ? 'border-slate-700 text-slate-400' : 'border-slate-200 text-slate-500'}`}>
-            Loading…
+            {t('maintenance.table.loading')}
           </div>
         ) : (
           <MaintenanceTable
@@ -212,7 +222,7 @@ const MaintenancePage = () => {
           setIsScheduleModalOpen(false);
           clearPrefillParams();
         }}
-        title="Schedule maintenance"
+        title={t('maintenance.form.titleNew')}
         maxWidth="2xl"
       >
         {submitError && (
@@ -238,7 +248,7 @@ const MaintenancePage = () => {
           setIsRemoveModalOpen(false);
           setRecordToRemove(null);
         }}
-        title="Remove maintenance"
+        title={t('maintenance.remove.title')}
         maxWidth="md"
         footer={(
           <div className="flex items-center justify-end gap-3">
@@ -256,7 +266,7 @@ const MaintenancePage = () => {
               }`}
               disabled={isRemoving}
             >
-              Cancel
+              {t('common.cancel')}
             </button>
             <button
               type="button"
@@ -268,27 +278,29 @@ const MaintenancePage = () => {
               } disabled:opacity-60 disabled:cursor-not-allowed`}
               disabled={isRemoving}
             >
-              {isRemoving ? 'Removing...' : 'Yes, remove'}
+              {isRemoving ? t('maintenance.remove.removing') : t('maintenance.remove.confirm')}
             </button>
           </div>
         )}
       >
         <div className={`rounded-xl border p-4 ${dark ? 'border-rose-900/50 bg-rose-950/30' : 'border-rose-200 bg-rose-50/70'}`}>
           <p className={`text-sm ${dark ? 'text-rose-100' : 'text-rose-900'}`}>
-            This action will permanently delete this maintenance record.
+            {t('maintenance.remove.message')}
           </p>
           <div className={`mt-3 space-y-1 text-sm ${dark ? 'text-slate-200' : 'text-slate-700'}`}>
             <p>
-              <span className="font-semibold">Type:</span> {recordToRemove?.type || 'N/A'}
+              <span className="font-semibold">{t('common.type')}:</span>{' '}
+              {recordToRemove?.type || t('common.na')}
             </p>
             <p>
-              <span className="font-semibold">Vehicle:</span>{' '}
+              <span className="font-semibold">{t('common.vehicle')}:</span>{' '}
               {recordToRemove?.vehicleName
                 ? `${recordToRemove.vehicleName}${recordToRemove.vehiclePlate ? ` (${recordToRemove.vehiclePlate})` : ''}`
-                : recordToRemove?.vehiclePlate || 'N/A'}
+                : recordToRemove?.vehiclePlate || t('common.na')}
             </p>
             <p>
-              <span className="font-semibold">Scheduled date:</span> {recordToRemove?.scheduledDate || 'N/A'}
+              <span className="font-semibold">{t('maintenance.form.scheduledDate')}:</span>{' '}
+              {formatDate(recordToRemove?.scheduledDate)}
             </p>
           </div>
         </div>
@@ -301,7 +313,7 @@ const MaintenancePage = () => {
           setRecordToEdit(null);
           setEditError(null);
         }}
-        title="Edit maintenance"
+        title={t('maintenance.form.titleEdit')}
         maxWidth="2xl"
       >
         {editError && (
