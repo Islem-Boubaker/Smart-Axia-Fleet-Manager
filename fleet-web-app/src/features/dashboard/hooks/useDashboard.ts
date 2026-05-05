@@ -2,13 +2,14 @@ import { useCallback, useMemo, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { driversService } from '../../drivers/services/drivers.service';
+import { driverRankingService, type DriverLeaderboardEntry } from '../../drivers/services/driverRanking.service';
 import { maintenanceService } from '../../maintenance/services/maintenance.service';
 import { buildMaintenancePrefillUrl } from '../../maintenance/utils/maintenancePrefill';
 import notificationApi, { type NotificationRecord } from '../../../shared/services/notification.api';
 import { tripsService } from '../../trips/services/trips.service';
 import { vehiclesService } from '../../vehicles/services/vehicles.service';
 import { getVehicleStatusLabel, isVehicleOperational } from '../../vehicles/utils/vehicleStatus';
-import type { Driver, Maintenance, Trip, Vehicle } from '../../../types';
+import type { Maintenance, Trip, Vehicle } from '../../../types';
 import { FUEL_PRICE_TND } from '../../../utils/constants';
 import { queryKeys } from '../../../shared/services/queryKeys';
 
@@ -29,12 +30,6 @@ export interface DashboardFleetStatus {
   total: number;
 }
 
-export interface DashboardTopDriver {
-  driver: Driver;
-  km: number;
-  onTimeRate: number;
-}
-
 export interface DashboardFuelDay {
   day: string;
   liters: number;
@@ -45,7 +40,7 @@ interface DashboardData {
   fleetStatus: DashboardFleetStatus;
   alerts: NotificationRecord[];
   recentTrips: Trip[];
-  topDrivers: DashboardTopDriver[];
+  topDrivers: DriverLeaderboardEntry[];
   fuelByDay: DashboardFuelDay[];
   upcomingMaintenance: Maintenance[];
 }
@@ -317,28 +312,6 @@ const buildExpiryAlerts = (
   return expiryAlerts;
 };
 
-const isOnTimeTrip = (trip: Trip): boolean => {
-  if (trip.status !== 'completed') return false;
-
-  const orderedStops = Array.isArray(trip.stops)
-    ? [...trip.stops].sort((a, b) => a.stopOrder - b.stopOrder)
-    : [];
-
-  const lastStop = orderedStops.length > 0 ? orderedStops[orderedStops.length - 1] : null;
-  const scheduledArrival = toDate(lastStop?.estimatedArrival || undefined);
-  const actualArrival = toDate(lastStop?.arrivalTime || trip.endTime);
-
-  if (!scheduledArrival || !actualArrival) return false;
-  return actualArrival.getTime() <= scheduledArrival.getTime();
-};
-
-const fallbackDriver = (id: string, name: string): Driver => ({
-  id,
-  name,
-  email: 'unknown@unknown.local',
-  status: 'active',
-});
-
 export const useDashboard = () => {
   const { t, i18n } = useTranslation();
   const queryClient = useQueryClient();
@@ -348,12 +321,13 @@ export const useDashboard = () => {
     queryKey: queryKeys.dashboard.all,
     staleTime: 2 * 60 * 1000,
     queryFn: async () => {
-      const [vehiclesData, driversData, tripsData, maintenanceData, notificationsData] = await Promise.all([
+      const [vehiclesData, driversData, tripsData, maintenanceData, notificationsData, leaderboardData] = await Promise.all([
         vehiclesService.getVehicles(),
         driversService.getDrivers(),
         tripsService.getTrips({ page: 1, limit: 1000, includeStops: true }),
         maintenanceService.getAll({ page: 1, limit: 1000 }),
         notificationApi.getAll({ limit: 50 }),
+        driverRankingService.getLeaderboard(3),
       ]);
 
       return {
@@ -362,6 +336,7 @@ export const useDashboard = () => {
         trips: tripsData.items ?? [],
         maintenances: maintenanceData.items ?? [],
         notifications: normalizeNotifications(notificationsData),
+        leaderboard: leaderboardData ?? [],
       };
     },
   });
@@ -489,43 +464,7 @@ export const useDashboard = () => {
       .sort((a, b) => new Date(b.createdAt || b.startTime).getTime() - new Date(a.createdAt || a.startTime).getTime())
       .slice(0, 5);
 
-    const monthTrips = trips.filter((trip) => {
-      const start = toDate(trip.startTime);
-      return start ? inRange(start, currentMonth.start, currentMonth.end) : false;
-    });
-
-    const topDriverMap = new Map<string, { driver: Driver; km: number; onTimeCount: number; totalTrips: number }>();
-
-    monthTrips.forEach((trip) => {
-      const driverId = trip.userId || trip.driver?.id;
-      if (!driverId) return;
-
-      const fromDrivers = drivers.find((driver) => String(driver.id) === String(driverId));
-      const fallbackName = trip.driver?.name || 'Unknown driver';
-      const driver = fromDrivers || fallbackDriver(String(driverId), fallbackName);
-
-      const current = topDriverMap.get(String(driverId)) || {
-        driver,
-        km: 0,
-        onTimeCount: 0,
-        totalTrips: 0,
-      };
-
-      current.km += numberFrom(trip.distance);
-      current.totalTrips += 1;
-      if (isOnTimeTrip(trip)) current.onTimeCount += 1;
-
-      topDriverMap.set(String(driverId), current);
-    });
-
-    const topDrivers = Array.from(topDriverMap.values())
-      .map((item) => ({
-        driver: item.driver,
-        km: item.km,
-        onTimeRate: item.totalTrips > 0 ? Math.round((item.onTimeCount / item.totalTrips) * 100) : 0,
-      }))
-      .sort((a, b) => b.onTimeRate - a.onTimeRate)
-      .slice(0, 4);
+    const topDrivers = dashboardQuery.data?.leaderboard ?? [];
 
     const fuelByDay: DashboardFuelDay[] = Array.from({ length: 7 }).map((_, index) => {
       const date = new Date(now);

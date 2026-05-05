@@ -37,6 +37,13 @@ const TYPE_OPTIONS: TypeOption[] = [
     subject: "Vehicle issue",
   },
   {
+    type: "accident",
+    label: "Accident report",
+    description: "Collision, road accident, or any safety incident involving the vehicle.",
+    icon: "car-crash",
+    subject: "Accident report",
+  },
+  {
     type: "maintenance",
     label: "Maintenance needed",
     description: "Ask operations to schedule a maintenance intervention.",
@@ -82,7 +89,7 @@ const MAINTENANCE_PRIORITY_OPTIONS: {
 ];
 
 const requiresVehicleContext = (type: ReclamationType) =>
-  type === "vehicle" || type === "maintenance";
+  type === "vehicle" || type === "maintenance" || type === "accident";
 
 const vehicleLabel = (name?: string, plate?: string) => {
   if (name && plate) return `${name} (${plate})`;

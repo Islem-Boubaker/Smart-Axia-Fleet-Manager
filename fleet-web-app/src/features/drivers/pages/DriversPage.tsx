@@ -20,6 +20,8 @@ const DriversPage = () => {
   const { dark } = useOutletContext<ThemeContext>();
   const { t } = useTranslation();
   const [searchQuery, setSearchQuery] = useState("");
+  const [statusFilter, setStatusFilter] = useState('all');
+  const [scoreFilter, setScoreFilter] = useState('all');
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [selectedDriver, setSelectedDriver] = useState<Driver | null>(null);
@@ -27,11 +29,24 @@ const DriversPage = () => {
   const { drivers, isLoading, addDriver, updateDriver, deleteDriver } = useDrivers();
   const { vehicles } = useVehicleOptions();
 
-  const filteredDrivers = drivers.filter((driver) =>
-    `${driver.name} ${driver.email} ${driver.licenseNumber ?? ""}`
+  const matchesScoreFilter = (driver: Driver) => {
+    const score = typeof driver.driverScore === 'number' ? driver.driverScore : null;
+    if (scoreFilter === 'all') return true;
+    if (score === null) return false;
+    if (scoreFilter === '90_plus') return score >= 90;
+    if (scoreFilter === '80_89') return score >= 80 && score < 90;
+    if (scoreFilter === '70_79') return score >= 70 && score < 80;
+    if (scoreFilter === 'below_70') return score < 70;
+    return true;
+  };
+
+  const filteredDrivers = drivers.filter((driver) => {
+    const matchesSearch = `${driver.name} ${driver.email} ${driver.licenseNumber ?? ""}`
       .toLowerCase()
-      .includes(searchQuery.toLowerCase()),
-  );
+      .includes(searchQuery.toLowerCase());
+    const matchesStatus = statusFilter === 'all' ? true : driver.status === statusFilter;
+    return matchesSearch && matchesStatus && matchesScoreFilter(driver);
+  });
 
   const handleAddDriver = useCallback(
     async (data: any, photo: File | null) => {
@@ -87,7 +102,15 @@ const DriversPage = () => {
     <>
       <div className={`${pageShellClasses(dark)} ${pageShellInnerSpacing} animate-fade-in`}>
         <DriversHeader onAdd={() => setIsAddModalOpen(true)} dark={dark} />
-        <DriversSearch value={searchQuery} onChange={setSearchQuery} dark={dark} />
+        <DriversSearch
+          value={searchQuery}
+          onChange={setSearchQuery}
+          statusFilter={statusFilter}
+          onStatusChange={setStatusFilter}
+          scoreFilter={scoreFilter}
+          onScoreChange={setScoreFilter}
+          dark={dark}
+        />
         <DriversGrid
           drivers={filteredDrivers}
           isLoading={isLoading}

@@ -22,6 +22,7 @@ router.post(
 );
 
 router.get('/user/me', authMiddleware.authenticate, cacheMiddleware('users', 'me', { requireAuth: true }), userController.getMe);
+router.get('/user/me/ranking', authMiddleware.authenticate, userController.getMyDriverRanking);
 router.put('/user/me', authMiddleware.authenticate, csrfMiddleware.verifyCsrf, userController.updateMe);
 router.get('/user/me/notifications', authMiddleware.authenticate, cacheMiddleware('users', 'notificationSettings', { requireAuth: true }), userController.getMyNotificationSettings);
 router.put(
@@ -59,6 +60,12 @@ router.post(
   ...userController.createUser
 );
 
+router.get(
+  '/user/driver-leaderboard',
+  authMiddleware.authenticate,
+  authMiddleware.authorizeRoles('ADMIN', 'MANAGER', 'DRIVER'),
+  userController.getDriverLeaderboard
+);
 router.get(
   '/user/getusers',
   authMiddleware.authenticate,

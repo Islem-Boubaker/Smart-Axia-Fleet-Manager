@@ -24,7 +24,7 @@ import MainTopHeader from "@/shared/components/layout/MainTopHeader";
 
 // ─── Types ────────────────────────────────────────────────────────
 type ReclamationStatus = "pending" | "in_progress" | "resolved";
-type ReclamationType = "general" | "vehicle" | "maintenance" | "trip" | "damage" | "delay" | "technical" | "other";
+type ReclamationType = "general" | "vehicle" | "maintenance" | "trip" | "accident" | "damage" | "delay" | "technical" | "other";
 type FilterOption = "all" | ReclamationStatus;
 
 interface Reclamation {
@@ -54,6 +54,7 @@ const toScreenReclamation = (item: any): Reclamation => ({
     item.type === "vehicle" ||
     item.type === "maintenance" ||
     item.type === "trip" ||
+    item.type === "accident" ||
     item.type === "damage" ||
     item.type === "delay" ||
     item.type === "technical" ||
@@ -93,6 +94,7 @@ const TYPE_CONFIG = {
   vehicle: { label: "Vehicle", icon: "directions-car" },
   maintenance: { label: "Maintenance", icon: "build" },
   trip: { label: "Trip", icon: "timeline" },
+  accident: { label: "Accident", icon: "car-crash" },
   damage: { label: "Damage", icon: "directions-car" },
   delay: { label: "Delay", icon: "schedule" },
   technical: { label: "Technical", icon: "build" },

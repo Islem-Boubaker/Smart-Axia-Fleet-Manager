@@ -83,6 +83,11 @@ const Trip = sequelize.define(
       allowNull: true,
     },
 
+    plannedEndTime: {
+      type: DataTypes.DATE,
+      allowNull: true,
+    },
+
     distance: {
       type: DataTypes.FLOAT,
       allowNull: false,
@@ -118,6 +123,11 @@ const Trip = sequelize.define(
       type: DataTypes.ENUM("general", "cold", "fragile", "heavy"),
       allowNull: false,
       defaultValue: "general",
+    },
+    scoreRouteDeviationApplied: {
+      type: DataTypes.BOOLEAN,
+      allowNull: false,
+      defaultValue: false,
     }
   },
   {

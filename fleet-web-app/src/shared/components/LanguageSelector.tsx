@@ -72,18 +72,19 @@ export const LanguageSelector = memo(({ dark = false }: { dark?: boolean }) => {
       {open ? (
         <div
           role="menu"
-          className={`absolute ${isRtl ? 'left-0' : 'right-0'} top-[calc(100%+0.5rem)] z-50 min-w-[160px] overflow-hidden rounded-2xl border shadow-xl ${
+          className={`absolute ${isRtl ? 'left-0' : 'right-0'} top-[calc(100%+0.5rem)] z-[140] min-w-[190px] overflow-hidden rounded-2xl border shadow-2xl ${
             dark
-              ? 'border-cyan-200/10 bg-[#0F1B2D]/96 text-slate-100'
+              ? 'border-slate-600 bg-[#0b1625] text-slate-50 ring-1 ring-slate-500/35'
               : 'border-slate-200 bg-white text-slate-900'
           }`}
+          style={dark ? { backgroundColor: '#0b1625', opacity: 1 } : undefined}
         >
           <div className={`px-3 py-2 text-[11px] font-bold uppercase tracking-[0.14em] ${
-            dark ? 'text-slate-400' : 'text-slate-500'
+            dark ? 'text-slate-300' : 'text-slate-500'
           }`}>
             {t('header.language')}
           </div>
-          <div className="p-1.5">
+          <div className={`border-t p-1.5 ${dark ? 'border-slate-600' : 'border-slate-200'}`}>
             {languages.map((lang) => {
               const isActive = lang.code === value;
 
@@ -97,16 +98,16 @@ export const LanguageSelector = memo(({ dark = false }: { dark?: boolean }) => {
                   className={`flex w-full items-center justify-between rounded-xl px-3 py-2 text-sm transition-colors ${
                     isActive
                       ? dark
-                        ? 'bg-cyan-300/12 text-cyan-100'
+                        ? 'bg-sky-500/20 text-white'
                         : 'bg-sky-50 text-sky-700'
                       : dark
-                        ? 'text-slate-200 hover:bg-slate-800'
+                        ? 'text-slate-100 hover:bg-slate-800'
                         : 'text-slate-700 hover:bg-slate-50'
                   }`}
                 >
                   <span className="flex items-center gap-2">
                     <span className={`inline-flex h-6 w-6 items-center justify-center rounded-full text-[10px] font-bold ${
-                      dark ? 'bg-slate-800 text-slate-300' : 'bg-slate-100 text-slate-600'
+                      dark ? 'bg-slate-800 text-slate-100 ring-1 ring-slate-700' : 'bg-slate-100 text-slate-600'
                     }`}>
                       {lang.shortLabel}
                     </span>

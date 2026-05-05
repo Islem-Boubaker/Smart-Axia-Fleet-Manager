@@ -9,6 +9,11 @@ import TripLocationPing from "../models/tripLocationPing.model.js";
 import User from "../models/user.model.js";
 import Vehicle from "../models/vehicle.model.js";
 import { checkVehicleAvailableForTrip } from "./maintenance.service.js";
+import {
+  recordRouteDeviationScoreEvent,
+  removeTripCompletionScoreEvent,
+  syncTripCompletionScoreEvent,
+} from "./driverScore.service.js";
 import { eventBus, FLEET_EVENTS } from "../events/eventBus.js";
 
 const TRIP_STATUS = {
@@ -84,6 +89,9 @@ const normalizeWindow = (startTime, endTime) => {
 
   return { start, end };
 };
+
+const resolvePlannedEndTime = (data = {}, fallback = null) =>
+  data.plannedEndTime ?? data.endTime ?? fallback ?? null;
 
 const validateVehicle = async (vehicleId) => {
   const vehicle = await Vehicle.findByPk(vehicleId);
@@ -358,12 +366,18 @@ const maybeEmitRouteDeviation = ({ trip, latitude, longitude, accuracy, speed, h
   const distanceMeters = getDistanceFromRouteMeters(currentPoint, routeCoordinates);
   const thresholdMeters = getRouteDeviationThresholdMeters();
 
-  if (distanceMeters === null || distanceMeters <= thresholdMeters) return;
+  if (distanceMeters === null || distanceMeters <= thresholdMeters) return null;
 
   // A very inaccurate phone fix can look like a route deviation; skip noisy points.
-  if (accuracy !== null && accuracy > thresholdMeters) return;
+  if (accuracy !== null && accuracy > thresholdMeters) return null;
 
-  if (!shouldEmitRouteDeviationEvent(trip.id)) return;
+  if (!shouldEmitRouteDeviationEvent(trip.id)) {
+    return {
+      distanceMeters,
+      thresholdMeters,
+      emitted: false,
+    };
+  }
 
   emitTripEvent(FLEET_EVENTS.AI_ROUTE_DEVIATION, {
     tripId: trip.id,
@@ -383,6 +397,12 @@ const maybeEmitRouteDeviation = ({ trip, latitude, longitude, accuracy, speed, h
     distanceMeters: Math.round(distanceMeters),
     thresholdMeters,
   });
+
+  return {
+    distanceMeters,
+    thresholdMeters,
+    emitted: true,
+  };
 };
 
 const enrichTripWithEstimatedFuel = (trip) => {
@@ -501,8 +521,8 @@ export const getTripRecommendations = async (tripData) => {
 };
 
 export const createTrip = async (data) => {
-
-  const { start, end } = normalizeWindow(data.startTime, data.endTime);
+  const plannedEndTime = resolvePlannedEndTime(data);
+  const { start, end } = normalizeWindow(data.startTime, plannedEndTime);
 
   // ── ML Recommendation Logic ──────────────────────────────────────────
   // If driver or vehicle is missing, auto-pick the best available recommendation
@@ -551,6 +571,8 @@ export const createTrip = async (data) => {
     const trip = await Trip.create(
       {
         ...tripInput,
+        plannedEndTime,
+        endTime: plannedEndTime,
         fuel: estimatedFuel,
         status: TRIP_STATUS.SCHEDULED,
       },
@@ -642,9 +664,9 @@ export const updateTrip = async (tripId, data) => {
   const nextVehicleId = data.vehicleId ?? trip.vehicleId;
   const nextUserId = data.userId !== undefined ? data.userId : trip.userId;
   const nextStart = data.startTime ?? trip.startTime;
-  const nextEnd = data.endTime ?? trip.endTime;
+  const nextPlannedEnd = resolvePlannedEndTime(data, trip.plannedEndTime ?? trip.endTime);
 
-  const { start, end } = normalizeWindow(nextStart, nextEnd);
+  const { start, end } = normalizeWindow(nextStart, nextPlannedEnd);
 
   if (data.vehicleId) {
     await validateVehicle(nextVehicleId);
@@ -672,7 +694,13 @@ export const updateTrip = async (tripId, data) => {
     excludeTripId: tripId,
   });
 
-  await trip.update(data);
+  const updatePayload = { ...data };
+  if (Object.prototype.hasOwnProperty.call(data, "endTime") || Object.prototype.hasOwnProperty.call(data, "plannedEndTime")) {
+    updatePayload.plannedEndTime = nextPlannedEnd;
+    updatePayload.endTime = nextPlannedEnd;
+  }
+
+  await trip.update(updatePayload);
   return fetchTripWithStops(trip.id);
 };
 
@@ -699,7 +727,15 @@ export const updateTripStatus = async (tripId, newStatus) => {
     await validateVehicle(trip.vehicleId);
   }
 
-  await trip.update({ status: newStatus });
+  const updatePayload = { status: newStatus };
+  if (newStatus === TRIP_STATUS.COMPLETED) {
+    updatePayload.endTime = new Date().toISOString();
+    if (!trip.plannedEndTime && trip.endTime) {
+      updatePayload.plannedEndTime = trip.endTime;
+    }
+  }
+
+  await trip.update(updatePayload);
   await syncVehicleStatusForTripStatus(trip, newStatus);
 
   if (newStatus === TRIP_STATUS.ONGOING) {
@@ -707,9 +743,11 @@ export const updateTripStatus = async (tripId, newStatus) => {
   }
   if (newStatus === TRIP_STATUS.COMPLETED) {
     emitTripEvent(FLEET_EVENTS.TRIP_COMPLETED, { tripId: trip.id, userId: trip.userId });
+    await syncTripCompletionScoreEvent(trip.id);
   }
   if (newStatus === TRIP_STATUS.CANCELLED) {
     emitTripEvent(FLEET_EVENTS.TRIP_CANCELLED, { tripId: trip.id, userId: trip.userId });
+    await removeTripCompletionScoreEvent(trip.id);
   }
 
   return trip;
@@ -739,14 +777,20 @@ export const completeTrip = async (tripId, callerRole, callerId, settlement = {}
     throw createError("Trip can only be completed from ongoing status", 409, "CONFLICT");
   }
 
-  const updates = { status: TRIP_STATUS.COMPLETED };
-  if (settlement.endTime) updates.endTime = settlement.endTime;
+  const updates = {
+    status: TRIP_STATUS.COMPLETED,
+    endTime: settlement.endTime || new Date().toISOString(),
+  };
+  if (!trip.plannedEndTime && trip.endTime) {
+    updates.plannedEndTime = trip.endTime;
+  }
   if (settlement.revenue !== undefined) updates.revenue = settlement.revenue;
   if (settlement.fuel !== undefined) updates.fuel = settlement.fuel;
 
   await trip.update(updates);
   await syncVehicleStatusForTripStatus(trip, TRIP_STATUS.COMPLETED);
   emitTripEvent(FLEET_EVENTS.TRIP_COMPLETED, { tripId: trip.id, userId: trip.userId });
+  await syncTripCompletionScoreEvent(trip.id);
   return trip;
 };
 
@@ -761,6 +805,7 @@ export const cancelTrip = async (tripId, callerRole, callerId) => {
   await trip.update({ status: TRIP_STATUS.CANCELLED });
   await syncVehicleStatusForTripStatus(trip, TRIP_STATUS.CANCELLED);
   emitTripEvent(FLEET_EVENTS.TRIP_CANCELLED, { tripId: trip.id, userId: trip.userId });
+  await removeTripCompletionScoreEvent(trip.id);
   return trip;
 };
 
@@ -770,7 +815,7 @@ export const assignDriver = async (tripId, userId) => {
 
   await validateDriver(userId);
 
-  const { start, end } = normalizeWindow(trip.startTime, trip.endTime);
+  const { start, end } = normalizeWindow(trip.startTime, trip.plannedEndTime ?? trip.endTime);
   await ensureNoDriverOverlap({ userId, start, end, excludeTripId: tripId });
 
   await trip.update({ userId });
@@ -817,7 +862,15 @@ export const recordTripLocationPing = async (tripId, callerRole, callerId, paylo
     recordedAt,
   });
 
-  maybeEmitRouteDeviation({ trip, latitude, longitude, accuracy, speed, heading, recordedAt });
+  const deviation = maybeEmitRouteDeviation({ trip, latitude, longitude, accuracy, speed, heading, recordedAt });
+  if (deviation?.distanceMeters && trip.userId) {
+    await recordRouteDeviationScoreEvent({
+      tripId: trip.id,
+      driverId: trip.userId,
+      distanceMeters: Math.round(deviation.distanceMeters),
+      recordedAt,
+    });
+  }
 
   return ping;
 };

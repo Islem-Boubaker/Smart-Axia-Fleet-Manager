@@ -37,6 +37,8 @@ export const queryKeys = {
     list: (filters?: unknown) => [...queryKeys.drivers.lists(), filters] as const,
     details: () => [...queryKeys.drivers.all, 'detail'] as const,
     detail: (id: string) => [...queryKeys.drivers.details(), id] as const,
+    leaderboard: (limit?: number) => [...queryKeys.drivers.all, 'leaderboard', limit] as const,
+    ranking: () => [...queryKeys.drivers.all, 'ranking'] as const,
   },
 
   fleet: {

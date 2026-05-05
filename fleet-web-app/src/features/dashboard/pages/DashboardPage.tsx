@@ -158,7 +158,7 @@ const DashboardPage = () => {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         <RecentTripsCard trips={recentTrips} onTripClick={setSelectedTrip} />
-        <TopDriversCard drivers={topDrivers} />
+        <TopDriversCard drivers={topDrivers} onViewFull={() => navigate(ROUTES.DRIVERS)} />
         <FuelUsageCard fuelByDay={fuelByDay} activeVehicles={stats.activeVehicles} />
       </div>
 

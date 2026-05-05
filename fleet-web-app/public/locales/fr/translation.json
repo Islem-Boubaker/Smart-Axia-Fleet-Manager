@@ -285,6 +285,17 @@
       "none": "Aucune donnée conducteur ce mois-ci.",
       "kmOnTime": "{{km}} km · {{pct}}% à l'heure"
     },
+    "podium": {
+      "title": "Podium des conducteurs",
+      "subtitle": "Classement global basé sur les accidents, les écarts de route et la ponctualité.",
+      "none": "Aucune donnée de classement conducteur pour le moment.",
+      "viewFull": "Voir le classement complet",
+      "first": "1er",
+      "second": "2e",
+      "third": "3e",
+      "score": "Score",
+      "completedTrips": "{{count}} trajets terminés"
+    },
     "fuel": {
       "title": "Consommation carburant — 7 derniers jours",
       "totalWeek": "Total cette semaine",
@@ -334,6 +345,16 @@
     "section_label": "PERSONNES",
     "add_button": " Ajouter un conducteur",
     "search_placeholder": "Rechercher par nom, email, permis...",
+    "filters": {
+      "statusLabel": "Statut",
+      "scoreLabel": "Score",
+      "allStatuses": "Tous les statuts",
+      "allScores": "Tous les scores",
+      "score90Plus": "90+",
+      "score80to89": "80–89",
+      "score70to79": "70–79",
+      "scoreBelow70": "Moins de 70"
+    },
     "showing_results": "Affichage de {{count}} résultats",
     "description": "Gérez les profils, permis et affectations véhicule.",
     "addNew": "Ajouter un conducteur",

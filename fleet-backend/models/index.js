@@ -6,6 +6,7 @@ import Trip from "./trip.model.js";
 import TripStop from "./TripStop.js";
 import TripLocationPing from "./tripLocationPing.model.js";
 import Notification from "./notification.model.js";
+import DriverScoreEvent from "./driverScoreEvent.model.js";
 
 Trip.hasMany(TripStop, { foreignKey: "tripId", as: "stops", onDelete: "CASCADE" });
 TripStop.belongsTo(Trip, { foreignKey: "tripId", as: "trip" });
@@ -22,9 +23,15 @@ Maintenance.belongsTo(User, { foreignKey: "createdBy", as: "creator", onDelete: 
 Maintenance.belongsTo(User, { foreignKey: "updatedBy", as: "updater", onDelete: "SET NULL" });
 Reclamation.belongsTo(User, { foreignKey: "userId", as: "driver" });
 Reclamation.belongsTo(Vehicle, { foreignKey: "vehicleId", as: "vehicle" });
+User.hasMany(DriverScoreEvent, { foreignKey: "driverId", as: "scoreEvents", onDelete: "CASCADE" });
+DriverScoreEvent.belongsTo(User, { foreignKey: "driverId", as: "driver" });
+Trip.hasMany(DriverScoreEvent, { foreignKey: "tripId", as: "scoreEvents", onDelete: "SET NULL" });
+DriverScoreEvent.belongsTo(Trip, { foreignKey: "tripId", as: "trip" });
+Reclamation.hasMany(DriverScoreEvent, { foreignKey: "reclamationId", as: "scoreEvents", onDelete: "SET NULL" });
+DriverScoreEvent.belongsTo(Reclamation, { foreignKey: "reclamationId", as: "reclamation" });
 
 if (typeof Notification.associate === "function") {
 	Notification.associate({ User });
 }
 
-export { User, Vehicle, Reclamation, Maintenance, Trip, TripStop, TripLocationPing, Notification };
+export { User, Vehicle, Reclamation, Maintenance, Trip, TripStop, TripLocationPing, Notification, DriverScoreEvent };

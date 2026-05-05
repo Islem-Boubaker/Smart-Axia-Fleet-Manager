@@ -285,6 +285,17 @@
       "none": "No driver data for this month.",
       "kmOnTime": "{{km}} km · {{pct}}% on-time"
     },
+    "podium": {
+      "title": "Driver podium",
+      "subtitle": "Lifetime ranking based on accidents, route deviations, and trip punctuality.",
+      "none": "No driver ranking data available yet.",
+      "viewFull": "View full ranking",
+      "first": "1st",
+      "second": "2nd",
+      "third": "3rd",
+      "score": "Score",
+      "completedTrips": "{{count}} completed trips"
+    },
     "fuel": {
       "title": "Fuel usage — last 7 days",
       "totalWeek": "Total this week",
@@ -334,6 +345,16 @@
     "section_label": "PEOPLE",
     "add_button": " Add driver",
     "search_placeholder": "Search drivers by name, email, license...",
+    "filters": {
+      "statusLabel": "Status",
+      "scoreLabel": "Score",
+      "allStatuses": "All statuses",
+      "allScores": "All scores",
+      "score90Plus": "90+",
+      "score80to89": "80–89",
+      "score70to79": "70–79",
+      "scoreBelow70": "Below 70"
+    },
     "showing_results": "Showing {{count}} results",
     "description": "Manage driver profiles, licenses, and vehicle assignments.",
     "addNew": "Add New Driver",

@@ -51,6 +51,13 @@ export interface Driver {
   totalTrips?: number;
   rating?: number;
   role?: string;
+  driverScore?: number;
+  driverRank?: number;
+  experienceBadge?: {
+    key: string;
+    label: string;
+    minTrips: number;
+  };
 }
 
 export interface TripStop {

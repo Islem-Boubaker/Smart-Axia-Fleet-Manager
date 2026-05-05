@@ -5,6 +5,7 @@ import { getPagination, getPagingData } from '../utils/pagination.js';
 import cloudinary from '../config/cloudinary.js';
 import nodemailer from 'nodemailer';
 import crypto from 'crypto';
+import { getDriverLeaderboard, getDriverRankingProfile } from './driverScore.service.js';
 import {
   buildEmailAttachments,
   buildEmailLogoHtml,
@@ -417,6 +418,14 @@ export const refreshTokenSvc = async (refreshToken) => {
     err.statusCode = 401;
     throw err;
   }
+};
+
+export const getDriverLeaderboardSvc = async (limit = 10) => {
+  return getDriverLeaderboard(limit);
+};
+
+export const getMyDriverRankingSvc = async (userId) => {
+  return getDriverRankingProfile(userId);
 };
 
 

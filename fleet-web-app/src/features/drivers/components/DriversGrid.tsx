@@ -1,4 +1,5 @@
 import { AppDataTable, AppRowActions, AppStatusBadge, AppTd, AppTr } from '../../../shared/components';
+import { Badge } from '../../../shared/components';
 import { useTranslation } from 'react-i18next';
 import type { Driver } from '../../../types';
 
@@ -90,7 +91,10 @@ const DriversGrid = ({ drivers, isLoading, onEdit, onDelete, dark = false }: Pro
 
           <AppTd className={dark ? 'text-slate-100' : 'text-slate-900'}>
             <div>
-              <p className="font-semibold">{driver.name}</p>
+              <div className="flex items-center gap-2">
+                <p className="font-semibold">{driver.name}</p>
+                {driver.experienceBadge ? <Badge size="sm" variant="info">{driver.experienceBadge.label}</Badge> : null}
+              </div>
               <p className={`text-xs ${dark ? 'text-slate-400' : 'text-slate-500'}`}>
                 {driver.licenseNumber || t('drivers.table.noLicense')}
               </p>
@@ -105,7 +109,14 @@ const DriversGrid = ({ drivers, isLoading, onEdit, onDelete, dark = false }: Pro
           </AppTd>
 
           <AppTd className={dark ? 'text-slate-300' : 'text-slate-600'}>{driver.assignedVehicle || t('common.unassigned')}</AppTd>
-          <AppTd className={dark ? 'text-slate-300' : 'text-slate-600'}>{driver.totalTrips ?? 0}</AppTd>
+          <AppTd className={dark ? 'text-slate-300' : 'text-slate-600'}>
+            <div className="space-y-1">
+              <p>{driver.totalTrips ?? 0}</p>
+              {typeof driver.driverScore === 'number' ? (
+                <p className="text-xs text-slate-400 dark:text-slate-500">{t('common.scoreLabel', { score: driver.driverScore })}</p>
+              ) : null}
+            </div>
+          </AppTd>
 
           <AppTd>
             <AppRowActions
