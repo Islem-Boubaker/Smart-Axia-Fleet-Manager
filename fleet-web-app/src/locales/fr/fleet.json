@@ -1,0 +1,10 @@
+{
+  "fleet": {
+    "title": "Vue d'ensemble de la flotte",
+    "subtitle": "Vue consolidée de tous les actifs.",
+    "table": {
+      "empty": "Aucune donnée de flotte.",
+      "loading": "Chargement de la flotte..."
+    }
+  }
+}

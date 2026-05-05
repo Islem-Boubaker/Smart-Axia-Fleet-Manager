@@ -1,0 +1,13 @@
+{
+  "header": {
+    "search": "بحث",
+    "searchPlaceholder": "ابحث في الأسطول والرحلات والسائقين…",
+    "notifications": "الإشعارات",
+    "language": "اللغة",
+    "openMenu": "فتح القائمة",
+    "lightMode": "الوضع الفاتح",
+    "darkMode": "الوضع الداكن",
+    "closeMenu": "إغلاق القائمة",
+    "searchVehiclesDriversTrips": "ابحث عن مركبات وسائقين ورحلات..."
+  }
+}

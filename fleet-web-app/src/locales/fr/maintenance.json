@@ -1,0 +1,21 @@
+{
+  "maintenance": {
+    "title": "Maintenance",
+    "subtitle": "Planifiez et suivez la maintenance des véhicules.",
+    "add": "Planifier une maintenance",
+    "table": {
+      "empty": "Aucun enregistrement de maintenance.",
+      "loading": "Chargement de la maintenance..."
+    },
+    "form": {
+      "titleNew": "Nouvelle maintenance",
+      "titleEdit": "Modifier la maintenance",
+      "submit": "Enregistrer la maintenance",
+      "types": {
+        "routine": "Routine",
+        "repair": "Réparation",
+        "inspection": "Inspection"
+      }
+    }
+  }
+}

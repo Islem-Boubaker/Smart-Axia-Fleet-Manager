@@ -1,7 +1,9 @@
 import { memo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { FiMenu, FiMoon, FiSearch, FiSun } from 'react-icons/fi';
 import { HeaderNotifications } from './HeaderNotifications';
 import UserMenu from '../../ui/UserMenu';
+import { LanguageSelector } from '../../LanguageSelector';
 
 export interface AppTopBarProps {
   dark: boolean;
@@ -10,6 +12,7 @@ export interface AppTopBarProps {
 }
 
 export const AppTopBar = memo(({ dark, setDark, onMenuClick }: AppTopBarProps) => {
+  const { t } = useTranslation();
   return (
     <header
       className={`shrink-0 z-20  px-4 sm:px-6 lg:px-8 pt-4 pb-2 ${
@@ -29,7 +32,7 @@ export const AppTopBar = memo(({ dark, setDark, onMenuClick }: AppTopBarProps) =
           className={`lg:hidden p-2.5 rounded-xl transition-colors ${
             dark ? 'hover:bg-slate-800 text-slate-200' : 'hover:bg-slate-100 text-slate-600'
           }`}
-          aria-label="Open menu"
+          aria-label={t('header.openMenu')}
         >
           <FiMenu className="w-5 h-5" />
         </button>
@@ -44,7 +47,7 @@ export const AppTopBar = memo(({ dark, setDark, onMenuClick }: AppTopBarProps) =
             type="search"
             name="search-query"
             autoComplete="off"
-            placeholder="Search fleet, trips, drivers…"
+            placeholder={t('header.searchPlaceholder')}
             className={`w-full bg-transparent text-sm outline-none placeholder:text-slate-400 ${
               dark ? 'text-slate-100' : 'text-slate-800'
             }`}
@@ -63,7 +66,7 @@ export const AppTopBar = memo(({ dark, setDark, onMenuClick }: AppTopBarProps) =
               className={`p-2 rounded-full transition-all ${
                 !dark ? 'bg-white text-amber-500 shadow-sm' : 'text-slate-500 hover:text-slate-300'
               }`}
-              title="Light mode"
+              title={t('header.lightMode')}
             >
               <FiSun className="w-4 h-4" />
             </button>
@@ -73,11 +76,13 @@ export const AppTopBar = memo(({ dark, setDark, onMenuClick }: AppTopBarProps) =
               className={`p-2 rounded-full transition-all ${
                 dark ? 'bg-slate-900 text-sky-300 shadow-sm' : 'text-slate-500 hover:text-slate-700'
               }`}
-              title="Dark mode"
+              title={t('header.darkMode')}
             >
               <FiMoon className="w-4 h-4" />
             </button>
           </div>
+
+          <LanguageSelector dark={dark} />
 
           <HeaderNotifications />
 

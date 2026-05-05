@@ -6,6 +6,7 @@ import { Card, Button } from '../../../shared/components';
 import ProfileSettings from '../components/ProfileSettings';
 import NotificationSettings from '../components/NotificationSettings';
 import SecuritySettings from '../components/SecuritySettings';
+import { useTranslation } from 'react-i18next';
 import type { NotificationPreferences, ProfileData } from '../settings.types';
 import { useAppSelector, useAppDispatch } from '../../../shared/hooks';
 import { setUser } from '../../../store/authSlice';
@@ -38,27 +39,30 @@ const ProfileFieldTiles = ({
 }: {
   items: Array<{ label: string; value: string }>;
   dark: boolean;
-}) => (
-  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
-    {items.map((item) => (
-      <div
-        key={item.label}
-        className={`rounded-xl px-3 py-2.5 sm:px-2 sm:py-3.5 border transition-colors ${
-          dark
-            ? 'border-slate-700/50 bg-slate-800/35 hover:bg-slate-800/55'
-            : 'border-slate-200/80 bg-slate-50/80 hover:bg-white'
-        }`}
-      >
-        <p className={`text-[10px] sm:text-[11px] font-semibold uppercase tracking-[0.1em] ${dark ? 'text-slate-500' : 'text-slate-500'}`}>
-          {item.label}
-        </p>
-        <p className={`mt-1 sm:mt-2 text-xs sm:text-xs font-medium leading-snug ${dark ? 'text-slate-100' : 'text-slate-900'}`}>
-          {item.value || '—'}
-        </p>
-      </div>
-    ))}
-  </div>
-);
+}) => {
+  const { t } = useTranslation();
+  return (
+    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+      {items.map((item) => (
+        <div
+          key={item.label}
+          className={`rounded-xl px-3 py-2.5 sm:px-2 sm:py-3.5 border transition-colors ${
+            dark
+              ? 'border-slate-700/50 bg-slate-800/35 hover:bg-slate-800/55'
+              : 'border-slate-200/80 bg-slate-50/80 hover:bg-white'
+          }`}
+        >
+          <p className={`text-[10px] sm:text-[11px] font-semibold uppercase tracking-[0.1em] ${dark ? 'text-slate-500' : 'text-slate-500'}`}>
+            {item.label}
+          </p>
+          <p className={`mt-1 sm:mt-2 text-xs sm:text-xs font-medium leading-snug ${dark ? 'text-slate-100' : 'text-slate-900'}`}>
+            {item.value || t('common.emDash')}
+          </p>
+        </div>
+      ))}
+    </div>
+  );
+};
 
 const ProfileOverview = ({
   profileData,
@@ -69,13 +73,14 @@ const ProfileOverview = ({
   dark: boolean;
   onEdit: () => void;
 }) => {
+  const { t } = useTranslation();
   const personalMain = [
-    { label: 'First name', value: profileData.name.split(' ')[0] || '' },
-    { label: 'Last name', value: profileData.name.split(' ').slice(1).join(' ') || '' },
-    { label: 'Email', value: profileData.email },
-    { label: 'Phone', value: profileData.phone },
+    { label: t('settings.profile.first_name'), value: profileData.name.split(' ')[0] || '' },
+    { label: t('settings.profile.last_name'), value: profileData.name.split(' ').slice(1).join(' ') || '' },
+    { label: t('settings.profile.email'), value: profileData.email },
+    { label: t('settings.profile.phone'), value: profileData.phone },
   ];
-  const bioText = profileData.role || 'No bio added';
+  const bioText = profileData.role || t('common.noBioAdded');
 
   return (
     <div className="space-y-6 lg:space-y-8">
@@ -88,37 +93,37 @@ const ProfileOverview = ({
               }`}
             >
               {profileData.avatar ? (
-                <img src={profileData.avatar} alt="Avatar" className="w-full h-full object-cover" />
+                <img src={profileData.avatar} alt={t('common.avatarPreview')} className="w-full h-full object-cover" />
               ) : (
                 profileData.name
                   .split(' ')
                   .filter(Boolean)
                   .slice(0, 2)
                   .map((part) => part[0])
-                  .join('') || 'U'
+                  .join('') || t('settings.profile.default_user')
               )}
             </div>
             <div className="min-w-0 space-y-1">
               <h3 className={`text-2xl font-bold tracking-tight ${dark ? 'text-white' : 'text-slate-900'}`}>
-                {profileData.name || 'Unknown user'}
+                {profileData.name || t('common.unknownUser')}
               </h3>
-              <p className={dark ? 'text-slate-400' : 'text-slate-600'}>{profileData.role || 'No role set'}</p>
-              <p className={`text-sm ${dark ? 'text-slate-500' : 'text-slate-500'}`}>AXIA Fleet Manager</p>
+              <p className={dark ? 'text-slate-400' : 'text-slate-600'}>{profileData.role || t('common.noRoleSet')}</p>
+              <p className={`text-sm ${dark ? 'text-slate-500' : 'text-slate-500'}`}>{t('common.axiaFleetManager')}</p>
             </div>
           </div>
           <Button variant="secondary" onClick={onEdit} className={`rounded-xl shrink-0 ${editBtnClass(dark)}`}>
             <FiEdit2 className="mr-2" />
-            Edit
+            {t('common.edit')}
           </Button>
         </div>
       </Card>
 
       <Card dark={dark} padding="lg" className={profileCardClass(dark)}>
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
-          <h4 className={`text-lg font-bold ${dark ? 'text-white' : 'text-slate-900'}`}>Personal information</h4>
+          <h4 className={`text-lg font-bold ${dark ? 'text-white' : 'text-slate-900'}`}>{t('settings.profile.personal_info')}</h4>
           <Button variant="secondary" onClick={onEdit} className={`rounded-xl shrink-0 ${editBtnClass(dark)}`}>
             <FiEdit2 className="mr-2" />
-            Edit
+            {t('common.edit')}
           </Button>
         </div>
         <ProfileFieldTiles items={personalMain} dark={dark} />
@@ -128,7 +133,7 @@ const ProfileOverview = ({
           }`}
         >
           <p className={`text-[11px] font-semibold uppercase tracking-[0.1em] ${dark ? 'text-slate-500' : 'text-slate-500'}`}>
-            Bio
+            {t('settings.profile.bio')}
           </p>
           <p className={`mt-2 text-sm leading-relaxed ${dark ? 'text-slate-300' : 'text-slate-700'}`}>{bioText}</p>
         </div>
@@ -136,19 +141,19 @@ const ProfileOverview = ({
 
       <Card dark={dark} padding="lg" className={profileCardClass(dark)}>
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
-          <h4 className={`text-lg font-bold ${dark ? 'text-white' : 'text-slate-900'}`}>Address</h4>
+          <h4 className={`text-lg font-bold ${dark ? 'text-white' : 'text-slate-900'}`}>{t('common.address')}</h4>
           <Button variant="secondary" onClick={onEdit} className={`rounded-xl shrink-0 ${editBtnClass(dark)}`}>
             <FiEdit2 className="mr-2" />
-            Edit
+            {t('common.edit')}
           </Button>
         </div>
         <ProfileFieldTiles
           dark={dark}
           items={[
-            { label: 'Country', value: profileData.country || '' },
-            { label: 'City / State', value: profileData.city || '' },
-            { label: 'Postal code', value: profileData.postalCode || '' },
-            { label: 'TAX ID', value: profileData.taxId || '' },
+            { label: t('common.country'), value: profileData.country || '' },
+            { label: t('common.cityState'), value: profileData.city || '' },
+            { label: t('common.postalCode'), value: profileData.postalCode || '' },
+            { label: t('common.taxId'), value: profileData.taxId || '' },
           ]}
         />
       </Card>
@@ -156,15 +161,10 @@ const ProfileOverview = ({
   );
 };
 
-const tabTitle: Record<string, string> = {
-  profile: 'My profile',
-  security: 'Password & security',
-  notifications: 'Notifications',
-};
-
 const SettingsPage = () => {
   const { dark } = useOutletContext<ThemeContext>();
   const location = useLocation();
+  const { t } = useTranslation();
   const { user } = useAppSelector((state) => state.auth);
   const dispatch = useAppDispatch();
   const { changePassword, updateNotifications, isLoading: isSettingsLoading } = useSettings();
@@ -188,7 +188,7 @@ const SettingsPage = () => {
     name: user?.name || '',
     email: user?.email || '',
     phone: (user as { phone?: string } | null)?.phone || '',
-    company: (user as any)?.company || 'AXIA Fleet Manager',
+    company: (user as any)?.company || t('common.axiaFleetManager'),
     role: user?.role || '',
     avatar: user?.avatar,
     country: (user as any)?.country || '',
@@ -223,7 +223,7 @@ const SettingsPage = () => {
       setIsEditingProfile(false);
     } catch (error) {
       console.error('Failed to save profile:', error);
-      alert('Failed to save profile');
+      alert(t('settings.profile.save_failed'));
     }
   };
 
@@ -248,24 +248,24 @@ const SettingsPage = () => {
   }, [notificationsQuery.data]);
 
   const handleChangePassword = async (currentPassword: string, newPassword: string) => {
-    const loadingId = toast.loading('Updating password...');
+    const loadingId = toast.loading(t('settings.security.toast_updating'));
 
     try {
       await changePassword(currentPassword, newPassword);
       toast.update(loadingId, {
         type: 'success',
-        title: 'Success',
-        message: 'Password changed successfully.',
+        title: t('common.success'),
+        message: t('settings.security.toast_success'),
       });
     } catch (err) {
       const message =
         (err as { response?: { data?: { message?: string } }; message?: string })?.response?.data?.message ||
         (err as { message?: string })?.message ||
-        'Failed to change password';
+        t('settings.security.toast_failed');
 
       toast.update(loadingId, {
         type: 'error',
-        title: 'Error',
+        title: t('common.error'),
         message,
       });
 
@@ -274,22 +274,22 @@ const SettingsPage = () => {
   };
 
   const handleSaveNotifications = async () => {
-    const loadingId = toast.loading('Saving notification settings...');
+    const loadingId = toast.loading(t('settings.notifications.toast_saving'));
     try {
       await updateNotifications(notifications);
       toast.update(loadingId, {
         type: 'success',
-        title: 'Success',
-        message: 'Notification settings saved.',
+        title: t('common.success'),
+        message: t('settings.notifications.toast_success'),
       });
     } catch (err) {
       const message =
         (err as { response?: { data?: { message?: string } }; message?: string })?.response?.data?.message ||
         (err as { message?: string })?.message ||
-        'Failed to save notification settings';
+        t('settings.notifications.toast_failed');
       toast.update(loadingId, {
         type: 'error',
-        title: 'Error',
+        title: t('common.error'),
         message,
       });
     }
@@ -306,7 +306,7 @@ const SettingsPage = () => {
                 onClick={() => setIsEditingProfile(false)}
                 className={dark ? '!text-slate-300 hover:!bg-slate-800' : ''}
               >
-                ← Back to profile overview
+                ← {t('settings.profile.back_to_overview')}
               </Button>
               <ProfileSettings profileData={profileData} onSave={handleSaveProfile} dark={dark} />
             </div>
@@ -342,7 +342,11 @@ const SettingsPage = () => {
     <div className={`${shell} overflow-hidden animate-fade-in`}>
       <div className="max-w-5xl mx-auto p-6 sm:p-8 lg:p-10">
         <h2 className={`text-2xl sm:text-3xl font-extrabold tracking-tight mb-6 lg:mb-8 ${dark ? 'text-white' : 'text-slate-900'}`}>
-          {tabTitle[activeTab] ?? 'Settings'}
+          {activeTab === 'profile'
+            ? t('settings.profile.title')
+            : activeTab === 'security'
+              ? t('settings.security.title')
+              : t('settings.tabs.notifications')}
         </h2>
         <div className="space-y-6 lg:space-y-8">{renderTabContent()}</div>
       </div>

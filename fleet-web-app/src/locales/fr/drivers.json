@@ -1,0 +1,23 @@
+{
+  "drivers": {
+    "title": "Conducteurs",
+    "description": "Gérez les profils, permis et affectations véhicule.",
+    "addNew": "Ajouter un conducteur",
+    "edit": "Modifier le conducteur",
+    "searchPlaceholder": "Rechercher par nom, e-mail, permis…",
+    "addAria": "Ajouter un conducteur",
+    "addButton": "Ajouter un conducteur",
+    "form": {
+      "submitCreate": "Créer le conducteur",
+      "submitUpdate": "Mettre à jour le conducteur",
+      "statusActive": "Actif",
+      "statusInactive": "Inactif"
+    },
+    "card": {
+      "license": "Permis",
+      "vehicle": "Véhicule",
+      "rating": "Note",
+      "since": "Depuis"
+    }
+  }
+}

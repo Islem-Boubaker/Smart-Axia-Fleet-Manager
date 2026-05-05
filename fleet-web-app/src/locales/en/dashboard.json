@@ -1,0 +1,62 @@
+{
+  "dashboard": {
+    "title": "Dashboard",
+    "overviewLine": "Operations center overview for {{date}}",
+    "newTrip": "New Trip",
+    "tripDetails": "Trip details",
+    "tripDetailsWithId": "Trip details #{{id}}",
+    "alerts": {
+      "title": "Active alerts",
+      "none": "No active alerts.",
+      "viewAll": "View all"
+    },
+    "fleetOverview": {
+      "title": "Fleet status overview",
+      "onTrip": "On trip",
+      "available": "Available",
+      "inMaintenance": "In maintenance",
+      "outOfService": "Out of service"
+    },
+    "stats": {
+      "activeVehicles": "Active vehicles",
+      "tripsToday": "Trips today",
+      "maintenanceDue": "Maintenance due",
+      "fuelCostMonth": "Fuel cost this month",
+      "tnd": "{{n}} TND"
+    },
+    "recentTrips": {
+      "title": "Recent trips",
+      "none": "No recent trips."
+    },
+    "topDrivers": {
+      "title": "Top drivers — this month",
+      "none": "No driver data for this month.",
+      "kmOnTime": "{{km}} km · {{pct}}% on-time"
+    },
+    "fuel": {
+      "title": "Fuel usage — last 7 days",
+      "totalWeek": "Total this week",
+      "avgVehicle": "Avg per vehicle",
+      "cost": "Cost"
+    },
+    "quickActions": {
+      "title": "Quick actions",
+      "newTrip": " New Trip",
+      "addVehicle": "Add Vehicle",
+      "scheduleMaintenance": "Schedule Maintenance",
+      "generateReport": "Generate Report"
+    },
+    "maintenance": {
+      "title": "Upcoming maintenance",
+      "none": "No upcoming maintenance in the next 14 days.",
+      "scheduledLine": "Scheduled: {{date}}",
+      "typePlate": "{{type}} — {{plate}}"
+    },
+    "tripItem": {
+      "statusCompleted": "completed",
+      "statusOngoing": "ongoing",
+      "statusCancelled": "cancelled",
+      "statusScheduled": "scheduled"
+    }
+  }
+}

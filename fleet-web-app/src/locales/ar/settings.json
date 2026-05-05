@@ -1,0 +1,34 @@
+{
+  "settings": {
+    "pageTitle": "الإعدادات",
+    "tabs": {
+      "profile": "ملفي الشخصي",
+      "security": "كلمة المرور والأمان",
+      "notifications": "الإشعارات"
+    },
+    "profile": {
+      "title": "معلومات الملف الشخصي",
+      "subtitle": "حدّث معلوماتك الشخصية",
+      "uploadChange": "رفع / تغيير",
+      "saveChanges": "حفظ التغييرات",
+      "changePasswordHint": "غيّر كلمة المرور من تبويب الأمان."
+    },
+    "security": {
+      "currentPasswordPlaceholder": "كلمة المرور الحالية",
+      "newPasswordPlaceholder": "كلمة المرور الجديدة",
+      "confirmPasswordPlaceholder": "تأكيد كلمة المرور",
+      "submit": "تحديث كلمة المرور",
+      "title": "الأمان"
+    },
+    "notifications": {
+      "email": "البريد",
+      "push": "إشعارات فورية",
+      "save": "حفظ التفضيلات"
+    },
+    "sidebar": {
+      "profile": "الملف الشخصي",
+      "notifications": "الإشعارات",
+      "security": "الأمان"
+    }
+  }
+}

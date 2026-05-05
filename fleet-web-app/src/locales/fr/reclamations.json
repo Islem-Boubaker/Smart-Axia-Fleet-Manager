@@ -1,0 +1,17 @@
+{
+  "reclamations": {
+    "title": "Problèmes conducteurs",
+    "subtitle": "Examinez et résolvez les signalements des conducteurs.",
+    "filters": {
+      "searchPlaceholder": "Recherche : sujet, message, conducteur, véhicule"
+    },
+    "table": {
+      "empty": "Aucun problème ne correspond aux filtres.",
+      "loading": "Chargement des problèmes..."
+    },
+    "details": {
+      "title": "Détails du problème",
+      "close": "Fermer"
+    }
+  }
+}

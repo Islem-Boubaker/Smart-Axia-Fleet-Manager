@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useOutletContext, useSearchParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 import TripsHeader from '../components/TripsHeader';
 import TripsFilters from '../components/TripsFilters';
 import TripsList from '../components/TripsList';
@@ -89,6 +90,7 @@ const buildVehicleLabel = (vehicle: Vehicle) => (
 
 const TripsPage = () => {
   const { dark } = useOutletContext<ThemeContext>();
+  const { t } = useTranslation();
   const [searchParams] = useSearchParams();
   const initialStatusParam = searchParams.get('status');
   const initialStatus = ['all', 'scheduled', 'ongoing', 'completed', 'cancelled'].includes(initialStatusParam || '')
@@ -222,7 +224,7 @@ const TripsPage = () => {
       const response = (err as { response?: { status?: number; data?: { message?: string; errors?: string[] } } })?.response;
       const message = response?.data?.message;
       const detailed = Array.isArray(response?.data?.errors) ? response?.data?.errors.join(' | ') : null;
-      setSubmitError(detailed || message || 'Failed to create trip.');
+      setSubmitError(detailed || message || t('trips.errors.createFailed'));
     } finally {
       setIsSubmitting(false);
     }
@@ -246,46 +248,46 @@ const TripsPage = () => {
     if (!editValues) return false;
 
     const nextErrors: Partial<Record<keyof TripEditValues, string>> = {};
-    if (!editValues.vehicleId) nextErrors.vehicleId = 'Vehicle is required.';
-    if (!editValues.userId) nextErrors.userId = 'Driver is required.';
-    if (editValues.startLocation.trim().length < 2) nextErrors.startLocation = 'Start location must be at least 2 characters.';
-    if (editValues.endLocation.trim().length < 2) nextErrors.endLocation = 'End location must be at least 2 characters.';
-    if (!editValues.startTime) nextErrors.startTime = 'Start date/time is required.';
-    if (!editValues.region) nextErrors.region = 'Region is required.';
+    if (!editValues.vehicleId) nextErrors.vehicleId = t('trips.form.errors.vehicleRequired');
+    if (!editValues.userId) nextErrors.userId = t('trips.form.errors.driverRequired');
+    if (editValues.startLocation.trim().length < 2) nextErrors.startLocation = t('trips.form.errors.startRequired');
+    if (editValues.endLocation.trim().length < 2) nextErrors.endLocation = t('trips.form.errors.destinationRequired');
+    if (!editValues.startTime) nextErrors.startTime = t('trips.form.errors.startTimeRequired');
+    if (!editValues.region) nextErrors.region = t('trips.form.errors.regionRequired');
     if (!editValues.requiredCapacity || Number(editValues.requiredCapacity) <= 0) {
-      nextErrors.requiredCapacity = 'Capacity must be greater than 0.';
+      nextErrors.requiredCapacity = t('trips.form.errors.capacityPositive');
     }
 
     const distance = Number(editValues.distance);
     if (Number.isNaN(distance) || distance <= 0) {
-      nextErrors.distance = 'Distance must be a positive number.';
+      nextErrors.distance = t('trips.form.errors.distancePositive');
     }
 
     if (editValues.endTime) {
       const startDate = new Date(editValues.startTime);
       const endDate = new Date(editValues.endTime);
       if (!Number.isNaN(startDate.getTime()) && !Number.isNaN(endDate.getTime()) && endDate <= startDate) {
-        nextErrors.endTime = 'End date/time must be after start date/time.';
+        nextErrors.endTime = t('trips.errors.endAfterStart');
       }
     }
 
     if (editValues.fuel.trim().length > 0) {
       const fuel = Number(editValues.fuel);
-      if (Number.isNaN(fuel) || fuel < 0) nextErrors.fuel = 'Fuel must be a non-negative number.';
+      if (Number.isNaN(fuel) || fuel < 0) nextErrors.fuel = t('trips.errors.fuelInvalid');
     }
 
     if (editValues.revenue.trim().length > 0) {
       const revenue = Number(editValues.revenue);
-      if (Number.isNaN(revenue) || revenue < 0) nextErrors.revenue = 'Revenue must be a non-negative number.';
+      if (Number.isNaN(revenue) || revenue < 0) nextErrors.revenue = t('trips.form.errors.revenueInvalid');
     }
 
     if (editValues.notes.trim().length === 1) {
-      nextErrors.notes = 'Notes must be at least 2 characters if provided.';
+      nextErrors.notes = t('trips.form.errors.notesLength');
     }
 
     const hasInvalidStop = editStops.some((stop) => stop.locationName.trim().length < 2);
     if (hasInvalidStop) {
-      setEditStopsError('Each stop name must be at least 2 characters.');
+      setEditStopsError(t('trips.edit.stopNameLength'));
     } else {
       setEditStopsError(null);
     }
@@ -425,7 +427,7 @@ const TripsPage = () => {
       const response = (err as { response?: { data?: { message?: string; errors?: string[] } } })?.response;
       const message = response?.data?.message;
       const detailed = Array.isArray(response?.data?.errors) ? response?.data?.errors.join(' | ') : null;
-      setEditError(detailed || message || 'Failed to update trip.');
+      setEditError(detailed || message || t('trips.errors.updateFailed'));
     } finally {
       setIsEditSubmitting(false);
     }
@@ -433,19 +435,19 @@ const TripsPage = () => {
 
   const handleGetEditRecommendations = async () => {
     if (!editValues?.startTime || !editValues?.region) {
-      setEditError('Please set a start time and region before requesting recommendations.');
+      setEditError(t('trips.errors.recStartRegion'));
       return;
     }
 
     const distanceValue = Number(editValues.distance);
     if (!Number.isFinite(distanceValue) || distanceValue <= 0) {
-      setEditError('Please set a valid distance before requesting recommendations.');
+      setEditError(t('trips.errors.recDistance'));
       return;
     }
 
     const capacityValue = Number(editValues.requiredCapacity);
     if (!Number.isFinite(capacityValue) || capacityValue <= 0) {
-      setEditError('Please set a required capacity greater than 0 before requesting recommendations.');
+      setEditError(t('trips.errors.recCapacity'));
       return;
     }
 
@@ -473,7 +475,7 @@ const TripsPage = () => {
       }) : null);
 
     } catch (err) {
-      setEditError('Failed to fetch ML recommendations. Using standard lists.');
+      setEditError(t('trips.errors.recFailed'));
     } finally {
       setIsFetchingRecs(false);
     }
@@ -481,20 +483,22 @@ const TripsPage = () => {
 
   const vehicleOptions = recommendations?.vehicles?.length
     ? [
-        { value: '', label: 'Select a vehicle' },
+        { value: '', label: t('trips.form.selectVehicle') },
         ...[...recommendations.vehicles]
           .map((vehicle) => {
             const score = vehicle.score;
+            const baseLabel = vehicle.name || t('common.vehicleDefaultName');
+            const scoreLabel = score ? t('common.scoreLabel', { score: Math.round(score) }) : '';
             return {
               value: vehicle.id,
-              label: (vehicle.name || 'Vehicle') + (score ? ` (Score: ${Math.round(score)})` : ''),
+              label: `${baseLabel}${scoreLabel}`,
               score: score || 0,
             };
           })
           .sort((a, b) => b.score - a.score || (a.label || '').localeCompare(b.label || '')),
       ]
     : [
-        { value: '', label: 'Select a vehicle' },
+        { value: '', label: t('trips.form.selectVehicle') },
         ...[...vehicles]
           .map((vehicle) => ({
             value: vehicle.id,
@@ -506,20 +510,21 @@ const TripsPage = () => {
 
   const driverOptions = recommendations?.drivers?.length
     ? [
-        { value: '', label: 'Select a driver' },
+        { value: '', label: t('trips.form.selectDriver') },
         ...[...recommendations.drivers]
           .map((driver) => {
             const score = driver.score;
+            const scoreLabel = score ? t('common.scoreLabel', { score: Math.round(score) }) : '';
             return {
               value: driver.id,
-              label: driver.name + (score ? ` (Score: ${Math.round(score)})` : ''),
+              label: `${driver.name}${scoreLabel}`,
               score: score || 0,
             };
           })
           .sort((a, b) => b.score - a.score || (a.label || '').localeCompare(b.label || '')),
       ]
     : [
-        { value: '', label: 'Select a driver' },
+        { value: '', label: t('trips.form.selectDriver') },
         ...[...drivers]
           .map((driver) => ({
             value: driver.id,
@@ -555,7 +560,7 @@ const TripsPage = () => {
           )}
           {isLoading ? (
             <div className={`text-center py-16 rounded-2xl border ${dark ? 'border-slate-700 text-slate-400' : 'border-slate-200 text-slate-500'}`}>
-              Loading trips...
+              {t('trips.loading')}
             </div>
           ) : (
             <TripsList
@@ -579,7 +584,7 @@ const TripsPage = () => {
           setIsAddModalOpen(false);
           setSubmitError(null);
         }}
-        title="Schedule trip"
+        title={t('trips.header.scheduleTrip')}
         maxWidth="2xl"
       >
         {submitError && (
@@ -604,7 +609,11 @@ const TripsPage = () => {
       <GlobalCard
         isOpen={Boolean(selectedTrip)}
         onClose={() => setSelectedTrip(null)}
-        title={selectedTrip ? `Trip details #${selectedTrip.id}` : 'Trip details'}
+        title={
+          selectedTrip
+            ? t('trips.modals.detailsTitleWithId', { id: selectedTrip.id })
+            : t('trips.modals.detailsTitle')
+        }
         maxWidth="2xl"
       >
         {selectedTrip ? <TripDetailsView trip={selectedTrip} dark={dark} /> : null}
@@ -621,7 +630,11 @@ const TripsPage = () => {
           setEditStopsError(null);
           setEditError(null);
         }}
-        title={editingTrip ? `Edit trip #${editingTrip.id}` : 'Edit trip'}
+        title={
+          editingTrip
+            ? t('trips.modals.editTitleWithId', { id: editingTrip.id })
+            : t('trips.modals.editTitle')
+        }
         maxWidth="2xl"
       >
         {editError && (
@@ -634,8 +647,8 @@ const TripsPage = () => {
           <div className="space-y-4">
             <div className={`flex flex-col sm:flex-row items-center justify-between p-4 rounded-2xl border ${dark ? 'border-indigo-500/30 bg-indigo-500/5' : 'border-indigo-100 bg-indigo-50/50'} gap-4`}>
               <div className="flex-1">
-                <p className={`text-sm font-semibold ${dark ? 'text-indigo-300' : 'text-indigo-700'}`}>Smart Recommendation</p>
-                <p className="text-xs text-gray-500 dark:text-slate-400">Rank drivers and vehicles for this specific route.</p>
+                <p className={`text-sm font-semibold ${dark ? 'text-indigo-300' : 'text-indigo-700'}`}>{t('trips.form.smartRecTitle')}</p>
+                <p className="text-xs text-gray-500 dark:text-slate-400">{t('trips.form.smartRecHint')}</p>
               </div>
               <Button
                 type="button"
@@ -646,14 +659,14 @@ const TripsPage = () => {
                 disabled={!editValues.startTime || isFetchingRecs}
                 className="bg-indigo-600 hover:bg-indigo-700 text-white shadow-sm whitespace-nowrap"
               >
-                {recommendations ? 'Refresh Suggestions' : 'Get ML Suggestions'}
+                {recommendations ? t('trips.form.refreshSuggestions') : t('trips.form.getMlSuggestions')}
               </Button>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
 
               <div>
-                <label className="block text-[13px] text-gray-500 dark:text-slate-400 mb-1.5">Vehicle</label>
+                <label className="block text-[13px] text-gray-500 dark:text-slate-400 mb-1.5">{t('trips.form.vehicleLabel')}</label>
                 <Select
                   value={editValues.vehicleId}
                   onChange={(value) => handleEditField('vehicleId', value)}
@@ -664,7 +677,7 @@ const TripsPage = () => {
                 {editErrors.vehicleId && <p className="mt-1 text-sm text-red-600">{editErrors.vehicleId}</p>}
               </div>
               <div>
-                <label className="block text-[13px] text-gray-500 dark:text-slate-400 mb-1.5">Driver</label>
+                <label className="block text-[13px] text-gray-500 dark:text-slate-400 mb-1.5">{t('trips.form.driverLabel')}</label>
                 <Select
                   value={editValues.userId}
                   onChange={(value) => handleEditField('userId', value)}
@@ -678,13 +691,13 @@ const TripsPage = () => {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <Input
-                label="Start location"
+                label={t('trips.form.startLocation')}
                 value={editValues.startLocation}
                 onChange={(e) => handleEditField('startLocation', e.target.value)}
                 error={editErrors.startLocation}
               />
               <Input
-                label="End location"
+                label={t('trips.form.finalDestination')}
                 value={editValues.endLocation}
                 onChange={(e) => handleEditField('endLocation', e.target.value)}
                 error={editErrors.endLocation}
@@ -693,14 +706,14 @@ const TripsPage = () => {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <Input
-                label="Start date/time"
+                label={t('trips.form.startDateTime')}
                 type="datetime-local"
                 value={editValues.startTime}
                 onChange={(e) => handleEditField('startTime', e.target.value)}
                 error={editErrors.startTime}
               />
               <Input
-                label="End date/time"
+                label={t('trips.form.endDateTime')}
                 type="datetime-local"
                 value={editValues.endTime}
                 onChange={(e) => handleEditField('endTime', e.target.value)}
@@ -710,7 +723,7 @@ const TripsPage = () => {
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <Input
-                label="Distance (km)"
+                label={t('trips.form.distanceKm')}
                 type="number"
                 min="0.1"
                 step="0.1"
@@ -719,7 +732,7 @@ const TripsPage = () => {
                 error={editErrors.distance}
               />
               <Input
-                label="Fuel (L)"
+                label={t('trips.edit.fuelLabel')}
                 type="number"
                 min="0"
                 step="0.1"
@@ -728,7 +741,7 @@ const TripsPage = () => {
                 error={editErrors.fuel}
               />
               <Input
-                label="Revenue (TND)"
+                label={t('trips.form.revenueTnd')}
                 type="number"
                 min="0"
                 step="0.1"
@@ -737,13 +750,13 @@ const TripsPage = () => {
                 error={editErrors.revenue}
               />
               <Input
-                label="Region"
+                label={t('common.region')}
                 value={editValues.region}
                 onChange={(e) => handleEditField('region', e.target.value)}
                 error={editErrors.region}
               />
               <Input
-                label="Req. Capacity (kg)"
+                label={t('trips.form.reqCapacity')}
                 type="number"
                 min="1"
                 value={editValues.requiredCapacity}
@@ -753,7 +766,7 @@ const TripsPage = () => {
             </div>
 
             <div>
-              <label className="block text-[13px] text-gray-500 dark:text-slate-400 mb-1.5">Notes (optional)</label>
+              <label className="block text-[13px] text-gray-500 dark:text-slate-400 mb-1.5">{t('trips.form.notesOptional')}</label>
               <textarea
                 value={editValues.notes}
                 onChange={(e) => handleEditField('notes', e.target.value)}
@@ -763,7 +776,7 @@ const TripsPage = () => {
                     ? 'bg-slate-800/50 border-slate-700 text-white placeholder:text-slate-500 hover:border-slate-600'
                     : 'bg-white border-gray-200 text-gray-900 placeholder:text-gray-400 hover:border-gray-300'
                 } ${editErrors.notes ? 'border-red-500' : ''}`}
-                placeholder="Add notes..."
+                placeholder={t('trips.form.notesPlaceholder')}
               />
               {editErrors.notes && <p className="mt-1 text-sm text-red-600">{editErrors.notes}</p>}
             </div>
@@ -771,13 +784,13 @@ const TripsPage = () => {
             <div className={`rounded-2xl border p-4 space-y-3 ${dark ? 'border-slate-700/80 bg-slate-900/30' : 'border-slate-200/90 bg-white/70'}`}>
               <div className="flex items-center justify-between gap-3">
                 <div>
-                  <p className={`text-sm font-semibold ${dark ? 'text-slate-100' : 'text-slate-900'}`}>Stops</p>
-                  <p className={`text-xs ${dark ? 'text-slate-400' : 'text-slate-500'}`}>
-                    Edit stop names, notes, ETA, add/remove stops, and reorder when trip is scheduled.
-                  </p>
+                    <p className={`text-sm font-semibold ${dark ? 'text-slate-100' : 'text-slate-900'}`}>{t('trips.edit.stopsTitle')}</p>
+                    <p className={`text-xs ${dark ? 'text-slate-400' : 'text-slate-500'}`}>
+                      {t('trips.edit.stopsHint')}
+                    </p>
                 </div>
                 <Button type="button" size="sm" variant="secondary" onClick={handleAddEditStop} disabled={isEditSubmitting}>
-                  Add stop
+                    {t('trips.form.addStop')}
                 </Button>
               </div>
 
@@ -785,13 +798,13 @@ const TripsPage = () => {
 
               <div className="space-y-3">
                 {editStops.length === 0 ? (
-                  <p className={`text-sm ${dark ? 'text-slate-400' : 'text-slate-500'}`}>No stops yet.</p>
+                    <p className={`text-sm ${dark ? 'text-slate-400' : 'text-slate-500'}`}>{t('trips.edit.noStops')}</p>
                 ) : (
                   editStops.map((stop, index) => (
                     <div key={stop.tempId} className={`rounded-xl border p-3 ${dark ? 'border-slate-700 bg-slate-800/40' : 'border-slate-200 bg-slate-50/80'}`}>
                       <div className="flex items-center justify-between gap-2 mb-3">
                         <p className={`text-xs font-semibold uppercase tracking-wide ${dark ? 'text-slate-400' : 'text-slate-500'}`}>
-                          Stop {index + 1}
+                            {t('trips.edit.stopNumber', { n: index + 1 })}
                         </p>
                         <div className="flex items-center gap-2">
                           <Button
@@ -801,7 +814,7 @@ const TripsPage = () => {
                             onClick={() => moveEditStop(index, index - 1)}
                             disabled={isEditSubmitting || editingTrip?.status !== 'scheduled' || index === 0}
                           >
-                            Up
+                              {t('trips.edit.moveUp')}
                           </Button>
                           <Button
                             type="button"
@@ -810,7 +823,7 @@ const TripsPage = () => {
                             onClick={() => moveEditStop(index, index + 1)}
                             disabled={isEditSubmitting || editingTrip?.status !== 'scheduled' || index === editStops.length - 1}
                           >
-                            Down
+                              {t('trips.edit.moveDown')}
                           </Button>
                           <Button
                             type="button"
@@ -819,19 +832,19 @@ const TripsPage = () => {
                             onClick={() => handleRemoveEditStop(stop.tempId)}
                             disabled={isEditSubmitting}
                           >
-                            Remove
+                              {t('common.remove')}
                           </Button>
                         </div>
                       </div>
 
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                         <Input
-                          label="Stop name"
+                            label={t('trips.edit.stopName')}
                           value={stop.locationName}
                           onChange={(e) => handleEditStopField(stop.tempId, 'locationName', e.target.value)}
                         />
                         <Input
-                          label="Estimated arrival"
+                            label={t('trips.edit.estimatedArrival')}
                           type="datetime-local"
                           value={stop.estimatedArrival}
                           onChange={(e) => handleEditStopField(stop.tempId, 'estimatedArrival', e.target.value)}
@@ -839,7 +852,7 @@ const TripsPage = () => {
                       </div>
 
                       <div className="mt-3">
-                        <label className="block text-[13px] text-gray-500 dark:text-slate-400 mb-1.5">Stop notes (optional)</label>
+                          <label className="block text-[13px] text-gray-500 dark:text-slate-400 mb-1.5">{t('trips.edit.stopNotesLabel')}</label>
                         <textarea
                           value={stop.notes}
                           onChange={(e) => handleEditStopField(stop.tempId, 'notes', e.target.value)}
@@ -849,7 +862,7 @@ const TripsPage = () => {
                               ? 'bg-slate-800/50 border-slate-700 text-white placeholder:text-slate-500 hover:border-slate-600'
                               : 'bg-white border-gray-200 text-gray-900 placeholder:text-gray-400 hover:border-gray-300'
                           }`}
-                          placeholder="Optional note for this stop"
+                            placeholder={t('trips.edit.stopNotesPlaceholder')}
                         />
                       </div>
                     </div>
@@ -873,10 +886,10 @@ const TripsPage = () => {
                 }}
                 disabled={isEditSubmitting}
               >
-                Cancel
+                {t('common.cancel')}
               </Button>
               <Button type="button" onClick={handleSaveEdit} isLoading={isEditSubmitting}>
-                Save changes
+                {t('common.saveChanges')}
               </Button>
             </div>
           </div>

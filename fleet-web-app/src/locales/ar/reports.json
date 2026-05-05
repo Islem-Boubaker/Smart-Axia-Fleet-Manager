@@ -1,0 +1,23 @@
+{
+  "reports": {
+    "title": "التقارير",
+    "subtitle": "تحليلات ومؤشرات الأسطول.",
+    "filters": {
+      "dateRange": "نطاق التاريخ",
+      "export": "تصدير",
+      "apply": "تطبيق"
+    },
+    "sections": {
+      "overview": "نظرة عامة",
+      "fuel": "تحليل الوقود",
+      "drivers": "مؤشرات السائقين",
+      "maintenance": "ملخص الصيانة",
+      "trips": "تحليلات الرحلات",
+      "vehicles": "أداء المركبات",
+      "monthly": "الاتجاهات الشهرية",
+      "utilization": "الاستخدام"
+    },
+    "loadingSection": "جاري تحميل القسم...",
+    "errorSection": "تعذّر تحميل هذا القسم."
+  }
+}

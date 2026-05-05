@@ -1,0 +1,10 @@
+{
+  "fleet": {
+    "title": "Fleet overview",
+    "subtitle": "Consolidated view of all fleet assets.",
+    "table": {
+      "empty": "No fleet data available.",
+      "loading": "Loading fleet..."
+    }
+  }
+}

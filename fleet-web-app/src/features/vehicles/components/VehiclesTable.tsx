@@ -1,4 +1,5 @@
 ﻿import { memo, useState } from "react";
+import { useTranslation } from 'react-i18next';
 import type { Vehicle } from "../../../types";
 import type { VehicleTableRow } from "../hooks/useVehicles";
 import { AppDataTable, AppStatusBadge, AppTd, AppTr } from '../../../shared/components';
@@ -14,10 +15,10 @@ interface VehiclesTableProps {
   onDelete: (vehicleId: string) => void;
 }
 
-const statusVariant = (status: VehicleTableRow["statusLabel"]) => {
-  if (status === "Available") return "success";
-  if (status === "In Use") return "info";
-  if (status === "Maintenance") return "danger";
+const statusVariant = (status: VehicleTableRow['status']) => {
+  if (status === 'available') return 'success';
+  if (status === 'in_use') return 'info';
+  if (status === 'maintenance') return 'danger';
   return "neutral";
 };
 
@@ -53,7 +54,11 @@ const VehiclesTable = memo(
     onEdit,
     onDelete,
   }: VehiclesTableProps) => {
+    const { t } = useTranslation();
     const [expandedRows, setExpandedRows] = useState<Record<string, boolean>>({});
+
+    const normalizeStatusKey = (value: string) =>
+      value.toLowerCase().replace(/\s+/g, '_').replace(/-+/g, '_');
 
     const toggleRow = (vehicleId: string) => {
       setExpandedRows((current) => ({
@@ -71,7 +76,7 @@ const VehiclesTable = memo(
               : "border-slate-200 text-slate-500"
           }`}
         >
-          Loading vehicles...
+          {t('vehicles.table.loading')}
         </div>
       );
     }
@@ -96,16 +101,26 @@ const VehiclesTable = memo(
               : "border-slate-200 text-slate-500"
           }`}
         >
-          No vehicles found for the selected filters.
+          {t('vehicles.table.empty')}
         </div>
       );
     }
 
+    const statusLabel = (status: VehicleTableRow['status']) => t(`status.${normalizeStatusKey(status)}`);
+
     return (
       <AppDataTable
-        columns={["Vehicle", "Status", "Driver", "Last Trip", "Maintenance Recommendation", "Actions"]}
+        columns={[
+          t('vehicles.table.vehicle'),
+          t('vehicles.table.status'),
+          t('vehicles.table.driver'),
+          t('vehicles.table.last_trip'),
+          t('vehicles.table.maintenance_recommendation'),
+          t('vehicles.table.actions'),
+        ]}
         totalResults={rows.length}
         dark={dark}
+        ariaLabel={t('vehicles.table.dataTableAria')}
       >
         {rows.map((row) => {
           const vehicleImage = row.vehicle.photos?.[0] ?? null;
@@ -138,7 +153,7 @@ const VehiclesTable = memo(
                       />
                     ) : (
                       <span className={`text-[10px] font-medium ${dark ? 'text-slate-500' : 'text-slate-400'}`}>
-                        No image
+                        {t('vehicles.table.noImage')}
                       </span>
                     )}
                   </div>
@@ -155,20 +170,20 @@ const VehiclesTable = memo(
 
               {/* ── Status ── */}
               <AppTd>
-                <AppStatusBadge variant={statusVariant(row.statusLabel)}>
-                  {row.statusLabel}
+                <AppStatusBadge variant={statusVariant(row.status)}>
+                  {statusLabel(row.status)}
                 </AppStatusBadge>
               </AppTd>
 
               {/* ── Driver ── */}
               <AppTd
                 className={
-                  row.driverName === "Unassigned"
+                  !row.isDriverAssigned
                     ? dark ? 'italic text-slate-400' : 'italic text-slate-500'
                     : dark ? 'text-slate-100' : 'text-slate-900'
                 }
               >
-                {row.driverName}
+                {row.driverName ?? t('common.unassigned')}
               </AppTd>
 
               {/* ── Last Trip ── */}
@@ -180,7 +195,7 @@ const VehiclesTable = memo(
               <AppTd className="min-w-[18rem] align-top">
                 {primaryRecommendation === null ? (
                   <span className={`text-xs italic ${dark ? 'text-slate-500' : 'text-slate-400'}`}>
-                    No recommendations
+                    {t('vehicles.table.noRecommendations')}
                   </span>
                 ) : (
                   <div className="space-y-2 max-w-sm">
@@ -202,14 +217,20 @@ const VehiclesTable = memo(
                           type="button"
                           onClick={() => toggleRow(row.vehicle.id)}
                           aria-expanded={isExpanded}
-                          aria-label={isExpanded ? `Hide additional recommendations for ${row.vehicle.name}` : `Show additional recommendations for ${row.vehicle.name}`}
+                          aria-label={
+                            isExpanded
+                              ? t('vehicles.table.hideRecAria', { name: row.vehicle.name })
+                              : t('vehicles.table.showRecAria', { name: row.vehicle.name })
+                          }
                           className={`text-xs font-medium transition-colors ${
                             dark
                               ? 'text-slate-400 hover:text-slate-200'
                               : 'text-slate-500 hover:text-slate-800'
                           }`}
                         >
-                          {isExpanded ? 'Hide' : `Show ${recommendations.length - 1} more`}
+                          {isExpanded
+                            ? t('vehicles.table.hide')
+                            : t('vehicles.table.showMore', { n: recommendations.length - 1 })}
                         </button>
 
                         {isExpanded && (

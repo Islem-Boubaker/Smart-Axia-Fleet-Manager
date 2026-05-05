@@ -1,4 +1,5 @@
 import { memo } from 'react';
+import { useTranslation } from 'react-i18next';
 
 interface FleetTableProps {
   data: any[];
@@ -6,22 +7,23 @@ interface FleetTableProps {
 }
 
 const FleetTable = memo(({ data, dark = false }: FleetTableProps) => {
+  const { t } = useTranslation();
   return (
     <div className="overflow-x-auto rounded-xl">
       <table className={`min-w-full divide-y ${dark ? 'divide-slate-700' : 'divide-gray-200'}`}>
         <thead className={dark ? 'bg-slate-800/60' : 'bg-gray-50'}>
           <tr>
             <th className={`px-6 py-3 text-left text-xs font-medium uppercase tracking-wider ${dark ? 'text-slate-400' : 'text-gray-500'}`}>
-              Name
+              {t('fleet.table.name')}
             </th>
             <th className={`px-6 py-3 text-left text-xs font-medium uppercase tracking-wider ${dark ? 'text-slate-400' : 'text-gray-500'}`}>
-              Description
+              {t('fleet.table.description')}
             </th>
             <th className={`px-6 py-3 text-left text-xs font-medium uppercase tracking-wider ${dark ? 'text-slate-400' : 'text-gray-500'}`}>
-              Vehicles
+              {t('fleet.table.vehicles')}
             </th>
             <th className={`px-6 py-3 text-left text-xs font-medium uppercase tracking-wider ${dark ? 'text-slate-400' : 'text-gray-500'}`}>
-              Actions
+              {t('fleet.table.actions')}
             </th>
           </tr>
         </thead>
@@ -32,7 +34,7 @@ const FleetTable = memo(({ data, dark = false }: FleetTableProps) => {
               <td className="px-6 py-4 whitespace-nowrap">{item.description}</td>
               <td className="px-6 py-4 whitespace-nowrap">{item.vehicleCount}</td>
               <td className="px-6 py-4 whitespace-nowrap">
-                <button className="text-blue-600 hover:text-blue-500 dark:text-blue-300 dark:hover:text-blue-200 font-medium">Edit</button>
+                <button className="text-blue-600 hover:text-blue-500 dark:text-blue-300 dark:hover:text-blue-200 font-medium">{t('common.edit')}</button>
               </td>
             </tr>
           ))}

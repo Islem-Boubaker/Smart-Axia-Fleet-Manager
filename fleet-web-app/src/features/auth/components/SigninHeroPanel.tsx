@@ -1,6 +1,8 @@
+import { useTranslation } from 'react-i18next';
 import DELIVERY_IMG from '../../../assets/Delivery.png';
 
 export default function SigninHeroPanel() {
+  const { t } = useTranslation();
   return (
     <div
       className="sa-left"
@@ -16,7 +18,7 @@ export default function SigninHeroPanel() {
     >
       <img
         src={DELIVERY_IMG}
-        alt="Delivery team loading packages"
+        alt={t('common.deliveryImageAlt')}
         style={{
           position: 'absolute',
           inset: 0,
@@ -109,7 +111,7 @@ export default function SigninHeroPanel() {
             }}
           />
           <span style={{ color: 'rgba(255,255,255,0.90)', fontSize: '12px', fontWeight: 500, letterSpacing: '0.05em' }}>
-            Live Fleet Tracking
+            {t('auth.heroBadge')}
           </span>
         </div>
 
@@ -127,7 +129,7 @@ export default function SigninHeroPanel() {
           >
             Smart <span style={{ color: '#2F2FE4' }}>AXIA</span>
             <br />
-            <span style={{ color: '#fff' }}>Fleet Manager</span>
+            <span style={{ color: '#fff' }}>{t('brand.heroTitleFleet')}</span>
           </h1>
 
           <p
@@ -138,7 +140,7 @@ export default function SigninHeroPanel() {
               maxWidth: '380px',
             }}
           >
-            Full visibility over your deliveries — real-time GPS, driver status, and dispatch from one unified control room.
+            {t('auth.heroDescription')}
           </p>
         </div>
       </div>

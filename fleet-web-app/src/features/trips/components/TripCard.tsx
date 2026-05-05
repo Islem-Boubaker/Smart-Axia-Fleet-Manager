@@ -1,4 +1,5 @@
 import { memo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { FiArrowRight, FiTruck, FiUser } from 'react-icons/fi';
 import { Badge } from '../../../shared/components';
 import type { Trip } from '../../../types';
@@ -17,35 +18,38 @@ interface TripCardProps {
   onCancel?: (tripId: string) => void;
 }
 
-const formatDateTime = (value?: string) => {
-  if (!value) return 'N/A';
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return value;
-  return date.toLocaleString();
-};
-
-const formatFuel = (trip: Trip) => {
-  const fuel = trip.fuel;
-  if (typeof fuel === 'number' && Number.isFinite(fuel)) {
-    return `${fuel.toFixed(1)} L`;
-  }
-
-  const distance = typeof trip.distance === 'number' ? trip.distance : Number(trip.distance);
-  const consumption = trip.vehicle?.consumption;
-  if (Number.isFinite(distance) && Number.isFinite(consumption) && distance > 0 && Number(consumption) > 0) {
-    const estimated = (distance * Number(consumption)) / 100;
-    return `${estimated.toFixed(1)} L (est.)`;
-  }
-
-  const legacyValue = fuel as unknown;
-  if (typeof legacyValue === 'string' && legacyValue.trim().length > 0) {
-    return legacyValue;
-  }
-
-  return 'N/A';
-};
-
 const TripCard = memo(({ trip, dark = false, index = 0, isBusy = false, onViewDetails, onEdit, onStart, onReachStop, onComplete, onCancel }: TripCardProps) => {
+  const { t, i18n } = useTranslation();
+  const normalizeStatusKey = (value: string) =>
+    value.toLowerCase().replace(/\s+/g, '_').replace(/-+/g, '_');
+
+  const formatDateTime = (value?: string) => {
+    if (!value) return t('common.na');
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return value;
+    return date.toLocaleString(i18n.language);
+  };
+
+  const formatFuel = (tr: Trip) => {
+    const fuel = tr.fuel;
+    if (typeof fuel === 'number' && Number.isFinite(fuel)) {
+      return t('trips.card.liters', { n: fuel.toFixed(1) });
+    }
+
+    const distance = typeof tr.distance === 'number' ? tr.distance : Number(tr.distance);
+    const consumption = tr.vehicle?.consumption;
+    if (Number.isFinite(distance) && Number.isFinite(consumption) && distance > 0 && Number(consumption) > 0) {
+      const estimated = (distance * Number(consumption)) / 100;
+      return t('trips.card.fuelEst', { n: estimated.toFixed(1) });
+    }
+
+    const legacyValue = fuel as unknown;
+    if (typeof legacyValue === 'string' && legacyValue.trim().length > 0) {
+      return legacyValue;
+    }
+
+    return t('common.na');
+  };
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'completed':
@@ -69,15 +73,18 @@ const TripCard = memo(({ trip, dark = false, index = 0, isBusy = false, onViewDe
         : 'from-slate-300 to-slate-400';
 
   const metrics: Array<[string, string]> = [
-    ['Distance', `${trip.distance ?? 0} km`],
-    ['Fuel', formatFuel(trip)],
-    ['Revenue', trip.revenue !== undefined ? `${trip.revenue} TND` : 'N/A'],
+    [t('trips.card.distance'), `${trip.distance ?? 0} ${t('common.kmUnit')}`],
+    [t('trips.card.fuel'), formatFuel(trip)],
+    [
+      t('trips.card.revenue'),
+      trip.revenue !== undefined ? t('trips.card.revenueTnd', { n: trip.revenue }) : t('common.na'),
+    ],
   ];
 
-  const driverDisplay = trip.driver?.name || 'Unassigned driver';
-  const vehicleDisplay = [trip.vehicle?.name, trip.vehicle?.plaque_immatriculation]
-    .filter(Boolean)
-    .join(' - ') || 'Unknown vehicle';
+  const driverDisplay = trip.driver?.name || t('trips.card.unassignedDriver');
+  const vehicleDisplay =
+    [trip.vehicle?.name, trip.vehicle?.plaque_immatriculation].filter(Boolean).join(' - ') ||
+    t('trips.card.unknownVehicle');
 
   const orderedStops = Array.isArray(trip.stops)
     ? [...trip.stops].sort((a, b) => a.stopOrder - b.stopOrder)
@@ -115,12 +122,12 @@ const TripCard = memo(({ trip, dark = false, index = 0, isBusy = false, onViewDe
     ...timelineStops.map((stop) => {
       const isActiveStop = stop.id === activeStopId;
       const subtitle = stop.status === 'reached'
-        ? `Reached ${formatDateTime(stop.arrivalTime)}`
+        ? t('trips.card.reachedAt', { dt: formatDateTime(stop.arrivalTime) })
         : stop.status === 'skipped'
-          ? 'Skipped'
+          ? t('trips.card.skipped')
           : isActiveStop
-            ? 'Next stop'
-            : 'Upcoming';
+            ? t('trips.card.nextStop')
+            : t('trips.card.upcoming');
 
       return {
         id: stop.id,
@@ -134,7 +141,11 @@ const TripCard = memo(({ trip, dark = false, index = 0, isBusy = false, onViewDe
     {
       id: `end-${trip.id}`,
       title: compactLocationLabel(trip.endLocation),
-      subtitle: trip.endTime ? formatDateTime(trip.endTime) : trip.status === 'completed' ? 'Reached destination' : 'Final destination',
+      subtitle: trip.endTime
+        ? formatDateTime(trip.endTime)
+        : trip.status === 'completed'
+          ? t('trips.card.reachedDestination')
+          : t('trips.card.finalDestination'),
       kind: 'end',
     },
   ];
@@ -168,7 +179,7 @@ const TripCard = memo(({ trip, dark = false, index = 0, isBusy = false, onViewDe
         <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 mb-5">
           <div>
             <p className={`text-xs font-semibold uppercase tracking-wider ${dark ? 'text-slate-500' : 'text-slate-400'}`}>
-              Trip #{trip.id}
+              {t('trips.card.tripNumber', { id: trip.id })}
             </p>
             <h3 className={`mt-1 text-lg font-bold ${dark ? 'text-white' : 'text-slate-900'}`}>
               {compactLocationLabel(trip.startLocation)}
@@ -177,7 +188,7 @@ const TripCard = memo(({ trip, dark = false, index = 0, isBusy = false, onViewDe
             </h3>
           </div>
           <Badge variant={getStatusColor(trip.status) as 'success' | 'warning' | 'info' | 'error' | 'default'}>
-            {trip.status}
+            {t(`status.${normalizeStatusKey(trip.status)}`)}
           </Badge>
         </div>
 
@@ -278,7 +289,7 @@ const TripCard = memo(({ trip, dark = false, index = 0, isBusy = false, onViewDe
               }}
               className={`px-3 py-2 text-xs font-semibold whitespace-nowrap rounded-lg ${dark ? 'bg-emerald-500/20 text-emerald-200' : 'bg-emerald-50 text-emerald-700'} ${isBusy ? 'opacity-50 cursor-not-allowed' : ''}`}
             >
-              Start Trip
+              {t('trips.card.startTrip')}
             </button>
           )}
           {canMarkStopReached && nextPendingStop && (
@@ -291,7 +302,7 @@ const TripCard = memo(({ trip, dark = false, index = 0, isBusy = false, onViewDe
               }}
               className={`px-3 py-2 text-xs font-semibold whitespace-nowrap rounded-lg ${dark ? 'bg-sky-500/20 text-sky-200' : 'bg-sky-50 text-sky-700'} ${isBusy ? 'opacity-50 cursor-not-allowed' : ''}`}
             >
-              Stop Reached
+              {t('trips.card.stopReached')}
             </button>
           )}
           {canFinishLastStep && (
@@ -304,7 +315,7 @@ const TripCard = memo(({ trip, dark = false, index = 0, isBusy = false, onViewDe
               }}
               className={`px-3 py-2 text-xs font-semibold whitespace-nowrap rounded-lg ${dark ? 'bg-sky-500/20 text-sky-200' : 'bg-sky-50 text-sky-700'} ${isBusy ? 'opacity-50 cursor-not-allowed' : ''}`}
             >
-              Stop Reached
+              {t('trips.card.stopReached')}
             </button>
           )}
           {canCompleteTrip && (
@@ -317,7 +328,7 @@ const TripCard = memo(({ trip, dark = false, index = 0, isBusy = false, onViewDe
               }}
               className={`px-3 py-2 text-xs font-semibold whitespace-nowrap rounded-lg ${dark ? 'bg-brand/20 text-brand' : 'bg-brand-light text-brand-deep'} ${isBusy ? 'opacity-50 cursor-not-allowed' : ''}`}
             >
-              Complete Trip
+              {t('trips.card.completeTrip')}
             </button>
           )}
           {(trip.status === 'scheduled' || trip.status === 'ongoing') && (
@@ -330,7 +341,7 @@ const TripCard = memo(({ trip, dark = false, index = 0, isBusy = false, onViewDe
               }}
               className={`px-3 py-2 text-xs font-semibold whitespace-nowrap rounded-lg ${dark ? 'bg-amber-500/20 text-amber-200' : 'bg-amber-50 text-amber-700'} ${isBusy ? 'opacity-50 cursor-not-allowed' : ''}`}
             >
-              Edit
+              {t('common.edit')}
             </button>
           )}
           {(trip.status === 'scheduled' || trip.status === 'ongoing') && (
@@ -343,7 +354,7 @@ const TripCard = memo(({ trip, dark = false, index = 0, isBusy = false, onViewDe
               }}
               className={`px-3 py-2 text-xs font-semibold whitespace-nowrap rounded-lg ${dark ? 'bg-red-500/20 text-red-200' : 'bg-red-50 text-red-700'} ${isBusy ? 'opacity-50 cursor-not-allowed' : ''}`}
             >
-              Cancel Trip
+              {t('trips.card.cancelTrip')}
             </button>
           )}
         </div>

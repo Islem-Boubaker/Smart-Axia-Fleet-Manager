@@ -1,4 +1,5 @@
 import { memo, useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import UserAvatar from "../ui/UserAvatar";
 import {
@@ -25,78 +26,92 @@ interface SidebarProps {
   dark?: boolean;
 }
 
-const settingsSubItems = [
-  {
-    icon: FiUser,
-    label: "Profile",
-    path: `${ROUTES.SETTINGS}?tab=profile`,
-    tab: "profile",
-  },
-  {
-    icon: FiBell,
-    label: "Notifications",
-    path: `${ROUTES.SETTINGS}?tab=notifications`,
-    tab: "notifications",
-  },
-  {
-    icon: FiShield,
-    label: "Security",
-    path: `${ROUTES.SETTINGS}?tab=security`,
-    tab: "security",
-  },
-];
-
 export const Sidebar = memo(
   ({ isOpen, setIsOpen, dark = false }: SidebarProps) => {
+    const { t } = useTranslation();
     const location = useLocation();
     const [settingsOpen, setSettingsOpen] = useState(
       location.pathname.startsWith(ROUTES.SETTINGS),
     );
     useNavigate();
 
+    const settingsSubItems = useMemo(
+      () => [
+        {
+          icon: FiUser,
+          label: t("settings.sidebar.profile"),
+          path: `${ROUTES.SETTINGS}?tab=profile`,
+          tab: "profile",
+        },
+        {
+          icon: FiBell,
+          label: t("settings.sidebar.notifications"),
+          path: `${ROUTES.SETTINGS}?tab=notifications`,
+          tab: "notifications",
+        },
+        {
+          icon: FiShield,
+          label: t("settings.sidebar.security"),
+          path: `${ROUTES.SETTINGS}?tab=security`,
+          tab: "security",
+        },
+      ],
+      [t],
+    );
+
     const menuItems = useMemo(
       () => [
         {
           icon: FiHome,
-          label: "Dashboard",
+          label: t("nav.dashboard"),
           path: ROUTES.DASHBOARD,
           hasAdd: true,
         },
         {
           icon: FiTruck,
-          label: "Vehicles",
+          label: t("nav.vehicles"),
           path: ROUTES.VEHICLES,
           hasAdd: true,
         },
-        { icon: FiUsers, label: "Drivers", path: ROUTES.DRIVERS, hasAdd: true },
-        { icon: FiMapPin, label: "Trips", path: ROUTES.TRIPS, hasAdd: true },
+        {
+          icon: FiUsers,
+          label: t("nav.drivers"),
+          path: ROUTES.DRIVERS,
+          hasAdd: true,
+        },
+        {
+          icon: FiMapPin,
+          label: t("nav.trips"),
+          path: ROUTES.TRIPS,
+          hasAdd: true,
+        },
         {
           icon: FiTool,
-          label: "Maintenance",
+          label: t("nav.maintenance"),
           path: ROUTES.MAINTENANCE,
           hasAdd: false,
         },
         {
           icon: FiBarChart2,
-          label: "Reports",
+          label: t("nav.reports"),
           path: ROUTES.REPORTS,
           hasAdd: false,
         },
         {
           icon: FiAlertCircle,
-          label: "Driver Issues",
+          label: t("nav.reclamations"),
           path: ROUTES.DRIVER_ISSUES,
           hasAdd: false,
         },
         {
           icon: FiSettings,
-          label: "Settings",
+          label: t("nav.settings"),
           path: ROUTES.SETTINGS,
           hasCollapse: true,
           children: settingsSubItems,
         },
       ],
-      [],
+      [t, settingsSubItems],
     );
 
     const base = dark
@@ -170,10 +185,10 @@ export const Sidebar = memo(
                 <h2
                   className={`text-[13px] font-bold tracking-widest truncate uppercase ${dark ? "text-white" : "text-slate-900"}`}
                 >
-                  Smart Axia
+                  {t("brand.axia")}
                 </h2>
                 <p className="text-[11px] font-medium text-blue-500 truncate">
-                  Fleet Manager
+                  {t("brand.fleetManager")}
                 </p>
               </div>
             </Link>
@@ -181,7 +196,7 @@ export const Sidebar = memo(
               type="button"
               onClick={() => setIsOpen(false)}
               className={`lg:hidden p-1.5 rounded-lg shrink-0 ${dark ? "text-slate-400 hover:bg-slate-800" : "text-slate-400 hover:bg-slate-100"}`}
-              aria-label="Close menu"
+              aria-label={t("header.closeMenu")}
             >
               <FiX className="text-base" />
             </button>
@@ -191,7 +206,7 @@ export const Sidebar = memo(
           <nav className="flex-1 overflow-y-auto px-3 py-3 space-y-0.5">
             {menuItems.map((item) => {
               const isActive = location.pathname === item.path;
-              const isSettingsItem = item.label === "Settings";
+              const isSettingsItem = item.path === ROUTES.SETTINGS;
               const Icon = item.icon;
 
               return (

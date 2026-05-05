@@ -1,4 +1,5 @@
 import { FiCalendar, FiClock, FiTruck } from 'react-icons/fi';
+import { useTranslation } from 'react-i18next';
 import type { Maintenance } from '../../../types';
 
 interface Props {
@@ -7,23 +8,26 @@ interface Props {
 }
 
 export function ScheduledMaintenance({ dark = false, items = [] }: Props) {
+  const { t } = useTranslation();
+  const normalizeKey = (value: string) => value.toLowerCase().replace(/\s+/g, '_').replace(/-+/g, '_');
+
   return (
     <section className="space-y-4">
       <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-2">
         <div>
           <p className={`text-xs font-semibold uppercase tracking-[0.12em] ${dark ? 'text-slate-500' : 'text-slate-400'}`}>
-            Upcoming
+            {t('maintenance.upcoming')}
           </p>
-          <h2 className={`text-xl font-bold ${dark ? 'text-white' : 'text-slate-900'}`}>Scheduled maintenance</h2>
+          <h2 className={`text-xl font-bold ${dark ? 'text-white' : 'text-slate-900'}`}>{t('maintenance.scheduledTitle')}</h2>
           <p className={`text-sm mt-0.5 ${dark ? 'text-slate-400' : 'text-slate-500'}`}>
-            Next service windows for your fleet
+            {t('maintenance.scheduledSubtitle')}
           </p>
         </div>
       </div>
 
       {items.length === 0 && (
         <div className={`rounded-xl border px-4 py-8 text-sm text-center ${dark ? 'border-slate-700 text-slate-400' : 'border-slate-200 text-slate-500'}`}>
-          No upcoming maintenances.
+          {t('maintenance.noUpcoming')}
         </div>
       )}
 
@@ -50,12 +54,14 @@ export function ScheduledMaintenance({ dark = false, items = [] }: Props) {
                   dark ? 'bg-amber-500/15 text-amber-300' : 'bg-amber-50 text-amber-800'
                 }`}
               >
-                Scheduled
+                {t('status.scheduled')}
               </span>
             </div>
-            <h3 className={`font-bold ${dark ? 'text-white' : 'text-slate-900'}`}>{item.vehiclePlate || 'Vehicle'}</h3>
+            <h3 className={`font-bold ${dark ? 'text-white' : 'text-slate-900'}`}>{item.vehiclePlate || t('common.vehicle')}</h3>
             <p className={`text-sm ${dark ? 'text-slate-400' : 'text-slate-500'}`}>{item.vehiclePlate}</p>
-            <p className={`text-sm font-medium mt-3 ${dark ? 'text-slate-200' : 'text-slate-800'}`}>{item.type || 'Maintenance'}</p>
+            <p className={`text-sm font-medium mt-3 ${dark ? 'text-slate-200' : 'text-slate-800'}`}>
+              {item.type ? t(`maintenance.types.${normalizeKey(item.type)}`, { defaultValue: item.type }) : t('maintenance.title')}
+            </p>
             <div className={`mt-4 flex flex-wrap gap-4 text-sm ${dark ? 'text-slate-400' : 'text-slate-600'}`}>
               <span className="inline-flex items-center gap-1.5">
                 <FiCalendar className="w-4 h-4 opacity-80" />
@@ -63,7 +69,7 @@ export function ScheduledMaintenance({ dark = false, items = [] }: Props) {
               </span>
               <span className="inline-flex items-center gap-1.5">
                 <FiClock className="w-4 h-4 opacity-80" />
-                {item.status}
+                {t(`status.${normalizeKey(item.status)}`, { defaultValue: item.status })}
               </span>
             </div>
           </li>

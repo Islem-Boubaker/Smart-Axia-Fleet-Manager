@@ -1,0 +1,23 @@
+{
+  "drivers": {
+    "title": "Drivers",
+    "description": "Manage driver profiles, licenses, and vehicle assignments.",
+    "addNew": "Add New Driver",
+    "edit": "Edit Driver",
+    "searchPlaceholder": "Search drivers by name, email, license…",
+    "addAria": "Add new driver",
+    "addButton": "Add driver",
+    "form": {
+      "submitCreate": "Create driver",
+      "submitUpdate": "Update driver",
+      "statusActive": "Active",
+      "statusInactive": "Inactive"
+    },
+    "card": {
+      "license": "License",
+      "vehicle": "Vehicle",
+      "rating": "Rating",
+      "since": "Since"
+    }
+  }
+}

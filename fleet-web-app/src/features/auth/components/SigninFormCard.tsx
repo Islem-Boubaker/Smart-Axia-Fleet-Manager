@@ -1,4 +1,5 @@
 import { ArrowLeft } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import AuthCheckbox from './AuthCheckbox';
 import AuthInputField from './AuthInputField';
 import { AlertIcon, EyeIcon, EyeOffIcon, LockIcon, MailIcon } from './AuthIcons';
@@ -44,6 +45,7 @@ export default function SigninFormCard({
   onBackToSignIn,
   onSubmit,
 }: SigninFormCardProps) {
+  const { t } = useTranslation();
   return (
     <div
       className="sa-right"
@@ -76,7 +78,7 @@ export default function SigninFormCard({
             className="inline-flex items-center gap-1.5 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors mb-6 focus-visible:outline-none focus-visible:underline"
           >
             <ArrowLeft className="h-4 w-4" aria-hidden="true" />
-            Back to sign in
+            {t('auth.backToSignIn')}
           </button>
         )}
 
@@ -90,7 +92,7 @@ export default function SigninFormCard({
             marginBottom: '10px',
           }}
         >
-          Fleet Manager
+          {t('brand.fleetManager')}
         </p>
 
         <h2
@@ -105,20 +107,18 @@ export default function SigninFormCard({
           }}
         >
           {isForgotMode ? (
-            'Reset your password'
+            t('auth.resetPassword')
           ) : (
             <>
-              Sign in to your
+              {t('auth.signInTitleLine1')}
               <br />
-              control room
+              {t('auth.signInTitleLine2')}
             </>
           )}
         </h2>
 
         <p style={{ fontSize: '14px', color: '#6b7280', marginBottom: '28px', lineHeight: 1.6 }}>
-          {isForgotMode
-            ? 'Enter your work email to receive a password reset link.'
-            : 'Enter your credentials to access live telemetry and dispatch.'}
+          {isForgotMode ? t('auth.forgotSubtitle') : t('auth.signInSubtitle')}
         </p>
 
         {errors.form && (
@@ -161,15 +161,15 @@ export default function SigninFormCard({
             }}
           >
             <span>✓</span>
-            <span>{isForgotMode ? 'Password reset link sent. Check your inbox.' : 'Welcome back — redirecting to your dashboard...'}</span>
+            <span>{isForgotMode ? t('auth.passwordResetSent') : t('auth.welcomeRedirect')}</span>
           </div>
         )}
 
         <AuthInputField
-          label="Email"
+          label={t('auth.email')}
           type="email"
           autoComplete="email"
-          placeholder="example@gmail.com"
+          placeholder={t('auth.emailPlaceholder')}
           icon={<MailIcon />}
           value={email}
           onChange={(event) => onEmailChange(event.target.value)}
@@ -178,10 +178,10 @@ export default function SigninFormCard({
 
         {!isForgotMode && (
           <AuthInputField
-            label="Password"
+            label={t('auth.password')}
             type={showPwd ? 'text' : 'password'}
             autoComplete="current-password"
-            placeholder="••••••••"
+            placeholder={t('auth.passwordPlaceholder')}
             icon={<LockIcon />}
             value={password}
             onChange={(event) => onPasswordChange(event.target.value)}
@@ -190,7 +190,7 @@ export default function SigninFormCard({
               <button
                 type="button"
                 onClick={onTogglePasswordVisibility}
-                aria-label={showPwd ? 'Hide password' : 'Show password'}
+                aria-label={showPwd ? t('auth.hidePassword') : t('auth.showPassword')}
                 style={{
                   background: 'none',
                   border: 'none',
@@ -217,7 +217,7 @@ export default function SigninFormCard({
             marginTop: '4px',
           }}
         >
-          {!isForgotMode && <AuthCheckbox checked={remember} onChange={onRememberChange} label="Remember me" />}
+          {!isForgotMode && <AuthCheckbox checked={remember} onChange={onRememberChange} label={t('auth.rememberMe')} />}
           {!isForgotMode && (
             <a
               href="#"
@@ -234,7 +234,7 @@ export default function SigninFormCard({
                 onToggleForgotMode();
               }}
             >
-              Forgot password?
+              {t('auth.forgotPassword')}
             </a>
           )}
         </div>
@@ -279,15 +279,15 @@ export default function SigninFormCard({
           <span>
             {success
               ? isForgotMode
-                ? '✓ Email sent'
-                : '✓ Welcome back'
+                ? t('auth.emailSentShort')
+                : t('auth.welcomeBackShort')
               : loading
                 ? isForgotMode
-                  ? 'Sending reset link...'
-                  : 'Signing in...'
+                  ? t('auth.sendingReset')
+                  : t('auth.signingIn')
                 : isForgotMode
-                  ? 'Send reset link'
-                  : 'Sign in'}
+                  ? t('auth.sendResetLink')
+                  : t('auth.signIn')}
           </span>
         </button>
       </div>
@@ -304,7 +304,7 @@ export default function SigninFormCard({
           textAlign: 'center',
         }}
       >
-        Protected by enterprise-grade encryption · © {new Date().getFullYear()} Smart Axia
+        {t('auth.footer', { year: new Date().getFullYear() })}
       </p>
     </div>
   );

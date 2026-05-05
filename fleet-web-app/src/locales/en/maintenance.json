@@ -1,0 +1,21 @@
+{
+  "maintenance": {
+    "title": "Maintenance",
+    "subtitle": "Schedule and track vehicle maintenance.",
+    "add": "Schedule maintenance",
+    "table": {
+      "empty": "No maintenance records yet.",
+      "loading": "Loading maintenance..."
+    },
+    "form": {
+      "titleNew": "New maintenance",
+      "titleEdit": "Edit maintenance",
+      "submit": "Save maintenance",
+      "types": {
+        "routine": "Routine",
+        "repair": "Repair",
+        "inspection": "Inspection"
+      }
+    }
+  }
+}

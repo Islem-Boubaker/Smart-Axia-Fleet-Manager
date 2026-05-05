@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useNavigate, useOutletContext } from 'react-router-dom';
 import { FiPlus } from 'react-icons/fi';
 import { Button, GlobalCard } from '../../../shared/components';
@@ -21,6 +22,7 @@ interface ThemeContext {
 }
 
 const DashboardPage = () => {
+  const { t, i18n } = useTranslation();
   const { dark } = useOutletContext<ThemeContext>();
   const navigate = useNavigate();
   const [selectedTrip, setSelectedTrip] = useState<Trip | null>(null);
@@ -66,16 +68,16 @@ const DashboardPage = () => {
     navigate(ROUTES.SETTINGS);
   };
 
-  const todayLabel = useMemo(
-    () =>
-      new Date().toLocaleDateString('en-GB', {
-        weekday: 'long',
-        day: 'numeric',
-        month: 'long',
-        year: 'numeric',
-      }),
-    []
-  );
+  const todayLabel = useMemo(() => {
+    const lng = (i18n.language || 'en').split('-')[0];
+    const locale = lng === 'ar' ? 'ar' : lng === 'fr' ? 'fr-FR' : 'en-GB';
+    return new Date().toLocaleDateString(locale, {
+      weekday: 'long',
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric',
+    });
+  }, [i18n.language]);
 
   if (loading) {
     return (
@@ -115,13 +117,13 @@ const DashboardPage = () => {
 
       <div className="relative grid grid-cols-1 lg:grid-cols-2 gap-4 items-center rounded-2xl border border-gray-200/70 dark:border-gray-800/70 bg-white/80 dark:bg-gray-900/60 backdrop-blur-sm shadow-soft px-5 py-4">
         <div>
-          <h1 className="text-xl md:text-2xl font-semibold tracking-tight text-gray-900 dark:text-white">Dashboard</h1>
-          <p className="text-gray-500 dark:text-gray-400 text-sm">Operations center overview for {todayLabel}</p>
+          <h1 className="text-xl md:text-2xl font-semibold tracking-tight text-gray-900 dark:text-white">{t('dashboard.title')}</h1>
+          <p className="text-gray-500 dark:text-gray-400 text-sm">{t('dashboard.overviewLine', { date: todayLabel })}</p>
         </div>
         <div className="justify-self-start lg:justify-self-end">
           <Button onClick={() => navigate(ROUTES.TRIPS)} className="shadow-sm">
             <FiPlus className="mr-1.5 h-4 w-4" />
-            New Trip
+            {t('dashboard.newTrip')}
           </Button>
         </div>
       </div>
@@ -161,7 +163,7 @@ const DashboardPage = () => {
       <GlobalCard
         isOpen={Boolean(selectedTrip)}
         onClose={() => setSelectedTrip(null)}
-        title={selectedTrip ? `Trip details #${selectedTrip.id}` : 'Trip details'}
+        title={selectedTrip ? t('dashboard.tripDetailsWithId', { id: selectedTrip.id }) : t('dashboard.tripDetails')}
         maxWidth="2xl"
       >
         {selectedTrip ? <TripDetailsView trip={selectedTrip} dark={dark} /> : null}

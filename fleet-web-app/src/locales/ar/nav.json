@@ -1,0 +1,22 @@
+{
+  "nav": {
+    "dashboard": "لوحة التحكم",
+    "vehicles": "المركبات",
+    "drivers": "السائقون",
+    "trips": "الرحلات",
+    "maintenance": "الصيانة",
+    "reports": "التقارير",
+    "reclamations": "بلاغات السائقين",
+    "settings": "الإعدادات",
+    "fleet": "الأسطول",
+    "profile": "الملف الشخصي",
+    "notifications": "الإشعارات",
+    "security": "الأمان"
+  },
+  "brand": {
+    "axia": "Smart Axia",
+    "fleetManager": "مدير الأسطول",
+    "heroProduct": "Smart AXIA",
+    "heroTitleFleet": "مدير الأسطول"
+  }
+}

@@ -1,0 +1,22 @@
+{
+  "nav": {
+    "dashboard": "Tableau de bord",
+    "vehicles": "Véhicules",
+    "drivers": "Conducteurs",
+    "trips": "Trajets",
+    "maintenance": "Maintenance",
+    "reports": "Rapports",
+    "reclamations": "Problèmes conducteurs",
+    "settings": "Paramètres",
+    "fleet": "Flotte",
+    "profile": "Profil",
+    "notifications": "Notifications",
+    "security": "Sécurité"
+  },
+  "brand": {
+    "axia": "Smart Axia",
+    "fleetManager": "Gestionnaire de flotte",
+    "heroProduct": "Smart AXIA",
+    "heroTitleFleet": "Gestionnaire de flotte"
+  }
+}

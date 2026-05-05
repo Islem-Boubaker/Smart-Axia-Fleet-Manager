@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import type React from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   FiX,
   FiCheck,
@@ -125,27 +126,36 @@ const NotificationItem = ({
 /* ─────────────────────────────────────────────
    Empty state
 ───────────────────────────────────────────── */
-const EmptyState = () => (
-  <div className="flex flex-col items-center justify-center py-16 px-4">
-    <FiBell className="text-gray-300 dark:text-slate-600 text-5xl mb-3" />
-    <p className="text-gray-500 dark:text-gray-400 text-sm">No notifications yet</p>
-  </div>
-);
+const EmptyState = () => {
+  const { t } = useTranslation();
+  return (
+    <div className="flex flex-col items-center justify-center py-16 px-4">
+      <FiBell className="text-gray-300 dark:text-slate-600 text-5xl mb-3" />
+      <p className="text-gray-500 dark:text-gray-400 text-sm">{t('shared.notifications.empty')}</p>
+    </div>
+  );
+};
 
-const LoadingState = () => (
-  <div className="flex flex-col items-center justify-center py-16 px-4 text-center">
-    <div className="w-10 h-10 rounded-full border-2 border-blue-200 border-t-blue-600 animate-spin mb-3" />
-    <p className="text-gray-500 dark:text-gray-400 text-sm">Loading notifications...</p>
-  </div>
-);
+const LoadingState = () => {
+  const { t } = useTranslation();
+  return (
+    <div className="flex flex-col items-center justify-center py-16 px-4 text-center">
+      <div className="w-10 h-10 rounded-full border-2 border-blue-200 border-t-blue-600 animate-spin mb-3" />
+      <p className="text-gray-500 dark:text-gray-400 text-sm">{t('shared.notifications.loading')}</p>
+    </div>
+  );
+};
 
-const ErrorState = ({ message }: { message: string }) => (
-  <div className="flex flex-col items-center justify-center py-16 px-4 text-center">
-    <FiAlertCircle className="text-red-400 dark:text-red-300 text-4xl mb-3" />
-    <p className="text-gray-700 dark:text-gray-200 text-sm font-medium">Unable to load notifications</p>
-    <p className="text-gray-500 dark:text-gray-400 text-xs mt-1 max-w-[260px]">{message}</p>
-  </div>
-);
+const ErrorState = ({ message }: { message: string }) => {
+  const { t } = useTranslation();
+  return (
+    <div className="flex flex-col items-center justify-center py-16 px-4 text-center">
+      <FiAlertCircle className="text-red-400 dark:text-red-300 text-4xl mb-3" />
+      <p className="text-gray-700 dark:text-gray-200 text-sm font-medium">{t('shared.notifications.errorTitle')}</p>
+      <p className="text-gray-500 dark:text-gray-400 text-xs mt-1 max-w-[260px]">{message}</p>
+    </div>
+  );
+};
 
 /* ─────────────────────────────────────────────
    Main component
@@ -160,6 +170,7 @@ export const NotificationPopup = ({
   onMarkAllAsRead,
   triggerRef,
 }: NotificationPopupProps) => {
+  const { t } = useTranslation();
   const popupRef = useRef<HTMLDivElement>(null);
   const isMobile = useMediaQuery('(max-width: 1023px)');
 
@@ -257,9 +268,9 @@ export const NotificationPopup = ({
       {/* Sticky header */}
       <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 rounded-t-xl">
         <div>
-          <h3 className="text-base font-semibold text-gray-900 dark:text-gray-100">Notifications</h3>
+          <h3 className="text-base font-semibold text-gray-900 dark:text-gray-100">{t('shared.notifications.title')}</h3>
           {unreadCount > 0 && (
-            <p className="text-xs text-gray-500 dark:text-gray-400">{unreadCount} unread</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400">{t('shared.notifications.unread', { count: unreadCount })}</p>
           )}
         </div>
         <div className="flex items-center gap-2">
@@ -268,13 +279,13 @@ export const NotificationPopup = ({
               onClick={onMarkAllAsRead}
               className="text-xs text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 font-medium transition-colors"
             >
-              Mark all as read
+              {t('shared.notifications.markAllRead')}
             </button>
           )}
           <button
             onClick={onClose}
             className="text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300 p-1 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
-            aria-label="Close notifications"
+            aria-label={t('shared.notifications.closeAria')}
           >
             <FiX className="w-4 h-4" />
           </button>
@@ -304,7 +315,7 @@ export const NotificationPopup = ({
       <div
         role="dialog"
         aria-modal="true"
-        aria-label="Notifications"
+        aria-label={t('shared.notifications.dialogAria')}
         onTouchStart={handleTouchStart}
         onTouchEnd={handleTouchEnd}
         className={`
@@ -318,11 +329,11 @@ export const NotificationPopup = ({
         {/* Sticky header */}
         <div className="sticky top-0 z-10 flex items-center justify-between px-4 py-4 border-b border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 shadow-sm">
           <div>
-            <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Notifications</h2>
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">{t('shared.notifications.title')}</h2>
             {unreadCount > 0 ? (
-              <p className="text-xs text-gray-500 dark:text-gray-400">{unreadCount} unread</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400">{t('shared.notifications.unread', { count: unreadCount })}</p>
             ) : (
-              <p className="text-xs text-gray-400 dark:text-gray-500">All caught up</p>
+              <p className="text-xs text-gray-400 dark:text-gray-500">{t('shared.notifications.allCaughtUp')}</p>
             )}
           </div>
 
@@ -332,13 +343,13 @@ export const NotificationPopup = ({
                 onClick={onMarkAllAsRead}
                 className="text-sm text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 font-medium transition-colors"
               >
-                Mark all as read
+                {t('shared.notifications.markAllRead')}
               </button>
             )}
             <button
               onClick={onClose}
               className="text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300 p-1.5 rounded-full hover:bg-gray-100 dark:hover:bg-slate-800 transition-colors"
-              aria-label="Close notifications"
+              aria-label={t('shared.notifications.closeAria')}
             >
               <FiX className="w-5 h-5" />
             </button>

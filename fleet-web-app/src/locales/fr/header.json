@@ -1,0 +1,13 @@
+{
+  "header": {
+    "search": "Rechercher",
+    "searchPlaceholder": "Rechercher flotte, trajets, conducteurs…",
+    "notifications": "Notifications",
+    "language": "Langue",
+    "openMenu": "Ouvrir le menu",
+    "lightMode": "Mode clair",
+    "darkMode": "Mode sombre",
+    "closeMenu": "Fermer le menu",
+    "searchVehiclesDriversTrips": "Rechercher véhicules, conducteurs, trajets..."
+  }
+}

@@ -1,5 +1,6 @@
 import { useState, useCallback } from "react";
 import { useOutletContext } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 
 import { useDrivers } from "../hooks/useDrivers";
 import { toast } from "../../../shared/components";
@@ -17,6 +18,7 @@ interface ThemeContext {
 
 const DriversPage = () => {
   const { dark } = useOutletContext<ThemeContext>();
+  const { t } = useTranslation();
   const [searchQuery, setSearchQuery] = useState("");
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -33,16 +35,16 @@ const DriversPage = () => {
 
   const handleAddDriver = useCallback(
     async (data: any, photo: File | null) => {
-      const loadingId = toast.loading('Adding driver…');
+      const loadingId = toast.loading(t('drivers.toast.creating'));
       try {
         await addDriver({ ...data, role: "DRIVER" }, photo);
-        toast.update(loadingId, { type: 'success', title: 'Success', message: 'Driver added successfully!' });
+        toast.update(loadingId, { type: 'success', title: t('common.success'), message: t('drivers.toast.createSuccess') });
         setIsAddModalOpen(false);
       } catch (err: any) {
-        toast.update(loadingId, { type: 'error', title: 'Error', message: err.message || 'Failed to add driver' });
+        toast.update(loadingId, { type: 'error', title: t('common.error'), message: err.message || t('drivers.toast.createError') });
       }
     },
-    [addDriver],
+    [addDriver, t],
   );
 
   const handleEditDriver = useCallback((driver: Driver) => {
@@ -53,32 +55,32 @@ const DriversPage = () => {
   const handleUpdateDriver = useCallback(
     async (data: any, photo: File | null) => {
       if (!selectedDriver?.id) return;
-      const loadingId = toast.loading('Updating driver…');
+      const loadingId = toast.loading(t('drivers.toast.updating'));
       try {
         await updateDriver(selectedDriver.id, data, photo);
-        toast.update(loadingId, { type: 'success', title: 'Success', message: 'Driver updated successfully!' });
+        toast.update(loadingId, { type: 'success', title: t('common.success'), message: t('drivers.toast.updateSuccess') });
         setIsEditModalOpen(false);
         setSelectedDriver(null);
       } catch (err: any) {
-        toast.update(loadingId, { type: 'error', title: 'Error', message: err.message || 'Failed to update driver' });
+        toast.update(loadingId, { type: 'error', title: t('common.error'), message: err.message || t('drivers.toast.deleteError') });
       }
     },
-    [selectedDriver, updateDriver],
+    [selectedDriver, updateDriver, t],
   );
 
   const handleDeleteDriver = useCallback(
     async (driverId: string) => {
-      if (!window.confirm("Are you sure you want to delete this driver?"))
+      if (!window.confirm(t('drivers.toast.deleteConfirm')))
         return;
-      const loadingId = toast.loading('Deleting driver…');
+      const loadingId = toast.loading(t('drivers.toast.deleting'));
       try {
         await deleteDriver(driverId);
-        toast.update(loadingId, { type: 'success', title: 'Deleted', message: 'Driver deleted successfully.' });
+        toast.update(loadingId, { type: 'success', title: t('common.deleted'), message: t('drivers.toast.deleteSuccess') });
       } catch (err: any) {
-        toast.update(loadingId, { type: 'error', title: 'Error', message: err.message || 'Failed to delete driver' });
+        toast.update(loadingId, { type: 'error', title: t('common.error'), message: err.message || t('drivers.toast.updateError') });
       }
     },
-    [deleteDriver],
+    [deleteDriver, t],
   );
 
   return (
@@ -97,7 +99,7 @@ const DriversPage = () => {
       <DriverModal
         isOpen={isAddModalOpen}
         onClose={() => setIsAddModalOpen(false)}
-        title="Add New Driver"
+        title={t('drivers.addNew')}
         dark={dark}
         vehicles={vehicles}
         onSubmit={handleAddDriver}
@@ -108,7 +110,7 @@ const DriversPage = () => {
           setIsEditModalOpen(false);
           setSelectedDriver(null);
         }}
-        title="Edit Driver"
+        title={t('drivers.edit')}
         dark={dark}
         driver={selectedDriver}
         vehicles={vehicles}

@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Button, GlobalCard } from '../../../shared/components';
 import type { Vehicle } from '../../../types';
 import type { VehicleAssignmentSummary } from '../hooks/useVehicles';
@@ -30,11 +31,11 @@ interface VehicleDetailsModalProps {
 
 const sectionTitleClass = 'text-sm font-semibold text-slate-900';
 
-const prettyDate = (value?: string): string => {
-  if (!value) return 'N/A';
+const prettyDate = (value: string | undefined, locale: string, fallback: string): string => {
+  if (!value) return fallback;
   const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return 'N/A';
-  return date.toLocaleDateString();
+  if (Number.isNaN(date.getTime())) return fallback;
+  return date.toLocaleDateString(locale);
 };
 
 const VehicleDetailsModal = ({
@@ -49,6 +50,7 @@ const VehicleDetailsModal = ({
   isLoading = false,
   error = null,
 }: VehicleDetailsModalProps) => {
+  const { t, i18n } = useTranslation();
   const [isGenerating, setIsGenerating] = useState(false);
   const [liveRecommendations, setLiveRecommendations] = useState<MaintenanceRecommendation[] | null>(null);
 
@@ -83,20 +85,20 @@ const VehicleDetailsModal = ({
     <GlobalCard
       isOpen={isOpen}
       onClose={onClose}
-      title="Vehicle details"
+      title={t('vehicles.details.title')}
       maxWidth="2xl"
       footer={
         <div className="flex items-center justify-end gap-2">
-          <Button variant="secondary" onClick={onClose} aria-label="Close vehicle details">
-            Close
+          <Button variant="secondary" onClick={onClose} aria-label={t('vehicles.details.closeAria')}>
+            {t('common.close')}
           </Button>
-          <Button onClick={onEdit} disabled={!vehicle || isLoading} aria-label="Edit this vehicle">
-            Edit
+          <Button onClick={onEdit} disabled={!vehicle || isLoading} aria-label={t('vehicles.details.editAria')}>
+            {t('common.edit')}
           </Button>
         </div>
       }
     >
-      {isLoading && <p className="text-sm text-slate-500">Loading vehicle details...</p>}
+      {isLoading && <p className="text-sm text-slate-500">{t('vehicles.details.loading')}</p>}
 
       {error && !isLoading && (
         <div className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">{error}</div>
@@ -106,58 +108,73 @@ const VehicleDetailsModal = ({
         <div className="space-y-6">
           <section className="grid grid-cols-1 gap-3 rounded-xl border border-slate-200 bg-slate-50/70 p-4 sm:grid-cols-2">
             <div>
-              <p className="text-xs text-slate-500">Name</p>
+              <p className="text-xs text-slate-500">{t('common.name')}</p>
               <p className="text-sm font-semibold text-slate-900">{vehicle.name}</p>
             </div>
             <div>
-              <p className="text-xs text-slate-500">Vehicle ID</p>
+              <p className="text-xs text-slate-500">{t('vehicles.details.vehicleId')}</p>
               <p className="text-sm font-semibold text-slate-900">{vehicle.id}</p>
             </div>
             <div>
-              <p className="text-xs text-slate-500">Plate</p>
-              <p className="text-sm font-semibold text-slate-900">{vehicle.plaque_immatriculation || 'N/A'}</p>
+              <p className="text-xs text-slate-500">{t('common.plate')}</p>
+              <p className="text-sm font-semibold text-slate-900">{vehicle.plaque_immatriculation || t('common.na')}</p>
             </div>
             <div>
-              <p className="text-xs text-slate-500">Model</p>
+              <p className="text-xs text-slate-500">{t('common.model')}</p>
               <p className="text-sm font-semibold text-slate-900">{vehicle.Vehicle_Model}</p>
             </div>
           </section>
 
           <section>
-            <h3 className={sectionTitleClass}>Current Assignment</h3>
+            <h3 className={sectionTitleClass}>{t('vehicles.details.assignmentTitle')}</h3>
             {assignment ? (
               <div className="mt-2 rounded-xl border border-slate-200 p-4">
                 <p className="text-sm text-slate-700">
-                  Driver: <span className="font-semibold text-slate-900">{assignment.driverName}</span>
+                  {t('vehicles.details.assignmentDriver')}{' '}
+                  <span className="font-semibold text-slate-900">{assignment.driverName ?? t('common.unassigned')}</span>
                 </p>
                 <p className="text-sm text-slate-700">
-                  Route: <span className="font-semibold text-slate-900">{assignment.startLocation} {'->'} {assignment.endLocation}</span>
+                  {t('vehicles.details.assignmentRoute')}{' '}
+                  <span className="font-semibold text-slate-900">{assignment.startLocation} {'->'} {assignment.endLocation}</span>
                 </p>
                 <p className="text-sm text-slate-700">
-                  Status: <span className="font-semibold capitalize text-slate-900">{assignment.tripStatus}</span>
+                  {t('vehicles.details.assignmentStatus')}{' '}
+                  <span className="font-semibold capitalize text-slate-900">
+                    {assignment.tripStatus ? t(`trips.status.${assignment.tripStatus}`) : t('common.na')}
+                  </span>
                 </p>
                 <p className="text-sm text-slate-700">
-                  Start: <span className="font-semibold text-slate-900">{prettyDate(assignment.startTime)}</span>
+                  {t('vehicles.details.assignmentStart')}{' '}
+                  <span className="font-semibold text-slate-900">{prettyDate(assignment.startTime, i18n.language, t('common.na'))}</span>
                 </p>
               </div>
             ) : (
-              <p className="mt-2 rounded-xl border border-slate-200 p-4 text-sm text-slate-500">No active assignment for this vehicle.</p>
+              <p className="mt-2 rounded-xl border border-slate-200 p-4 text-sm text-slate-500">{t('vehicles.details.noAssignment')}</p>
             )}
           </section>
 
           <section>
-            <h3 className={sectionTitleClass}>Maintenance History</h3>
+            <h3 className={sectionTitleClass}>{t('vehicles.details.maintenanceHistoryTitle')}</h3>
             {maintenanceHistory.length === 0 ? (
-              <p className="mt-2 rounded-xl border border-slate-200 p-4 text-sm text-slate-500">No maintenance records found.</p>
+              <p className="mt-2 rounded-xl border border-slate-200 p-4 text-sm text-slate-500">{t('vehicles.details.noMaintenance')}</p>
             ) : (
               <div className="mt-2 space-y-2">
                 {maintenanceHistory.slice(0, 6).map((record) => (
                   <div key={record.id} className="rounded-xl border border-slate-200 p-3">
-                    <p className="text-sm font-semibold text-slate-900">{record.description || 'Maintenance task'}</p>
+                    <p className="text-sm font-semibold text-slate-900">{record.description || t('common.maintenanceTask')}</p>
                     <p className="text-xs text-slate-500">
-                      {prettyDate(record.scheduledDate)} • {record.status} • Priority {record.priority}
+                      {t('vehicles.details.maintenanceLine', {
+                        date: prettyDate(record.scheduledDate, i18n.language, t('common.na')),
+                        status: record.status,
+                        priority: record.priority,
+                      })}
                     </p>
-                    <p className="text-xs text-slate-500">Cost: {record.cost.toLocaleString()} DZD</p>
+                    <p className="text-xs text-slate-500">
+                      {t('vehicles.details.costLine', {
+                        cost: record.cost.toLocaleString(i18n.language),
+                        currency: t('common.currencyDzd'),
+                      })}
+                    </p>
                   </div>
                 ))}
               </div>
@@ -166,9 +183,7 @@ const VehicleDetailsModal = ({
 
           <section>
             <div className="flex items-center justify-between mb-3">
-              <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100">
-                Maintenance Recommendations
-              </h3>
+              <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100">{t('vehicles.details.recommendationsTitle')}</h3>
               <button
                 onClick={handleGenerateRecommendations}
                 disabled={isGenerating || !vehicle}
@@ -180,21 +195,21 @@ const VehicleDetailsModal = ({
                       <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
                       <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/>
                     </svg>
-                    Generating...
+                    {t('vehicles.details.generating')}
                   </>
                 ) : (
                   <>
                     <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
                     </svg>
-                    {displayedRecommendations.length > 0 ? 'Regenerate' : 'Generate'}
+                    {displayedRecommendations.length > 0 ? t('vehicles.details.regenerate') : t('vehicles.details.generate')}
                   </>
                 )}
               </button>
             </div>
 
             {displayedRecommendations.length === 0 ? (
-              <p className="text-xs text-slate-400 italic">No recommendations yet. Click Generate to analyse this vehicle.</p>
+              <p className="text-xs text-slate-400 italic">{t('common.noRecommendationsYet')}</p>
             ) : (
               <div className="space-y-2">
                 {displayedRecommendations.map((rec, index) => (

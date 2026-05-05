@@ -1,4 +1,5 @@
 import { AppDataTable, AppRowActions, AppStatusBadge, AppTd, AppTr, Button } from '../../../shared/components';
+import { useTranslation } from 'react-i18next';
 import type { Trip } from '../../../types';
 
 interface Props {
@@ -14,6 +15,9 @@ interface Props {
 }
 
 const TripsList = ({ trips, dark = false, actionTripId = null, onViewDetails, onEdit, onCancel }: Props) => {
+  const { t, i18n } = useTranslation();
+  const normalizeStatusKey = (value: string) =>
+    value.toLowerCase().replace(/\s+/g, '_').replace(/-+/g, '_');
   if (trips.length === 0)
     return (
       <div
@@ -21,7 +25,7 @@ const TripsList = ({ trips, dark = false, actionTripId = null, onViewDetails, on
           dark ? 'border-slate-700/80 bg-slate-900/40' : 'border-slate-200/90 bg-white/60 backdrop-blur-sm'
         }`}
       >
-        <p className={dark ? 'text-slate-400' : 'text-slate-500'}>No trips match your filters.</p>
+        <p className={dark ? 'text-slate-400' : 'text-slate-500'}>{t('trips.table.empty')}</p>
       </div>
     );
 
@@ -34,18 +38,26 @@ const TripsList = ({ trips, dark = false, actionTripId = null, onViewDetails, on
   };
 
   const formatDate = (value?: string) => {
-    if (!value) return 'N/A';
+    if (!value) return t('common.na');
     const date = new Date(value);
     if (Number.isNaN(date.getTime())) return value;
-    return date.toLocaleString();
+    return date.toLocaleString(i18n.language);
   };
 
   return (
     <AppDataTable
-      columns={['Route', 'Driver', 'Vehicle', 'Distance', 'Start', 'Status', 'Actions']}
+      columns={[
+        t('trips.table.route'),
+        t('trips.table.driver'),
+        t('trips.table.vehicle'),
+        t('trips.table.distance'),
+        t('trips.table.start'),
+        t('trips.table.status'),
+        t('trips.table.actions'),
+      ]}
       totalResults={trips.length}
       dark={dark}
-      ariaLabel="Trips table"
+      ariaLabel={t('trips.table.aria')}
     >
       {trips.map((trip) => {
         const isBusy = actionTripId === trip.id;
@@ -56,24 +68,28 @@ const TripsList = ({ trips, dark = false, actionTripId = null, onViewDetails, on
               {trip.startLocation} {'->'} {trip.endLocation}
             </AppTd>
 
-            <AppTd className={dark ? 'text-slate-300' : 'text-slate-600'}>{trip.driver?.name || 'Unassigned'}</AppTd>
+            <AppTd className={dark ? 'text-slate-300' : 'text-slate-600'}>{trip.driver?.name || t('common.unassigned')}</AppTd>
             <AppTd className={dark ? 'text-slate-300' : 'text-slate-600'}>
-              {trip.vehicle?.name || 'Unknown vehicle'}
+              {trip.vehicle?.name || t('common.unknownVehicle')}
             </AppTd>
 
-            <AppTd className={dark ? 'text-slate-300' : 'text-slate-600'}>{trip.distance ?? 0} km</AppTd>
+            <AppTd className={dark ? 'text-slate-300' : 'text-slate-600'}>
+              {t('common.km', { n: trip.distance ?? 0 })}
+            </AppTd>
 
             <AppTd className={dark ? 'text-slate-300' : 'text-slate-600'}>{formatDate(trip.startTime)}</AppTd>
 
             <AppTd>
-              <AppStatusBadge variant={statusVariant(trip.status)}>{trip.status}</AppStatusBadge>
+              <AppStatusBadge variant={statusVariant(trip.status)}>
+                {t(`status.${normalizeStatusKey(trip.status)}`)}
+              </AppStatusBadge>
             </AppTd>
 
             <AppTd>
               <div className="flex flex-wrap items-center gap-2">
                 {(trip.status === 'scheduled' || trip.status === 'ongoing') && (
                   <Button type="button" size="sm" variant="secondary" onClick={() => onCancel?.(trip.id)} disabled={isBusy}>
-                    Cancel
+                    {t('common.cancel')}
                   </Button>
                 )}
 

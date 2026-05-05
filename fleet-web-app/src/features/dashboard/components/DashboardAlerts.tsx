@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import type { NotificationRecord } from '../../../shared/services/notification.api';
 import { ROUTES } from '../../../utils/constants';
@@ -15,26 +16,29 @@ const alertColorClass = (notification: NotificationRecord) => {
   return 'bg-blue-400';
 };
 
-const alertSubDetail = (notification: NotificationRecord) => {
-  const created = new Date(notification.createdAt);
-  if (Number.isNaN(created.getTime())) return 'Active alert';
-  return created.toLocaleDateString('en-GB');
-};
-
 const DashboardAlerts = ({ alerts, onAlertClick }: DashboardAlertsProps) => {
   const navigate = useNavigate();
+  const { t, i18n } = useTranslation();
+
+  const alertSubDetail = (notification: NotificationRecord) => {
+    const created = new Date(notification.createdAt);
+    if (Number.isNaN(created.getTime())) return t('common.activeAlert');
+    const lng = (i18n.language || 'en').split('-')[0];
+    const locale = lng === 'ar' ? 'ar' : lng === 'fr' ? 'fr-FR' : 'en-GB';
+    return created.toLocaleDateString(locale);
+  };
 
   return (
     <div className="bg-white/90 dark:bg-gray-900/70 rounded-2xl border border-gray-200/70 dark:border-gray-700/60 shadow-sm p-5">
       <div className="mb-3 flex items-center justify-between gap-3">
-        <h2 className="text-sm font-medium text-gray-700 dark:text-gray-300">Active alerts</h2>
+        <h2 className="text-sm font-medium text-gray-700 dark:text-gray-300">{t('dashboard.alerts.title')}</h2>
         <Badge variant={alerts.length > 0 ? 'error' : 'default'} size="sm">
           {alerts.length}
         </Badge>
       </div>
 
       {alerts.length === 0 ? (
-        <p className="text-sm text-gray-500 dark:text-gray-400 py-2">No active alerts.</p>
+        <p className="text-sm text-gray-500 dark:text-gray-400 py-2">{t('dashboard.alerts.none')}</p>
       ) : (
         <ul>
           {alerts.slice(0, 5).map((alert, index) => (
@@ -67,7 +71,7 @@ const DashboardAlerts = ({ alerts, onAlertClick }: DashboardAlertsProps) => {
             onClick={() => navigate(ROUTES.SETTINGS)}
             className="text-xs font-medium text-blue-500 hover:text-blue-600 dark:hover:text-blue-300"
           >
-            View all
+            {t('dashboard.alerts.viewAll')}
           </button>
         </div>
       ) : null}

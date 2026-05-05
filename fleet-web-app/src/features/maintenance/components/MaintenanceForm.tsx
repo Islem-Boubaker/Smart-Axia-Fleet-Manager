@@ -1,5 +1,6 @@
 import { useState, useMemo } from "react";
 import type { FormEvent, ChangeEvent } from "react";
+import { useTranslation } from "react-i18next";
 import { Input, Button, Select } from "../../../shared/components";
 import { useVehicleOptions } from "../../vehicles/hooks/useVehicles";
 
@@ -16,6 +17,7 @@ const textareaClass =
 const labelClass = "block text-[13px] text-gray-500 dark:text-slate-400 mb-1.5";
 
 const MaintenanceForm = ({ maintenance, dark = false, onSubmit, onCancel }: MaintenanceFormProps) => {
+  const { t } = useTranslation();
   const { vehicles, isLoading: vehiclesLoading } = useVehicleOptions();
 
   const [formData, setFormData] = useState({
@@ -78,24 +80,33 @@ const MaintenanceForm = ({ maintenance, dark = false, onSubmit, onCancel }: Main
   const vehicleLabel = useMemo(
     () => (v: any) => {
       const plate = v.plate || v.vehiclePlate || "";
-      const name = v.name || v.model || "Vehicle";
+      const name = v.name || v.model || t("common.vehicle");
       return plate ? `${name} (${plate})` : name;
     },
-    []
+    [t]
   );
+
+  const maintenanceTypeOptions = [
+    { value: "Oil Change", label: t("maintenance.types.oil_change") },
+    { value: "Tire Rotation", label: t("maintenance.types.tire_rotation") },
+    { value: "Brake Inspection", label: t("maintenance.types.brake_inspection") },
+    { value: "Engine Tune-up", label: t("maintenance.types.engine_tune_up") },
+    { value: "Battery Replacement", label: t("maintenance.types.battery_replacement") },
+    { value: "General Inspection", label: t("maintenance.types.general_inspection") },
+    { value: "Other", label: t("maintenance.types.other") },
+  ];
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {/* Vehicle */}
         <div>
-          <label className={labelClass}>Vehicle *</label>
+          <label className={labelClass}>{t("common.vehicle")} *</label>
           <Select
             value={formData.vehicleId}
             onChange={(value) => handleSelectChange('vehicleId', value)}
             dark={dark}
             disabled={vehiclesLoading}
-            placeholder={vehiclesLoading ? "Loading vehicles..." : "Select vehicle"}
+            placeholder={vehiclesLoading ? t("common.loadingVehicles") : t("common.selectVehicle")}
             options={vehicles.map((v: any) => ({
               value: v.id,
               label: vehicleLabel(v),
@@ -103,91 +114,76 @@ const MaintenanceForm = ({ maintenance, dark = false, onSubmit, onCancel }: Main
           />
         </div>
 
-        {/* Type */}
         <div className="md:col-span-2">
           <label className={labelClass}>
-            Maintenance Type <span className="text-red-500">*</span>
+            {t("maintenance.form.type")} <span className="text-red-500">*</span>
           </label>
           <Select
             value={formData.type}
             onChange={(value) => handleSelectChange('type', value)}
             dark={dark}
-            placeholder="Select type"
-            options={[
-              "Oil Change",
-              "Tire Rotation",
-              "Brake Inspection",
-              "Engine Tune-up",
-              "Battery Replacement",
-              "General Inspection",
-              "Other",
-            ].map((t) => ({ value: t, label: t }))}
+            placeholder={t("common.selectType")}
+            options={maintenanceTypeOptions}
           />
         </div>
 
-        {/* Date */}
         <div>
           <label className={labelClass}>
-            Scheduled Date <span className="text-red-500">*</span>
+            {t("maintenance.form.scheduledDate")} <span className="text-red-500">*</span>
           </label>
           <Input type="date" name="scheduledDate" value={formData.scheduledDate} onChange={handleChange} required />
         </div>
 
-        {/* Technician */}
         <div>
-          <label className={labelClass}>Technician *</label>
-          <Input type="text" name="technician" value={formData.technician} onChange={handleChange} placeholder="Technician name" required />
+          <label className={labelClass}>{t("maintenance.table.technician")} *</label>
+          <Input type="text" name="technician" value={formData.technician} onChange={handleChange} placeholder={t("common.technicianName")} required />
         </div>
 
-        {/* Priority */}
         <div>
           <label className={labelClass}>
-            Priority <span className="text-red-500">*</span>
+            {t("common.priority")} <span className="text-red-500">*</span>
           </label>
           <Select
             value={formData.priority}
             onChange={(value) => handleSelectChange('priority', value)}
             dark={dark}
             options={[
-              { value: 'low', label: 'Low' },
-              { value: 'medium', label: 'Medium' },
-              { value: 'high', label: 'High' },
+              { value: 'low', label: t('priority.low') },
+              { value: 'medium', label: t('priority.medium') },
+              { value: 'high', label: t('priority.high') },
             ]}
           />
         </div>
 
-        {/* Cost */}
         <div>
-          <label className={labelClass}>Estimated Cost (TND) *</label>
-          <Input type="number" name="cost" value={formData.cost} onChange={handleChange} placeholder="e.g., 150" required min={0} />
+          <label className={labelClass}>{t("maintenance.form.estimatedCost")} *</label>
+          <Input type="number" name="cost" value={formData.cost} onChange={handleChange} placeholder={t("common.costExample")} required min={0} />
         </div>
 
-        {/* Mileage */}
         <div>
-          <label className={labelClass}>Current Mileage (km)</label>
-          <Input type="number" name="mileage" value={formData.mileage} onChange={handleChange} placeholder="e.g., 45230" />
+          <label className={labelClass}>{t("maintenance.form.currentMileage")}</label>
+          <Input type="number" name="mileage" value={formData.mileage} onChange={handleChange} placeholder={t("common.mileageExample")} />
         </div>
 
-        {/* Description */}
         <div className="md:col-span-2">
-          <label className={labelClass}>Description / Notes</label>
+          <label className={labelClass}>{t("maintenance.form.descriptionNotes")}</label>
           <textarea
             name="description"
             value={formData.description}
             onChange={handleChange}
             rows={3}
             className={textareaClass}
-            placeholder="Additional details about the maintenance..."
+            placeholder={t("common.maintenanceDetailsPlaceholder")}
           />
         </div>
       </div>
 
       <div className="flex gap-3 pt-4">
         <Button type="submit" className="flex-1">
-          {maintenance ? "Update Maintenance" : "Schedule Maintenance"}
+          {maintenance ? t("maintenance.form.submitUpdate") : t("maintenance.form.submit")}
         </Button>
         <Button type="button" variant="secondary" onClick={onCancel}>
-          Cancel
+          {t("common.cancel")}
         </Button>
       </div>
     </form>

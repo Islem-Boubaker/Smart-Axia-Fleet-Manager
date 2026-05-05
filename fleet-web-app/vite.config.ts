@@ -14,17 +14,13 @@ export default defineConfig({
     rollupOptions: {
       output: {
         manualChunks: {
-          // Core vendor libraries
+          // Core vendor libraries:
           'react-vendor': ['react', 'react-dom', 'react-router-dom'],
           'redux-vendor': ['react-redux', '@reduxjs/toolkit'],
           'pdf-vendor': ['html2canvas', 'jspdf'],
-          
-       
-          
-          // Feature modules
+          // Feature modules:
           'auth': [
             './src/features/auth/pages/Signin.tsx',
-            './src/features/auth/components/AuthLayout.tsx',
             './src/features/auth/services/auth.service.ts',
           ],
           'dashboard': [

@@ -1,0 +1,60 @@
+{
+  "vehicles": {
+    "title": "Vehicles",
+    "description": "Manage fleet vehicles, assignments, and maintenance signals.",
+    "addNew": "Add New Vehicle",
+    "edit": "Edit Vehicle",
+    "searchPlaceholder": "Search vehicles by name or ID...",
+    "status": {
+      "available": "Available",
+      "inUse": "In Use",
+      "maintenance": "Maintenance",
+      "inactive": "Inactive",
+      "filterAvailable": "Status: Available",
+      "filterInUse": "Status: In Use",
+      "filterMaintenance": "Status: Maintenance",
+      "filterInactive": "Status: Inactive",
+      "filterAll": "All statuses"
+    },
+    "table": {
+      "loading": "Loading vehicles...",
+      "empty": "No vehicles found for the selected filters.",
+      "colVehicle": "Vehicle",
+      "colStatus": "Status",
+      "colDriver": "Driver",
+      "colLastTrip": "Last Trip",
+      "colMaintenance": "Maintenance Recommendation",
+      "colActions": "Actions",
+      "noImage": "No image",
+      "noRecommendations": "No recommendations",
+      "showMore": "Show {{n}} more",
+      "hide": "Hide",
+      "hideRecAria": "Hide additional recommendations for {{name}}",
+      "showRecAria": "Show additional recommendations for {{name}}",
+      "rowActions": "Row actions",
+      "viewDetails": "View vehicle details",
+      "editVehicle": "Edit vehicle",
+      "deleteVehicle": "Delete vehicle",
+      "dataTableAria": "Vehicles table"
+    },
+    "details": {
+      "title": "Vehicle details",
+      "loading": "Loading vehicle details...",
+      "closeAria": "Close vehicle details",
+      "editAria": "Edit this vehicle",
+      "vehicleId": "Vehicle ID",
+      "assignmentDriver": "Driver:",
+      "assignmentRoute": "Route:",
+      "assignmentStatus": "Status:",
+      "assignmentStart": "Start:",
+      "recommendationsHeading": "AI maintenance recommendations",
+      "generate": "Generate"
+    },
+    "form": {
+      "submitCreate": "Create vehicle",
+      "submitUpdate": "Update vehicle",
+      "activeLabel": "Vehicle is active",
+      "needsMaintenanceLabel": "Needs maintenance"
+    }
+  }
+}

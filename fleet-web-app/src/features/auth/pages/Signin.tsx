@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import SigninFormCard from '../components/SigninFormCard';
 import SigninHeroPanel from '../components/SigninHeroPanel';
 import { useAuth } from '../hooks/useAuth';
@@ -12,6 +13,7 @@ type AuthErrors = {
 };
 
 export default function SignIn() {
+  const { t } = useTranslation();
   const { signIn, forgotPassword, loading, error } = useAuth();
   const rememberedEmail = localStorage.getItem('axia.remember') ?? '';
   const [email, setEmail] = useState(rememberedEmail);
@@ -25,15 +27,15 @@ export default function SignIn() {
   const validate = (): AuthErrors => {
     const nextErrors: AuthErrors = {};
     if (!email.trim()) {
-      nextErrors.email = 'Email is required.';
+      nextErrors.email = t('auth.emailRequired');
     } else if (!EMAIL_RE.test(email.trim())) {
-      nextErrors.email = 'Enter a valid email address.';
+      nextErrors.email = t('auth.emailInvalid');
     }
     if (!isForgotMode) {
       if (!password) {
-        nextErrors.password = 'Password is required.';
+        nextErrors.password = t('auth.passwordRequired');
       } else if (password.length < 8) {
-        nextErrors.password = 'Password must be at least 8 characters.';
+        nextErrors.password = t('auth.passwordMin');
       }
     }
     return nextErrors;
@@ -60,7 +62,7 @@ export default function SignIn() {
       }
       setErrors({});
     } catch (submitError) {
-      const fallbackMessage = submitError instanceof Error ? submitError.message : 'Something went wrong.';
+      const fallbackMessage = submitError instanceof Error ? submitError.message : t('auth.somethingWrong');
       setErrors((prev) => ({ ...prev, form: error || fallbackMessage }));
     }
   };

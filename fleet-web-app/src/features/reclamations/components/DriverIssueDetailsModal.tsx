@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { FiCalendar, FiFileText, FiTruck, FiUser, FiX } from 'react-icons/fi';
 import { Badge, Button } from '../../../shared/components';
+import { useTranslation } from 'react-i18next';
 import type { ReclamationRecord, ReclamationStatus } from '../services/reclamations.service';
 
 interface DriverIssueDetailsModalProps {
@@ -21,10 +22,10 @@ const statusVariant: Record<ReclamationStatus, 'warning' | 'info' | 'success' | 
   REJECTED: 'error',
 };
 
-const formatDateTime = (value: string) => {
+const formatDateTime = (value: string, locale?: string) => {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return value;
-  return date.toLocaleString('en-GB');
+  return date.toLocaleString(locale);
 };
 
 const DriverIssueDetailsModal = ({
@@ -36,6 +37,7 @@ const DriverIssueDetailsModal = ({
   getDriverLabel,
   getVehicleLabel,
 }: DriverIssueDetailsModalProps) => {
+  const { t, i18n } = useTranslation();
   useEffect(() => {
     if (!isOpen) return;
 
@@ -61,7 +63,7 @@ const DriverIssueDetailsModal = ({
       <button
         type="button"
         className="absolute inset-0 bg-slate-950/40 backdrop-blur-[4px]"
-        aria-label="Close issue details"
+        aria-label={t('reclamations.details.close_aria')}
         onClick={onClose}
       />
 
@@ -81,7 +83,7 @@ const DriverIssueDetailsModal = ({
           <div className="flex items-start justify-between gap-4">
             <div className="min-w-0 space-y-2">
               <p className={`text-xs font-semibold uppercase tracking-[0.12em] ${dark ? 'text-slate-500' : 'text-slate-400'}`}>
-                Driver Issue Report
+                {t('reclamations.details.section_label')}
               </p>
               <h2 id="driver-issue-title" className={`text-xl font-bold tracking-tight ${dark ? 'text-white' : 'text-slate-900'}`}>
                 {issue.subject}
@@ -97,7 +99,7 @@ const DriverIssueDetailsModal = ({
               className={`inline-flex h-9 w-9 items-center justify-center rounded-xl transition-colors ${
                 dark ? 'text-slate-300 hover:bg-slate-800' : 'text-slate-500 hover:bg-slate-100'
               }`}
-              aria-label="Close"
+              aria-label={t('common.close')}
             >
               <FiX className="h-5 w-5" />
             </button>
@@ -109,7 +111,7 @@ const DriverIssueDetailsModal = ({
             <section className={`rounded-2xl border p-5 ${dark ? 'border-slate-700 bg-slate-800/35' : 'border-slate-200 bg-slate-50/70'}`}>
               <div className="mb-3 flex items-center gap-2">
                 <FiFileText className={dark ? 'text-slate-400' : 'text-slate-500'} />
-                <p className={`text-sm font-semibold ${dark ? 'text-slate-200' : 'text-slate-800'}`}>Issue Description</p>
+                <p className={`text-sm font-semibold ${dark ? 'text-slate-200' : 'text-slate-800'}`}>{t('reclamations.details.issue_description')}</p>
               </div>
               <p className={`whitespace-pre-wrap leading-6 ${dark ? 'text-slate-300' : 'text-slate-700'}`}>{issue.message}</p>
             </section>
@@ -117,7 +119,7 @@ const DriverIssueDetailsModal = ({
             <section className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <div className={`rounded-2xl border p-4 ${dark ? 'border-slate-700 bg-slate-800/30' : 'border-slate-200 bg-white'}`}>
                 <p className={`mb-2 text-xs font-semibold uppercase tracking-wide ${dark ? 'text-slate-500' : 'text-slate-400'}`}>
-                  Driver
+                  {t('common.driver')}
                 </p>
                 <p className={`flex items-center gap-2 text-sm font-medium ${dark ? 'text-slate-200' : 'text-slate-800'}`}>
                   <FiUser className={dark ? 'text-slate-500' : 'text-slate-500'} />
@@ -127,7 +129,7 @@ const DriverIssueDetailsModal = ({
 
               <div className={`rounded-2xl border p-4 ${dark ? 'border-slate-700 bg-slate-800/30' : 'border-slate-200 bg-white'}`}>
                 <p className={`mb-2 text-xs font-semibold uppercase tracking-wide ${dark ? 'text-slate-500' : 'text-slate-400'}`}>
-                  Vehicle
+                  {t('common.vehicle')}
                 </p>
                 <p className={`flex items-center gap-2 text-sm font-medium ${dark ? 'text-slate-200' : 'text-slate-800'}`}>
                   <FiTruck className={dark ? 'text-slate-500' : 'text-slate-500'} />
@@ -137,21 +139,21 @@ const DriverIssueDetailsModal = ({
 
               <div className={`rounded-2xl border p-4 ${dark ? 'border-slate-700 bg-slate-800/30' : 'border-slate-200 bg-white'}`}>
                 <p className={`mb-2 text-xs font-semibold uppercase tracking-wide ${dark ? 'text-slate-500' : 'text-slate-400'}`}>
-                  Created At
+                  {t('common.created')}
                 </p>
                 <p className={`flex items-center gap-2 text-sm ${dark ? 'text-slate-300' : 'text-slate-700'}`}>
                   <FiCalendar className={dark ? 'text-slate-500' : 'text-slate-500'} />
-                  {formatDateTime(issue.createdAt)}
+                  {formatDateTime(issue.createdAt, i18n.language)}
                 </p>
               </div>
 
               <div className={`rounded-2xl border p-4 ${dark ? 'border-slate-700 bg-slate-800/30' : 'border-slate-200 bg-white'}`}>
                 <p className={`mb-2 text-xs font-semibold uppercase tracking-wide ${dark ? 'text-slate-500' : 'text-slate-400'}`}>
-                  Updated At
+                  {t('common.updated')}
                 </p>
                 <p className={`flex items-center gap-2 text-sm ${dark ? 'text-slate-300' : 'text-slate-700'}`}>
                   <FiCalendar className={dark ? 'text-slate-500' : 'text-slate-500'} />
-                  {formatDateTime(issue.updatedAt)}
+                  {formatDateTime(issue.updatedAt, i18n.language)}
                 </p>
               </div>
             </section>
@@ -159,8 +161,10 @@ const DriverIssueDetailsModal = ({
             {issue.images?.length ? (
               <section>
                 <div className="mb-3 flex items-center justify-between">
-                  <p className={`text-sm font-semibold ${dark ? 'text-slate-200' : 'text-slate-800'}`}>Attachments</p>
-                  <p className={`text-xs ${dark ? 'text-slate-500' : 'text-slate-500'}`}>{issue.images.length} file(s)</p>
+                  <p className={`text-sm font-semibold ${dark ? 'text-slate-200' : 'text-slate-800'}`}>{t('reclamations.details.attachments')}</p>
+                  <p className={`text-xs ${dark ? 'text-slate-500' : 'text-slate-500'}`}>
+                    {t('reclamations.details.files', { count: issue.images.length })}
+                  </p>
                 </div>
 
                 <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
@@ -176,11 +180,11 @@ const DriverIssueDetailsModal = ({
                     >
                       <img
                         src={image}
-                        alt={`Issue attachment ${index + 1}`}
+                        alt={t('reclamations.details.attachment_alt', { index: index + 1 })}
                         className="h-44 w-full object-cover transition-transform duration-300 group-hover:scale-105"
                       />
                       <div className="absolute inset-0 flex items-end bg-gradient-to-t from-black/45 via-transparent to-transparent p-3 opacity-0 transition-opacity duration-300 group-hover:opacity-100">
-                        <span className="rounded-md bg-white/90 px-2 py-1 text-xs font-medium text-slate-900">Open preview</span>
+                        <span className="rounded-md bg-white/90 px-2 py-1 text-xs font-medium text-slate-900">{t('reclamations.details.open_preview')}</span>
                       </div>
                     </a>
                   ))}
@@ -193,7 +197,7 @@ const DriverIssueDetailsModal = ({
         <div className={`border-t px-6 py-4 sm:px-8 ${dark ? 'border-slate-700 bg-slate-900/95' : 'border-slate-200 bg-white/95'}`}>
           <div className="flex items-center justify-end gap-2">
             <Button type="button" variant="secondary" onClick={onClose}>
-              Close
+              {t('common.close')}
             </Button>
           </div>
         </div>

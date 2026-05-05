@@ -1,0 +1,34 @@
+{
+  "settings": {
+    "pageTitle": "Paramètres",
+    "tabs": {
+      "profile": "Mon profil",
+      "security": "Mot de passe et sécurité",
+      "notifications": "Notifications"
+    },
+    "profile": {
+      "title": "Informations du profil",
+      "subtitle": "Mettez à jour vos informations personnelles",
+      "uploadChange": "Téléverser / Modifier",
+      "saveChanges": "Enregistrer les modifications",
+      "changePasswordHint": "Changez le mot de passe dans l'onglet Sécurité."
+    },
+    "security": {
+      "currentPasswordPlaceholder": "Mot de passe actuel",
+      "newPasswordPlaceholder": "Nouveau mot de passe",
+      "confirmPasswordPlaceholder": "Confirmer le mot de passe",
+      "submit": "Mettre à jour le mot de passe",
+      "title": "Sécurité"
+    },
+    "notifications": {
+      "email": "E-mail",
+      "push": "Notifications push",
+      "save": "Enregistrer les préférences"
+    },
+    "sidebar": {
+      "profile": "Profil",
+      "notifications": "Notifications",
+      "security": "Sécurité"
+    }
+  }
+}

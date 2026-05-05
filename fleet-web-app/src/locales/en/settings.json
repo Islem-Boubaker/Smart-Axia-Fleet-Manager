@@ -1,0 +1,34 @@
+{
+  "settings": {
+    "pageTitle": "Settings",
+    "tabs": {
+      "profile": "My profile",
+      "security": "Password & security",
+      "notifications": "Notifications"
+    },
+    "profile": {
+      "title": "Profile information",
+      "subtitle": "Update your personal information",
+      "uploadChange": "Upload / Change",
+      "saveChanges": "Save changes",
+      "changePasswordHint": "Change password in the Security tab."
+    },
+    "security": {
+      "currentPasswordPlaceholder": "Enter current password",
+      "newPasswordPlaceholder": "Enter new password",
+      "confirmPasswordPlaceholder": "Confirm new password",
+      "submit": "Update password",
+      "title": "Security"
+    },
+    "notifications": {
+      "email": "Email",
+      "push": "Push",
+      "save": "Save preferences"
+    },
+    "sidebar": {
+      "profile": "Profile",
+      "notifications": "Notifications",
+      "security": "Security"
+    }
+  }
+}

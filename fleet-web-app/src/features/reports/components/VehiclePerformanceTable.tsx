@@ -1,4 +1,5 @@
 import { Card } from '../../../shared/components';
+import { useTranslation } from 'react-i18next';
 
 interface Vehicle {
   vehicle: string;
@@ -15,6 +16,7 @@ interface Props {
 }
 
 const VehiclePerformanceTable = ({ vehicles, dark = false }: Props) => {
+  const { t } = useTranslation();
   const th = dark ? 'text-slate-400' : 'text-gray-600';
   const tr = dark ? 'border-slate-700 hover:bg-slate-800/50' : 'border-gray-100 hover:bg-gray-50/80';
   const td = dark ? 'text-slate-300' : 'text-gray-600';
@@ -24,8 +26,8 @@ const VehiclePerformanceTable = ({ vehicles, dark = false }: Props) => {
 
   return (
     <Card
-      title="Vehicle Performance"
-      subtitle="Top performing vehicles this month"
+      title={t('reports.vehicle_performance.title')}
+      subtitle={t('reports.vehicle_performance.subtitle')}
       padding="lg"
       dark={dark}
       className={dark ? 'border-slate-700/80 shadow-none' : 'border-slate-200/90 shadow-glass'}
@@ -34,12 +36,12 @@ const VehiclePerformanceTable = ({ vehicles, dark = false }: Props) => {
         <table className="w-full border-separate border-spacing-0">
           <thead>
             <tr className={`border-b ${headBorder}`}>
-              <th className={`text-left py-4 px-5 text-sm font-semibold ${th} first:rounded-tl-lg`}>Vehicle</th>
-              <th className={`text-right py-4 px-5 text-sm font-semibold ${th}`}>Trips</th>
-              <th className={`text-right py-4 px-5 text-sm font-semibold ${th}`}>Distance</th>
-              <th className={`text-right py-4 px-5 text-sm font-semibold ${th}`}>Fuel Used</th>
-              <th className={`text-right py-4 px-5 text-sm font-semibold ${th}`}>Efficiency</th>
-              <th className={`text-right py-4 px-5 text-sm font-semibold ${th} last:rounded-tr-lg`}>Revenue</th>
+              <th className={`text-left py-4 px-5 text-sm font-semibold ${th} first:rounded-tl-lg`}>{t('reports.vehicle_performance.table.vehicle')}</th>
+              <th className={`text-right py-4 px-5 text-sm font-semibold ${th}`}>{t('reports.vehicle_performance.table.trips')}</th>
+              <th className={`text-right py-4 px-5 text-sm font-semibold ${th}`}>{t('reports.vehicle_performance.table.distance')}</th>
+              <th className={`text-right py-4 px-5 text-sm font-semibold ${th}`}>{t('reports.vehicle_performance.table.fuel_used')}</th>
+              <th className={`text-right py-4 px-5 text-sm font-semibold ${th}`}>{t('reports.vehicle_performance.table.efficiency')}</th>
+              <th className={`text-right py-4 px-5 text-sm font-semibold ${th} last:rounded-tr-lg`}>{t('reports.vehicle_performance.table.revenue')}</th>
             </tr>
           </thead>
           <tbody>

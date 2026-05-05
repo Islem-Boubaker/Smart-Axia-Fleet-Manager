@@ -1,0 +1,23 @@
+{
+  "reports": {
+    "title": "Rapports",
+    "subtitle": "Analyses et indicateurs de la flotte.",
+    "filters": {
+      "dateRange": "Plage de dates",
+      "export": "Exporter",
+      "apply": "Appliquer"
+    },
+    "sections": {
+      "overview": "Vue d'ensemble",
+      "fuel": "Analyse carburant",
+      "drivers": "Indicateurs conducteurs",
+      "maintenance": "Résumé maintenance",
+      "trips": "Analytique trajets",
+      "vehicles": "Performance véhicules",
+      "monthly": "Tendances mensuelles",
+      "utilization": "Utilisation"
+    },
+    "loadingSection": "Chargement de la section...",
+    "errorSection": "Impossible de charger cette section."
+  }
+}

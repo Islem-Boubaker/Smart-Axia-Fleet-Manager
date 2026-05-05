@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { FUEL_PRICE_TND } from '../../../utils/constants';
 import type { DashboardFuelDay } from '../hooks/useDashboard';
 
@@ -7,6 +8,8 @@ interface FuelUsageCardProps {
 }
 
 const FuelUsageCard = ({ fuelByDay, activeVehicles }: FuelUsageCardProps) => {
+  const { t, i18n } = useTranslation();
+  const countLocale = (i18n.language || 'en').split('-')[0] === 'ar' ? 'ar' : (i18n.language || 'en').split('-')[0] === 'fr' ? 'fr-FR' : 'en-TN';
   const maxLiters = Math.max(1, ...fuelByDay.map((d) => d.liters));
   const total = fuelByDay.reduce((sum, d) => sum + d.liters, 0);
   const avgPerVehicle = activeVehicles > 0 ? total / activeVehicles : 0;
@@ -14,7 +17,7 @@ const FuelUsageCard = ({ fuelByDay, activeVehicles }: FuelUsageCardProps) => {
 
   return (
     <div className="bg-white/90 dark:bg-gray-900/70 rounded-2xl border border-gray-200/70 dark:border-gray-700/60 shadow-sm p-5">
-      <h2 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">Fuel usage — last 7 days</h2>
+      <h2 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">{t('dashboard.fuel.title')}</h2>
 
       <div className="flex items-end gap-1 h-14 mb-1 rounded-lg bg-gray-50 dark:bg-gray-800/60 px-2 pt-2">
         {fuelByDay.map((item, index) => {
@@ -37,16 +40,16 @@ const FuelUsageCard = ({ fuelByDay, activeVehicles }: FuelUsageCardProps) => {
       </div>
 
       <div className="flex justify-between text-sm py-1.5 border-b border-gray-100 dark:border-gray-800">
-        <span className="text-gray-700 dark:text-gray-300">Total this week</span>
+        <span className="text-gray-700 dark:text-gray-300">{t('dashboard.fuel.totalWeek')}</span>
         <span className="text-gray-900 dark:text-white font-semibold">{total.toFixed(1)} L</span>
       </div>
       <div className="flex justify-between text-sm py-1.5 border-b border-gray-100 dark:border-gray-800">
-        <span className="text-gray-700 dark:text-gray-300">Avg per vehicle</span>
+        <span className="text-gray-700 dark:text-gray-300">{t('dashboard.fuel.avgVehicle')}</span>
         <span className="text-gray-900 dark:text-white font-semibold">{avgPerVehicle.toFixed(1)} L</span>
       </div>
       <div className="flex justify-between text-sm py-1.5">
-        <span className="text-gray-700 dark:text-gray-300">Cost</span>
-        <span className="text-gray-900 dark:text-white font-semibold">{Math.round(cost).toLocaleString('en-TN')} TND</span>
+        <span className="text-gray-700 dark:text-gray-300">{t('dashboard.fuel.cost')}</span>
+        <span className="text-gray-900 dark:text-white font-semibold">{t('dashboard.stats.tnd', { n: Math.round(cost).toLocaleString(countLocale) })}</span>
       </div>
     </div>
   );

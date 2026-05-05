@@ -1,6 +1,7 @@
 import { useCallback, useMemo, useState } from 'react';
 import { useOutletContext, useSearchParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 import { driversService } from '../../drivers/services/drivers.service';
 import { vehiclesService } from '../../vehicles/services/vehicles.service';
 import type { Driver, Vehicle } from '../../../types';
@@ -17,13 +18,6 @@ import { queryKeys } from '../../../shared/services/queryKeys';
 interface ThemeContext {
   dark: boolean;
 }
-
-const statusLabel: Record<ReclamationStatus, string> = {
-  PENDING: 'Pending',
-  IN_PROGRESS: 'In Progress',
-  RESOLVED: 'Resolved',
-  REJECTED: 'Rejected',
-};
 
 const normalize = (value?: string | null) => String(value ?? '').trim().toLowerCase();
 
@@ -51,6 +45,7 @@ const findVehicleFromAssignedValue = (assignedValue: string | undefined, vehicle
 
 const DriverIssuesPage = () => {
   const { dark } = useOutletContext<ThemeContext>();
+  const { t } = useTranslation();
   const [searchParams, setSearchParams] = useSearchParams();
 
   const [statusFilter, setStatusFilter] = useState<'all' | ReclamationStatus>('all');
@@ -108,8 +103,8 @@ const DriverIssuesPage = () => {
     const assignedMatch = findVehicleFromAssignedValue(driver?.assignedVehicle, vehicles);
     if (assignedMatch) return buildVehicleLabel(assignedMatch);
 
-    return item.vehicleId || 'N/A';
-  }, [drivers, vehicles]);
+    return item.vehicleId || t('common.na');
+  }, [drivers, vehicles, t]);
 
   const filteredItems = useMemo(() => {
     const normalizedSearch = searchQuery.trim().toLowerCase();
@@ -143,14 +138,21 @@ const DriverIssuesPage = () => {
   }, [items, getVehicleLabel]);
 
   const driverSelectOptions = useMemo(
-    () => driverFilterOptions.map((option) => ({ value: option, label: option === 'all' ? 'All drivers' : option })),
-    [driverFilterOptions]
+    () => driverFilterOptions.map((option) => ({ value: option, label: option === 'all' ? t('reclamations.filters.all_drivers') : option })),
+    [driverFilterOptions, t]
   );
 
   const vehicleSelectOptions = useMemo(
-    () => vehicleFilterOptions.map((option) => ({ value: option, label: option === 'all' ? 'All vehicles' : option })),
-    [vehicleFilterOptions]
+    () => vehicleFilterOptions.map((option) => ({ value: option, label: option === 'all' ? t('reclamations.filters.all_vehicles') : option })),
+    [vehicleFilterOptions, t]
   );
+
+  const statusLabel = useMemo(() => ({
+    PENDING: t('status.pending'),
+    IN_PROGRESS: t('status.in_progress'),
+    RESOLVED: t('status.resolved'),
+    REJECTED: t('status.rejected'),
+  }), [t]);
 
   const closeDetails = () => {
     setSelected(null);
@@ -165,11 +167,11 @@ const DriverIssuesPage = () => {
     <div className={`${pageShellClasses(dark)} ${pageShellInnerSpacing} animate-fade-in`}>
       <div className="space-y-1 px-1">
         <p className={`text-xs font-semibold uppercase tracking-[0.12em] ${dark ? 'text-slate-500' : 'text-slate-400'}`}>
-          Operations
+          {t('reclamations.section_label')}
         </p>
-        <h1 className={`text-2xl font-bold tracking-tight ${dark ? 'text-white' : 'text-slate-900'}`}>Driver Issue Reports</h1>
+        <h1 className={`text-2xl font-bold tracking-tight ${dark ? 'text-white' : 'text-slate-900'}`}>{t('reclamations.title')}</h1>
         <p className={`text-sm ${dark ? 'text-slate-400' : 'text-slate-600'}`}>
-          Monitor vehicle issues submitted by drivers.
+          {t('reclamations.subtitle')}
         </p>
       </div>
 
@@ -196,11 +198,11 @@ const DriverIssuesPage = () => {
 
       {loading ? (
         <div className={`rounded-2xl border px-6 py-16 text-center text-sm ${dark ? 'border-slate-700/80 bg-slate-900/30 text-slate-400' : 'border-slate-200/90 bg-white/75 text-slate-500'}`}>
-          Loading driver issue reports...
+          {t('reclamations.table.loading')}
         </div>
       ) : filteredItems.length === 0 ? (
         <div className={`rounded-2xl border px-6 py-16 text-center text-sm ${dark ? 'border-slate-700/80 bg-slate-900/30 text-slate-400' : 'border-slate-200/90 bg-white/75 text-slate-500'}`}>
-          No issue reports found.
+          {t('reclamations.table.empty')}
         </div>
       ) : (
         <DriverIssuesTable

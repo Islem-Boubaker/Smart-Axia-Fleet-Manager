@@ -1,4 +1,5 @@
 import { Card } from '../../../shared/components';
+import { useTranslation } from 'react-i18next';
 
 interface Trend {
   month: string;
@@ -13,6 +14,7 @@ interface Props {
 }
 
 const MonthlyTrends = ({ trends, dark = false }: Props) => {
+  const { t } = useTranslation();
   const label = dark ? 'text-slate-500' : 'text-gray-500';
   const val = dark ? 'text-white' : 'text-gray-900';
   const row = dark
@@ -22,8 +24,8 @@ const MonthlyTrends = ({ trends, dark = false }: Props) => {
 
   return (
     <Card
-      title="Monthly Trends"
-      subtitle="Performance over time"
+      title={t('reports.monthly.title')}
+      subtitle={t('reports.monthly.subtitle')}
       padding="lg"
       dark={dark}
       className={dark ? 'border-slate-700/80 shadow-none' : 'border-slate-200/90 shadow-glass'}
@@ -35,20 +37,20 @@ const MonthlyTrends = ({ trends, dark = false }: Props) => {
             className={`grid grid-cols-2 md:grid-cols-4 gap-5 sm:gap-6 p-5 sm:p-6 rounded-xl border ${row}`}
           >
             <div className="space-y-1.5">
-              <p className={`text-xs font-medium uppercase tracking-wide ${label}`}>Month</p>
+              <p className={`text-xs font-medium uppercase tracking-wide ${label}`}>{t('reports.monthly.labels.month')}</p>
               <p className={`text-lg font-semibold ${val}`}>{trend.month}</p>
             </div>
             <div className="space-y-1.5">
-              <p className={`text-xs font-medium uppercase tracking-wide ${label}`}>Trips</p>
+              <p className={`text-xs font-medium uppercase tracking-wide ${label}`}>{t('reports.monthly.labels.trips')}</p>
               <p className={`text-lg font-semibold tabular-nums ${val}`}>{trend.trips}</p>
             </div>
             <div className="space-y-1.5">
-              <p className={`text-xs font-medium uppercase tracking-wide ${label}`}>Distance</p>
-              <p className={`text-lg font-semibold ${val}`}>{trend.distance.toLocaleString()} km</p>
+              <p className={`text-xs font-medium uppercase tracking-wide ${label}`}>{t('reports.monthly.labels.distance')}</p>
+              <p className={`text-lg font-semibold ${val}`}>{trend.distance.toLocaleString()} {t('common.kmUnit')}</p>
             </div>
             <div className="space-y-1.5 col-span-2 md:col-span-1">
-              <p className={`text-xs font-medium uppercase tracking-wide ${label}`}>Revenue</p>
-              <p className={`text-lg font-semibold tabular-nums ${rev}`}>{trend.revenue.toLocaleString()} TND</p>
+              <p className={`text-xs font-medium uppercase tracking-wide ${label}`}>{t('reports.monthly.labels.revenue')}</p>
+              <p className={`text-lg font-semibold tabular-nums ${rev}`}>{trend.revenue.toLocaleString()} {t('common.currencyTnd')}</p>
             </div>
           </div>
         ))}

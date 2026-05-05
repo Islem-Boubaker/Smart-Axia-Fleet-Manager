@@ -1,6 +1,7 @@
 import { lazy, Suspense, useMemo, useRef, useState, type ComponentType, type LazyExoticComponent } from 'react';
 import { useOutletContext } from 'react-router-dom';
 import { FiDownload } from 'react-icons/fi';
+import { useTranslation } from 'react-i18next';
 import { Button, Card } from '../../../shared/components';
 import { useReports } from '../hooks/useReports';
 import { useSectionVisible } from '../hooks/useSectionVisible';
@@ -75,6 +76,7 @@ function LazySection<P extends object>({
 
 const ReportsPage = () => {
   const { dark } = useOutletContext<ThemeContext>();
+  const { t } = useTranslation();
   const pdfRef = useRef<HTMLDivElement>(null);
   const [dateRange, setDateRange] = useState('month');
   const [customRange, setCustomRange] = useState(() => {
@@ -167,7 +169,7 @@ const ReportsPage = () => {
     filteredTripsRaw.forEach((trip) => {
       const key = trip.vehicleId;
       const fallbackVehicle = vehiclesRaw.find((vehicle) => vehicle.id === key);
-      const vehicleName = trip.vehicle?.name || fallbackVehicle?.name || 'Unknown vehicle';
+      const vehicleName = trip.vehicle?.name || fallbackVehicle?.name || t('common.unknownVehicle');
       const vehiclePlate = trip.vehicle?.plaque_immatriculation || fallbackVehicle?.plaque_immatriculation || '';
       const vehicleLabel = vehiclePlate ? `${vehicleName} (${vehiclePlate})` : vehicleName;
       const current = byVehicle.get(key) || { plate: vehicleLabel, fuel: 0 };
@@ -185,7 +187,7 @@ const ReportsPage = () => {
       totalFuelCost,
       topVehiclesFuel,
     };
-  }, [filteredTripsRaw, vehiclesRaw]);
+  }, [filteredTripsRaw, vehiclesRaw, t]);
 
   const maintenanceStats = useMemo(() => {
     const completed = filteredMaintenancesRaw.filter((item) => item.status === 'completed');
@@ -207,7 +209,7 @@ const ReportsPage = () => {
 
     const byVehicle = new Map<string, { plate: string; cost: number; jobs: number; types: Set<string> }>();
     filteredMaintenancesRaw.forEach((item) => {
-      const plate = item.vehiclePlate || 'Unknown';
+      const plate = item.vehiclePlate || t('common.unknown');
       const matchedVehicle = vehiclesRaw.find((vehicle) => vehicle.plaque_immatriculation === plate);
       const vehicleLabel = matchedVehicle?.name
         ? `${matchedVehicle.name} (${plate})`
@@ -230,7 +232,7 @@ const ReportsPage = () => {
       avgDowntime,
       costByVehicle,
     };
-  }, [filteredMaintenancesRaw, vehiclesRaw]);
+  }, [filteredMaintenancesRaw, vehiclesRaw, t]);
 
   const driverScorecard = useMemo(() => {
     const byDriver = new Map<string, {
@@ -245,7 +247,7 @@ const ReportsPage = () => {
       const key = trip.userId || trip.driver?.id;
       if (!key) return;
       const fallbackDriver = driversRaw.find((driver) => driver.id === key);
-      const name = trip.driver?.name || fallbackDriver?.name || 'Unknown driver';
+      const name = trip.driver?.name || fallbackDriver?.name || t('common.unknownDriver');
       const current = byDriver.get(key) || {
         name,
         trips: 0,
@@ -280,7 +282,7 @@ const ReportsPage = () => {
       })
       .sort((a, b) => b.onTimeRate - a.onTimeRate)
       .slice(0, 6);
-  }, [filteredTripsRaw, driversRaw]);
+  }, [filteredTripsRaw, driversRaw, t]);
 
   const utilization = useMemo(() => {
     const byVehicleDays = new Map<string, Set<string>>();
@@ -311,9 +313,9 @@ const ReportsPage = () => {
     const lowest = rows.length > 0 ? rows[rows.length - 1] : null;
     return {
       rows,
-      recommendation: lowest && lowest.rate < 25 ? `${lowest.vehicle} may be a candidate for reassignment.` : null,
+      recommendation: lowest && lowest.rate < 25 ? t('reports.utilization.recommendation', { vehicle: lowest.vehicle }) : null,
     };
-  }, [filteredTripsRaw, vehiclesRaw, rangeDays]);
+  }, [filteredTripsRaw, vehiclesRaw, rangeDays, t]);
 
   const sectionSubtitleClass = dark
     ? 'flex items-center gap-2 text-sm font-semibold tracking-wide text-slate-200'
@@ -345,10 +347,10 @@ const ReportsPage = () => {
   };
 
   const periodButtons = [
-    { label: 'This month', value: 'month' },
-    { label: 'Last 3 months', value: 'quarter' },
-    { label: 'Last 6 months', value: 'halfyear' },
-    { label: 'This year', value: 'year' },
+    { label: t('reports.filters.thisMonth'), value: 'month' },
+    { label: t('reports.filters.last3Months'), value: 'quarter' },
+    { label: t('reports.filters.last6Months'), value: 'halfyear' },
+    { label: t('reports.filters.thisYear'), value: 'year' },
   ];
 
   const customRangeInvalid =
@@ -359,8 +361,8 @@ const ReportsPage = () => {
   return (
     <div className={`${pageShellClasses(dark)} ${pageShellInnerSpacing}`}>
       <div className="space-y-2">
-        <h1 className={`text-3xl sm:text-4xl font-extrabold tracking-tight ${dark ? 'text-white' : 'text-slate-900'}`}>Reports</h1>
-        <p className={`text-sm sm:text-base ${dark ? 'text-slate-400' : 'text-slate-600'}`}>Fleet analytics with actionable operational insights.</p>
+        <h1 className={`text-3xl sm:text-4xl font-extrabold tracking-tight ${dark ? 'text-white' : 'text-slate-900'}`}>{t('reports.title')}</h1>
+        <p className={`text-sm sm:text-base ${dark ? 'text-slate-400' : 'text-slate-600'}`}>{t('reports.subtitle')}</p>
       </div>
 
       <div className="flex flex-wrap items-center gap-2">
@@ -395,12 +397,12 @@ const ReportsPage = () => {
                 : 'border-slate-200 text-slate-500 hover:border-slate-300 hover:text-slate-700'
           }`}
         >
-          Custom range
+          {t('reports.filters.customRange')}
         </button>
         <div className="ml-auto">
           <Button size="sm" onClick={exportPDF} className="rounded-full">
             <FiDownload className="mr-1.5" />
-            Export PDF
+            {t('common.exportPdf')}
           </Button>
         </div>
       </div>
@@ -413,7 +415,7 @@ const ReportsPage = () => {
         >
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             <label className="space-y-1">
-              <span className={dark ? 'text-xs text-slate-400' : 'text-xs text-slate-500'}>Start date</span>
+              <span className={dark ? 'text-xs text-slate-400' : 'text-xs text-slate-500'}>{t('reports.filters.startDate')}</span>
               <input
                 type="date"
                 value={customRange.startDate}
@@ -426,7 +428,7 @@ const ReportsPage = () => {
               />
             </label>
             <label className="space-y-1">
-              <span className={dark ? 'text-xs text-slate-400' : 'text-xs text-slate-500'}>End date</span>
+              <span className={dark ? 'text-xs text-slate-400' : 'text-xs text-slate-500'}>{t('reports.filters.endDate')}</span>
               <input
                 type="date"
                 value={customRange.endDate}
@@ -440,7 +442,7 @@ const ReportsPage = () => {
             </label>
           </div>
           {customRangeInvalid && (
-            <p className="mt-2 text-xs text-rose-500">Start date must be before end date.</p>
+            <p className="mt-2 text-xs text-rose-500">{t('reports.filters.invalidRange')}</p>
           )}
         </Card>
       )}
@@ -454,7 +456,7 @@ const ReportsPage = () => {
       <div ref={pdfRef} id="pdf-content" className="space-y-8 lg:space-y-10">
         {isLoading ? (
           <div className={`text-center py-16 rounded-2xl border ${dark ? 'border-slate-700 text-slate-400' : 'border-slate-200 text-slate-500'}`}>
-            Loading reports...
+            {t('reports.loading')}
           </div>
         ) : (
           <>

@@ -1,6 +1,7 @@
 import { useState, useCallback } from 'react';
 import { useOutletContext } from 'react-router-dom';
 import axios from 'axios';
+import { useTranslation } from 'react-i18next';
 import { useVehicles } from '../hooks/useVehicles';
 import { Button, toast } from '../../../shared/components';
 import { FiPlus } from 'react-icons/fi';
@@ -18,6 +19,7 @@ interface ThemeContext {
 
 const VehiclesPage = () => {
   const { dark } = useOutletContext<ThemeContext>();
+  const { t } = useTranslation();
   const {
     filteredVehicles,
     isLoading,
@@ -50,24 +52,24 @@ const VehiclesPage = () => {
     if (axios.isAxiosError(err)) {
       return err.response?.data?.message || err.message;
     }
-    return err instanceof Error ? err.message : 'An unexpected error occurred';
+    return err instanceof Error ? err.message : t('common.unexpectedError');
   };
 
   const handleAddVehicle = useCallback(
     async (data: Partial<Vehicle> | FormData) => {
-      const loadingId = toast.loading('Creating vehicle…');
+      const loadingId = toast.loading(t('vehicles.toast.creating'));
       try {
         setFormError('');
         await createVehicle(data);
-        toast.update(loadingId, { type: 'success', title: 'Success', message: 'Vehicle created successfully!' });
+        toast.update(loadingId, { type: 'success', title: t('common.success'), message: t('vehicles.toast.createSuccess') });
         setIsAddModalOpen(false);
       } catch (err) {
         const msg = extractErrorMessage(err);
-        toast.update(loadingId, { type: 'error', title: 'Error', message: msg });
+        toast.update(loadingId, { type: 'error', title: t('common.error'), message: msg });
         setFormError(msg);
       }
     },
-    [createVehicle],
+    [createVehicle, t],
   );
 
   const handleEditVehicle = useCallback((vehicle: Vehicle) => {
@@ -79,34 +81,34 @@ const VehiclesPage = () => {
   const handleUpdateVehicle = useCallback(
     async (data: Partial<Vehicle> | FormData) => {
       if (!selectedVehicleForEdit) return;
-      const loadingId = toast.loading('Updating vehicle…');
+      const loadingId = toast.loading(t('vehicles.toast.updating'));
       try {
         setFormError('');
         await updateVehicle(selectedVehicleForEdit.id, data);
-        toast.update(loadingId, { type: 'success', title: 'Success', message: 'Vehicle updated successfully!' });
+        toast.update(loadingId, { type: 'success', title: t('common.success'), message: t('vehicles.toast.updateSuccess') });
         setIsEditModalOpen(false);
         setSelectedVehicleForEdit(null);
       } catch (err) {
         const msg = extractErrorMessage(err);
-        toast.update(loadingId, { type: 'error', title: 'Error', message: msg });
+        toast.update(loadingId, { type: 'error', title: t('common.error'), message: msg });
         setFormError(msg);
       }
     },
-    [selectedVehicleForEdit, updateVehicle],
+    [selectedVehicleForEdit, updateVehicle, t],
   );
 
   const handleDeleteVehicle = useCallback(
     async (vehicleId: string) => {
-      if (!window.confirm('Are you sure you want to delete this vehicle?')) return;
-      const loadingId = toast.loading('Deleting vehicle…');
+      if (!window.confirm(t('vehicles.toast.deleteConfirm'))) return;
+      const loadingId = toast.loading(t('vehicles.toast.deleting'));
       try {
         await deleteVehicle(vehicleId);
-        toast.update(loadingId, { type: 'success', title: 'Deleted', message: 'Vehicle deleted successfully.' });
+        toast.update(loadingId, { type: 'success', title: t('common.deleted'), message: t('vehicles.toast.deleteSuccess') });
       } catch (err) {
-        toast.update(loadingId, { type: 'error', title: 'Error', message: extractErrorMessage(err) });
+        toast.update(loadingId, { type: 'error', title: t('common.error'), message: extractErrorMessage(err) });
       }
     },
-    [deleteVehicle],
+    [deleteVehicle, t],
   );
 
   const detailsVehicle = selectedVehicleDetails ?? selectedVehicleRow?.vehicle ?? null;
@@ -115,13 +117,13 @@ const VehiclesPage = () => {
     <>
       <div className={`${pageShellClasses(dark)} ${pageShellInnerSpacing} animate-fade-in`}>
         <PageHeader
-          title="Vehicles"
-          description="Your full fleet inventory and live status."
+          title={t('vehicles.title')}
+          description={t('vehicles.subtitle')}
           dark={dark}
           actions={
             <Button onClick={() => setIsAddModalOpen(true)} className="rounded-xl">
               <FiPlus className="mr-2" />
-              Add Vehicle
+              {t('vehicles.add_button')}
             </Button>
           }
         />
@@ -150,7 +152,7 @@ const VehiclesPage = () => {
       <VehicleModal
         isOpen={isAddModalOpen}
         onClose={() => { setIsAddModalOpen(false); setFormError(''); }}
-        title="Add New Vehicle"
+        title={t('vehicles.addNew')}
         dark={dark}
         onSubmit={handleAddVehicle}
         error={formError}
@@ -163,7 +165,7 @@ const VehiclesPage = () => {
           setSelectedVehicleForEdit(null);
           setFormError('');
         }}
-        title="Edit Vehicle"
+        title={t('vehicles.edit')}
         dark={dark}
         vehicle={selectedVehicleForEdit ?? undefined}
         onSubmit={handleUpdateVehicle}
