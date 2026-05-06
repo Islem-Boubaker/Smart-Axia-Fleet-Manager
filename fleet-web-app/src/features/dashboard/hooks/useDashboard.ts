@@ -2,9 +2,11 @@ import { useCallback, useMemo, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { driversService } from '../../drivers/services/drivers.service';
 import { maintenanceService } from '../../maintenance/services/maintenance.service';
+import { buildMaintenancePrefillUrl } from '../../maintenance/utils/maintenancePrefill';
 import notificationApi, { type NotificationRecord } from '../../../shared/services/notification.api';
 import { tripsService } from '../../trips/services/trips.service';
 import { vehiclesService } from '../../vehicles/services/vehicles.service';
+import { getVehicleStatusLabel, isVehicleOperational } from '../../vehicles/utils/vehicleStatus';
 import type { Driver, Maintenance, Trip, Vehicle } from '../../../types';
 import { FUEL_PRICE_TND } from '../../../utils/constants';
 import { queryKeys } from '../../../shared/services/queryKeys';
@@ -143,12 +145,30 @@ const buildExpiryAlerts = (vehicles: Vehicle[]): NotificationRecord[] => {
         message: `${vehicleLabel(vehicle)} insurance expires on ${formatDateLabel(vehicle.insurance_expiry_date || undefined)} (${whenText}).`,
         entityType: 'vehicle',
         entityId: vehicle.id,
-        actionUrl: null,
+        actionUrl: buildMaintenancePrefillUrl({
+          source: 'dashboard-alert',
+          vehicleId: vehicle.id,
+          vehicleName: vehicle.name,
+          vehiclePlate: vehicle.plaque_immatriculation,
+          type: 'Insurance Renewal',
+          priority: overdue ? 'high' : 'medium',
+          description: [
+            'Created from insurance expiry alert.',
+            '',
+            `${vehicleLabel(vehicle)} insurance expires on ${formatDateLabel(vehicle.insurance_expiry_date || undefined)} (${whenText}).`,
+            '',
+            `Vehicle: ${vehicleLabel(vehicle)}`,
+          ].join('\n'),
+        }),
         metadata: {
           source: 'dashboard-computed',
           expiresAt: vehicle.insurance_expiry_date,
           daysUntilDue: insuranceDays,
           category: 'insurance',
+          maintenanceType: 'Insurance Renewal',
+          vehicleId: vehicle.id,
+          vehicleName: vehicle.name,
+          vehiclePlate: vehicle.plaque_immatriculation,
         },
         read: false,
         readAt: null,
@@ -175,12 +195,30 @@ const buildExpiryAlerts = (vehicles: Vehicle[]): NotificationRecord[] => {
         message: `${vehicleLabel(vehicle)} technical visit expires on ${formatDateLabel(vehicle.tech_visit_expiry_date || undefined)} (${whenText}).`,
         entityType: 'vehicle',
         entityId: vehicle.id,
-        actionUrl: null,
+        actionUrl: buildMaintenancePrefillUrl({
+          source: 'dashboard-alert',
+          vehicleId: vehicle.id,
+          vehicleName: vehicle.name,
+          vehiclePlate: vehicle.plaque_immatriculation,
+          type: 'Technical Visit',
+          priority: overdue ? 'high' : 'medium',
+          description: [
+            'Created from technical visit expiry alert.',
+            '',
+            `${vehicleLabel(vehicle)} technical visit expires on ${formatDateLabel(vehicle.tech_visit_expiry_date || undefined)} (${whenText}).`,
+            '',
+            `Vehicle: ${vehicleLabel(vehicle)}`,
+          ].join('\n'),
+        }),
         metadata: {
           source: 'dashboard-computed',
           expiresAt: vehicle.tech_visit_expiry_date,
           daysUntilDue: techVisitDays,
           category: 'tech-visit',
+          maintenanceType: 'Technical Visit',
+          vehicleId: vehicle.id,
+          vehicleName: vehicle.name,
+          vehiclePlate: vehicle.plaque_immatriculation,
         },
         read: false,
         readAt: null,
@@ -192,29 +230,6 @@ const buildExpiryAlerts = (vehicles: Vehicle[]): NotificationRecord[] => {
   });
 
   return expiryAlerts;
-};
-
-const statusText = (vehicle: Vehicle): string => {
-  const value = (vehicle as unknown as { status?: string }).status;
-  return typeof value === 'string' ? value.toLowerCase() : '';
-};
-
-const booleanFrom = (value: unknown, fallback = false): boolean => {
-  if (typeof value === 'boolean') return value;
-  if (typeof value === 'number') return value === 1;
-  if (typeof value === 'string') {
-    const normalized = value.trim().toLowerCase();
-    if (['t'].includes(normalized)) return true;
-    if (['f'].includes(normalized)) return false;
-    if (['true', '1', 'yes', 'y', 'on', 'active'].includes(normalized)) return true;
-    if (['false', '0', 'no', 'n', 'off', 'inactive'].includes(normalized)) return false;
-  }
-  return fallback;
-};
-
-const normalizedPlate = (value: unknown): string => {
-  if (typeof value !== 'string') return '';
-  return value.trim().toUpperCase().replace(/\s+/g, '');
 };
 
 const isOnTimeTrip = (trip: Trip): boolean => {
@@ -360,76 +375,16 @@ export const useDashboard = () => {
     const fuelCostMonth = currentMonthFuelLiters * FUEL_PRICE_TND;
     const previousFuelCostMonth = previousMonthFuelLiters * FUEL_PRICE_TND;
 
-    const ongoingVehicleIds = new Set(
-      trips
-        .filter((trip) => trip.status === 'ongoing')
-        .map((trip) => String(trip.vehicleId))
-    );
-
-    const openMaintenanceVehicleIds = new Set<string>();
-    const openMaintenanceVehiclePlates = new Set<string>();
-
-    maintenances
-      .filter((item) => item.status !== 'completed' && item.status !== 'cancelled')
-      .forEach((item) => {
-        if (item.vehicleId) {
-          openMaintenanceVehicleIds.add(String(item.vehicleId));
-        }
-
-        const plate = normalizedPlate(item.vehiclePlate);
-        if (plate) {
-          openMaintenanceVehiclePlates.add(plate);
-        }
-      });
-
-    // Make fleet buckets mutually exclusive:
-    // onTrip -> inMaintenance -> outOfService -> available.
+    // DB vehicle.status is the single source of truth for fleet buckets.
     const fleetStatusCounts = vehicles.reduce(
       (acc, vehicle) => {
-        const rawVehicle = vehicle as unknown as {
-          id?: unknown;
-          plaque_immatriculation?: unknown;
-          Active?: unknown;
-          active?: unknown;
-          Need_Maintenance?: unknown;
-          need_maintenance?: unknown;
-          needMaintenance?: unknown;
-          maintenanceRequired?: unknown;
-          needsMaintenance?: unknown;
-        };
-        const state = statusText(vehicle);
-        const vehicleId = String(rawVehicle.id ?? vehicle.id ?? '');
-        const vehiclePlate = normalizedPlate(rawVehicle.plaque_immatriculation ?? vehicle.plaque_immatriculation);
+        const statusLabel = getVehicleStatusLabel(vehicle);
 
-        const isActive = booleanFrom(rawVehicle.Active ?? rawVehicle.active, true);
-        const needsMaintenance = booleanFrom(
-          rawVehicle.Need_Maintenance ??
-            rawVehicle.need_maintenance ??
-            rawVehicle.needMaintenance ??
-            rawVehicle.maintenanceRequired ??
-            rawVehicle.needsMaintenance,
-          false
-        );
-
-        const isOnTrip = state.includes('on_trip') || ongoingVehicleIds.has(String(vehicle.id));
-        const isInMaintenance =
-          state.includes('maintenance') ||
-          needsMaintenance ||
-          openMaintenanceVehicleIds.has(vehicleId) ||
-          (vehiclePlate.length > 0 && openMaintenanceVehiclePlates.has(vehiclePlate));
-        const isInactive =
-          state.includes('inactive') ||
-          state.includes('out_of_service') ||
-          state.includes('out-of-service') ||
-          !isActive;
-
-        if (isOnTrip) {
+        if (statusLabel === 'In Use') {
           acc.onTrip += 1;
-        } else if (isInMaintenance) {
-          // Requested behavior: inactive + maintenance must count in maintenance.
+        } else if (statusLabel === 'Maintenance') {
           acc.inMaintenance += 1;
-        } else if (isInactive) {
-          // Requested behavior: inactive only (without maintenance) counts as out of service.
+        } else if (statusLabel === 'Inactive') {
           acc.outOfService += 1;
         } else {
           acc.available += 1;
@@ -524,7 +479,7 @@ export const useDashboard = () => {
 
     return {
       stats: {
-        activeVehicles: vehicles.filter((vehicle) => vehicle.Active).length,
+        activeVehicles: vehicles.filter(isVehicleOperational).length,
         tripsToday,
         maintenanceDue,
         fuelCostMonth,

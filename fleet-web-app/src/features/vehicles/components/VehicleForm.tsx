@@ -27,6 +27,13 @@ const typeToVehicleModel: Record<string, Vehicle['Vehicle_Model']> = {
   motorcycle: 'Motorcycle',
 };
 
+const resolveInitialStatus = (vehicle?: Partial<Vehicle>): Vehicle['status'] => {
+  if (vehicle?.status) return vehicle.status;
+  if (vehicle?.Need_Maintenance) return 'IN_MAINTENANCE';
+  if (vehicle?.Active === false) return 'OUT_OF_SERVICE';
+  return 'AVAILABLE';
+};
+
 const firstPhoto = (photos: unknown): string | null => {
   if (Array.isArray(photos) && photos.length > 0 && typeof photos[0] === 'string') {
     return photos[0];
@@ -46,6 +53,7 @@ const VehicleForm = ({ vehicle, dark = false, onSubmit, onCancel, error }: Vehic
     vin: vehicle?.vin || '',
     plaque_immatriculation: vehicle?.plaque_immatriculation || '',
     type: vehicle?.type || 'car',
+    status: resolveInitialStatus(vehicle),
     Active: vehicle?.Active ?? true,
     Vehicle_Model: vehicle?.Vehicle_Model || typeToVehicleModel[vehicle?.type || 'car'] || 'Car',
     Mileage: vehicle?.Mileage ?? 0,
@@ -81,6 +89,8 @@ const VehicleForm = ({ vehicle, dark = false, onSubmit, onCancel, error }: Vehic
     payload.Engine_Size = payload.Engine_Size === '' ? null : Number(payload.Engine_Size);
     payload.consumption = payload.consumption === '' ? null : Number(payload.consumption);
     payload.Vehicle_Model = typeToVehicleModel[String(payload.type || 'car')] || 'Car';
+    payload.Active = payload.status !== 'OUT_OF_SERVICE';
+    payload.Need_Maintenance = payload.status === 'IN_MAINTENANCE';
     payload.max_load = payload.max_load === '' || payload.max_load === null ? null : Number(payload.max_load);
     payload.insurance_expiry_date = payload.insurance_expiry_date === '' ? null : payload.insurance_expiry_date;
     payload.tech_visit_expiry_date = payload.tech_visit_expiry_date === '' ? null : payload.tech_visit_expiry_date;
@@ -133,7 +143,7 @@ const VehicleForm = ({ vehicle, dark = false, onSubmit, onCancel, error }: Vehic
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6 max-h-[70vh] overflow-y-auto pr-2 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+    <form onSubmit={handleSubmit} className="space-y-4">
       {error && (
         <div className="bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/20 text-red-700 dark:text-red-400 px-4 py-3 rounded-xl text-sm shadow-sm mb-4">
           {error}
@@ -141,13 +151,13 @@ const VehicleForm = ({ vehicle, dark = false, onSubmit, onCancel, error }: Vehic
       )}
 
       {/* Header Section */}
-      <div className="flex items-center gap-4 mb-2">
+      <div className="flex items-center gap-3">
         <div className="relative">
-          <div className="w-20 h-20 rounded-full bg-brand/10 flex items-center justify-center text-brand relative overflow-hidden ring-[3px] ring-white dark:ring-slate-800 shadow-md">
+          <div className="w-16 h-16 rounded-2xl bg-brand/10 flex items-center justify-center text-brand relative overflow-hidden ring-[3px] ring-white dark:ring-slate-800 shadow-md">
             {previewUrl ? (
               <img src={previewUrl} alt={t('common.vehiclePhotoAlt')} className="w-full h-full object-cover" />
             ) : (
-              <FiTruck className="w-8 h-8" />
+              <FiTruck className="w-7 h-7" />
             )}
           </div>
           
@@ -177,7 +187,7 @@ const VehicleForm = ({ vehicle, dark = false, onSubmit, onCancel, error }: Vehic
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-5">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-4">
         {/* Name */}
         <div className="md:col-span-2">
           <Input label={t('common.name')} name="name" value={formData.name} onChange={handleChange} placeholder={t('common.vehicleName')} required />
@@ -213,6 +223,21 @@ const VehicleForm = ({ vehicle, dark = false, onSubmit, onCancel, error }: Vehic
         {/* Max Load */}
         <div>
           <Input label={t('common.maxLoadKg')} type="number" name="max_load" value={formData.max_load ?? ''} onChange={handleChange} min="0" />
+        </div>
+
+        {/* Operational Status */}
+        <div className="md:col-span-2">
+          <label className={labelClass}>Operational Status</label>
+          <Select
+            value={formData.status}
+            onChange={(value) => handleSelectChange('status', value)}
+            dark={dark}
+            options={[
+              { value: 'AVAILABLE', label: 'Active' },
+              { value: 'OUT_OF_SERVICE', label: 'Inactive' },
+              { value: 'IN_MAINTENANCE', label: 'Maintenance' },
+            ]}
+          />
         </div>
 
         {/* Mileage */}
@@ -325,7 +350,7 @@ const VehicleForm = ({ vehicle, dark = false, onSubmit, onCancel, error }: Vehic
         </div>
       </div>
 
-      <div className="flex items-center justify-between pt-6 mt-4">
+      <div className="flex items-center justify-between pt-3">
         <button
           type="button"
           onClick={onCancel}

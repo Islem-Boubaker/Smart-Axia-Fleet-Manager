@@ -231,8 +231,13 @@ const SettingsPage = () => {
     emailTrips: true,
     emailMaintenance: true,
     emailDrivers: false,
+    emailAI: true,
+    emailSystem: true,
     pushTrips: true,
     pushMaintenance: true,
+    pushDrivers: true,
+    pushAI: true,
+    pushSystem: true,
     pushAlerts: true,
     smsAlerts: false,
   });

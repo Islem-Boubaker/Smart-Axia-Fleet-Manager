@@ -1,22 +1,40 @@
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Alert } from "react-native";
+import { useSelector } from "react-redux";
 
 import { useImagePicker } from "./useImagePicker";
 import { useReclamation } from "./useReclamation";
+import { tripsApi } from "@/features/trips/services/trips.api";
+import type { RootState } from "@/store";
 import type {
   ReclamationFormData,
   ReclamationFormErrors,
   ReclamationImage,
   ReclamationStep,
+  ReclamationType,
+  MaintenancePriority,
 } from "../types/reclamation.types";
 
 const STEPS: ReclamationStep[] = ["SUBJECT"];
 
 const initialForm: ReclamationFormData = {
+  type: "vehicle",
   subject: "",
   message: "",
   date: null,
   images: [],
+  maintenanceType: "General Inspection",
+  maintenancePriority: "medium",
+  estimatedCost: "",
+  currentMileage: "",
+  maintenanceNotes: "",
+};
+
+const parseOptionalPositiveNumber = (value?: string) => {
+  const trimmed = String(value ?? "").trim();
+  if (!trimmed) return null;
+  const parsed = Number(trimmed);
+  return Number.isFinite(parsed) ? parsed : Number.NaN;
 };
 
 function validateForm(form: ReclamationFormData): ReclamationFormErrors {
@@ -30,17 +48,91 @@ function validateForm(form: ReclamationFormData): ReclamationFormErrors {
     errors.message = "Description must be at least 10 characters.";
   }
 
+  if (form.type === "maintenance") {
+    if (!form.maintenanceType?.trim()) {
+      errors.maintenanceType = "Choose the maintenance type.";
+    }
+
+    const estimatedCost = parseOptionalPositiveNumber(form.estimatedCost);
+    if (estimatedCost !== null && (!Number.isFinite(estimatedCost) || estimatedCost < 0)) {
+      errors.estimatedCost = "Estimated cost must be a valid positive number.";
+    }
+
+    const currentMileage = parseOptionalPositiveNumber(form.currentMileage);
+    if (currentMileage !== null && (!Number.isFinite(currentMileage) || currentMileage < 0)) {
+      errors.currentMileage = "Mileage must be a valid positive number.";
+    }
+  }
+
   return errors;
 }
 
 export function useReclamationForm() {
   const { createReclamation, isLoading } = useReclamation();
+  const user = useSelector((state: RootState) => state.auth.user);
 
   const [form, setForm] = useState<ReclamationFormData>(initialForm);
   const [errors, setErrors] = useState<ReclamationFormErrors>({});
   const [currentStep, setCurrentStep] = useState(0);
   const [isDatePickerVisible, setIsDatePickerVisible] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
+  const [isContextLoading, setIsContextLoading] = useState(true);
+  const [contextError, setContextError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const loadContext = async () => {
+      setIsContextLoading(true);
+      setContextError(null);
+      try {
+        const [ongoing, scheduled] = await Promise.all([
+          tripsApi.getTripsWithMeta({ status: "ongoing", limit: 1 }),
+          tripsApi.getTripsWithMeta({ status: "scheduled", limit: 1 }),
+        ]);
+        if (cancelled) return;
+
+        const trip = ongoing.items[0] ?? scheduled.items[0] ?? null;
+        const vehicle = trip?.vehicleRecord;
+        const vehicleName =
+          vehicle?.name ||
+          vehicle?.model ||
+          vehicle?.Vehicle_Model ||
+          trip?.vehicle ||
+          "";
+        const vehiclePlate = vehicle?.plaque_immatriculation || "";
+
+        setForm((prev) => ({
+          ...prev,
+          driverName: user?.name || prev.driverName,
+          tripId: trip?.id || prev.tripId,
+          vehicleId: trip?.vehicleId || vehicle?.id || prev.vehicleId,
+          vehicleName: vehicleName || prev.vehicleName,
+          vehiclePlate: vehiclePlate || prev.vehiclePlate,
+        }));
+      } catch (error) {
+        if (!cancelled) {
+          setForm((prev) => ({
+            ...prev,
+            driverName: user?.name || prev.driverName,
+          }));
+          setContextError(
+            error instanceof Error
+              ? error.message
+              : "Could not load assigned vehicle context.",
+          );
+        }
+      } finally {
+        if (!cancelled) setIsContextLoading(false);
+      }
+    };
+
+    void loadContext();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [user?.name]);
 
   const updateImages = useCallback(
     (value: React.SetStateAction<ReclamationImage[]>) => {
@@ -62,9 +154,44 @@ export function useReclamationForm() {
     setErrors((prev) => ({ ...prev, subject: undefined }));
   }, []);
 
+  const setType = useCallback((type: ReclamationType, label?: string) => {
+    setForm((prev) => ({
+      ...prev,
+      type,
+      reclamationTypeLabel: label,
+      subject:
+        !prev.subject.trim() || prev.subject === prev.reclamationTypeLabel
+          ? label || prev.subject
+          : prev.subject,
+    }));
+  }, []);
+
   const setMessage = useCallback((value: string) => {
     setForm((prev) => ({ ...prev, message: value }));
     setErrors((prev) => ({ ...prev, message: undefined }));
+  }, []);
+
+  const setMaintenanceType = useCallback((value: string) => {
+    setForm((prev) => ({ ...prev, maintenanceType: value }));
+    setErrors((prev) => ({ ...prev, maintenanceType: undefined }));
+  }, []);
+
+  const setMaintenancePriority = useCallback((value: MaintenancePriority) => {
+    setForm((prev) => ({ ...prev, maintenancePriority: value }));
+  }, []);
+
+  const setEstimatedCost = useCallback((value: string) => {
+    setForm((prev) => ({ ...prev, estimatedCost: value }));
+    setErrors((prev) => ({ ...prev, estimatedCost: undefined }));
+  }, []);
+
+  const setCurrentMileage = useCallback((value: string) => {
+    setForm((prev) => ({ ...prev, currentMileage: value }));
+    setErrors((prev) => ({ ...prev, currentMileage: undefined }));
+  }, []);
+
+  const setMaintenanceNotes = useCallback((value: string) => {
+    setForm((prev) => ({ ...prev, maintenanceNotes: value }));
   }, []);
 
   const setDate = useCallback((date: Date) => {
@@ -93,16 +220,52 @@ export function useReclamationForm() {
   const handleSubmit = useCallback(async () => {
     const nextErrors = validateForm(form);
 
-    if (nextErrors.subject || nextErrors.message) {
+    if (
+      nextErrors.subject ||
+      nextErrors.message ||
+      nextErrors.maintenanceType ||
+      nextErrors.estimatedCost ||
+      nextErrors.currentMileage
+    ) {
       setErrors(nextErrors);
       setCurrentStep(0);
       return;
     }
 
     try {
+      const isMaintenance = form.type === "maintenance";
+
       await createReclamation({
         subject: form.subject.trim(),
         message: form.message.trim(),
+        type: form.type,
+        vehicleId:
+          form.type === "vehicle" || form.type === "maintenance"
+            ? form.vehicleId
+            : undefined,
+        vehicleName:
+          form.type === "vehicle" || form.type === "maintenance"
+            ? form.vehicleName
+            : undefined,
+        vehiclePlate:
+          form.type === "vehicle" || form.type === "maintenance"
+            ? form.vehiclePlate
+            : undefined,
+        driverName: form.driverName || user?.name || undefined,
+        tripId: form.tripId,
+        reclamationTypeLabel: form.reclamationTypeLabel,
+        metadata: {
+          source: "mobile",
+          tripId: form.tripId ?? null,
+          vehicleName: form.vehicleName ?? null,
+          vehiclePlate: form.vehiclePlate ?? null,
+          driverName: form.driverName || user?.name || null,
+          maintenanceType: isMaintenance ? form.maintenanceType ?? null : null,
+          maintenancePriority: isMaintenance ? form.maintenancePriority ?? null : null,
+          estimatedCost: isMaintenance ? form.estimatedCost?.trim() || null : null,
+          currentMileage: isMaintenance ? form.currentMileage?.trim() || null : null,
+          maintenanceNotes: isMaintenance ? form.maintenanceNotes?.trim() || null : null,
+        },
         images: form.images,
       });
       setIsSuccess(true);
@@ -130,7 +293,7 @@ export function useReclamationForm() {
         });
       Alert.alert("Submission failed", errorMessage);
     }
-  }, [createReclamation, form]);
+  }, [createReclamation, form, user?.name]);
 
   const resetForm = useCallback(() => {
     setForm(initialForm);
@@ -153,9 +316,17 @@ export function useReclamationForm() {
     isDatePickerVisible,
     isSuccess,
     isLoading,
+    isContextLoading,
+    contextError,
     isFormValid,
+    setType,
     setSubject,
     setMessage,
+    setMaintenanceType,
+    setMaintenancePriority,
+    setEstimatedCost,
+    setCurrentMileage,
+    setMaintenanceNotes,
     setDate,
     openDatePicker,
     closeDatePicker,

@@ -19,8 +19,8 @@ const DashboardOverview = ({ fleetStatus }: DashboardOverviewProps) => {
   ];
 
   return (
-    <div className="relative overflow-hidden bg-white/90 dark:bg-gray-900/70 rounded-2xl border border-gray-200/70 dark:border-gray-700/60 shadow-sm p-5">
-      <div className="pointer-events-none absolute -right-8 -top-8 h-24 w-24 rounded-full bg-blue-100/70 dark:bg-blue-900/20 blur-xl" />
+    <div className="learning-card relative overflow-hidden p-5">
+      <div className="pointer-events-none absolute -right-8 -top-8 h-24 w-24 rounded-full bg-sky-100/80 dark:bg-sky-900/20 blur-xl" />
       <div className="mb-4 flex items-center justify-between">
         <h2 className="text-sm font-medium text-gray-700 dark:text-gray-300">{t('dashboard.fleetOverview.title')}</h2>
         <Badge variant="default" size="sm">
@@ -31,7 +31,7 @@ const DashboardOverview = ({ fleetStatus }: DashboardOverviewProps) => {
         {blocks.map((block) => {
           const width = Math.max(0, Math.min(100, (block.count / total) * 100));
           return (
-            <div key={block.label} className="rounded-xl border border-gray-200/70 dark:border-gray-700/60 bg-gray-50/80 dark:bg-gray-800/50 p-4 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-sm">
+            <div key={block.label} className="rounded-2xl border border-gray-200/70 dark:border-gray-700/60 bg-slate-50/80 dark:bg-slate-800/50 p-4 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-sm">
               <div className="flex items-center justify-between">
                 <p className="text-xs text-gray-500 dark:text-gray-400">{block.label}</p>
                 <p className="text-lg font-semibold text-gray-900 dark:text-white">{block.count.toLocaleString(countLocale)}</p>

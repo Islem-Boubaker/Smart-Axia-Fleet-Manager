@@ -1,13 +1,19 @@
 {
   "header": {
     "search": "بحث",
-    "searchPlaceholder": "ابحث في الأسطول والرحلات والسائقين…",
+    "searchPlaceholder": "ابحث في الأسطول والرحلات والسائقين...",
     "notifications": "الإشعارات",
     "language": "اللغة",
     "openMenu": "فتح القائمة",
     "lightMode": "الوضع الفاتح",
     "darkMode": "الوضع الداكن",
     "closeMenu": "إغلاق القائمة",
-    "searchVehiclesDriversTrips": "ابحث عن مركبات وسائقين ورحلات..."
+    "searchVehiclesDriversTrips": "ابحث عن مركبات وسائقين ورحلات...",
+    "goodMorning": "صباح الخير",
+    "goodAfternoon": "مساء الخير",
+    "goodEvening": "مساء الخير",
+    "defaultName": "بك",
+    "greetingWithName": "{{greeting}}، {{name}}",
+    "operationalActivity": "تابع أحدث نشاط تشغيلي لأسطولك."
   }
 }

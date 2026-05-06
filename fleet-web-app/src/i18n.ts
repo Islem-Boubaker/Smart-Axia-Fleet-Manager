@@ -1,19 +1,37 @@
-import i18n from 'i18next';
+import i18n, { type Resource } from 'i18next';
 import { initReactI18next } from 'react-i18next';
-import HttpBackend from 'i18next-http-backend';
 import LanguageDetector from 'i18next-browser-languagedetector';
 
+type LocaleModule = { default: Record<string, unknown> };
+
+const localeModules = import.meta.glob('./locales/*/*.json', {
+  eager: true,
+}) as Record<string, LocaleModule>;
+
+const resources: Resource = {};
+
+for (const [path, module] of Object.entries(localeModules)) {
+  const match = path.match(/\.\/locales\/([^/]+)\/[^/]+\.json$/);
+  if (!match) continue;
+
+  const lng = match[1];
+  resources[lng] = resources[lng] ?? { translation: {} };
+  resources[lng].translation = {
+    ...(resources[lng].translation as Record<string, unknown>),
+    ...module.default,
+  };
+}
+
 i18n
-  .use(HttpBackend)
   .use(LanguageDetector)
   .use(initReactI18next)
   .init({
+    resources,
     fallbackLng: 'en',
     defaultNS: 'translation',
     supportedLngs: ['en', 'fr', 'ar'],
-    backend: {
-      loadPath: '/locales/{{lng}}/translation.json',
-    },
+    nonExplicitSupportedLngs: true,
+    load: 'languageOnly',
     detection: {
       order: ['localStorage', 'navigator'],
       caches: ['localStorage'],

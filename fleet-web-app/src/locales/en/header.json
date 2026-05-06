@@ -8,6 +8,12 @@
     "lightMode": "Light mode",
     "darkMode": "Dark mode",
     "closeMenu": "Close menu",
-    "searchVehiclesDriversTrips": "Search vehicles, drivers, trips..."
+    "searchVehiclesDriversTrips": "Search vehicles, drivers, trips...",
+    "goodMorning": "Good Morning",
+    "goodAfternoon": "Good Afternoon",
+    "goodEvening": "Good Evening",
+    "defaultName": "there",
+    "greetingWithName": "{{greeting}}, {{name}}",
+    "operationalActivity": "Check your fleet's latest operational activity."
   }
 }

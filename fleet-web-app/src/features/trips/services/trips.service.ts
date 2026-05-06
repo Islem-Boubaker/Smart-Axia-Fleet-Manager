@@ -59,6 +59,19 @@ export interface RankedRecommendationItem {
   score: number;
 }
 
+export interface TripLiveLocation {
+  latitude: number;
+  longitude: number;
+  recordedAt?: string;
+  source?: string;
+  accuracy?: number | null;
+  isStale?: boolean;
+  driver?: {
+    id?: string;
+    name?: string;
+  } | null;
+}
+
 export const tripsService = {
   // Trips Core
   getTrips: async (filters?: TripFilters): Promise<TripListResponse> => {
@@ -90,6 +103,11 @@ export const tripsService = {
 
   getTripById: async (id: string) => {
     const response = await api.get<{ success: boolean; data: Trip }>(`/trips/${id}`);
+    return response.data.data;
+  },
+
+  getLiveLocation: async (id: string) => {
+    const response = await api.get<{ success: boolean; data: TripLiveLocation | null }>(`/trips/${id}/live-location`);
     return response.data.data;
   },
 

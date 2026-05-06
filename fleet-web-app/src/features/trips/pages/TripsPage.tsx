@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useOutletContext, useSearchParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
@@ -91,8 +91,9 @@ const buildVehicleLabel = (vehicle: Vehicle) => (
 const TripsPage = () => {
   const { dark } = useOutletContext<ThemeContext>();
   const { t } = useTranslation();
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const initialStatusParam = searchParams.get('status');
+  const focusedTripId = searchParams.get('tripId');
   const initialStatus = ['all', 'scheduled', 'ongoing', 'completed', 'cancelled'].includes(initialStatusParam || '')
     ? (initialStatusParam as string)
     : 'all';
@@ -110,6 +111,7 @@ const TripsPage = () => {
   const [editStopsError, setEditStopsError] = useState<string | null>(null);
   const [recommendations, setRecommendations] = useState<{ drivers: RankedRecommendationItem[]; vehicles: RankedRecommendationItem[] } | null>(null);
   const [isFetchingRecs, setIsFetchingRecs] = useState(false);
+  const dismissedFocusedTripIdRef = useRef<string | null>(null);
 
   const [editError, setEditError] = useState<string | null>(null);
   const [isEditSubmitting, setIsEditSubmitting] = useState(false);
@@ -151,6 +153,47 @@ const TripsPage = () => {
       .includes(searchQuery.toLowerCase());
     return matchesSearch;
   });
+
+  useEffect(() => {
+    if (!focusedTripId) {
+      dismissedFocusedTripIdRef.current = null;
+      return;
+    }
+
+    if (dismissedFocusedTripIdRef.current === focusedTripId) return;
+    if (!focusedTripId || selectedTrip?.id === focusedTripId) return;
+
+    const matchedTrip = trips.find((trip) => trip.id === focusedTripId);
+    if (matchedTrip) {
+      setSelectedTrip(matchedTrip);
+      return;
+    }
+
+    let isMounted = true;
+    tripsService
+      .getTripById(focusedTripId)
+      .then((trip: Trip) => {
+        if (isMounted) setSelectedTrip(trip);
+      })
+      .catch(() => {
+        // If the trip was removed or the user lost access, keep the page usable.
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [focusedTripId, selectedTrip?.id, trips]);
+
+  const closeTripDetails = () => {
+    dismissedFocusedTripIdRef.current = selectedTrip?.id || focusedTripId;
+    setSelectedTrip(null);
+
+    if (!searchParams.has('tripId')) return;
+
+    const nextParams = new URLSearchParams(searchParams);
+    nextParams.delete('tripId');
+    setSearchParams(nextParams, { replace: true });
+  };
 
   const handleStart = async (tripId: string) => {
     setActionTripId(tripId);
@@ -608,7 +651,7 @@ const TripsPage = () => {
 
       <GlobalCard
         isOpen={Boolean(selectedTrip)}
-        onClose={() => setSelectedTrip(null)}
+        onClose={closeTripDetails}
         title={
           selectedTrip
             ? t('trips.modals.detailsTitleWithId', { id: selectedTrip.id })

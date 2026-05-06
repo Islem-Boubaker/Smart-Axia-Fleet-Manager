@@ -5,13 +5,23 @@ import { getPagination, getPagingData } from '../utils/pagination.js';
 import cloudinary from '../config/cloudinary.js';
 import nodemailer from 'nodemailer';
 import crypto from 'crypto';
+import {
+  buildEmailAttachments,
+  buildEmailLogoHtml,
+  escapeHtml,
+} from '../utils/emailTemplate.js';
 
 const NOTIFICATION_KEYS = [
   'emailTrips',
   'emailMaintenance',
   'emailDrivers',
+  'emailAI',
+  'emailSystem',
   'pushTrips',
   'pushMaintenance',
+  'pushDrivers',
+  'pushAI',
+  'pushSystem',
   'pushAlerts',
   'smsAlerts',
 ];
@@ -45,6 +55,58 @@ const isLocalAvatarUri = (value) => {
   if (typeof value !== 'string') return false;
   const normalized = value.trim().toLowerCase();
   return normalized.startsWith('file://') || normalized.startsWith('content://');
+};
+
+const buildPasswordResetEmailHtml = ({ name, temporaryPassword }) => {
+  const safeName = escapeHtml(name || 'there');
+  const safePassword = escapeHtml(temporaryPassword);
+
+  return `
+    <div style="margin:0;padding:0;background:#f4f7fb;font-family:Arial,Helvetica,sans-serif;color:#0f172a;">
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f4f7fb;padding:24px 0;">
+        <tr>
+          <td align="center">
+            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:600px;background:#ffffff;border:1px solid #e2e8f0;border-radius:12px;overflow:hidden;">
+              <tr>
+                <td style="padding:24px 28px;background:#0f172a;color:#ffffff;">
+                  <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+                    <tr>
+                      <td width="76" valign="middle">${buildEmailLogoHtml()}</td>
+                      <td valign="middle">
+                        <p style="margin:0;font-size:13px;letter-spacing:0.08em;text-transform:uppercase;color:#93c5fd;">AXIA Fleet Manager</p>
+                        <h1 style="margin:8px 0 0;font-size:22px;line-height:1.3;font-weight:700;">Password reset request</h1>
+                      </td>
+                    </tr>
+                  </table>
+                </td>
+              </tr>
+              <tr>
+                <td style="padding:28px;">
+                  <p style="margin:0 0 16px;font-size:15px;line-height:1.6;">Hello ${safeName},</p>
+                  <p style="margin:0 0 18px;font-size:15px;line-height:1.7;">
+                    We received a request to reset the password for your AXIA Fleet Manager account.
+                    Use the temporary password below to sign in.
+                  </p>
+                  <div style="margin:18px 0;padding:16px 18px;background:#f8fafc;border:1px solid #cbd5e1;border-radius:10px;">
+                    <p style="margin:0 0 6px;font-size:12px;letter-spacing:0.08em;text-transform:uppercase;color:#64748b;">Temporary password</p>
+                    <p style="margin:0;font-size:20px;font-weight:700;letter-spacing:0.08em;color:#0f172a;">${safePassword}</p>
+                  </div>
+                  <p style="margin:0;font-size:15px;line-height:1.7;">
+                    For your security, please sign in and change this temporary password from your account settings as soon as possible.
+                  </p>
+                  <div style="margin-top:24px;padding-top:18px;border-top:1px solid #e2e8f0;">
+                    <p style="margin:0;font-size:13px;line-height:1.6;color:#64748b;">
+                      If you did not request this reset, please contact your fleet administrator immediately.
+                    </p>
+                  </div>
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+      </table>
+    </div>
+  `;
 };
 
 export const updateUserPhotoSvc = async (id, file) => {
@@ -202,8 +264,24 @@ export const forgotPasswordSvc = async (email) => {
   const mailOptions = {
     from: `"AXIA Fleet Manager" <${process.env.EMAIL_USER}>`,
     to: user.email,
-    subject: 'Your new password for AXIA Fleet Manager',
-    text: `Hello ${user.name},\n\nYour new randomly generated password is: ${randomPlainPassword}\n\nPlease log in and change this temporarily auto-generated password in your account settings.\n\nBest regards,\nAXIA Fleet Team`,
+    subject: 'AXIA Fleet Manager password reset',
+    text: [
+      `Hello ${user.name || 'there'},`,
+      '',
+      'We received a request to reset the password for your AXIA Fleet Manager account.',
+      `Temporary password: ${randomPlainPassword}`,
+      '',
+      'For your security, please sign in and change this temporary password from your account settings as soon as possible.',
+      '',
+      'If you did not request this reset, please contact your fleet administrator immediately.',
+      '',
+      'AXIA Fleet Manager',
+    ].join('\n'),
+    html: buildPasswordResetEmailHtml({
+      name: user.name,
+      temporaryPassword: randomPlainPassword,
+    }),
+    attachments: buildEmailAttachments(),
   };
 
   try {

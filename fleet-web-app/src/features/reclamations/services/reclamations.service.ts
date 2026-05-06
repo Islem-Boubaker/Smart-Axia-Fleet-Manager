@@ -7,8 +7,24 @@ export interface ReclamationRecord {
   subject: string;
   message: string;
   status: ReclamationStatus;
+  type?: 'general' | 'vehicle' | 'maintenance' | 'trip' | 'delay' | 'technical' | 'damage' | 'other' | string;
   userId: string;
   vehicleId?: string | null;
+  driverName?: string | null;
+  vehicleName?: string | null;
+  vehiclePlate?: string | null;
+  metadata?: Record<string, unknown>;
+  driver?: {
+    id: string;
+    name?: string;
+    email?: string;
+  } | null;
+  vehicle?: {
+    id: string;
+    name?: string;
+    plaque_immatriculation?: string;
+    model?: string;
+  } | null;
   images: string[];
   createdAt: string;
   updatedAt: string;

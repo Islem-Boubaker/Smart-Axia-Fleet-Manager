@@ -11,6 +11,7 @@ interface MaintenanceRecommendation {
 
 interface VehicleDetailsModalProps {
   isOpen: boolean;
+  dark?: boolean;
   onClose: () => void;
   onEdit: () => void;
   onGenerateRecommendations: (vehicleId: string) => Promise<MaintenanceRecommendation[]>;
@@ -29,8 +30,6 @@ interface VehicleDetailsModalProps {
   error?: string | null;
 }
 
-const sectionTitleClass = 'text-sm font-semibold text-slate-900';
-
 const prettyDate = (value: string | undefined, locale: string, fallback: string): string => {
   if (!value) return fallback;
   const date = new Date(value);
@@ -40,6 +39,7 @@ const prettyDate = (value: string | undefined, locale: string, fallback: string)
 
 const VehicleDetailsModal = ({
   isOpen,
+  dark = false,
   onClose,
   onEdit,
   onGenerateRecommendations,
@@ -81,6 +81,38 @@ const VehicleDetailsModal = ({
     }
   };
 
+  const sectionTitleClass = dark
+    ? 'text-sm font-bold text-slate-50'
+    : 'text-sm font-semibold text-slate-900';
+  const generateButtonClass = dark
+    ? 'flex items-center gap-1.5 rounded-full bg-cyan-400 px-3 py-1.5 text-xs font-bold text-slate-950 shadow-[0_10px_24px_rgba(34,211,238,0.18)] transition-colors hover:bg-cyan-300 disabled:cursor-not-allowed disabled:opacity-60'
+    : 'flex items-center gap-1.5 rounded-full bg-blue-600 px-3 py-1.5 text-xs font-semibold text-white shadow-sm transition-colors hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60';
+  const recommendationTextClass = dark
+    ? 'mt-1 text-xs leading-relaxed text-slate-300'
+    : 'mt-1 text-xs leading-relaxed text-slate-700';
+  const recommendationCardClass = (level: MaintenanceRecommendation['level']) => {
+    if (dark) {
+      if (level === 'HIGH') return 'rounded-xl border border-rose-400/25 bg-rose-950/30 px-4 py-3';
+      if (level === 'MEDIUM') return 'rounded-xl border border-amber-300/25 bg-amber-950/25 px-4 py-3';
+      return 'rounded-xl border border-cyan-300/20 bg-cyan-950/22 px-4 py-3';
+    }
+
+    if (level === 'HIGH') return 'rounded-xl border border-rose-200 bg-rose-50 px-4 py-3';
+    if (level === 'MEDIUM') return 'rounded-xl border border-amber-200 bg-amber-50 px-4 py-3';
+    return 'rounded-xl border border-blue-200 bg-blue-50 px-4 py-3';
+  };
+  const recommendationLevelClass = (level: MaintenanceRecommendation['level']) => {
+    if (dark) {
+      if (level === 'HIGH') return 'text-rose-300';
+      if (level === 'MEDIUM') return 'text-amber-300';
+      return 'text-cyan-300';
+    }
+
+    if (level === 'HIGH') return 'text-rose-600';
+    if (level === 'MEDIUM') return 'text-amber-600';
+    return 'text-blue-600';
+  };
+
   return (
     <GlobalCard
       isOpen={isOpen}
@@ -101,7 +133,7 @@ const VehicleDetailsModal = ({
       {isLoading && <p className="text-sm text-slate-500">{t('vehicles.details.loading')}</p>}
 
       {error && !isLoading && (
-        <div className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">{error}</div>
+        <div className={dark ? 'rounded-xl border border-rose-500/25 bg-rose-950/35 px-4 py-3 text-sm text-rose-200' : 'rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700'}>{error}</div>
       )}
 
       {!isLoading && !error && vehicle && (
@@ -187,7 +219,7 @@ const VehicleDetailsModal = ({
               <button
                 onClick={handleGenerateRecommendations}
                 disabled={isGenerating || !vehicle}
-                className="flex items-center gap-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 disabled:opacity-60 disabled:cursor-not-allowed px-3 py-1.5 text-xs font-medium text-white transition-colors"
+                className={generateButtonClass}
               >
                 {isGenerating ? (
                   <>
@@ -215,22 +247,12 @@ const VehicleDetailsModal = ({
                 {displayedRecommendations.map((rec, index) => (
                   <div
                     key={index}
-                    className={`rounded-xl border px-4 py-3 ${
-                      rec.level === 'HIGH'
-                        ? 'border-rose-200 bg-rose-50 dark:border-rose-800/40 dark:bg-rose-950/30'
-                        : rec.level === 'MEDIUM'
-                        ? 'border-amber-200 bg-amber-50 dark:border-amber-800/40 dark:bg-amber-950/30'
-                        : 'border-blue-200 bg-blue-50 dark:border-blue-800/40 dark:bg-blue-950/30'
-                    }`}
+                    className={recommendationCardClass(rec.level)}
                   >
-                    <span className={`text-[10px] font-bold uppercase tracking-widest ${
-                      rec.level === 'HIGH' ? 'text-rose-600 dark:text-rose-400'
-                      : rec.level === 'MEDIUM' ? 'text-amber-600 dark:text-amber-400'
-                      : 'text-blue-600 dark:text-blue-400'
-                    }`}>
+                    <span className={`text-[10px] font-bold uppercase tracking-widest ${recommendationLevelClass(rec.level)}`}>
                       {rec.level}
                     </span>
-                    <p className="mt-1 text-xs leading-relaxed text-slate-700 dark:text-slate-300">
+                    <p className={recommendationTextClass}>
                       {rec.overview}
                     </p>
                   </div>

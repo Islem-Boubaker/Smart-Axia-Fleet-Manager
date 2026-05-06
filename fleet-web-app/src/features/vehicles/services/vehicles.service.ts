@@ -48,10 +48,61 @@ const normalizePhotos = (photos: unknown): string[] => {
   return [value];
 };
 
-const normalizeVehicle = (vehicle: Vehicle): Vehicle => ({
-  ...vehicle,
-  photos: normalizePhotos((vehicle as unknown as { photos?: unknown }).photos),
-});
+const booleanFrom = (value: unknown, fallback = false): boolean => {
+  if (typeof value === 'boolean') return value;
+  if (typeof value === 'number') return value === 1;
+  if (typeof value === 'string') {
+    const normalized = value.trim().toLowerCase();
+    if (['true', '1', 'yes', 'y', 'on', 'active', 'available'].includes(normalized)) return true;
+    if (['false', '0', 'no', 'n', 'off', 'inactive', 'out_of_service'].includes(normalized)) return false;
+  }
+  return fallback;
+};
+
+const normalizeStatus = (value: unknown): Vehicle['status'] => {
+  const normalized = typeof value === 'string' ? value.trim().toUpperCase().replace(/[-\s]+/g, '_') : '';
+  if (normalized === 'IN_MAINTENANCE' || normalized === 'MAINTENANCE') return 'IN_MAINTENANCE';
+  if (normalized === 'OUT_OF_SERVICE' || normalized === 'INACTIVE') return 'OUT_OF_SERVICE';
+  if (normalized === 'ON_TRIP' || normalized === 'IN_USE') return 'ON_TRIP';
+  return 'AVAILABLE';
+};
+
+const normalizeVehicleType = (value: unknown): Vehicle['type'] => {
+  const normalized = typeof value === 'string' ? value.trim().toLowerCase() : '';
+  if (normalized === 'suv' || normalized === 'truck' || normalized === 'motorcycle' || normalized === 'van') {
+    return normalized;
+  }
+  return 'car';
+};
+
+const statusFromLegacy = (vehicle: Record<string, unknown>): Vehicle['status'] => {
+  const needsMaintenance = booleanFrom(
+    vehicle.Need_Maintenance ?? vehicle.need_maintenance ?? vehicle.needMaintenance ?? vehicle.needsMaintenance,
+    false,
+  );
+  if (needsMaintenance) return 'IN_MAINTENANCE';
+
+  const active = booleanFrom(vehicle.Active ?? vehicle.active ?? vehicle.is_active, true);
+  return active ? 'AVAILABLE' : 'OUT_OF_SERVICE';
+};
+
+const normalizeVehicle = (vehicle: Vehicle): Vehicle => {
+  const raw = vehicle as unknown as Record<string, unknown>;
+  const hasExplicitStatus = typeof raw.status === 'string' && raw.status.trim().length > 0;
+  const status = hasExplicitStatus ? normalizeStatus(raw.status) : statusFromLegacy(raw);
+  const active = status !== 'OUT_OF_SERVICE';
+  const needsMaintenance = status === 'IN_MAINTENANCE';
+
+  return {
+    ...vehicle,
+    status,
+    Active: active,
+    Need_Maintenance: needsMaintenance,
+    type: normalizeVehicleType(raw.type ?? raw.vehicle_type),
+    Vehicle_Model: (raw.Vehicle_Model ?? raw.vehicle_type ?? vehicle.Vehicle_Model ?? 'Car') as Vehicle['Vehicle_Model'],
+    photos: normalizePhotos(raw.photos),
+  };
+};
 
 export const vehiclesService = {
   getVehicles: async (): Promise<Vehicle[]> => {

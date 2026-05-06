@@ -9,7 +9,7 @@ interface AppRowActionsProps {
 }
 
 const baseClass =
-  'inline-flex h-8 w-8 items-center justify-center rounded-md text-slate-500 transition-colors hover:bg-slate-100 hover:text-blue-600 disabled:cursor-not-allowed disabled:opacity-50';
+  'inline-flex h-8 w-8 items-center justify-center rounded-full text-slate-500 transition-colors hover:bg-white/80 hover:text-slate-950 dark:text-slate-400 dark:hover:bg-cyan-300/10 dark:hover:text-cyan-100 disabled:cursor-not-allowed disabled:opacity-50';
 
 const AppRowActions = ({ onView, onEdit, onDelete, disabled = false }: AppRowActionsProps) => {
   const { t } = useTranslation();

@@ -45,6 +45,10 @@ export const authAPI = {
     return response.data.data;
   },
 
+  async getMe(): Promise<AuthUser> {
+    const response = await api.get('/user/me');
+    return response.data.data;
+  },
 
   
   async signOut(): Promise<void> {

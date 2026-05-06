@@ -8,27 +8,18 @@ interface AppStatusBadgeProps {
 }
 
 const variantClasses: Record<AppStatusVariant, string> = {
-  success: 'bg-emerald-100 text-emerald-700',
-  info: 'bg-blue-100 text-blue-700',
-  warning: 'bg-amber-100 text-amber-700',
-  danger: 'bg-rose-100 text-rose-700',
-  neutral: 'bg-slate-200 text-slate-700',
-};
-
-const dotClasses: Record<AppStatusVariant, string> = {
-  success: 'bg-emerald-500',
-  info: 'bg-blue-500',
-  warning: 'bg-amber-500',
-  danger: 'bg-rose-500',
-  neutral: 'bg-slate-500',
+  success: 'bg-white text-emerald-500 ring-1 ring-emerald-100 dark:bg-emerald-400/10 dark:text-emerald-300 dark:ring-emerald-300/20',
+  info: 'bg-blue-100 text-blue-600 ring-1 ring-blue-100 dark:bg-cyan-300/10 dark:text-cyan-200 dark:ring-cyan-200/20',
+  warning: 'bg-orange-500 text-white ring-1 ring-orange-400/40 dark:bg-orange-500/90 dark:text-white dark:ring-orange-300/20',
+  danger: 'bg-white text-rose-500 ring-1 ring-rose-100 dark:bg-rose-400/10 dark:text-rose-300 dark:ring-rose-300/20',
+  neutral: 'bg-white text-slate-500 ring-1 ring-slate-100 dark:bg-slate-400/10 dark:text-slate-300 dark:ring-slate-300/15',
 };
 
 const AppStatusBadge = ({ children, variant = 'neutral' }: AppStatusBadgeProps) => {
   return (
     <span
-      className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-[11px] font-semibold uppercase tracking-wide ${variantClasses[variant]}`}
+      className={`inline-flex min-w-[64px] items-center justify-center rounded-full px-3 py-1 text-xs font-bold capitalize leading-none ${variantClasses[variant]}`}
     >
-      <span className={`h-1.5 w-1.5 rounded-full ${dotClasses[variant]}`} aria-hidden="true" />
       {children}
     </span>
   );

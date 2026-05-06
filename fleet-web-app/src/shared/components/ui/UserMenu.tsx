@@ -1,7 +1,11 @@
 import { useRef, useState, useEffect } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 import { api } from "../../services/api";
+import { clearCsrfToken } from "../../services/csrfToken";
+import { useAppDispatch } from "../../hooks";
+import { clearUser } from "../../../store/authSlice";
 import { ROUTES } from "../../../utils/constants";
 import UserAvatar from "./UserAvatar";
 
@@ -10,6 +14,8 @@ const UserMenu = () => {
   const [open, setOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
+  const dispatch = useAppDispatch();
+  const queryClient = useQueryClient();
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
@@ -41,7 +47,10 @@ const UserMenu = () => {
     } catch (error) {
       console.error("Logout failed:", error);
     } finally {
-      navigate(ROUTES.SIGN_IN);
+      dispatch(clearUser());
+      clearCsrfToken();
+      queryClient.clear();
+      navigate(ROUTES.SIGN_IN, { replace: true });
     }
   };
 

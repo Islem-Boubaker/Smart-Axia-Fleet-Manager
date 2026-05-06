@@ -2,6 +2,7 @@
 import { Navigate, Outlet } from "react-router-dom";
 import { useSelector } from "react-redux";
 import { type RootState } from "../store"; // Adjust path to your store
+import { LogoLoadingScreen } from "../shared/components";
 
 export default function ProtectedRoute() {
   const { isAuthenticated, loading } = useSelector(
@@ -10,11 +11,7 @@ export default function ProtectedRoute() {
 
   // Show loading state while checking auth
   if (loading) {
-    return (
-      <div className="flex h-screen items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600" />
-      </div>
-    );
+    return <LogoLoadingScreen />;
   }
 
   // Redirect to sign in if not authenticated

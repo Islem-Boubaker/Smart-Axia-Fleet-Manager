@@ -11,7 +11,7 @@ export function MaintenanceHeader({ onSchedule, dark = false }: Props) {
   const { t } = useTranslation();
 
   return (
-    <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-6">
+    <div className="fleet-hero flex flex-col sm:flex-row sm:items-end sm:justify-between gap-6">
       <div className="space-y-1">
         <p className={`text-xs font-semibold uppercase tracking-[0.12em] ${dark ? 'text-slate-500' : 'text-slate-400'}`}>
           {t('maintenance.sectionLabel')}
@@ -23,7 +23,7 @@ export function MaintenanceHeader({ onSchedule, dark = false }: Props) {
           {t('maintenance.subtitle')}
         </p>
       </div>
-      <Button onClick={onSchedule} className="rounded-xl shrink-0 shadow-soft">
+      <Button onClick={onSchedule} className="rounded-full shrink-0 shadow-soft">
         <FiPlus className="mr-2" />
         {t('maintenance.add')}
       </Button>

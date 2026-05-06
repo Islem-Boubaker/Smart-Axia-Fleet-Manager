@@ -5,6 +5,7 @@ import { sequelize } from "../config/connectdb.js";
 import { getPagingData } from "../utils/pagination.js";
 import Trip from "../models/trip.model.js";
 import TripStop from "../models/TripStop.js";
+import TripLocationPing from "../models/tripLocationPing.model.js";
 import User from "../models/user.model.js";
 import Vehicle from "../models/vehicle.model.js";
 import { checkVehicleAvailableForTrip } from "./maintenance.service.js";
@@ -23,6 +24,11 @@ const VALID_TRANSITIONS = {
   [TRIP_STATUS.COMPLETED]: [],
   [TRIP_STATUS.CANCELLED]: [],
 };
+
+const ROUTE_DEVIATION_THRESHOLD_METERS = 500;
+const ROUTE_DEVIATION_EVENT_COOLDOWN_MS = 2 * 60 * 1000;
+const METERS_PER_DEGREE_LATITUDE = 111_320;
+const routeDeviationEventTimestamps = new Map();
 
 const createError = (message, status = 400, code = "BAD_REQUEST") => {
   const error = new Error(message);
@@ -90,6 +96,25 @@ const validateVehicle = async (vehicleId) => {
   }
 
   return vehicle;
+};
+
+const syncVehicleStatusForTripStatus = async (trip, tripStatus) => {
+  if (!trip?.vehicleId) return;
+
+  const vehicle = await Vehicle.findByPk(trip.vehicleId);
+  if (!vehicle) return;
+
+  if (tripStatus === TRIP_STATUS.ONGOING) {
+    await vehicle.update({ status: "ON_TRIP", is_active: true });
+    return;
+  }
+
+  if (
+    [TRIP_STATUS.COMPLETED, TRIP_STATUS.CANCELLED].includes(tripStatus) &&
+    vehicle.status === "ON_TRIP"
+  ) {
+    await vehicle.update({ status: "AVAILABLE", is_active: true });
+  }
 };
 
 const validateDriver = async (userId) => {
@@ -171,12 +196,193 @@ const toFiniteNumberOrNull = (value) => {
   return null;
 };
 
+const toRequiredCoordinate = (value, label, min, max) => {
+  const parsed = toFiniteNumberOrNull(value);
+  if (parsed === null || parsed < min || parsed > max) {
+    throw createError(`${label} must be a valid coordinate`, 422, "VALIDATION_ERROR");
+  }
+  return parsed;
+};
+
+const toOptionalNumber = (value) => toFiniteNumberOrNull(value);
+
+const normalizeRecordedAt = (value) => {
+  if (!value) return new Date();
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? new Date() : date;
+};
+
+const getPositiveEnvNumber = (key, fallback) => {
+  const parsed = Number(process.env[key]);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
+};
+
+const getRouteDeviationThresholdMeters = () =>
+  getPositiveEnvNumber("ROUTE_DEVIATION_THRESHOLD_METERS", ROUTE_DEVIATION_THRESHOLD_METERS);
+
+const getRouteDeviationCooldownMs = () =>
+  getPositiveEnvNumber("ROUTE_DEVIATION_EVENT_COOLDOWN_MS", ROUTE_DEVIATION_EVENT_COOLDOWN_MS);
+
 const emitTripEvent = (event, payload) => {
   try {
     eventBus.emitEvent(event, payload);
   } catch (error) {
     console.error(`[EventBus] Failed to emit ${event}:`, error.message);
   }
+};
+
+const toCoordinatePoint = (latitude, longitude) => {
+  const parsedLatitude = toFiniteNumberOrNull(latitude);
+  const parsedLongitude = toFiniteNumberOrNull(longitude);
+
+  if (
+    parsedLatitude === null ||
+    parsedLongitude === null ||
+    parsedLatitude < -90 ||
+    parsedLatitude > 90 ||
+    parsedLongitude < -180 ||
+    parsedLongitude > 180
+  ) {
+    return null;
+  }
+
+  return {
+    latitude: parsedLatitude,
+    longitude: parsedLongitude,
+  };
+};
+
+const getTripRouteCoordinates = (trip) => {
+  const coordinates = [];
+  const addPoint = (latitude, longitude) => {
+    const point = toCoordinatePoint(latitude, longitude);
+    if (point) coordinates.push(point);
+  };
+
+  addPoint(trip.startLatitude, trip.startLongitude);
+
+  const stops = Array.isArray(trip.stops)
+    ? [...trip.stops].sort((a, b) => Number(a.stopOrder ?? 0) - Number(b.stopOrder ?? 0))
+    : [];
+
+  for (const stop of stops) {
+    addPoint(stop.latitude, stop.longitude);
+  }
+
+  addPoint(trip.endLatitude, trip.endLongitude);
+  return coordinates;
+};
+
+const projectToMeters = (point, referenceLatitude) => {
+  const metersPerDegreeLongitude =
+    METERS_PER_DEGREE_LATITUDE * Math.cos((referenceLatitude * Math.PI) / 180);
+
+  return {
+    x: point.longitude * metersPerDegreeLongitude,
+    y: point.latitude * METERS_PER_DEGREE_LATITUDE,
+  };
+};
+
+const getPointToSegmentDistanceMeters = (point, segmentStart, segmentEnd) => {
+  const dx = segmentEnd.x - segmentStart.x;
+  const dy = segmentEnd.y - segmentStart.y;
+
+  if (dx === 0 && dy === 0) {
+    return Math.hypot(point.x - segmentStart.x, point.y - segmentStart.y);
+  }
+
+  const rawT =
+    ((point.x - segmentStart.x) * dx + (point.y - segmentStart.y) * dy) / (dx * dx + dy * dy);
+  const t = Math.max(0, Math.min(1, rawT));
+  const closest = {
+    x: segmentStart.x + t * dx,
+    y: segmentStart.y + t * dy,
+  };
+
+  return Math.hypot(point.x - closest.x, point.y - closest.y);
+};
+
+const getDistanceFromRouteMeters = (point, routeCoordinates) => {
+  if (!point || !Array.isArray(routeCoordinates) || routeCoordinates.length < 2) {
+    return null;
+  }
+
+  const referenceLatitude =
+    [...routeCoordinates, point].reduce((sum, item) => sum + item.latitude, 0) /
+    (routeCoordinates.length + 1);
+  const projectedPoint = projectToMeters(point, referenceLatitude);
+  const projectedRoute = routeCoordinates.map((coordinate) =>
+    projectToMeters(coordinate, referenceLatitude)
+  );
+
+  let closestDistance = Number.POSITIVE_INFINITY;
+  for (let index = 0; index < projectedRoute.length - 1; index += 1) {
+    closestDistance = Math.min(
+      closestDistance,
+      getPointToSegmentDistanceMeters(
+        projectedPoint,
+        projectedRoute[index],
+        projectedRoute[index + 1]
+      )
+    );
+  }
+
+  return Number.isFinite(closestDistance) ? closestDistance : null;
+};
+
+const shouldEmitRouteDeviationEvent = (tripId) => {
+  const now = Date.now();
+  const cooldownMs = getRouteDeviationCooldownMs();
+  const lastEmittedAt = routeDeviationEventTimestamps.get(String(tripId));
+
+  if (lastEmittedAt && now - lastEmittedAt < cooldownMs) {
+    return false;
+  }
+
+  routeDeviationEventTimestamps.set(String(tripId), now);
+
+  if (routeDeviationEventTimestamps.size > 500) {
+    for (const [trackedTripId, timestamp] of routeDeviationEventTimestamps.entries()) {
+      if (now - timestamp > cooldownMs) {
+        routeDeviationEventTimestamps.delete(trackedTripId);
+      }
+    }
+  }
+
+  return true;
+};
+
+const maybeEmitRouteDeviation = ({ trip, latitude, longitude, accuracy, speed, heading, recordedAt }) => {
+  const routeCoordinates = getTripRouteCoordinates(trip);
+  const currentPoint = toCoordinatePoint(latitude, longitude);
+  const distanceMeters = getDistanceFromRouteMeters(currentPoint, routeCoordinates);
+  const thresholdMeters = getRouteDeviationThresholdMeters();
+
+  if (distanceMeters === null || distanceMeters <= thresholdMeters) return;
+
+  // A very inaccurate phone fix can look like a route deviation; skip noisy points.
+  if (accuracy !== null && accuracy > thresholdMeters) return;
+
+  if (!shouldEmitRouteDeviationEvent(trip.id)) return;
+
+  emitTripEvent(FLEET_EVENTS.AI_ROUTE_DEVIATION, {
+    tripId: trip.id,
+    driverId: trip.userId,
+    driverName: trip.driver?.name ?? null,
+    vehicleId: trip.vehicleId,
+    vehicleName: trip.vehicle?.name ?? null,
+    vehiclePlate: trip.vehicle?.plaque_immatriculation ?? null,
+    startLocation: trip.startLocation,
+    endLocation: trip.endLocation,
+    latitude,
+    longitude,
+    accuracy,
+    speed,
+    heading,
+    recordedAt,
+    distanceMeters: Math.round(distanceMeters),
+    thresholdMeters,
+  });
 };
 
 const enrichTripWithEstimatedFuel = (trip) => {
@@ -489,7 +695,12 @@ export const updateTripStatus = async (tripId, newStatus) => {
     throw createError(`Invalid transition from ${trip.status} to ${newStatus}`, 409, "CONFLICT");
   }
 
+  if (newStatus === TRIP_STATUS.ONGOING) {
+    await validateVehicle(trip.vehicleId);
+  }
+
   await trip.update({ status: newStatus });
+  await syncVehicleStatusForTripStatus(trip, newStatus);
 
   if (newStatus === TRIP_STATUS.ONGOING) {
     emitTripEvent(FLEET_EVENTS.TRIP_STARTED, { tripId: trip.id, userId: trip.userId });
@@ -512,7 +723,10 @@ export const startTrip = async (tripId, callerRole, callerId) => {
     throw createError("Trip can only be started from scheduled status", 409, "CONFLICT");
   }
 
+  await validateVehicle(trip.vehicleId);
+
   await trip.update({ status: TRIP_STATUS.ONGOING });
+  await syncVehicleStatusForTripStatus(trip, TRIP_STATUS.ONGOING);
   emitTripEvent(FLEET_EVENTS.TRIP_STARTED, { tripId: trip.id, userId: trip.userId });
   return trip;
 };
@@ -531,6 +745,7 @@ export const completeTrip = async (tripId, callerRole, callerId, settlement = {}
   if (settlement.fuel !== undefined) updates.fuel = settlement.fuel;
 
   await trip.update(updates);
+  await syncVehicleStatusForTripStatus(trip, TRIP_STATUS.COMPLETED);
   emitTripEvent(FLEET_EVENTS.TRIP_COMPLETED, { tripId: trip.id, userId: trip.userId });
   return trip;
 };
@@ -544,6 +759,7 @@ export const cancelTrip = async (tripId, callerRole, callerId) => {
   }
 
   await trip.update({ status: TRIP_STATUS.CANCELLED });
+  await syncVehicleStatusForTripStatus(trip, TRIP_STATUS.CANCELLED);
   emitTripEvent(FLEET_EVENTS.TRIP_CANCELLED, { tripId: trip.id, userId: trip.userId });
   return trip;
 };
@@ -573,6 +789,73 @@ export const unassignDriver = async (tripId) => {
 
   await trip.update({ userId: null });
   return trip;
+};
+
+export const recordTripLocationPing = async (tripId, callerRole, callerId, payload = {}) => {
+  const trip = await ensureTripExists(tripId, true);
+  ensureDriverOwnership(trip, callerRole, callerId);
+
+  if (trip.status !== TRIP_STATUS.ONGOING) {
+    throw createError("Location tracking is only available for ongoing trips", 409, "CONFLICT");
+  }
+
+  const latitude = toRequiredCoordinate(payload.latitude, "latitude", -90, 90);
+  const longitude = toRequiredCoordinate(payload.longitude, "longitude", -180, 180);
+  const accuracy = toOptionalNumber(payload.accuracy);
+  const speed = toOptionalNumber(payload.speed);
+  const heading = toOptionalNumber(payload.heading);
+  const recordedAt = normalizeRecordedAt(payload.timestamp ?? payload.recordedAt);
+
+  const ping = await TripLocationPing.create({
+    tripId: trip.id,
+    userId: callerId,
+    latitude,
+    longitude,
+    accuracy,
+    speed,
+    heading,
+    recordedAt,
+  });
+
+  maybeEmitRouteDeviation({ trip, latitude, longitude, accuracy, speed, heading, recordedAt });
+
+  return ping;
+};
+
+export const getTripLiveLocation = async (tripId, callerRole, callerId) => {
+  const trip = await ensureTripExists(tripId);
+  ensureDriverOwnership(trip, callerRole, callerId);
+
+  const latestPing = await TripLocationPing.findOne({
+    where: { tripId: trip.id },
+    include: [{ model: User, as: "driver", attributes: ["id", "name", "email"] }],
+    order: [["recordedAt", "DESC"], ["createdAt", "DESC"]],
+  });
+
+  if (!latestPing) return null;
+
+  const recordedAt = latestPing.recordedAt || latestPing.createdAt;
+  const ageMs = recordedAt ? Date.now() - new Date(recordedAt).getTime() : null;
+
+  return {
+    id: latestPing.id,
+    tripId: latestPing.tripId,
+    userId: latestPing.userId,
+    driver: latestPing.driver
+      ? {
+          id: latestPing.driver.id,
+          name: latestPing.driver.name,
+          email: latestPing.driver.email,
+        }
+      : null,
+    latitude: latestPing.latitude,
+    longitude: latestPing.longitude,
+    accuracy: latestPing.accuracy,
+    speed: latestPing.speed,
+    heading: latestPing.heading,
+    recordedAt,
+    isStale: typeof ageMs === "number" ? ageMs > 2 * 60 * 1000 : true,
+  };
 };
 
 

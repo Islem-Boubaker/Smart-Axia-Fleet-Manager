@@ -2,6 +2,7 @@ import { Op } from 'sequelize';
 import Vehicle from '../models/vehicle.model.js';
 import User from '../models/user.model.js';
 import Reclamation from '../models/reclamation.model.js';
+import Trip from '../models/trip.model.js';
 import { getPagination, getPagingData } from '../utils/pagination.js';
 import { eventBus, FLEET_EVENTS } from '../events/eventBus.js';
 import { buildCarPrompt } from '../utils/promptBuilder.js';
@@ -46,6 +47,177 @@ const buildSemanticCachePrompt = (vehicle) => {
     return prompt.length <= 1024 ? prompt : prompt.slice(0, 1024);
 };
 
+const VALID_VEHICLE_STATUSES = new Set([
+    'AVAILABLE',
+    'IN_MAINTENANCE',
+    'OUT_OF_SERVICE',
+    'ON_TRIP',
+]);
+
+const VEHICLE_TYPE_BY_UI_TYPE = {
+    car: 'Car',
+    suv: 'SUV',
+    van: 'Van',
+    truck: 'Truck',
+    bus: 'Bus',
+    motorcycle: 'Motorcycle',
+};
+
+const parseBoolean = (value, fallback = undefined) => {
+    if (typeof value === 'boolean') return value;
+    if (typeof value === 'number') return value === 1;
+    if (typeof value === 'string') {
+        const normalized = value.trim().toLowerCase();
+        if (['true', '1', 'yes', 'y', 'on', 'active', 'available'].includes(normalized)) return true;
+        if (['false', '0', 'no', 'n', 'off', 'inactive', 'out_of_service'].includes(normalized)) return false;
+    }
+    return fallback;
+};
+
+const parseOptionalNumber = (value) => {
+    if (value === null || value === undefined || value === '') return undefined;
+    const parsed = Number(value);
+    return Number.isFinite(parsed) ? parsed : undefined;
+};
+
+const normalizeVehicleStatus = (status) => {
+    if (status === null || status === undefined) return undefined;
+    const normalized = String(status).trim().toUpperCase().replace(/[-\s]+/g, '_');
+    if (normalized === 'MAINTENANCE') return 'IN_MAINTENANCE';
+    if (normalized === 'INACTIVE') return 'OUT_OF_SERVICE';
+    if (normalized === 'IN_USE') return 'ON_TRIP';
+    return VALID_VEHICLE_STATUSES.has(normalized) ? normalized : undefined;
+};
+
+const normalizeVehiclePayload = (data = {}) => {
+    const normalized = { ...data };
+
+    if (normalized.type && !normalized.vehicle_type) {
+        const type = String(normalized.type).trim().toLowerCase();
+        normalized.vehicle_type = VEHICLE_TYPE_BY_UI_TYPE[type] ?? normalized.type;
+    }
+
+    if (normalized.Vehicle_Model && !normalized.vehicle_type) {
+        normalized.vehicle_type = normalized.Vehicle_Model;
+    }
+
+    if (normalized.Mileage !== undefined && normalized.mileage === undefined) {
+        const mileage = parseOptionalNumber(normalized.Mileage);
+        if (mileage !== undefined) normalized.mileage = mileage;
+    }
+
+    if (normalized.Engine_Size !== undefined && normalized.engine_size === undefined) {
+        const engineSize = parseOptionalNumber(normalized.Engine_Size);
+        if (engineSize !== undefined) normalized.engine_size = engineSize;
+    }
+
+    if (normalized.max_load !== undefined && normalized.capacity === undefined) {
+        const capacity = parseOptionalNumber(normalized.max_load);
+        if (capacity !== undefined) normalized.capacity = capacity;
+    }
+
+    if (normalized.Active !== undefined && normalized.is_active === undefined) {
+        normalized.is_active = parseBoolean(normalized.Active, true);
+    }
+
+    const explicitStatus = normalizeVehicleStatus(normalized.status);
+    const needsMaintenance = parseBoolean(
+        normalized.Need_Maintenance ??
+        normalized.need_maintenance ??
+        normalized.needMaintenance ??
+        normalized.needsMaintenance,
+        undefined
+    );
+    const isActive = parseBoolean(normalized.is_active ?? normalized.Active ?? normalized.active, undefined);
+
+    if (explicitStatus) {
+        normalized.status = explicitStatus;
+    } else if (needsMaintenance === true) {
+        normalized.status = 'IN_MAINTENANCE';
+    } else if (isActive === false) {
+        normalized.status = 'OUT_OF_SERVICE';
+    } else if (isActive === true || needsMaintenance === false) {
+        normalized.status = 'AVAILABLE';
+    }
+
+    if (normalized.status === 'IN_MAINTENANCE') {
+        normalized.is_active = true;
+    } else if (normalized.status === 'OUT_OF_SERVICE') {
+        normalized.is_active = false;
+    } else if (normalized.status === 'AVAILABLE' && normalized.is_active === undefined) {
+        normalized.is_active = true;
+    }
+
+    // Strip frontend compatibility aliases so Sequelize only receives model columns.
+    delete normalized.type;
+    delete normalized.Vehicle_Model;
+    delete normalized.Mileage;
+    delete normalized.Vehicle_Age;
+    delete normalized.Engine_Size;
+    delete normalized.max_load;
+    delete normalized.consumption;
+    delete normalized.Active;
+    delete normalized.Need_Maintenance;
+    delete normalized.need_maintenance;
+    delete normalized.needMaintenance;
+    delete normalized.needsMaintenance;
+    delete normalized.Tire_Condition;
+    delete normalized.Brake_Condition;
+    delete normalized.Battery_Status;
+    delete normalized.active;
+
+    return normalized;
+};
+
+const deriveVehicleStatusFromState = (vehicle, ongoingVehicleIds) => {
+    if (ongoingVehicleIds.has(String(vehicle.id))) {
+        return 'ON_TRIP';
+    }
+
+    if (vehicle.status === 'IN_MAINTENANCE') {
+        return 'IN_MAINTENANCE';
+    }
+
+    if (vehicle.is_active === false) {
+        return 'OUT_OF_SERVICE';
+    }
+
+    return 'AVAILABLE';
+};
+
+const reconcileVehicleStatusesFromTrips = async (vehicleIds = null) => {
+    const vehicleWhere = Array.isArray(vehicleIds) && vehicleIds.length > 0
+        ? { id: { [Op.in]: vehicleIds } }
+        : undefined;
+
+    const [vehicles, ongoingTrips] = await Promise.all([
+        Vehicle.findAll({ where: vehicleWhere }),
+        Trip.findAll({
+            where: {
+                status: 'ongoing',
+                ...(vehicleWhere ? { vehicleId: { [Op.in]: vehicleIds } } : {}),
+            },
+            attributes: ['vehicleId'],
+        }),
+    ]);
+
+    const ongoingVehicleIds = new Set(
+        ongoingTrips
+            .map((trip) => trip.vehicleId)
+            .filter(Boolean)
+            .map((id) => String(id))
+    );
+
+    await Promise.all(
+        vehicles.map(async (vehicle) => {
+            const desiredStatus = deriveVehicleStatusFromState(vehicle, ongoingVehicleIds);
+            if (vehicle.status !== desiredStatus) {
+                await vehicle.update({ status: desiredStatus });
+            }
+        })
+    );
+};
+
 /**
  * Resolves the manager ID for a vehicle.
  * Priority: vehicle.managerId → first MANAGER/ADMIN user in DB → null
@@ -67,7 +239,7 @@ const resolveManagerId = async (vehicle) => {
 // ─────────────────────────────────────────────
 
 export const createVehicle = async (data) => {
-    return await Vehicle.create(data);
+    return await Vehicle.create(normalizeVehiclePayload(data));
 };
 
 // ─────────────────────────────────────────────
@@ -75,6 +247,7 @@ export const createVehicle = async (data) => {
 // ─────────────────────────────────────────────
 
 export const getAllVehicles = async (query = {}, cacheKey = null) => {
+    await reconcileVehicleStatusesFromTrips();
     const { page, limit, offset } = getPagination(query);
 
     const { count, rows } = await Vehicle.findAndCountAll({
@@ -87,6 +260,7 @@ export const getAllVehicles = async (query = {}, cacheKey = null) => {
 };
 
 export const getVehicleById = async (id, cacheKey = null) => {
+    await reconcileVehicleStatusesFromTrips([id]);
     return await Vehicle.findByPk(id);
 };
 
@@ -98,43 +272,44 @@ export const updateVehicle = async (id, data) => {
     const vehicle = await Vehicle.findByPk(id);
     if (!vehicle) return null;
 
+    const normalizedData = normalizeVehiclePayload(data);
     const previousStatus = vehicle.status;
     const previousDriverId = vehicle.driverId ?? null;
 
-    const updatedVehicle = await vehicle.update(data);
+    const updatedVehicle = await vehicle.update(normalizedData);
 
     // Resolve manager once, reuse across all events below
     const managerId = await resolveManagerId(updatedVehicle);
 
     // ── Driver assigned ──────────────────────────────────────────────────
-    if (data?.driverId && data.driverId !== previousDriverId) {
+    if (normalizedData?.driverId && normalizedData.driverId !== previousDriverId) {
         publishSafely(
             FLEET_EVENTS.DRIVER_ASSIGNED,
             {
-                driverId: data.driverId,
+                driverId: normalizedData.driverId,
                 vehicle: updatedVehicle,
-                tripId: data.tripId ?? null,
+                tripId: normalizedData.tripId ?? null,
             },
             'DRIVER_ASSIGNED'
         );
     }
 
     // ── Driver unassigned ────────────────────────────────────────────────
-    if (data?.driverId === null && previousDriverId) {
+    if (normalizedData?.driverId === null && previousDriverId) {
         publishSafely(
             FLEET_EVENTS.DRIVER_UNASSIGNED,
             {
                 driverId: previousDriverId,
                 vehicle: updatedVehicle,
-                tripId: data.tripId ?? null,
+                tripId: normalizedData.tripId ?? null,
             },
             'DRIVER_UNASSIGNED'
         );
     }
 
     // ── Status-change events ─────────────────────────────────────────────
-    if (data?.status && data.status !== previousStatus) {
-        const normalizedStatus = String(data.status).toUpperCase();
+    if (normalizedData?.status && normalizedData.status !== previousStatus) {
+        const normalizedStatus = String(normalizedData.status).toUpperCase();
 
         if (normalizedStatus === 'OUT_OF_SERVICE') {
             publishSafely(
@@ -143,7 +318,7 @@ export const updateVehicle = async (id, data) => {
                     vehicle: updatedVehicle,
                     driverId: updatedVehicle.driverId ?? previousDriverId ?? null,
                     managerId,
-                    location: data.location ?? null,
+                    location: normalizedData.location ?? null,
                 },
                 'VEHICLE_BREAKDOWN'
             );

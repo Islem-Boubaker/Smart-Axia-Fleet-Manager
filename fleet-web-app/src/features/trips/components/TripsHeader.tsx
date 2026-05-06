@@ -25,7 +25,7 @@ const TripsHeader = ({ dark = false, tripCount, onAdd }: TripsHeaderProps) => {
         </p>
       )}
     </div>
-    <Button className="rounded-xl shadow-soft shrink-0" onClick={onAdd}>
+    <Button className="rounded-full shadow-soft shrink-0" onClick={onAdd}>
       <FiPlus className="mr-2" />
       {t('trips.schedule_button')}
     </Button>

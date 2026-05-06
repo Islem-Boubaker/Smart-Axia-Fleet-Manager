@@ -1,20 +1,19 @@
 import React from "react";
-import { View, Text, TouchableOpacity, Platform } from "react-native";
-import Svg, { G, Path } from "react-native-svg";
+import { Image, Platform, Text, View } from "react-native";
 
-function LoginHeader({
-  handleGoogle,
-  handleApple,
-  isLoading,
-}: {
-  handleGoogle?: () => void;
-  handleApple?: () => void;
-  isLoading?: boolean;
-}) {
+function LoginHeader() {
   return (
     <View>
       {/* Title */}
       <View className="mb-10 justify-center items-center">
+        <View className="mb-5 h-32 w-32 items-center justify-center rounded-[32px] bg-black p-2">
+          <Image
+            source={require("../../../assets/images/official-logo.png")}
+            className="h-full w-full rounded-[26px]"
+            resizeMode="contain"
+          />
+        </View>
+
         <Text
           className="text-[28px] font-extrabold text-[#1A1233] tracking-tight mb-3"
           style={{ fontFamily: Platform.OS === "ios" ? "Georgia" : "serif" }}

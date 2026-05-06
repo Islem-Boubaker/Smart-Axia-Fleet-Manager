@@ -1,13 +1,19 @@
 {
   "header": {
     "search": "Rechercher",
-    "searchPlaceholder": "Rechercher flotte, trajets, conducteurs…",
+    "searchPlaceholder": "Rechercher flotte, trajets, conducteurs...",
     "notifications": "Notifications",
     "language": "Langue",
     "openMenu": "Ouvrir le menu",
     "lightMode": "Mode clair",
     "darkMode": "Mode sombre",
     "closeMenu": "Fermer le menu",
-    "searchVehiclesDriversTrips": "Rechercher véhicules, conducteurs, trajets..."
+    "searchVehiclesDriversTrips": "Rechercher vehicules, conducteurs, trajets...",
+    "goodMorning": "Bonjour",
+    "goodAfternoon": "Bon apres-midi",
+    "goodEvening": "Bonsoir",
+    "defaultName": "a vous",
+    "greetingWithName": "{{greeting}}, {{name}}",
+    "operationalActivity": "Consultez les dernieres activites operationnelles de votre flotte."
   }
 }

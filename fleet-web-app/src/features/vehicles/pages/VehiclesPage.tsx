@@ -174,6 +174,7 @@ const VehiclesPage = () => {
 
       <VehicleDetailsModal
         isOpen={Boolean(selectedVehicleRow || selectedVehicleDetails || isDetailsLoading || detailsError)}
+        dark={dark}
         onClose={closeVehicleDetails}
         onEdit={() => {
           if (!detailsVehicle) return;

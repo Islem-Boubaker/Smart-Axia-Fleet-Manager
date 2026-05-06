@@ -30,7 +30,6 @@ const VehiclePerformanceTable = ({ vehicles, dark = false }: Props) => {
       subtitle={t('reports.vehicle_performance.subtitle')}
       padding="lg"
       dark={dark}
-      className={dark ? 'border-slate-700/80 shadow-none' : 'border-slate-200/90 shadow-glass'}
     >
       <div className="overflow-x-auto -mx-2 px-2">
         <table className="w-full border-separate border-spacing-0">

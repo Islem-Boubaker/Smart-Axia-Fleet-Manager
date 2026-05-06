@@ -38,6 +38,7 @@ interface BackendTrip {
   vehicle?: {
     id: string;
     name?: string;
+    plaque_immatriculation?: string;
     model?: string;
     Vehicle_Model?: string;
   };

@@ -67,7 +67,8 @@ export const useMaintenance = (
       setActionError(null);
       await action();
       await queryClient.invalidateQueries({ queryKey: queryKeys.maintenance.all });
-      await queryClient.invalidateQueries({ queryKey: queryKeys.dashboard.stats() });
+      await queryClient.invalidateQueries({ queryKey: queryKeys.vehicles.all });
+      await queryClient.invalidateQueries({ queryKey: queryKeys.dashboard.all });
     } catch (err: unknown) {
       setActionError(toApiMessage(err, 'Maintenance action failed.'));
       throw err;

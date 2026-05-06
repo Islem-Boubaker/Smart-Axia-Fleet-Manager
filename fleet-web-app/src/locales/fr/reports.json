@@ -18,6 +18,15 @@
       "utilization": "Utilisation"
     },
     "loadingSection": "Chargement de la section...",
-    "errorSection": "Impossible de charger cette section."
+    "errorSection": "Impossible de charger cette section.",
+    "tableau": {
+      "defaultTitle": "Rapports Tableau de la flotte",
+      "defaultSubtitle": "Indicateurs decisionnels en direct integres depuis Tableau.",
+      "refresh": "Actualiser",
+      "refreshTitle": "Actualiser le rapport",
+      "open": "Ouvrir",
+      "openTitle": "Ouvrir le rapport dans un nouvel onglet",
+      "notConfigured": "Tableau n'est pas encore configure"
+    }
   }
 }

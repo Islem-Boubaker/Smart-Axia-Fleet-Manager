@@ -1,10 +1,10 @@
 // src/app/router.tsx
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { lazy, Suspense } from "react";
-import { useTranslation } from "react-i18next";
 import { ROUTES } from "../utils/constants";
 import ProtectedRoute from "./ProtectedRoute";
 import PublicRoute from "./PublicRoute";
+import { LogoLoadingScreen } from "../shared/components";
 
 // Lazy load components
 const SignIn = lazy(() => import("../features/auth/pages/Signin"));
@@ -33,22 +33,10 @@ const SettingsPage = lazy(
   () => import("../features/settings/pages/SettingsPage"),
 );
 
-function PageLoader() {
-  const { t } = useTranslation();
-  return (
-    <div className="flex h-screen items-center justify-center bg-gray-50">
-      <div className="text-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4" />
-        <p className="text-gray-600">{t("router.loading")}</p>
-      </div>
-    </div>
-  );
-}
-
 export default function AppRouter() {
   return (
     <BrowserRouter>
-      <Suspense fallback={<PageLoader />}>
+      <Suspense fallback={<LogoLoadingScreen />}>
         <Routes>
           {/* Root redirect */}
           <Route path="/" element={<Navigate to="/signin" replace />} />

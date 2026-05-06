@@ -24,7 +24,7 @@ export default function VehicleCard({ vehicle }: any) {
 
         <View className="bg-emerald-50 px-2.5 py-1 rounded-full">
           <Text className="text-xs font-semibold text-emerald-700">
-            {vehicle.status}
+            {vehicle.statusLabel ?? vehicle.status}
           </Text>
         </View>
       </View>

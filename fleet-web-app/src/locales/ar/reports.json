@@ -1,7 +1,7 @@
 {
   "reports": {
     "title": "التقارير",
-    "subtitle": "تحليلات ومؤشرات الأسطول.",
+    "subtitle": "تحليلات ومؤشرات تشغيلية للأسطول.",
     "filters": {
       "dateRange": "نطاق التاريخ",
       "export": "تصدير",
@@ -17,7 +17,16 @@
       "monthly": "الاتجاهات الشهرية",
       "utilization": "الاستخدام"
     },
-    "loadingSection": "جاري تحميل القسم...",
-    "errorSection": "تعذّر تحميل هذا القسم."
+    "loadingSection": "جار تحميل القسم...",
+    "errorSection": "تعذر تحميل هذا القسم.",
+    "tableau": {
+      "defaultTitle": "تقارير الأسطول في Tableau",
+      "defaultSubtitle": "مؤشرات أعمال مباشرة مدمجة من Tableau.",
+      "refresh": "تحديث",
+      "refreshTitle": "تحديث التقرير",
+      "open": "فتح",
+      "openTitle": "فتح التقرير في تبويب جديد",
+      "notConfigured": "لم يتم إعداد Tableau بعد"
+    }
   }
 }

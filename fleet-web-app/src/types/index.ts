@@ -13,6 +13,7 @@ export interface Vehicle {
   photos?: string[];
   plaque_immatriculation?: string;
   type: 'car' | 'suv' | 'truck' | 'motorcycle' | 'van';
+  status: 'AVAILABLE' | 'IN_MAINTENANCE' | 'OUT_OF_SERVICE' | 'ON_TRIP';
   Active: boolean;
   Vehicle_Model: 'Car' | 'SUV' | 'Van' | 'Truck' | 'Bus' | 'Motorcycle';
   max_load?: number | null;
@@ -72,6 +73,7 @@ export interface Trip {
   userId?: string;
   vehicleId: string;
   region?: string;
+  requiredCapacity?: number;
   notes?: string;
   startLocation: string;
   startLatitude?: number;
@@ -82,7 +84,6 @@ export interface Trip {
   startTime: string;
   endTime?: string;
   distance: number;
-  requiredCapacity?: number;
   loadType?: 'general' | 'cold' | 'fragile' | 'heavy';
   distance_in_meters?: number;
   estimated_duration_seconds?: number;
@@ -107,6 +108,7 @@ export interface Trip {
 export interface Maintenance {
   id: string;
   vehicleId?: string;
+  reclamationId?: string;
   vehicleName?: string;
   vehiclePlate: string;
   scheduledDate: string;

@@ -8,10 +8,12 @@ router.use(authMiddleware.authenticate);
 
 router.post('/vehicle/addvehicle', authMiddleware.authorizeRoles('ADMIN', 'MANAGER'), vehicleController.createVehicle);
 
+// Allow authenticated drivers to read vehicle records (list & detail).
+// `router.use(authMiddleware.authenticate)` at the top already enforces authentication,
+// so we only require role checks on admin-only mutating routes below.
+router.get('/vehicle/getvehicles', cacheMiddleware('vehicles', 'index', { requireAuth: true }), vehicleController.getAllVehicles);
 
-router.get('/vehicle/getvehicles', authMiddleware.authenticate, authMiddleware.authorizeRoles('ADMIN', 'MANAGER'), cacheMiddleware('vehicles', 'index', { requireAuth: true }), vehicleController.getAllVehicles);
-
-router.get('/vehicle/getvehicle/:id', authMiddleware.authenticate, authMiddleware.authorizeRoles('ADMIN', 'MANAGER'), cacheMiddleware('vehicles', 'show', { requireAuth: true }), vehicleController.getVehicleById);
+router.get('/vehicle/getvehicle/:id', cacheMiddleware('vehicles', 'show', { requireAuth: true }), vehicleController.getVehicleById);
 
 
 router.put('/vehicle/updatevehicle/:id', authMiddleware.authenticate, authMiddleware.authorizeRoles('ADMIN', 'MANAGER'), vehicleController.updateVehicle);

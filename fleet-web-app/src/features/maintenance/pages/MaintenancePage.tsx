@@ -1,5 +1,5 @@
-import { useState, useCallback } from 'react';
-import { useOutletContext } from 'react-router-dom';
+import { useState, useCallback, useEffect, useMemo } from 'react';
+import { useOutletContext, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 
 import { GlobalCard } from '../../../shared/components';
@@ -18,6 +18,7 @@ interface ThemeContext {
 const MaintenancePage = () => {
   const { dark } = useOutletContext<ThemeContext>();
   const { t } = useTranslation();
+  const [searchParams, setSearchParams] = useSearchParams();
   const {
     records,
     isLoading,
@@ -36,12 +37,51 @@ const MaintenancePage = () => {
   const [editError, setEditError] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
 
+  const prefilledMaintenance = useMemo(() => {
+    if (searchParams.get('schedule') !== '1') return undefined;
+
+    return {
+      vehicleId: searchParams.get('vehicleId') || '',
+      reclamationId: searchParams.get('reclamationId') || '',
+      vehiclePlate: searchParams.get('vehiclePlate') || '',
+      type: searchParams.get('type') || 'General Inspection',
+      scheduledDate: '',
+      technician: searchParams.get('technician') || 'Pending assignment',
+      priority: searchParams.get('priority') || 'high',
+      status: 'scheduled',
+      cost: searchParams.get('cost') || '0',
+      mileage: searchParams.get('mileage') || '',
+      description: searchParams.get('description') || '',
+    };
+  }, [searchParams]);
+
+  const clearPrefillParams = useCallback(() => {
+    if (searchParams.get('source') !== 'reclamation' && searchParams.get('schedule') !== '1') return;
+    setSearchParams(new URLSearchParams(), { replace: true });
+  }, [searchParams, setSearchParams]);
+
+  useEffect(() => {
+    if (prefilledMaintenance) {
+      setSubmitError(null);
+      setIsScheduleModalOpen(true);
+    }
+  }, [prefilledMaintenance]);
+
+  const normalizeMaintenanceErrorMessage = useCallback((message?: string | null, fallback?: string) => {
+    const normalized = String(message || '').trim().toLowerCase();
+    if (normalized.includes('only available vehicles can be scheduled for maintenance')) {
+      return fallback || 'Failed to schedule maintenance.';
+    }
+    return message || fallback || 'Failed to schedule maintenance.';
+  }, []);
+
   const handleScheduleMaintenance = useCallback(async (data: Record<string, unknown>) => {
     try {
       setSubmitError(null);
       await maintenanceService.create(data);
       await refetch();
       setIsScheduleModalOpen(false);
+      clearPrefillParams();
     } catch (err: unknown) {
       const response = (err as { response?: { status?: number; data?: { message?: string } } })?.response;
       const status = Number(response?.status);
@@ -52,28 +92,28 @@ const MaintenancePage = () => {
         : null;
 
       if (status === 422) {
-        setSubmitError(detailed || message || t('maintenance.errors.validation'));
+        setSubmitError(normalizeMaintenanceErrorMessage(detailed || message, t('maintenance.errors.validation')));
         return;
       }
 
       if (status === 409) {
-        setSubmitError(message || t('maintenance.errors.conflict'));
+        setSubmitError(normalizeMaintenanceErrorMessage(message, t('maintenance.errors.conflict')));
         return;
       }
 
       if (status === 401 || status === 403) {
-        setSubmitError(message || t('maintenance.errors.unauthorizedCreate'));
+        setSubmitError(normalizeMaintenanceErrorMessage(message, t('maintenance.errors.unauthorizedCreate')));
         return;
       }
 
       if (status === 404) {
-        setSubmitError(message || t('maintenance.errors.vehicleNotFound'));
+        setSubmitError(normalizeMaintenanceErrorMessage(message, t('maintenance.errors.vehicleNotFound')));
         return;
       }
 
-      setSubmitError(message || t('maintenance.errors.scheduleFailed'));
+      setSubmitError(normalizeMaintenanceErrorMessage(message, t('maintenance.errors.scheduleFailed')));
     }
-  }, [refetch, t]);
+  }, [clearPrefillParams, normalizeMaintenanceErrorMessage, refetch, t]);
 
   const handleTransition = useCallback(async (record: Maintenance) => {
     if (record.status === 'scheduled' || record.status === 'pending') {
@@ -186,7 +226,15 @@ const MaintenancePage = () => {
             {submitError}
           </div>
         )}
-        <MaintenanceForm dark={dark} onSubmit={handleScheduleMaintenance} onCancel={() => setIsScheduleModalOpen(false)} />
+        <MaintenanceForm
+          dark={dark}
+          initialValues={prefilledMaintenance}
+          onSubmit={handleScheduleMaintenance}
+          onCancel={() => {
+            setIsScheduleModalOpen(false);
+            clearPrefillParams();
+          }}
+        />
       </GlobalCard>
 
       <GlobalCard

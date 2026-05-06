@@ -18,6 +18,15 @@
       "utilization": "Utilization"
     },
     "loadingSection": "Loading section...",
-    "errorSection": "Could not load this section."
+    "errorSection": "Could not load this section.",
+    "tableau": {
+      "defaultTitle": "Tableau Fleet Reports",
+      "defaultSubtitle": "Live business intelligence embedded from Tableau.",
+      "refresh": "Refresh",
+      "refreshTitle": "Refresh report",
+      "open": "Open",
+      "openTitle": "Open report in new tab",
+      "notConfigured": "Tableau is not configured yet"
+    }
   }
 }

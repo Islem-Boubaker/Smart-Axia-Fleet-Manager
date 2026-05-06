@@ -2,6 +2,9 @@ import { useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import AppRouter from "./app/router";
 import { ToastProvider } from "./shared/components/toast/ToastProvider";
+import { useAppDispatch } from "./shared/hooks";
+import { authAPI } from "./features/auth/services/auth.service";
+import { clearUser, setLoading, setUser } from "./store/authSlice";
 import "./i18n";
 
 function I18nDocumentSync() {
@@ -14,9 +17,39 @@ function I18nDocumentSync() {
   return null;
 }
 
+function AuthBootstrap() {
+  const dispatch = useAppDispatch();
+
+  useEffect(() => {
+    let active = true;
+
+    const bootstrap = async () => {
+      dispatch(setLoading(true));
+      try {
+        const user = await authAPI.getMe();
+        if (!active) return;
+        dispatch(setUser(user));
+      } catch {
+        if (!active) return;
+        dispatch(clearUser());
+      } finally {
+        if (active) dispatch(setLoading(false));
+      }
+    };
+
+    bootstrap();
+    return () => {
+      active = false;
+    };
+  }, [dispatch]);
+
+  return null;
+}
+
 export default function App() {
   return (
     <ToastProvider>
+      <AuthBootstrap />
       <I18nDocumentSync />
       <AppRouter />
     </ToastProvider>

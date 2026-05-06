@@ -27,7 +27,7 @@ const ScheduledMaintenance = ({ items, onOpenAll }: ScheduledMaintenanceProps) =
       <button
         type="button"
         onClick={onOpenAll}
-        className="text-sm font-medium text-gray-700 dark:text-gray-300 inline-flex items-center gap-1 hover:text-blue-600 dark:hover:text-blue-300 transition-colors"
+        className="text-sm font-black text-gray-800 dark:text-gray-200 inline-flex items-center gap-1 hover:text-sky-600 dark:hover:text-sky-300 transition-colors"
       >
         {t('dashboard.maintenance.title')}
         <FiArrowUpRight className="w-4 h-4" />

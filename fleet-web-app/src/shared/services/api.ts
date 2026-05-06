@@ -40,7 +40,6 @@ const AUTH_ENDPOINTS = [
   '/user/login',
   '/user/signup',
   '/user/forgot-password',
-  '/user/logout',
   '/user/refresh-token',
 ];
 

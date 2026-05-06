@@ -1,5 +1,6 @@
-import { useEffect } from 'react';
+import { useEffect, useId } from 'react';
 import type { ReactNode } from 'react';
+import { createPortal } from 'react-dom';
 import { FiX } from 'react-icons/fi';
 
 interface GlobalCardProps {
@@ -19,6 +20,8 @@ export const GlobalCard = ({
   footer,
   maxWidth = 'lg',
 }: GlobalCardProps) => {
+  const titleId = useId();
+
   // Close on Escape key
   useEffect(() => {
     const handleEscape = (e: KeyboardEvent) => {
@@ -33,69 +36,76 @@ export const GlobalCard = ({
 
   // Prevent body scroll when modal is open
   useEffect(() => {
-    if (isOpen) {
-      document.body.style.overflow = 'hidden';
-    } else {
-      document.body.style.overflow = 'unset';
-    }
+    if (!isOpen) return undefined;
+
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+
     return () => {
-      document.body.style.overflow = 'unset';
+      document.body.style.overflow = previousOverflow;
     };
   }, [isOpen]);
 
-  if (!isOpen) return null;
+  if (!isOpen || typeof document === 'undefined') return null;
 
   const maxWidthClasses = {
-    sm: 'max-w-sm',
-    md: 'max-w-md',
-    lg: 'max-w-lg',
-    xl: 'max-w-xl',
-    '2xl': 'max-w-2xl',
+    sm: 'max-w-lg',
+    md: 'max-w-2xl',
+    lg: 'max-w-3xl',
+    xl: 'max-w-4xl',
+    '2xl': 'max-w-5xl',
   };
 
-  return (
-    <div className="fixed inset-0 z-50 overflow-y-auto">
-      {/* Soft overlay with blur */}
-      <div
-        className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm transition-opacity"
+  return createPortal(
+    <div className="fixed inset-0 z-[9999] overflow-hidden">
+      <button
+        type="button"
+        className="fixed inset-0 cursor-default bg-slate-950/55 backdrop-blur-[5px] transition-opacity"
         onClick={onClose}
-        aria-hidden="true"
+        aria-label="Close modal"
       />
 
-      {/* Modal Container */}
-      <div className="flex min-h-full items-center justify-center p-4">
-        {/* Modal Window */}
-        <div
-          className={`relative bg-white dark:bg-slate-900 rounded-2xl shadow-2xl dark:shadow-slate-900/50 ${maxWidthClasses[maxWidth]} w-full transform transition-all scale-100 opacity-100 flex flex-col border border-transparent dark:border-slate-800`}
+      <div className="flex min-h-full items-center justify-center p-3 sm:p-4">
+        <section
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby={title ? titleId : undefined}
+          className={`relative z-10 flex max-h-[calc(100vh-1.5rem)] w-full ${maxWidthClasses[maxWidth]} flex-col overflow-hidden rounded-[28px] border border-white/70 bg-white p-4 shadow-[0_24px_80px_rgba(15,23,42,0.26)] dark:border-cyan-100/10 dark:bg-[#07111f] dark:shadow-[0_24px_90px_rgba(0,0,0,0.65)] sm:p-5`}
           onClick={(e) => e.stopPropagation()}
         >
-          {/* Close button overlaid on top right */}
-          <button
-            onClick={onClose}
-            className="absolute top-6 right-6 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors p-1 rounded-full hover:bg-gray-100 dark:hover:bg-slate-800 z-10"
-            aria-label="Close modal"
-          >
-            <FiX className="w-5 h-5" />
-          </button>
-
-          {/* Content Area */}
-          <div className="px-8 py-8 w-full max-h-[calc(100vh-80px)] overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+          <div className="mb-5 flex shrink-0 items-center justify-between gap-4 px-1">
             {title && (
-              <h2 className="text-base font-bold text-gray-900 dark:text-white mb-6">{title}</h2>
+              <h2
+                id={titleId}
+                className="font-sans text-xl font-black tracking-tight text-slate-950 dark:text-white sm:text-2xl"
+              >
+                {title}
+              </h2>
             )}
-            {children}
+
+            <button
+              type="button"
+              onClick={onClose}
+              className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-slate-950 text-white shadow-[0_10px_22px_rgba(15,23,42,0.32)] ring-1 ring-white/40 transition-all hover:-translate-y-0.5 hover:bg-black focus:outline-none focus:ring-2 focus:ring-slate-400 dark:bg-black dark:ring-white/15 dark:hover:bg-slate-900"
+              aria-label="Close modal"
+            >
+              <FiX className="h-5 w-5" />
+            </button>
           </div>
 
-          {/* Footer (if provided) */}
-          {footer && (
-            <div className="border-t border-gray-100 dark:border-slate-800 px-8 py-4 bg-gray-50/50 dark:bg-slate-800/50 rounded-b-2xl">
-              {footer}
-            </div>
-          )}
-        </div>
+          <div className="min-h-0 flex-1 overflow-y-auto rounded-[22px] border border-slate-200/90 bg-white p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.85)] dark:border-cyan-100/10 dark:bg-[#0b1628] sm:p-5 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+            {children}
+
+            {footer && (
+              <div className="mt-5 border-t border-slate-100 pt-4 dark:border-cyan-100/10">
+                {footer}
+              </div>
+            )}
+          </div>
+        </section>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };
-
 

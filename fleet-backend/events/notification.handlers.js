@@ -8,9 +8,25 @@ import Vehicle from "../models/vehicle.model.js";
 import { getIO } from "../config/socket.js";
 import nodemailer from "nodemailer";
 import NotificationService from "../services/notification.service.js";
+import {
+  buildEmailAttachments,
+  buildFleetEmailHtml,
+  buildPlainTextEmail,
+} from "../utils/emailTemplate.js";
 
 const EMAIL_FROM = process.env.EMAIL_USER;
 const EMAIL_PASS = process.env.EMAIL_PASS;
+const DEFAULT_ROUTE_DEVIATION_ALERT_THROTTLE_MS = 15 * 60 * 1000;
+
+const getPositiveEnvNumber = (key, fallback) => {
+  const parsed = Number(process.env[key]);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
+};
+
+const ROUTE_DEVIATION_ALERT_THROTTLE_MS = getPositiveEnvNumber(
+  "ROUTE_DEVIATION_ALERT_THROTTLE_MS",
+  DEFAULT_ROUTE_DEVIATION_ALERT_THROTTLE_MS
+);
 
 const transporter =
   EMAIL_FROM && EMAIL_PASS
@@ -61,13 +77,15 @@ const sendEmailToUsers = async (users, { subject, message }) => {
 
   const results = await Promise.allSettled(
     targets.map((user) => {
-      const text = `Hello ${user.name ?? "there"},\n\n${message}\n\nAXIA Fleet Manager`;
+      const recipientName = user.name ?? "there";
 
       return transporter.sendMail({
         from: `"AXIA Fleet Manager" <${EMAIL_FROM}>`,
         to: user.email,
         subject,
-        text,
+        text: buildPlainTextEmail({ recipientName, message }),
+        html: buildFleetEmailHtml({ recipientName, subject, message }),
+        attachments: buildEmailAttachments(),
       });
     })
   );
@@ -110,6 +128,27 @@ const getUsersWithEmailPreference = async (userIds = [], preferenceKey) => {
   });
 };
 
+const getUsersWithPushPreference = async (userIds = [], preferenceKey) => {
+  if (!Array.isArray(userIds) || userIds.length === 0) return [];
+
+  const where = {
+    id: { [Op.in]: userIds },
+    isActive: true,
+    expoPushToken: {
+      [Op.ne]: null,
+    },
+  };
+
+  if (preferenceKey) {
+    where[preferenceKey] = true;
+  }
+
+  return User.findAll({
+    where,
+    attributes: ["id", "name", "expoPushToken"],
+  });
+};
+
 const getManagerAndAdminIds = async () => {
   const users = await User.findAll({
     where: {
@@ -131,7 +170,19 @@ const getAlertRecipients = async () => {
       },
       isActive: true,
     },
-    attributes: ["id", "name", "email", "emailMaintenance", "pushAlerts", "expoPushToken"],
+    attributes: [
+      "id",
+      "name",
+      "email",
+      "emailMaintenance",
+      "emailAI",
+      "emailSystem",
+      "pushMaintenance",
+      "pushAI",
+      "pushSystem",
+      "pushAlerts",
+      "expoPushToken",
+    ],
   });
 };
 
@@ -157,10 +208,88 @@ const formatDate = (value) => {
   return d.toLocaleDateString("en-GB");
 };
 
-const vehicleLabel = (vehicle) => {
-  return vehicle?.plaque_immatriculation
-    ? `${vehicle?.name ?? "Vehicle"} - ${vehicle.plaque_immatriculation}`
-    : vehicle?.name ?? "Vehicle";
+const formatDateTime = (value) => {
+  const d = new Date(value);
+  if (Number.isNaN(d.getTime())) return "unknown time";
+  return d.toLocaleString("en-GB");
+};
+
+const formatDistance = (value) => {
+  const distance = Number(value);
+  if (!Number.isFinite(distance)) return "outside the configured route tolerance";
+  if (distance >= 1000) return `${(distance / 1000).toFixed(1)} km`;
+  return `${Math.round(distance)} m`;
+};
+
+const vehicleLabel = (vehicle, fallback = {}) => {
+  const name = vehicle?.name || fallback.name || "";
+  const plate = vehicle?.plaque_immatriculation || fallback.plate || "";
+
+  if (name && plate) return `${name} (${plate})`;
+  if (name) return name;
+  if (plate) return `vehicle ${plate}`;
+  return "the vehicle";
+};
+
+const documentMaintenanceType = (type) =>
+  type === NOTIFICATION_TYPES.VEHICLE_INSURANCE_EXPIRY
+    ? "Insurance Renewal"
+    : "Technical Visit";
+
+const documentMaintenanceCategory = (type) =>
+  type === NOTIFICATION_TYPES.VEHICLE_INSURANCE_EXPIRY ? "insurance" : "tech-visit";
+
+const buildVehicleDocumentMaintenanceActionUrl = ({ vehicle, type, message, expiresAt, overdue }) => {
+  const maintenanceType = documentMaintenanceType(type);
+  const params = new URLSearchParams({
+    schedule: "1",
+    source: "alert",
+    vehicleId: String(vehicle.id),
+    type: maintenanceType,
+    priority: overdue ? "high" : "medium",
+    technician: "Pending assignment",
+    cost: "0",
+    description: [
+      `Created from ${maintenanceType.toLowerCase()} alert.`,
+      "",
+      message,
+      "",
+      `Vehicle: ${vehicleLabel(vehicle)}`,
+      expiresAt ? `Current expiry date: ${formatDate(expiresAt)}` : "",
+    ]
+      .filter(Boolean)
+      .join("\n"),
+  });
+
+  if (vehicle.name) params.set("vehicleName", vehicle.name);
+  if (vehicle.plaque_immatriculation) params.set("vehiclePlate", vehicle.plaque_immatriculation);
+
+  return `/maintenance?${params.toString()}`;
+};
+
+const maintenanceVehicleLabel = (maintenance, vehicle) =>
+  vehicleLabel(vehicle, { plate: maintenance?.vehiclePlate });
+
+const userLabel = (user) => user?.name || user?.email || "the driver";
+
+const getUserById = async (userId) => {
+  if (!userId) return null;
+  return User.findByPk(userId, { attributes: ["id", "name", "email"] });
+};
+
+const getTripNotificationContext = async (tripId) => {
+  const trip = await Trip.findByPk(tripId, {
+    include: [{ model: User, as: "driver", attributes: ["id", "name", "email"] }],
+  });
+
+  if (!trip) return null;
+
+  const driver = trip.driver || (trip.userId ? await getUserById(trip.userId) : null);
+  return {
+    trip,
+    driverName: userLabel(driver),
+    route: `${trip.startLocation} to ${trip.endLocation}`,
+  };
 };
 
 const findExistingAlertRecipients = async ({ recipientIds, type, entityId }) => {
@@ -204,6 +333,16 @@ const dispatchVehicleDocumentExpiryAlert = async ({
   const targetRecipients = recipients.filter((user) => !alreadyAlerted.has(String(user.id)));
   if (!targetRecipients.length) return;
 
+  const maintenanceType = documentMaintenanceType(type);
+  const category = documentMaintenanceCategory(type);
+  const actionUrl = buildVehicleDocumentMaintenanceActionUrl({
+    vehicle,
+    type,
+    message,
+    expiresAt,
+    overdue,
+  });
+
   const notifications = await Notification.bulkCreate(
     targetRecipients.map((user) => ({
       userId: user.id,
@@ -212,11 +351,17 @@ const dispatchVehicleDocumentExpiryAlert = async ({
       message,
       entityType: "vehicle",
       entityId: vehicle.id,
+      actionUrl,
       metadata: {
         referenceId: vehicle.id,
         referenceType: "vehicle",
         plate: vehicle.plaque_immatriculation ?? null,
         name: vehicle.name,
+        vehicleId: vehicle.id,
+        vehicleName: vehicle.name,
+        vehiclePlate: vehicle.plaque_immatriculation ?? null,
+        category,
+        maintenanceType,
         expiresAt,
       },
       expiresAt,
@@ -234,7 +379,7 @@ const dispatchVehicleDocumentExpiryAlert = async ({
   });
 
   const notificationByUserId = new Map(notifications.map((item) => [String(item.userId), item]));
-  const pushRecipients = targetRecipients.filter((user) => user.pushAlerts && user.expoPushToken);
+  const pushRecipients = targetRecipients.filter((user) => user.pushMaintenance && user.expoPushToken);
 
   await Promise.allSettled(
     pushRecipients.map((user) => {
@@ -313,30 +458,53 @@ if (process.env.NODE_ENV !== "test") {
 }
 
 eventBus.subscribe(FLEET_EVENTS.TRIP_ASSIGNED, async ({ payload }) => {
-  const trip = await Trip.findByPk(payload.tripId);
-  if (!trip) return;
+  const context = await getTripNotificationContext(payload.tripId);
+  if (!context) return;
+  const { trip, driverName, route } = context;
 
   await createNotification({
     userId: payload.userId,
     type: NOTIFICATION_TYPES.TRIP_ASSIGNED,
     title: "New Trip Assigned",
-    message: `You have been assigned to trip from ${trip.startLocation} to ${trip.endLocation}.`,
+    message: `${driverName}, you have been assigned to a trip from ${route}.`,
     entityId: payload.tripId,
     entityType: "trip",
     metadata: {
       referenceId: payload.tripId,
       referenceType: "trip",
+      driverName,
     },
   });
 
   const emailRecipients = await getUsersWithEmailPreference([payload.userId], "emailTrips");
   await sendEmailToUsers(emailRecipients, {
     subject: "New Trip Assigned",
-    message: `You have been assigned to a trip from ${trip.startLocation} to ${trip.endLocation}.`,
+    message: `${driverName}, you have been assigned to a trip from ${route}.`,
   });
+
+  const pushRecipients = await getUsersWithPushPreference([payload.userId], "pushTrips");
+  const createdNotification = await Notification.findOne({
+    where: {
+      userId: payload.userId,
+      type: NOTIFICATION_TYPES.TRIP_ASSIGNED,
+      entityType: "trip",
+      entityId: payload.tripId,
+    },
+    order: [["createdAt", "DESC"]],
+  });
+
+  await Promise.allSettled(
+    pushRecipients.map((user) => {
+      if (!createdNotification || !user.expoPushToken) return Promise.resolve();
+      return NotificationService.sendExpoPush(user.expoPushToken, createdNotification);
+    })
+  );
 });
 
 eventBus.subscribe(FLEET_EVENTS.TRIP_STARTED, async ({ payload }) => {
+  const context = await getTripNotificationContext(payload.tripId);
+  if (!context) return;
+  const { driverName, route } = context;
   const recipientIds = await getManagerAndAdminIds();
   if (!recipientIds.length) return;
 
@@ -345,10 +513,10 @@ eventBus.subscribe(FLEET_EVENTS.TRIP_STARTED, async ({ payload }) => {
       userId,
       type: NOTIFICATION_TYPES.TRIP_STARTED,
       title: "Trip Started",
-      message: `Trip ${payload.tripId} has started.`,
+      message: `${driverName} started the trip from ${route}.`,
       entityId: payload.tripId,
       entityType: "trip",
-      metadata: { referenceId: payload.tripId, referenceType: "trip" },
+      metadata: { referenceId: payload.tripId, referenceType: "trip", driverName },
     }))
   );
 
@@ -357,11 +525,24 @@ eventBus.subscribe(FLEET_EVENTS.TRIP_STARTED, async ({ payload }) => {
   const emailRecipients = await getUsersWithEmailPreference(recipientIds, "emailTrips");
   await sendEmailToUsers(emailRecipients, {
     subject: "Trip Started",
-    message: `Trip ${payload.tripId} has started.`,
+    message: `${driverName} started the trip from ${route}.`,
   });
+
+  const notificationByUserId = new Map(notifications.map((item) => [String(item.userId), item]));
+  const pushRecipients = await getUsersWithPushPreference(recipientIds, "pushTrips");
+  await Promise.allSettled(
+    pushRecipients.map((user) => {
+      const notification = notificationByUserId.get(String(user.id));
+      if (!notification || !user.expoPushToken) return Promise.resolve();
+      return NotificationService.sendExpoPush(user.expoPushToken, notification);
+    })
+  );
 });
 
 eventBus.subscribe(FLEET_EVENTS.TRIP_COMPLETED, async ({ payload }) => {
+  const context = await getTripNotificationContext(payload.tripId);
+  if (!context) return;
+  const { driverName, route } = context;
   const recipientIds = await getManagerAndAdminIds();
   if (!recipientIds.length) return;
 
@@ -370,10 +551,10 @@ eventBus.subscribe(FLEET_EVENTS.TRIP_COMPLETED, async ({ payload }) => {
       userId,
       type: NOTIFICATION_TYPES.TRIP_COMPLETED,
       title: "Trip Completed",
-      message: `Trip ${payload.tripId} has been completed.`,
+      message: `${driverName} completed the trip from ${route}.`,
       entityId: payload.tripId,
       entityType: "trip",
-      metadata: { referenceId: payload.tripId, referenceType: "trip" },
+      metadata: { referenceId: payload.tripId, referenceType: "trip", driverName },
     }))
   );
 
@@ -382,13 +563,24 @@ eventBus.subscribe(FLEET_EVENTS.TRIP_COMPLETED, async ({ payload }) => {
   const emailRecipients = await getUsersWithEmailPreference(recipientIds, "emailTrips");
   await sendEmailToUsers(emailRecipients, {
     subject: "Trip Completed",
-    message: `Trip ${payload.tripId} has been completed.`,
+    message: `${driverName} completed the trip from ${route}.`,
   });
+
+  const notificationByUserId = new Map(notifications.map((item) => [String(item.userId), item]));
+  const pushRecipients = await getUsersWithPushPreference(recipientIds, "pushTrips");
+  await Promise.allSettled(
+    pushRecipients.map((user) => {
+      const notification = notificationByUserId.get(String(user.id));
+      if (!notification || !user.expoPushToken) return Promise.resolve();
+      return NotificationService.sendExpoPush(user.expoPushToken, notification);
+    })
+  );
 });
 
 eventBus.subscribe(FLEET_EVENTS.TRIP_CANCELLED, async ({ payload }) => {
-  const trip = await Trip.findByPk(payload.tripId);
-  if (!trip) return;
+  const context = await getTripNotificationContext(payload.tripId);
+  if (!context) return;
+  const { trip, driverName, route } = context;
 
   const managerIds = await getManagerAndAdminIds();
   const recipients = [...new Set([trip.userId, ...managerIds].filter(Boolean))];
@@ -400,10 +592,10 @@ eventBus.subscribe(FLEET_EVENTS.TRIP_CANCELLED, async ({ payload }) => {
       userId,
       type: NOTIFICATION_TYPES.TRIP_CANCELLED,
       title: "Trip Cancelled",
-      message: `Trip ${payload.tripId} has been cancelled.`,
+      message: `The trip from ${route} assigned to ${driverName} has been cancelled.`,
       entityId: payload.tripId,
       entityType: "trip",
-      metadata: { referenceId: payload.tripId, referenceType: "trip" },
+      metadata: { referenceId: payload.tripId, referenceType: "trip", driverName },
     }))
   );
 
@@ -412,8 +604,18 @@ eventBus.subscribe(FLEET_EVENTS.TRIP_CANCELLED, async ({ payload }) => {
   const emailRecipients = await getUsersWithEmailPreference(recipients, "emailTrips");
   await sendEmailToUsers(emailRecipients, {
     subject: "Trip Cancelled",
-    message: `Trip ${payload.tripId} has been cancelled.`,
+    message: `The trip from ${route} assigned to ${driverName} has been cancelled.`,
   });
+
+  const notificationByUserId = new Map(notifications.map((item) => [String(item.userId), item]));
+  const pushRecipients = await getUsersWithPushPreference(recipients, "pushTrips");
+  await Promise.allSettled(
+    pushRecipients.map((user) => {
+      const notification = notificationByUserId.get(String(user.id));
+      if (!notification || !user.expoPushToken) return Promise.resolve();
+      return NotificationService.sendExpoPush(user.expoPushToken, notification);
+    })
+  );
 });
 
 eventBus.subscribe(FLEET_EVENTS.DRIVER_ASSIGNED, async ({ payload }) => {
@@ -421,20 +623,24 @@ eventBus.subscribe(FLEET_EVENTS.DRIVER_ASSIGNED, async ({ payload }) => {
   const recipients = [...new Set([payload.driverId, ...managerIds].filter(Boolean))];
   if (!recipients.length) return;
 
-  const vehicleLabel =
-    payload?.vehicle?.plaque_immatriculation ?? payload?.vehicle?.name ?? payload?.vehicle?.id ?? "vehicle";
+  const driver = await getUserById(payload.driverId);
+  const driverName = userLabel(driver);
+  const vehicleDisplayName = vehicleLabel(payload?.vehicle);
 
   const notifications = await Notification.bulkCreate(
     recipients.map((userId) => ({
       userId,
       type: NOTIFICATION_TYPES.DRIVER_ASSIGNED,
       title: "Driver Assigned",
-      message: `A driver has been assigned to ${vehicleLabel}.`,
+      message: `${driverName} has been assigned to ${vehicleDisplayName}.`,
       entityId: payload?.tripId ?? payload?.vehicle?.id ?? null,
       entityType: payload?.tripId ? "trip" : "vehicle",
       metadata: {
         referenceId: payload?.tripId ?? payload?.vehicle?.id ?? null,
         referenceType: payload?.tripId ? "trip" : "vehicle",
+        driverName,
+        vehicleName: payload?.vehicle?.name ?? null,
+        vehiclePlate: payload?.vehicle?.plaque_immatriculation ?? null,
       },
     }))
   );
@@ -444,112 +650,187 @@ eventBus.subscribe(FLEET_EVENTS.DRIVER_ASSIGNED, async ({ payload }) => {
   const emailRecipients = await getUsersWithEmailPreference(recipients, "emailDrivers");
   await sendEmailToUsers(emailRecipients, {
     subject: "Driver Assignment Update",
-    message: `A driver has been assigned to ${vehicleLabel}.`,
+    message: `${driverName} has been assigned to ${vehicleDisplayName}.`,
   });
+
+  const notificationByUserId = new Map(notifications.map((item) => [String(item.userId), item]));
+  const pushRecipients = await getUsersWithPushPreference(recipients, "pushDrivers");
+  await Promise.allSettled(
+    pushRecipients.map((user) => {
+      const notification = notificationByUserId.get(String(user.id));
+      if (!notification || !user.expoPushToken) return Promise.resolve();
+      return NotificationService.sendExpoPush(user.expoPushToken, notification);
+    })
+  );
 });
 
 eventBus.on("maintenance:created", async ({ maintenance, vehicle }) => {
   const recipients = await getManagerAndAdminIds();
   if (!recipients.length) return;
 
+  const vehicleDisplayName = maintenanceVehicleLabel(maintenance, vehicle);
+  const scheduledDate = new Date(maintenance.scheduledDate).toLocaleDateString();
+
   const notifications = await Notification.bulkCreate(
     recipients.map((userId) => ({
       userId,
       type: NOTIFICATION_TYPES.MAINTENANCE_SCHEDULED,
       title: "Maintenance Scheduled",
-      message: `Vehicle ${vehicle?.plaque_immatriculation ?? maintenance?.vehiclePlate ?? maintenance?.vehicleId} has maintenance scheduled for ${new Date(maintenance.scheduledDate).toLocaleDateString()}.`,
+      message: `${vehicleDisplayName} has maintenance scheduled for ${scheduledDate}.`,
       entityId: maintenance.id,
       entityType: "maintenance",
-      metadata: { referenceId: maintenance.id, referenceType: "Maintenance" },
+      metadata: {
+        referenceId: maintenance.id,
+        referenceType: "Maintenance",
+        vehicleName: vehicle?.name ?? null,
+        vehiclePlate: vehicle?.plaque_immatriculation ?? maintenance?.vehiclePlate ?? null,
+      },
     }))
   );
 
   emitBulkSocketNotifications(notifications);
 
-  const vehicleLabel = vehicle?.plaque_immatriculation ?? maintenance?.vehiclePlate ?? maintenance?.vehicleId;
   const emailRecipients = await getUsersWithEmailPreference(recipients, "emailMaintenance");
   await sendEmailToUsers(emailRecipients, {
     subject: "Maintenance Scheduled",
-    message: `Vehicle ${vehicleLabel} has maintenance scheduled for ${new Date(maintenance.scheduledDate).toLocaleDateString()}.`,
+    message: `${vehicleDisplayName} has maintenance scheduled for ${scheduledDate}.`,
   });
+
+  const notificationByUserId = new Map(notifications.map((item) => [String(item.userId), item]));
+  const pushRecipients = await getUsersWithPushPreference(recipients, "pushMaintenance");
+  await Promise.allSettled(
+    pushRecipients.map((user) => {
+      const notification = notificationByUserId.get(String(user.id));
+      if (!notification || !user.expoPushToken) return Promise.resolve();
+      return NotificationService.sendExpoPush(user.expoPushToken, notification);
+    })
+  );
 });
 
 eventBus.on("maintenance:started", async ({ maintenance, vehicle }) => {
   const recipients = await getManagerAndAdminIds();
   if (!recipients.length) return;
 
+  const vehicleDisplayName = maintenanceVehicleLabel(maintenance, vehicle);
+
   const notifications = await Notification.bulkCreate(
     recipients.map((userId) => ({
       userId,
       type: NOTIFICATION_TYPES.MAINTENANCE_STARTED,
       title: "Maintenance In Progress",
-      message: `Maintenance has started on vehicle ${vehicle?.plaque_immatriculation ?? maintenance?.vehiclePlate ?? maintenance?.vehicleId}. Vehicle is temporarily unavailable.`,
+      message: `Maintenance has started on ${vehicleDisplayName}. The vehicle is temporarily unavailable.`,
       entityId: maintenance.id,
       entityType: "maintenance",
-      metadata: { referenceId: maintenance.id, referenceType: "Maintenance" },
+      metadata: {
+        referenceId: maintenance.id,
+        referenceType: "Maintenance",
+        vehicleName: vehicle?.name ?? null,
+        vehiclePlate: vehicle?.plaque_immatriculation ?? maintenance?.vehiclePlate ?? null,
+      },
     }))
   );
 
   emitBulkSocketNotifications(notifications);
 
-  const vehicleLabel = vehicle?.plaque_immatriculation ?? maintenance?.vehiclePlate ?? maintenance?.vehicleId;
   const emailRecipients = await getUsersWithEmailPreference(recipients, "emailMaintenance");
   await sendEmailToUsers(emailRecipients, {
     subject: "Maintenance In Progress",
-    message: `Maintenance has started on vehicle ${vehicleLabel}.`,
+    message: `Maintenance has started on ${vehicleDisplayName}.`,
   });
+
+  const notificationByUserId = new Map(notifications.map((item) => [String(item.userId), item]));
+  const pushRecipients = await getUsersWithPushPreference(recipients, "pushMaintenance");
+  await Promise.allSettled(
+    pushRecipients.map((user) => {
+      const notification = notificationByUserId.get(String(user.id));
+      if (!notification || !user.expoPushToken) return Promise.resolve();
+      return NotificationService.sendExpoPush(user.expoPushToken, notification);
+    })
+  );
 });
 
 eventBus.on("maintenance:completed", async ({ maintenance, vehicle }) => {
   const recipients = await getManagerAndAdminIds();
   if (!recipients.length) return;
 
+  const vehicleDisplayName = maintenanceVehicleLabel(maintenance, vehicle);
+
   const notifications = await Notification.bulkCreate(
     recipients.map((userId) => ({
       userId,
       type: NOTIFICATION_TYPES.MAINTENANCE_COMPLETED,
       title: "Maintenance Completed",
-      message: `Vehicle ${vehicle?.plaque_immatriculation ?? maintenance?.vehiclePlate ?? maintenance?.vehicleId} maintenance is complete and the vehicle is now available.`,
+      message: `${vehicleDisplayName} maintenance is complete and the vehicle is now available.`,
       entityId: maintenance.id,
       entityType: "maintenance",
-      metadata: { referenceId: maintenance.id, referenceType: "Maintenance" },
+      metadata: {
+        referenceId: maintenance.id,
+        referenceType: "Maintenance",
+        vehicleName: vehicle?.name ?? null,
+        vehiclePlate: vehicle?.plaque_immatriculation ?? maintenance?.vehiclePlate ?? null,
+      },
     }))
   );
 
   emitBulkSocketNotifications(notifications);
 
-  const vehicleLabel = vehicle?.plaque_immatriculation ?? maintenance?.vehiclePlate ?? maintenance?.vehicleId;
   const emailRecipients = await getUsersWithEmailPreference(recipients, "emailMaintenance");
   await sendEmailToUsers(emailRecipients, {
     subject: "Maintenance Completed",
-    message: `Maintenance for vehicle ${vehicleLabel} has been completed.`,
+    message: `Maintenance for ${vehicleDisplayName} has been completed.`,
   });
+
+  const notificationByUserId = new Map(notifications.map((item) => [String(item.userId), item]));
+  const pushRecipients = await getUsersWithPushPreference(recipients, "pushMaintenance");
+  await Promise.allSettled(
+    pushRecipients.map((user) => {
+      const notification = notificationByUserId.get(String(user.id));
+      if (!notification || !user.expoPushToken) return Promise.resolve();
+      return NotificationService.sendExpoPush(user.expoPushToken, notification);
+    })
+  );
 });
 
 eventBus.on("maintenance:cancelled", async ({ maintenance, vehicle }) => {
   const recipients = await getManagerAndAdminIds();
   if (!recipients.length) return;
 
+  const vehicleDisplayName = maintenanceVehicleLabel(maintenance, vehicle);
+
   const notifications = await Notification.bulkCreate(
     recipients.map((userId) => ({
       userId,
       type: NOTIFICATION_TYPES.MAINTENANCE_CANCELLED,
       title: "Maintenance Cancelled",
-      message: `Maintenance for vehicle ${vehicle?.plaque_immatriculation ?? maintenance?.vehiclePlate ?? maintenance?.vehicleId} has been cancelled.`,
+      message: `Maintenance for ${vehicleDisplayName} has been cancelled.`,
       entityId: maintenance.id,
       entityType: "maintenance",
-      metadata: { referenceId: maintenance.id, referenceType: "Maintenance" },
+      metadata: {
+        referenceId: maintenance.id,
+        referenceType: "Maintenance",
+        vehicleName: vehicle?.name ?? null,
+        vehiclePlate: vehicle?.plaque_immatriculation ?? maintenance?.vehiclePlate ?? null,
+      },
     }))
   );
 
   emitBulkSocketNotifications(notifications);
 
-  const vehicleLabel = vehicle?.plaque_immatriculation ?? maintenance?.vehiclePlate ?? maintenance?.vehicleId;
   const emailRecipients = await getUsersWithEmailPreference(recipients, "emailMaintenance");
   await sendEmailToUsers(emailRecipients, {
     subject: "Maintenance Cancelled",
-    message: `Maintenance for vehicle ${vehicleLabel} has been cancelled.`,
+    message: `Maintenance for ${vehicleDisplayName} has been cancelled.`,
   });
+
+  const notificationByUserId = new Map(notifications.map((item) => [String(item.userId), item]));
+  const pushRecipients = await getUsersWithPushPreference(recipients, "pushMaintenance");
+  await Promise.allSettled(
+    pushRecipients.map((user) => {
+      const notification = notificationByUserId.get(String(user.id));
+      if (!notification || !user.expoPushToken) return Promise.resolve();
+      return NotificationService.sendExpoPush(user.expoPushToken, notification);
+    })
+  );
 });
 
 const getSystemNotificationRecipients = async (recipientIds = []) => {
@@ -560,7 +841,7 @@ const getSystemNotificationRecipients = async (recipientIds = []) => {
       id: { [Op.in]: recipientIds },
       isActive: true,
     },
-    attributes: ["id", "name", "email", "role", "expoPushToken", "pushAlerts"],
+    attributes: ["id", "name", "email", "role", "expoPushToken", "pushAlerts", "pushSystem", "emailSystem"],
   });
 };
 
@@ -572,6 +853,105 @@ const buildSystemActionUrl = (payload) => {
     return `/driver-issues?reclamationId=${encodeURIComponent(String(reclamationId))}`;
   }
   return null;
+};
+
+const buildTripActionUrl = (tripId) =>
+  `/trips?status=ongoing&tripId=${encodeURIComponent(String(tripId))}`;
+
+const dispatchRouteDeviationNotifications = async ({ payload }) => {
+  if (!payload?.tripId) return;
+
+  const trip = await Trip.findByPk(payload.tripId, {
+    include: [
+      { model: User, as: "driver", attributes: ["id", "name", "email"] },
+      { model: Vehicle, as: "vehicle", attributes: ["id", "name", "plaque_immatriculation"] },
+    ],
+  });
+
+  if (!trip) return;
+
+  const existingRecentAlert = await Notification.findOne({
+    where: {
+      type: NOTIFICATION_TYPES.AI_ROUTE_DEVIATION,
+      entityType: "trip",
+      entityId: trip.id,
+      isArchived: false,
+      createdAt: {
+        [Op.gte]: new Date(Date.now() - ROUTE_DEVIATION_ALERT_THROTTLE_MS),
+      },
+    },
+    attributes: ["id"],
+  });
+
+  if (existingRecentAlert) return;
+
+  const recipients = await getAlertRecipients();
+  if (!recipients.length) return;
+
+  const driverName = trip.driver?.name || payload.driverName || "The driver";
+  const vehicleText = vehicleLabel(trip.vehicle, {
+    name: payload.vehicleName,
+    plate: payload.vehiclePlate,
+  });
+  const distanceText = formatDistance(payload.distanceMeters);
+  const routeText = `${trip.startLocation || payload.startLocation || "start"} to ${
+    trip.endLocation || payload.endLocation || "destination"
+  }`;
+  const recordedAtText = formatDateTime(payload.recordedAt);
+  const title = "Route deviation detected";
+  const message = `${driverName} is about ${distanceText} away from the planned route for ${vehicleText}.`;
+  const emailMessage = `${message} Trip route: ${routeText}. Last phone location was recorded at ${recordedAtText}. Open the active trip details to review the driver's live position.`;
+  const actionUrl = buildTripActionUrl(trip.id);
+
+  const notifications = await Notification.bulkCreate(
+    recipients.map((user) => ({
+      userId: user.id,
+      type: NOTIFICATION_TYPES.AI_ROUTE_DEVIATION,
+      title,
+      message,
+      entityType: "trip",
+      entityId: trip.id,
+      actionUrl,
+      group: "ai",
+      priority: "high",
+      metadata: {
+        tripId: trip.id,
+        driverId: trip.userId,
+        driverName,
+        vehicleId: trip.vehicleId,
+        vehicleName: trip.vehicle?.name || payload.vehicleName || null,
+        vehiclePlate: trip.vehicle?.plaque_immatriculation || payload.vehiclePlate || null,
+        startLocation: trip.startLocation || payload.startLocation || null,
+        endLocation: trip.endLocation || payload.endLocation || null,
+        latitude: payload.latitude,
+        longitude: payload.longitude,
+        accuracy: payload.accuracy,
+        speed: payload.speed,
+        heading: payload.heading,
+        recordedAt: payload.recordedAt,
+        distanceMeters: payload.distanceMeters,
+        thresholdMeters: payload.thresholdMeters,
+      },
+    }))
+  );
+
+  emitBulkSocketNotifications(notifications);
+
+  await sendEmailToUsers(recipients.filter((user) => user.email && user.emailAI !== false), {
+    subject: title,
+    message: emailMessage,
+  });
+
+  const notificationByUserId = new Map(notifications.map((item) => [String(item.userId), item]));
+  const pushRecipients = recipients.filter((user) => user.expoPushToken && user.pushAI !== false);
+
+  await Promise.allSettled(
+    pushRecipients.map((user) => {
+      const notification = notificationByUserId.get(String(user.id));
+      if (!notification || !user.expoPushToken) return Promise.resolve();
+      return NotificationService.sendExpoPush(user.expoPushToken, notification);
+    })
+  );
 };
 
 const dispatchSystemEventNotifications = async ({ payload, type }) => {
@@ -595,7 +975,7 @@ const dispatchSystemEventNotifications = async ({ payload, type }) => {
   emitBulkSocketNotifications(notifications);
 
   const targetAdminsManagers = recipients.filter(isAdminOrManager);
-  const emailRecipients = targetAdminsManagers.filter((user) => user.email);
+  const emailRecipients = targetAdminsManagers.filter((user) => user.email && user.emailSystem !== false);
 
   await sendEmailToUsers(emailRecipients, {
     subject: payload?.title || "System notification",
@@ -603,7 +983,7 @@ const dispatchSystemEventNotifications = async ({ payload, type }) => {
   });
 
   const notificationByUserId = new Map(notifications.map((item) => [String(item.userId), item]));
-  const pushRecipients = recipients.filter((user) => user.expoPushToken && user.pushAlerts !== false);
+  const pushRecipients = recipients.filter((user) => user.expoPushToken && user.pushSystem !== false);
 
   if (!pushRecipients.length) {
     console.warn("[NotificationHandlers] Push skipped: no recipients with Expo token.");
@@ -628,6 +1008,10 @@ eventBus.subscribe(FLEET_EVENTS.SYSTEM_ALERT, async ({ payload }) => {
     payload,
     type: NOTIFICATION_TYPES.SYSTEM_ALERT,
   });
+});
+
+eventBus.subscribe(FLEET_EVENTS.AI_ROUTE_DEVIATION, async ({ payload }) => {
+  await dispatchRouteDeviationNotifications({ payload });
 });
 
 eventBus.subscribe(FLEET_EVENTS.SYSTEM_UPDATE, async ({ payload }) => {

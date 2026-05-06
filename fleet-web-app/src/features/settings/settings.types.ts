@@ -17,8 +17,13 @@ export interface NotificationPreferences {
   emailTrips: boolean;
   emailMaintenance: boolean;
   emailDrivers: boolean;
+  emailAI: boolean;
+  emailSystem: boolean;
   pushTrips: boolean;
   pushMaintenance: boolean;
+  pushDrivers: boolean;
+  pushAI: boolean;
+  pushSystem: boolean;
   pushAlerts: boolean;
   smsAlerts: boolean;
 }

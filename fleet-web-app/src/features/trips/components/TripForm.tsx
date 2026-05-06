@@ -79,6 +79,7 @@ type RoutePlanStop = {
 
 type RoutePlan = {
   distanceKm: number;
+  durationSeconds: number | null;
   orderedStops: RoutePlanStop[];
   source: 'optimized' | 'fallback';
 };
@@ -219,6 +220,22 @@ const calculatePathDistanceKm = (points: MapPoint[]) => {
   return total;
 };
 
+const formatDuration = (seconds: number) => {
+  const safeSeconds = Math.max(0, Math.round(seconds));
+  const hours = Math.floor(safeSeconds / 3600);
+  const minutes = Math.round((safeSeconds % 3600) / 60);
+
+  if (hours > 0 && minutes > 0) return `${hours}h ${minutes}m`;
+  if (hours > 0) return `${hours}h`;
+  return `${minutes}m`;
+};
+
+const estimateFallbackDurationSeconds = (distanceKm: number) => {
+  if (!Number.isFinite(distanceKm) || distanceKm <= 0) return null;
+  const averageSpeedKmh = 45;
+  return Math.round((distanceKm / averageSpeedKmh) * 3600);
+};
+
 const squaredDistance = (a: MapPoint, b: MapPoint) => {
   const dLat = a.lat - b.lat;
   const dLng = a.lng - b.lng;
@@ -289,6 +306,13 @@ const TripForm = ({ vehicles, drivers, dark = false, isSubmitting = false, onSub
 
     return (distance * consumption) / 100;
   }, [values.distance, selectedVehicle?.consumption]);
+
+  const etaHelperText = useMemo(() => {
+    if (!values.startTime) return 'Set a start time to calculate ETA.';
+    if (!routePlan?.durationSeconds) return 'Complete the route points to calculate ETA from the map.';
+
+    return `Map route time ${formatDuration(routePlan.durationSeconds)} + 1h spare time.`;
+  }, [routePlan?.durationSeconds, values.startTime]);
 
   const buildVehicleLabel = (vehicle: Vehicle) => (
     vehicle.plaque_immatriculation ? `${vehicle.name} (${vehicle.plaque_immatriculation})` : vehicle.name
@@ -739,7 +763,7 @@ const TripForm = ({ vehicles, drivers, dark = false, isSubmitting = false, onSub
         const data = (await response.json()) as {
           code?: string;
           message?: string;
-          trips?: Array<{ distance: number }>;
+          trips?: Array<{ distance: number; duration?: number }>;
           waypoints?: OsrmWaypoint[];
         };
 
@@ -808,8 +832,12 @@ const TripForm = ({ vehicles, drivers, dark = false, isSubmitting = false, onSub
         }
 
         const distanceKm = data.trips[0].distance / 1000;
+        const durationSeconds = Number.isFinite(data.trips[0].duration)
+          ? Number(data.trips[0].duration)
+          : null;
         const nextPlan: RoutePlan = {
           distanceKm,
+          durationSeconds,
           orderedStops,
           source: 'optimized',
         };
@@ -834,6 +862,7 @@ const TripForm = ({ vehicles, drivers, dark = false, isSubmitting = false, onSub
 
         const fallbackPlan: RoutePlan = {
           distanceKm: fallbackDistance,
+          durationSeconds: estimateFallbackDurationSeconds(fallbackDistance),
           orderedStops: fallbackOrderedStops,
           source: 'fallback',
         };
@@ -939,6 +968,18 @@ const TripForm = ({ vehicles, drivers, dark = false, isSubmitting = false, onSub
     if (!values.region) nextErrors.region = t('trips.form.errors.regionRequired');
     if (!values.requiredCapacity || Number(values.requiredCapacity) <= 0) {
       nextErrors.requiredCapacity = t('trips.form.errors.capacityPositive');
+    }
+
+    if (values.startTime && values.endTime) {
+      const startDate = new Date(values.startTime);
+      const endDate = new Date(values.endTime);
+      if (
+        Number.isNaN(startDate.getTime()) ||
+        Number.isNaN(endDate.getTime()) ||
+        endDate <= startDate
+      ) {
+        nextErrors.endTime = 'ETA must be after the start time.';
+      }
     }
 
     const distanceValue = Number(values.distance);
@@ -1153,6 +1194,11 @@ const TripForm = ({ vehicles, drivers, dark = false, isSubmitting = false, onSub
                 })}
               </span>
             )}
+            {routePlan.durationSeconds && (
+              <span>
+                {' '}• ETA uses {formatDuration(routePlan.durationSeconds)} route time + 1h buffer
+              </span>
+            )}
           </div>
         )}
 
@@ -1175,8 +1221,11 @@ const TripForm = ({ vehicles, drivers, dark = false, isSubmitting = false, onSub
           label={t('trips.form.endDateTime')}
           type="datetime-local"
           value={values.endTime}
-          onChange={(e) => onFieldChange('endTime', e.target.value)}
+          readOnly
           error={errors.endTime}
+          helperText={etaHelperText}
+          placeholder="Calculated from route + 1h"
+          className="cursor-not-allowed"
         />
         <Input
           label={t('common.region')}

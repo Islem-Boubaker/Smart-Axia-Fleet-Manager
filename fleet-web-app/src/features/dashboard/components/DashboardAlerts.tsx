@@ -29,7 +29,7 @@ const DashboardAlerts = ({ alerts, onAlertClick }: DashboardAlertsProps) => {
   };
 
   return (
-    <div className="bg-white/90 dark:bg-gray-900/70 rounded-2xl border border-gray-200/70 dark:border-gray-700/60 shadow-sm p-5">
+    <div className="learning-card p-5">
       <div className="mb-3 flex items-center justify-between gap-3">
         <h2 className="text-sm font-medium text-gray-700 dark:text-gray-300">{t('dashboard.alerts.title')}</h2>
         <Badge variant={alerts.length > 0 ? 'error' : 'default'} size="sm">
