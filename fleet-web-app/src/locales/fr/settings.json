@@ -8,17 +8,46 @@
     },
     "profile": {
       "title": "Informations du profil",
+      "personal_info": "Informations personnelles",
       "subtitle": "Mettez à jour vos informations personnelles",
+      "default_user": "Utilisateur",
+      "profile_photo": "Photo de profil",
+      "photo_hint": "JPG, PNG ou GIF. Max 2 Mo.",
+      "upload_new": "Téléverser une nouvelle photo",
+      "full_name": "Nom complet",
+      "company": "Entreprise",
+      "role": "Rôle",
+      "save_changes": "Enregistrer les modifications",
+      "first_name": "Prénom",
+      "last_name": "Nom",
+      "email": "E-mail",
+      "phone": "Téléphone",
+      "bio": "Bio",
+      "save_failed": "Échec de la sauvegarde du profil. Veuillez réessayer.",
+      "back_to_overview": "Retour à l'aperçu",
       "uploadChange": "Téléverser / Modifier",
       "saveChanges": "Enregistrer les modifications",
       "changePasswordHint": "Changez le mot de passe dans l'onglet Sécurité."
     },
     "security": {
+      "title": "Sécurité",
+      "current_password": "Mot de passe actuel",
+      "current_password_placeholder": "Entrez le mot de passe actuel",
+      "new_password": "Nouveau mot de passe",
+      "new_password_placeholder": "Entrez le nouveau mot de passe",
+      "confirm_password": "Confirmer le nouveau mot de passe",
+      "confirm_password_placeholder": "Confirmez le nouveau mot de passe",
+      "change_button": "Changer le mot de passe",
       "currentPasswordPlaceholder": "Mot de passe actuel",
       "newPasswordPlaceholder": "Nouveau mot de passe",
       "confirmPasswordPlaceholder": "Confirmer le mot de passe",
       "submit": "Mettre à jour le mot de passe",
-      "title": "Sécurité"
+      "errors": {
+        "fill_all_fields": "Veuillez remplir tous les champs.",
+        "min_length": "Le nouveau mot de passe doit contenir au moins 6 caractères.",
+        "mismatch": "Les mots de passe ne correspondent pas.",
+        "unavailable": "Le changement de mot de passe est temporairement indisponible."
+      }
     },
     "notifications": {
       "email": "E-mail",

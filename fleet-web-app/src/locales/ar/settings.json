@@ -8,17 +8,46 @@
     },
     "profile": {
       "title": "معلومات الملف الشخصي",
+      "personal_info": "المعلومات الشخصية",
       "subtitle": "حدّث معلوماتك الشخصية",
+      "default_user": "مستخدم",
+      "profile_photo": "صورة الملف الشخصي",
+      "photo_hint": "JPG أو PNG أو GIF. الحد الأقصى 2 ميغابايت.",
+      "upload_new": "رفع صورة جديدة",
+      "full_name": "الاسم الكامل",
+      "company": "الشركة",
+      "role": "الدور",
+      "save_changes": "حفظ التغييرات",
+      "first_name": "الاسم الأول",
+      "last_name": "اسم العائلة",
+      "email": "البريد الإلكتروني",
+      "phone": "الهاتف",
+      "bio": "نبذة",
+      "save_failed": "فشل حفظ الملف الشخصي. حاول مجدداً.",
+      "back_to_overview": "العودة إلى النظرة العامة",
       "uploadChange": "رفع / تغيير",
       "saveChanges": "حفظ التغييرات",
       "changePasswordHint": "غيّر كلمة المرور من تبويب الأمان."
     },
     "security": {
+      "title": "الأمان",
+      "current_password": "كلمة المرور الحالية",
+      "current_password_placeholder": "أدخل كلمة المرور الحالية",
+      "new_password": "كلمة المرور الجديدة",
+      "new_password_placeholder": "أدخل كلمة المرور الجديدة",
+      "confirm_password": "تأكيد كلمة المرور الجديدة",
+      "confirm_password_placeholder": "أكّد كلمة المرور الجديدة",
+      "change_button": "تغيير كلمة المرور",
       "currentPasswordPlaceholder": "كلمة المرور الحالية",
       "newPasswordPlaceholder": "كلمة المرور الجديدة",
       "confirmPasswordPlaceholder": "تأكيد كلمة المرور",
       "submit": "تحديث كلمة المرور",
-      "title": "الأمان"
+      "errors": {
+        "fill_all_fields": "يرجى ملء جميع الحقول.",
+        "min_length": "يجب أن تحتوي كلمة المرور الجديدة على 6 أحرف على الأقل.",
+        "mismatch": "كلمتا المرور غير متطابقتين.",
+        "unavailable": "تغيير كلمة المرور غير متاح حالياً."
+      }
     },
     "notifications": {
       "email": "البريد",

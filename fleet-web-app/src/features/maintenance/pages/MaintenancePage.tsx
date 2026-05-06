@@ -76,44 +76,6 @@ const MaintenancePage = () => {
     return message || fallback || t('maintenance.errors.scheduleFailed');
   }, [t]);
 
-  const prefilledMaintenance = useMemo(() => {
-    if (searchParams.get('schedule') !== '1') return undefined;
-
-    return {
-      vehicleId: searchParams.get('vehicleId') || '',
-      reclamationId: searchParams.get('reclamationId') || '',
-      vehiclePlate: searchParams.get('vehiclePlate') || '',
-      type: searchParams.get('type') || 'General Inspection',
-      scheduledDate: '',
-      technician: searchParams.get('technician') || 'Pending assignment',
-      priority: searchParams.get('priority') || 'high',
-      status: 'scheduled',
-      cost: searchParams.get('cost') || '0',
-      mileage: searchParams.get('mileage') || '',
-      description: searchParams.get('description') || '',
-    };
-  }, [searchParams]);
-
-  const clearPrefillParams = useCallback(() => {
-    if (searchParams.get('source') !== 'reclamation' && searchParams.get('schedule') !== '1') return;
-    setSearchParams(new URLSearchParams(), { replace: true });
-  }, [searchParams, setSearchParams]);
-
-  useEffect(() => {
-    if (prefilledMaintenance) {
-      setSubmitError(null);
-      setIsScheduleModalOpen(true);
-    }
-  }, [prefilledMaintenance]);
-
-  const normalizeMaintenanceErrorMessage = useCallback((message?: string | null, fallback?: string) => {
-    const normalized = String(message || '').trim().toLowerCase();
-    if (normalized.includes('only available vehicles can be scheduled for maintenance')) {
-      return fallback || 'Failed to schedule maintenance.';
-    }
-    return message || fallback || 'Failed to schedule maintenance.';
-  }, []);
-
   const handleScheduleMaintenance = useCallback(async (data: Record<string, unknown>) => {
     try {
       setSubmitError(null);

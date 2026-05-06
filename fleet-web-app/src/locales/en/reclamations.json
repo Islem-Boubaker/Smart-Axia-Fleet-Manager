@@ -1,17 +1,37 @@
 {
   "reclamations": {
     "title": "Driver issues",
+    "section_label": "Driver Issues",
     "subtitle": "Review and resolve driver-submitted vehicle issues.",
     "filters": {
-      "searchPlaceholder": "Quick search: subject, message, driver, vehicle"
+      "searchPlaceholder": "Quick search: subject, message, driver, vehicle",
+      "search_placeholder": "Quick search: subject, message, driver, vehicle",
+      "search_label": "Search",
+      "all": "All",
+      "driver_label": "Driver",
+      "vehicle_label": "Vehicle",
+      "all_drivers": "All drivers",
+      "all_vehicles": "All vehicles"
     },
     "table": {
       "empty": "No issues match your filters.",
-      "loading": "Loading issues..."
+      "loading": "Loading issues...",
+      "subject": "Subject",
+      "driver": "Driver",
+      "vehicle": "Vehicle",
+      "status": "Status",
+      "submitted": "Submitted",
+      "actions": "Actions",
+      "aria": "Driver issues table"
     },
     "details": {
       "title": "Issue details",
-      "close": "Close"
+      "close": "Close",
+      "issue_description": "Issue description",
+      "attachments": "Attachments",
+      "files": "{{count}} file(s)",
+      "attachment_alt": "Attachment {{index}}",
+      "open_preview": "Open preview"
     }
   }
 }

@@ -1,10 +1,23 @@
 {
   "vehicles": {
     "title": "المركبات",
+    "subtitle": "إدارة المركبات والتعيينات وإشارات الصيانة.",
     "description": "إدارة المركبات والتعيينات وإشارات الصيانة.",
     "addNew": "إضافة مركبة",
+    "add_button": "إضافة مركبة",
     "edit": "تعديل المركبة",
     "searchPlaceholder": "ابحث بالاسم أو المعرف...",
+    "search_placeholder": "ابحث بالاسم أو المعرف...",
+    "filter_type": "النوع: {{value}}",
+    "filter_status": "الحالة: {{value}}",
+    "types": {
+      "all": "الكل",
+      "car": "سيارة",
+      "suv": "دفع رباعي",
+      "truck": "شاحنة",
+      "motorcycle": "دراجة نارية",
+      "van": "حافلة صغيرة"
+    },
     "status": {
       "available": "متاح",
       "inUse": "قيد الاستخدام",
@@ -25,6 +38,12 @@
       "colLastTrip": "آخر رحلة",
       "colMaintenance": "توصية الصيانة",
       "colActions": "إجراءات",
+      "vehicle": "المركبة",
+      "status": "الحالة",
+      "driver": "السائق",
+      "last_trip": "آخر رحلة",
+      "maintenance_recommendation": "توصية الصيانة",
+      "actions": "إجراءات",
       "noImage": "لا صورة",
       "noRecommendations": "لا توصيات",
       "showMore": "عرض {{n}} إضافية",
@@ -37,12 +56,29 @@
       "deleteVehicle": "حذف المركبة",
       "dataTableAria": "جدول المركبات"
     },
+    "toast": {
+      "creating": "جاري إنشاء المركبة...",
+      "createSuccess": "تم إنشاء المركبة بنجاح.",
+      "updating": "جاري تحديث المركبة...",
+      "updateSuccess": "تم تحديث المركبة بنجاح.",
+      "deleting": "جاري حذف المركبة...",
+      "deleteSuccess": "تم حذف المركبة بنجاح.",
+      "deleteConfirm": "هل أنت متأكد من حذف هذه المركبة؟"
+    },
     "details": {
       "title": "تفاصيل المركبة",
       "loading": "جاري التحميل...",
       "closeAria": "إغلاق التفاصيل",
       "editAria": "تعديل هذه المركبة",
       "vehicleId": "معرف المركبة",
+      "assignmentTitle": "التعيين الحالي",
+      "noAssignment": "لا تعيين نشط.",
+      "maintenanceHistoryTitle": "سجل الصيانة",
+      "noMaintenance": "لا سجلات صيانة.",
+      "maintenanceLine": "{{date}} · {{status}} · {{priority}}",
+      "costLine": "التكلفة: {{cost}} {{currency}}",
+      "generating": "جاري الإنشاء…",
+      "regenerate": "إعادة الإنشاء",
       "assignmentDriver": "السائق:",
       "assignmentRoute": "المسار:",
       "assignmentStatus": "الحالة:",
@@ -54,7 +90,16 @@
       "submitCreate": "إنشاء المركبة",
       "submitUpdate": "تحديث المركبة",
       "activeLabel": "المركبة نشطة",
-      "needsMaintenanceLabel": "تحتاج صيانة"
+      "needsMaintenanceLabel": "تحتاج صيانة",
+      "newTitle": "مركبة جديدة",
+      "operationalStatus": "الحالة التشغيلية",
+      "tireCondition": "حالة الإطارات",
+      "conditionNew": "جديد",
+      "conditionGood": "جيد",
+      "conditionWornOut": "مهترئ",
+      "brakeCondition": "حالة الفرامل",
+      "batteryStatus": "حالة البطارية",
+      "conditionWeak": "ضعيف"
     }
   }
 }

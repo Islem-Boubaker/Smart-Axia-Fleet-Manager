@@ -27,6 +27,13 @@
       "open": "Ouvrir",
       "openTitle": "Ouvrir le rapport dans un nouvel onglet",
       "notConfigured": "Tableau n'est pas encore configure"
+    },
+    "embed": {
+      "open": "Ouvrir",
+      "openInNewTab": "Ouvrir dans un nouvel onglet",
+      "refreshReport": "Actualiser le rapport",
+      "notConfigured": "Rapport non configuré. Définissez VITE_TABLEAU_REPORT_URL pour intégrer un rapport.",
+      "configExample": "ex. https://public.tableau.com/views/..."
     }
   }
 }

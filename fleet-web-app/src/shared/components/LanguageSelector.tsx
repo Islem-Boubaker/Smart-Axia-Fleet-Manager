@@ -12,31 +12,63 @@ export const LanguageSelector = memo(({ dark = false }: { dark?: boolean }) => {
 
   const languages = useMemo(
     () => [
-      { code: 'en', label: 'English', shortLabel: 'EN', dir: 'ltr' as const },
+      { code: 'en', label: 'English',  shortLabel: 'EN', dir: 'ltr' as const },
       { code: 'fr', label: 'Français', shortLabel: 'FR', dir: 'ltr' as const },
-      { code: 'ar', label: 'العربية', shortLabel: 'AR', dir: 'rtl' as const },
+      { code: 'ar', label: 'العربية',  shortLabel: 'AR', dir: 'rtl' as const },
     ],
     [],
   );
 
   const value = normalizeLang(i18n.language);
 
+  // ── Responsive dropdown position ─────────────────────────────────────────
+  // We calculate once the dropdown opens whether it would overflow the right
+  // edge of the viewport and switch to left-aligned if so.
+  const [dropdownStyle, setDropdownStyle] = useState<React.CSSProperties>({});
+
   useEffect(() => {
-    const handleOutsideClick = (event: MouseEvent) => {
-      if (!containerRef.current?.contains(event.target as Node)) {
-        setOpen(false);
-      }
-    };
+    if (!open || !containerRef.current) return;
 
-    const handleEscape = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') {
-        setOpen(false);
-      }
-    };
+    const DROPDOWN_WIDTH = 190;
+    const MARGIN = 8; // min gap from viewport edge
+    const rect = containerRef.current.getBoundingClientRect();
+    const vw = window.innerWidth;
 
+    let style: React.CSSProperties = {};
+
+    if (isRtl) {
+      // RTL: prefer opening to the right; flip left if it overflows
+      const wouldOverflowLeft = rect.left - DROPDOWN_WIDTH < MARGIN;
+      style = wouldOverflowLeft
+        ? { left: 0, right: 'auto' }
+        : { right: 'auto', left: `${rect.left - DROPDOWN_WIDTH}px` };
+    } else {
+      // LTR: prefer opening to the left (right-aligned); flip right if overflow
+      const wouldOverflowLeft = rect.right - DROPDOWN_WIDTH < MARGIN;
+      if (wouldOverflowLeft) {
+        style = { left: 0, right: 'auto' };
+      } else {
+        // Also guard against right-edge overflow (very narrow screens)
+        const wouldOverflowRight = rect.right + DROPDOWN_WIDTH > vw - MARGIN;
+        style = wouldOverflowRight
+          ? { left: '50%', transform: 'translateX(-50%)', right: 'auto' }
+          : { right: 0, left: 'auto' };
+      }
+    }
+
+    setDropdownStyle(style);
+  }, [open, isRtl]);
+
+  // ── Outside-click + Escape ────────────────────────────────────────────────
+  useEffect(() => {
+    const handleOutsideClick = (e: MouseEvent) => {
+      if (!containerRef.current?.contains(e.target as Node)) setOpen(false);
+    };
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setOpen(false);
+    };
     document.addEventListener('mousedown', handleOutsideClick);
     document.addEventListener('keydown', handleEscape);
-
     return () => {
       document.removeEventListener('mousedown', handleOutsideClick);
       document.removeEventListener('keydown', handleEscape);
@@ -53,6 +85,7 @@ export const LanguageSelector = memo(({ dark = false }: { dark?: boolean }) => {
 
   return (
     <div className="relative" ref={containerRef}>
+      {/* Trigger button */}
       <button
         type="button"
         aria-label={t('header.language')}
@@ -69,25 +102,35 @@ export const LanguageSelector = memo(({ dark = false }: { dark?: boolean }) => {
         <FiGlobe className="h-4.5 w-4.5" />
       </button>
 
-      {open ? (
+      {/* Dropdown */}
+      {open && (
         <div
           role="menu"
-          className={`absolute ${isRtl ? 'left-0' : 'right-0'} top-[calc(100%+0.5rem)] z-[140] min-w-[190px] overflow-hidden rounded-2xl border shadow-2xl ${
-            dark
-              ? 'border-slate-600 bg-[#0b1625] text-slate-50 ring-1 ring-slate-500/35'
-              : 'border-slate-200 bg-white text-slate-900'
-          }`}
-          style={dark ? { backgroundColor: '#0b1625', opacity: 1 } : undefined}
+          style={dropdownStyle}
+          className={`
+            absolute top-[calc(100%+0.5rem)] z-[140]
+            w-[190px] max-w-[calc(100vw-16px)]
+            overflow-hidden rounded-2xl border shadow-2xl
+            ${
+              dark
+                ? 'border-slate-600 bg-[#0b1625] text-slate-50 ring-1 ring-slate-500/35'
+                : 'border-slate-200 bg-white text-slate-900'
+            }
+          `}
         >
-          <div className={`px-3 py-2 text-[11px] font-bold uppercase tracking-[0.14em] ${
-            dark ? 'text-slate-300' : 'text-slate-500'
-          }`}>
+          {/* Header */}
+          <div
+            className={`px-3 py-2 text-[11px] font-bold uppercase tracking-[0.14em] ${
+              dark ? 'text-slate-300' : 'text-slate-500'
+            }`}
+          >
             {t('header.language')}
           </div>
+
+          {/* Options */}
           <div className={`border-t p-1.5 ${dark ? 'border-slate-600' : 'border-slate-200'}`}>
             {languages.map((lang) => {
               const isActive = lang.code === value;
-
               return (
                 <button
                   key={lang.code}
@@ -106,20 +149,24 @@ export const LanguageSelector = memo(({ dark = false }: { dark?: boolean }) => {
                   }`}
                 >
                   <span className="flex items-center gap-2">
-                    <span className={`inline-flex h-6 w-6 items-center justify-center rounded-full text-[10px] font-bold ${
-                      dark ? 'bg-slate-800 text-slate-100 ring-1 ring-slate-700' : 'bg-slate-100 text-slate-600'
-                    }`}>
+                    <span
+                      className={`inline-flex h-6 w-6 items-center justify-center rounded-full text-[10px] font-bold ${
+                        dark
+                          ? 'bg-slate-800 text-slate-100 ring-1 ring-slate-700'
+                          : 'bg-slate-100 text-slate-600'
+                      }`}
+                    >
                       {lang.shortLabel}
                     </span>
                     <span>{lang.label}</span>
                   </span>
-                  {isActive ? <FiCheck className="h-4 w-4" /> : null}
+                  {isActive && <FiCheck className="h-4 w-4 shrink-0" />}
                 </button>
               );
             })}
           </div>
         </div>
-      ) : null}
+      )}
     </div>
   );
 });

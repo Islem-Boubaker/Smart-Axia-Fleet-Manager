@@ -27,6 +27,13 @@
       "open": "فتح",
       "openTitle": "فتح التقرير في تبويب جديد",
       "notConfigured": "لم يتم إعداد Tableau بعد"
+    },
+    "embed": {
+      "open": "فتح",
+      "openInNewTab": "فتح في تبويب جديد",
+      "refreshReport": "تحديث التقرير",
+      "notConfigured": "التقرير غير مُعدّ. عيّن VITE_TABLEAU_REPORT_URL لتضمين تقرير.",
+      "configExample": "مثال: https://public.tableau.com/views/..."
     }
   }
 }

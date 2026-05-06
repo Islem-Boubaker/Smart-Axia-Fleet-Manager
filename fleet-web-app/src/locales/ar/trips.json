@@ -1,5 +1,9 @@
 {
   "trips": {
+    "section_label": "العمليات",
+    "title": "الرحلات",
+    "search_placeholder": "ابحث عن سائقين ومركبات ومدن…",
+    "all_statuses": "كل الحالات",
     "header": {
       "operations": "العمليات",
       "myTrips": "رحلاتي",
@@ -14,6 +18,17 @@
       "ongoing": "جاري",
       "completed": "مكتمل",
       "cancelled": "ملغى"
+    },
+    "table": {
+      "route": "المسار",
+      "driver": "السائق",
+      "vehicle": "المركبة",
+      "distance": "المسافة",
+      "start": "الانطلاق",
+      "status": "الحالة",
+      "actions": "إجراءات",
+      "empty": "لا رحلات.",
+      "aria": "جدول الرحلات"
     },
     "form": {
       "selectVehicle": "اختر مركبة",
@@ -56,6 +71,15 @@
       "vehicleLabel": "المركبة",
       "driverLabel": "السائق",
       "createTrip": "إنشاء الرحلة",
+      "etaLabel": "وقت الوصول المتوقع (ETA)",
+      "etaPlaceholder": "يُحسب من المسار",
+      "etaHelper": "ETA: {{duration}} من الانطلاق",
+      "startTimeForEta": "حدد وقت الانطلاق لحساب وقت الوصول.",
+      "completeRouteForEta": "أكمل المسار لحساب وقت الوصول.",
+      "estimatedFuel": "الوقود التقديري",
+      "estimatedFuelFromConsumption": "~{{liters}} ل (حسب الاستهلاك)",
+      "estimatedFuelHint": "حدد معدل استهلاك الوقود للمركبة لتقدير الوقود.",
+      "recMapErrorStartLocation": "حدد موقع الانطلاق أولاً.",
       "errors": {
         "vehicleRequired": "المركبة مطلوبة.",
         "driverRequired": "السائق مطلوب.",
@@ -63,6 +87,8 @@
         "destinationRequired": "الوجهة مطلوبة.",
         "startTimeRequired": "وقت الانطلاق مطلوب.",
         "endTimeRequired": "وقت الانتهاء مطلوب.",
+        "etaRequired": "وقت الوصول المتوقع مطلوب.",
+        "etaAfterStart": "يجب أن يكون وقت الوصول بعد وقت الانطلاق.",
         "regionRequired": "المنطقة مطلوبة.",
         "capacityPositive": "يجب أن تكون السعة أكبر من 0.",
         "distancePositive": "يجب أن تكون المسافة رقماً موجباً.",
@@ -117,6 +143,59 @@
       "ongoing": "جاري",
       "completed": "مكتمل",
       "cancelled": "ملغى"
+    },
+    "loading": "جاري تحميل الرحلات…",
+    "modals": {
+      "editTitle": "تعديل الرحلة",
+      "detailsTitle": "تفاصيل الرحلة"
+    },
+    "edit": {
+      "fuelLabel": "الوقود (ل)",
+      "stopsTitle": "المحطات",
+      "stopsHint": "رتّب المحطات أو حدّث أوقات الوصول التقديرية.",
+      "noStops": "لا محطات مضافة.",
+      "stopNumber": "محطة {{n}}",
+      "moveUp": "تحريك للأعلى",
+      "moveDown": "تحريك للأسفل",
+      "stopName": "اسم / عنوان المحطة",
+      "estimatedArrival": "الوصول التقديري",
+      "stopNotesLabel": "ملاحظات المحطة",
+      "stopNotesPlaceholder": "تعليمات لهذه المحطة…",
+      "stopNameLength": "يجب أن يكون اسم المحطة حرفين على الأقل."
+    },
+    "details": {
+      "stopsCount": "{{count}} محطة",
+      "noStops": "لا محطات لهذه الرحلة.",
+      "routeMap": "خريطة المسار",
+      "resolvingMarkers": "جاري تحديد علامات الخريطة…",
+      "mapUnavailable": "الخريطة غير متاحة.",
+      "calculatingRoute": "جاري حساب المسار…",
+      "routeFallback": "تعذّر رسم المسار.",
+      "live": {
+        "unknownTime": "غير معروف",
+        "justNow": "الآن",
+        "secondsAgo": "منذ {{count}} ث",
+        "minutesAgo": "منذ {{count}} د",
+        "hoursAgo": "منذ {{count}} س",
+        "accuracy": "±{{count}} م",
+        "signalOld": "إشارة قديمة",
+        "updated": "محدّث {{when}}",
+        "waiting": "في انتظار الموقع…",
+        "notReceived": "لم يُستلم موقع.",
+        "driverLocation": "موقع السائق"
+      }
+    },
+    "stopStatus": {
+      "pending": "قيد الانتظار",
+      "reached": "وصل",
+      "skipped": "تُخطّى"
+    },
+    "errors": {
+      "createFailed": "فشل إنشاء الرحلة.",
+      "endAfterStart": "يجب أن يكون وقت الانتهاء بعد وقت البدء.",
+      "fuelInvalid": "يجب أن يكون الوقود رقماً صالحاً غير سالب.",
+      "recStartRegion": "حدد موقع الانطلاق والمنطقة قبل طلب التوصيات.",
+      "recFailed": "تعذّر جلب التوصيات."
     }
   }
 }

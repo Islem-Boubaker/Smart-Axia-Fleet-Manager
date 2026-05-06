@@ -2,10 +2,8 @@ import { memo, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { FiMenu, FiMoon, FiSun } from 'react-icons/fi';
 import { useAppSelector } from '../../../hooks';
-import { HeaderNotifications } from './HeaderNotifications';
 import UserMenu from '../../ui/UserMenu';
 import { LanguageSelector } from '../../LanguageSelector';
-import UserMenu from '../../ui/UserMenu';
 import { HeaderNotifications } from './HeaderNotifications';
 
 export interface AppTopBarProps {

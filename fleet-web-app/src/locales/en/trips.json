@@ -1,5 +1,9 @@
 {
   "trips": {
+    "section_label": "Operations",
+    "title": "Trips",
+    "search_placeholder": "Search drivers, vehicles, cities…",
+    "all_statuses": "All statuses",
     "header": {
       "operations": "Operations",
       "myTrips": "My trips",
@@ -14,6 +18,17 @@
       "ongoing": "Ongoing",
       "completed": "Completed",
       "cancelled": "Cancelled"
+    },
+    "table": {
+      "route": "Route",
+      "driver": "Driver",
+      "vehicle": "Vehicle",
+      "distance": "Distance",
+      "start": "Start",
+      "status": "Status",
+      "actions": "Actions",
+      "empty": "No trips found.",
+      "aria": "Trips table"
     },
     "form": {
       "selectVehicle": "Select a vehicle",
@@ -56,6 +71,15 @@
       "vehicleLabel": "Vehicle",
       "driverLabel": "Driver",
       "createTrip": "Create trip",
+      "etaLabel": "Estimated arrival (ETA)",
+      "etaPlaceholder": "Calculated from route",
+      "etaHelper": "ETA: {{duration}} from start",
+      "startTimeForEta": "Set a start time to calculate ETA.",
+      "completeRouteForEta": "Complete the route to calculate ETA.",
+      "estimatedFuel": "Estimated fuel",
+      "estimatedFuelFromConsumption": "~{{liters}} L (based on consumption)",
+      "estimatedFuelHint": "Set consumption rate on vehicle to estimate fuel.",
+      "recMapErrorStartLocation": "Please set a start location first.",
       "errors": {
         "vehicleRequired": "Vehicle is required.",
         "driverRequired": "Driver is required.",
@@ -63,6 +87,8 @@
         "destinationRequired": "Destination is required.",
         "startTimeRequired": "Start time is required.",
         "endTimeRequired": "End time is required.",
+        "etaRequired": "Estimated arrival time is required.",
+        "etaAfterStart": "Arrival time must be after start time.",
         "regionRequired": "Region is required.",
         "capacityPositive": "Capacity must be greater than 0.",
         "distancePositive": "Distance must be a positive number.",
@@ -117,6 +143,59 @@
       "ongoing": "ongoing",
       "completed": "completed",
       "cancelled": "cancelled"
+    },
+    "loading": "Loading trips…",
+    "modals": {
+      "editTitle": "Edit trip",
+      "detailsTitle": "Trip details"
+    },
+    "edit": {
+      "fuelLabel": "Fuel (L)",
+      "stopsTitle": "Stops",
+      "stopsHint": "Reorder stops or update estimated arrival times.",
+      "noStops": "No stops added.",
+      "stopNumber": "Stop {{n}}",
+      "moveUp": "Move up",
+      "moveDown": "Move down",
+      "stopName": "Stop name / address",
+      "estimatedArrival": "Estimated arrival",
+      "stopNotesLabel": "Stop notes",
+      "stopNotesPlaceholder": "Instructions for this stop…",
+      "stopNameLength": "Stop name must be at least 2 characters."
+    },
+    "details": {
+      "stopsCount": "{{count}} stop(s)",
+      "noStops": "No stops for this trip.",
+      "routeMap": "Route map",
+      "resolvingMarkers": "Resolving map markers…",
+      "mapUnavailable": "Map unavailable.",
+      "calculatingRoute": "Calculating route…",
+      "routeFallback": "Route could not be drawn.",
+      "live": {
+        "unknownTime": "Unknown",
+        "justNow": "Just now",
+        "secondsAgo": "{{count}}s ago",
+        "minutesAgo": "{{count}}m ago",
+        "hoursAgo": "{{count}}h ago",
+        "accuracy": "±{{count}} m",
+        "signalOld": "Signal old",
+        "updated": "Updated {{when}}",
+        "waiting": "Waiting for location…",
+        "notReceived": "No location received.",
+        "driverLocation": "Driver location"
+      }
+    },
+    "stopStatus": {
+      "pending": "Pending",
+      "reached": "Reached",
+      "skipped": "Skipped"
+    },
+    "errors": {
+      "createFailed": "Failed to create trip.",
+      "endAfterStart": "End time must be after start time.",
+      "fuelInvalid": "Fuel must be a valid non-negative number.",
+      "recStartRegion": "Please set a start location and region before requesting recommendations.",
+      "recFailed": "Failed to fetch recommendations."
     }
   }
 }

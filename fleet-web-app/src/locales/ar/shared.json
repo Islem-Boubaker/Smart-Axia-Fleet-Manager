@@ -7,7 +7,7 @@
     "notifications": {
       "title": "الإشعارات",
       "unread": "{{count}} غير مقروء",
-      "markAllAsRead": "تعليم الكل كمقروء",
+      "markAllRead": "تعليم الكل كمقروء",
       "closeAria": "إغلاق الإشعارات",
       "dialogAria": "الإشعارات",
       "allCaughtUp": "لا جديد",

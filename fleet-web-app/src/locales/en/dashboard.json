@@ -57,6 +57,14 @@
       "statusOngoing": "ongoing",
       "statusCancelled": "cancelled",
       "statusScheduled": "scheduled"
+    },
+    "podium": {
+      "title": "Top drivers",
+      "viewFull": "View full ranking",
+      "none": "No driver data for this period.",
+      "first": "1st",
+      "second": "2nd",
+      "third": "3rd"
     }
   }
 }

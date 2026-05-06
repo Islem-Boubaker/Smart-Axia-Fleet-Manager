@@ -1,20 +1,15 @@
 import http from "http";
 import app from "./app.js";
-import { closeRedis, sequelize } from "./config/connectdb.js";
+import { closeRedis, sequelize, initializeRedis } from "./config/connectdb.js";
 import "./models/index.js";
 import { closeIO, initSocket } from "./config/socket.js";
 import "./events/notification.handlers.js";
-import { connectDB, initializeRedis } from "./config/connectdb.js";
-
-
 
 const PORT = Number(process.env.PORT);
 const ENV = process.env.NODE_ENV || "development";
 const MAX_PORT_RETRIES = 10;
 
 // ─── Sequelize sync strategy ──────────────────────────────────────────────────
-// development  → alter (without drops) to avoid accidental column loss
-// production   → never sync    (use migrations only — never alter a live DB)
 const SYNC_OPTIONS = ENV === "development" ? { alter: { drop: false } } : null;
 
 const listenWithFallback = (server, startPort, maxAttempts = 10) =>
@@ -55,29 +50,35 @@ const listenWithFallback = (server, startPort, maxAttempts = 10) =>
 
 // ─── Boot ─────────────────────────────────────────────────────────────────────
 async function startServer() {
+  let server; // Track server for graceful shutdown
+
   try {
-    // 1. Verify DB connection
+    // 1. Initialize Redis FIRST (before any requests can come in)
+    await initializeRedis();
+    console.log("✅ Redis initialized");
+
+    // 2. Verify DB connection
     await sequelize.authenticate();
     console.log("✅ Supabase connected successfully!");
 
-    // 2. Sync models (dev only)
+    // 3. Sync models (dev only)
     if (SYNC_OPTIONS) {
       await sequelize.sync(SYNC_OPTIONS);
       console.log("✅ Models synced (development)");
     }
 
-    // 3. Wrap Express in a raw HTTP server so Socket.IO can share the port
-    const server = http.createServer(app);
+    // 4. Wrap Express in a raw HTTP server so Socket.IO can share the port
+    server = http.createServer(app);
 
-    // 4. Attach Socket.IO (JWT auth + user rooms — see config/socket.js)
+    // 5. Attach Socket.IO (JWT auth + user rooms — see config/socket.js)
     initSocket(server);
     console.log("✅ Socket.IO initialised");
 
-    // 5. Start listening
+    // 6. Start listening
     const activePort = await listenWithFallback(server, PORT);
     console.log(`✅ Server running on port ${activePort} [${ENV}]`);
 
-    // 6. Graceful shutdown ────────────────────────────────────────────────────
+    // 7. Graceful shutdown ────────────────────────────────────────────────────
     let isShuttingDown = false;
 
     const shutdown = async (signal) => {
@@ -129,6 +130,7 @@ async function startServer() {
 
   } catch (error) {
     console.error("❌ Unable to start server:", error.message);
+    if (server) server.close();
     process.exit(1);
   }
 }

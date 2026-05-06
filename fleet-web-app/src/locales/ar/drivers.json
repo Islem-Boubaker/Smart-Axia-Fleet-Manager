@@ -1,12 +1,37 @@
 {
   "drivers": {
     "title": "السائقون",
+    "section_label": "الأسطول",
+    "subtitle": "إدارة الملفات والرخص وتعيين المركبات.",
     "description": "إدارة الملفات والرخص وتعيين المركبات.",
     "addNew": "إضافة سائق",
     "edit": "تعديل السائق",
     "searchPlaceholder": "ابحث بالاسم أو البريد أو الرخصة…",
+    "search_placeholder": "ابحث بالاسم أو البريد أو الرخصة…",
     "addAria": "إضافة سائق",
     "addButton": "إضافة سائق",
+    "table": {
+      "loading": "جاري تحميل السائقين...",
+      "empty": "لا سائقون.",
+      "avatar": "الصورة",
+      "driver": "السائق",
+      "email": "البريد",
+      "phone": "الهاتف",
+      "status": "الحالة",
+      "assigned_vehicle": "المركبة المُعيَّنة",
+      "trips": "الرحلات",
+      "actions": "إجراءات",
+      "aria": "جدول السائقين",
+      "noLicense": "بلا رخصة"
+    },
+    "filters": {
+      "allStatuses": "جميع الحالات",
+      "allScores": "جميع النقاط",
+      "score90Plus": "90+",
+      "score80to89": "80–89",
+      "score70to79": "70–79",
+      "scoreBelow70": "أقل من 70"
+    },
     "form": {
       "submitCreate": "إنشاء السائق",
       "submitUpdate": "تحديث السائق",
@@ -18,6 +43,18 @@
       "vehicle": "المركبة",
       "rating": "التقييم",
       "since": "منذ"
+    },
+    "toast": {
+      "creating": "جاري إنشاء السائق...",
+      "createSuccess": "تم إنشاء السائق بنجاح.",
+      "createError": "فشل إنشاء السائق.",
+      "updating": "جاري تحديث السائق...",
+      "updateSuccess": "تم تحديث السائق بنجاح.",
+      "updateError": "فشل تحديث السائق.",
+      "deleting": "جاري حذف السائق...",
+      "deleteSuccess": "تم حذف السائق بنجاح.",
+      "deleteError": "فشل حذف السائق.",
+      "deleteConfirm": "هل أنت متأكد من حذف هذا السائق؟"
     }
   }
 }

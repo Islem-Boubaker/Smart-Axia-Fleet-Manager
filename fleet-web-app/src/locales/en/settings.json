@@ -8,17 +8,46 @@
     },
     "profile": {
       "title": "Profile information",
+      "personal_info": "Personal information",
       "subtitle": "Update your personal information",
+      "default_user": "User",
+      "profile_photo": "Profile photo",
+      "photo_hint": "JPG, PNG or GIF. Max 2 MB.",
+      "upload_new": "Upload new photo",
+      "full_name": "Full name",
+      "company": "Company",
+      "role": "Role",
+      "save_changes": "Save changes",
+      "first_name": "First name",
+      "last_name": "Last name",
+      "email": "Email",
+      "phone": "Phone",
+      "bio": "Bio",
+      "save_failed": "Failed to save profile. Please try again.",
+      "back_to_overview": "Back to overview",
       "uploadChange": "Upload / Change",
       "saveChanges": "Save changes",
       "changePasswordHint": "Change password in the Security tab."
     },
     "security": {
+      "title": "Security",
+      "current_password": "Current password",
+      "current_password_placeholder": "Enter current password",
+      "new_password": "New password",
+      "new_password_placeholder": "Enter new password",
+      "confirm_password": "Confirm new password",
+      "confirm_password_placeholder": "Confirm new password",
+      "change_button": "Change password",
       "currentPasswordPlaceholder": "Enter current password",
       "newPasswordPlaceholder": "Enter new password",
       "confirmPasswordPlaceholder": "Confirm new password",
       "submit": "Update password",
-      "title": "Security"
+      "errors": {
+        "fill_all_fields": "Please fill in all fields.",
+        "min_length": "New password must be at least 6 characters.",
+        "mismatch": "Passwords do not match.",
+        "unavailable": "Password change is currently unavailable."
+      }
     },
     "notifications": {
       "email": "Email",

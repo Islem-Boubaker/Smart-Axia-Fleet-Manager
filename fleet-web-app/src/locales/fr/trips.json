@@ -1,5 +1,9 @@
 {
   "trips": {
+    "section_label": "Opérations",
+    "title": "Trajets",
+    "search_placeholder": "Rechercher conducteurs, véhicules, villes…",
+    "all_statuses": "Tous les statuts",
     "header": {
       "operations": "Opérations",
       "myTrips": "Mes trajets",
@@ -14,6 +18,17 @@
       "ongoing": "En cours",
       "completed": "Terminé",
       "cancelled": "Annulé"
+    },
+    "table": {
+      "route": "Itinéraire",
+      "driver": "Conducteur",
+      "vehicle": "Véhicule",
+      "distance": "Distance",
+      "start": "Départ",
+      "status": "Statut",
+      "actions": "Actions",
+      "empty": "Aucun trajet trouvé.",
+      "aria": "Table des trajets"
     },
     "form": {
       "selectVehicle": "Sélectionner un véhicule",
@@ -56,6 +71,15 @@
       "vehicleLabel": "Véhicule",
       "driverLabel": "Conducteur",
       "createTrip": "Créer le trajet",
+      "etaLabel": "Heure d'arrivée estimée (ETA)",
+      "etaPlaceholder": "Calculée depuis l'itinéraire",
+      "etaHelper": "ETA : {{duration}} après le départ",
+      "startTimeForEta": "Définissez une heure de départ pour calculer l'ETA.",
+      "completeRouteForEta": "Complétez l'itinéraire pour calculer l'ETA.",
+      "estimatedFuel": "Carburant estimé",
+      "estimatedFuelFromConsumption": "~{{liters}} L (selon la consommation)",
+      "estimatedFuelHint": "Définissez la consommation du véhicule pour estimer le carburant.",
+      "recMapErrorStartLocation": "Définissez d'abord un lieu de départ.",
       "errors": {
         "vehicleRequired": "Le véhicule est obligatoire.",
         "driverRequired": "Le conducteur est obligatoire.",
@@ -63,6 +87,8 @@
         "destinationRequired": "La destination est obligatoire.",
         "startTimeRequired": "L'heure de départ est obligatoire.",
         "endTimeRequired": "L'heure d'arrivée est obligatoire.",
+        "etaRequired": "L'heure d'arrivée estimée est obligatoire.",
+        "etaAfterStart": "L'heure d'arrivée doit être postérieure à l'heure de départ.",
         "regionRequired": "La région est obligatoire.",
         "capacityPositive": "La capacité doit être supérieure à 0.",
         "distancePositive": "La distance doit être un nombre positif.",
@@ -117,6 +143,59 @@
       "ongoing": "en cours",
       "completed": "terminé",
       "cancelled": "annulé"
+    },
+    "loading": "Chargement des trajets…",
+    "modals": {
+      "editTitle": "Modifier le trajet",
+      "detailsTitle": "Détails du trajet"
+    },
+    "edit": {
+      "fuelLabel": "Carburant (L)",
+      "stopsTitle": "Arrêts",
+      "stopsHint": "Réorganisez les arrêts ou mettez à jour les heures d'arrivée estimées.",
+      "noStops": "Aucun arrêt ajouté.",
+      "stopNumber": "Arrêt {{n}}",
+      "moveUp": "Monter",
+      "moveDown": "Descendre",
+      "stopName": "Nom / adresse de l'arrêt",
+      "estimatedArrival": "Arrivée estimée",
+      "stopNotesLabel": "Notes d'arrêt",
+      "stopNotesPlaceholder": "Instructions pour cet arrêt…",
+      "stopNameLength": "Le nom de l'arrêt doit comporter au moins 2 caractères."
+    },
+    "details": {
+      "stopsCount": "{{count}} arrêt(s)",
+      "noStops": "Aucun arrêt pour ce trajet.",
+      "routeMap": "Carte de l'itinéraire",
+      "resolvingMarkers": "Résolution des marqueurs…",
+      "mapUnavailable": "Carte indisponible.",
+      "calculatingRoute": "Calcul de l'itinéraire…",
+      "routeFallback": "L'itinéraire n'a pas pu être tracé.",
+      "live": {
+        "unknownTime": "Inconnu",
+        "justNow": "À l'instant",
+        "secondsAgo": "il y a {{count}}s",
+        "minutesAgo": "il y a {{count}}min",
+        "hoursAgo": "il y a {{count}}h",
+        "accuracy": "±{{count}} m",
+        "signalOld": "Signal ancien",
+        "updated": "Mis à jour {{when}}",
+        "waiting": "En attente de localisation…",
+        "notReceived": "Aucune localisation reçue.",
+        "driverLocation": "Position du conducteur"
+      }
+    },
+    "stopStatus": {
+      "pending": "En attente",
+      "reached": "Atteint",
+      "skipped": "Ignoré"
+    },
+    "errors": {
+      "createFailed": "Échec de la création du trajet.",
+      "endAfterStart": "L'heure de fin doit être postérieure à l'heure de début.",
+      "fuelInvalid": "Le carburant doit être un nombre valide positif ou nul.",
+      "recStartRegion": "Définissez un lieu de départ et une région avant de demander des recommandations.",
+      "recFailed": "Échec de la récupération des recommandations."
     }
   }
 }

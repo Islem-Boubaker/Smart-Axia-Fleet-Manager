@@ -2,20 +2,50 @@
   "maintenance": {
     "title": "Maintenance",
     "subtitle": "Schedule and track vehicle maintenance.",
+    "sectionLabel": "Fleet",
     "add": "Schedule maintenance",
     "table": {
       "empty": "No maintenance records yet.",
-      "loading": "Loading maintenance..."
+      "loading": "Loading maintenance...",
+      "technician": "Technician",
+      "tbd": "TBD",
+      "startMaintenance": "Start",
+      "completeMaintenance": "Complete",
+      "noAction": "—",
+      "aria": "Maintenance table"
     },
     "form": {
       "titleNew": "New maintenance",
       "titleEdit": "Edit maintenance",
       "submit": "Save maintenance",
+      "submitUpdate": "Update maintenance",
+      "type": "Type",
+      "scheduledDate": "Scheduled date",
+      "technicianPlaceholder": "e.g. Ahmed Mechanic",
+      "estimatedCost": "Estimated cost",
+      "costPlaceholder": "e.g. 150",
+      "currentMileage": "Current mileage",
+      "mileagePlaceholder": "e.g. 45230",
+      "descriptionNotes": "Description / Notes",
+      "selectVehicle": "Select a vehicle",
+      "noVehiclesFound": "No vehicles found",
+      "selectType": "Select type",
       "types": {
         "routine": "Routine",
         "repair": "Repair",
         "inspection": "Inspection"
       }
+    },
+    "types": {
+      "oil_change": "Oil Change",
+      "tire_rotation": "Tire Rotation",
+      "brake_inspection": "Brake Inspection",
+      "engine_tune_up": "Engine Tune-up",
+      "battery_replacement": "Battery Replacement",
+      "general_inspection": "General Inspection",
+      "technical_visit": "Technical Visit",
+      "insurance_renewal": "Insurance Renewal",
+      "other": "Other"
     }
   }
 }

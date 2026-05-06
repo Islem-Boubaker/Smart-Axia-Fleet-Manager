@@ -27,6 +27,13 @@
       "open": "Open",
       "openTitle": "Open report in new tab",
       "notConfigured": "Tableau is not configured yet"
+    },
+    "embed": {
+      "open": "Open",
+      "openInNewTab": "Open in new tab",
+      "refreshReport": "Refresh report",
+      "notConfigured": "Report not configured. Set VITE_TABLEAU_REPORT_URL to embed a report.",
+      "configExample": "e.g. https://public.tableau.com/views/..."
     }
   }
 }

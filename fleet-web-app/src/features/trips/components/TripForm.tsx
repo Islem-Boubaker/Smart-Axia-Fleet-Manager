@@ -172,22 +172,6 @@ const calculatePathDistanceKm = (points: MapPoint[]) => {
   return total;
 };
 
-const formatDuration = (seconds: number) => {
-  const safeSeconds = Math.max(0, Math.round(seconds));
-  const hours = Math.floor(safeSeconds / 3600);
-  const minutes = Math.round((safeSeconds % 3600) / 60);
-
-  if (hours > 0 && minutes > 0) return `${hours}h ${minutes}m`;
-  if (hours > 0) return `${hours}h`;
-  return `${minutes}m`;
-};
-
-const estimateFallbackDurationSeconds = (distanceKm: number) => {
-  if (!Number.isFinite(distanceKm) || distanceKm <= 0) return null;
-  const averageSpeedKmh = 45;
-  return Math.round((distanceKm / averageSpeedKmh) * 3600);
-};
-
 const squaredDistance = (a: MapPoint, b: MapPoint) => {
   const dLat = a.lat - b.lat;
   const dLng = a.lng - b.lng;

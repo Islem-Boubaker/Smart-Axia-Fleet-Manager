@@ -57,6 +57,14 @@
       "statusOngoing": "en cours",
       "statusCancelled": "annulé",
       "statusScheduled": "planifié"
+    },
+    "podium": {
+      "title": "Meilleurs conducteurs",
+      "viewFull": "Voir le classement complet",
+      "none": "Aucune donnée conducteur pour cette période.",
+      "first": "1er",
+      "second": "2ème",
+      "third": "3ème"
     }
   }
 }

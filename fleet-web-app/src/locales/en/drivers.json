@@ -1,12 +1,37 @@
 {
   "drivers": {
     "title": "Drivers",
+    "section_label": "Fleet",
+    "subtitle": "Manage driver profiles, licenses, and vehicle assignments.",
     "description": "Manage driver profiles, licenses, and vehicle assignments.",
     "addNew": "Add New Driver",
     "edit": "Edit Driver",
     "searchPlaceholder": "Search drivers by name, email, license…",
+    "search_placeholder": "Search drivers by name, email, license…",
     "addAria": "Add new driver",
     "addButton": "Add driver",
+    "table": {
+      "loading": "Loading drivers...",
+      "empty": "No drivers found.",
+      "avatar": "Avatar",
+      "driver": "Driver",
+      "email": "Email",
+      "phone": "Phone",
+      "status": "Status",
+      "assigned_vehicle": "Assigned Vehicle",
+      "trips": "Trips",
+      "actions": "Actions",
+      "aria": "Drivers table",
+      "noLicense": "No license"
+    },
+    "filters": {
+      "allStatuses": "All statuses",
+      "allScores": "All scores",
+      "score90Plus": "90+",
+      "score80to89": "80–89",
+      "score70to79": "70–79",
+      "scoreBelow70": "Below 70"
+    },
     "form": {
       "submitCreate": "Create driver",
       "submitUpdate": "Update driver",
@@ -18,6 +43,18 @@
       "vehicle": "Vehicle",
       "rating": "Rating",
       "since": "Since"
+    },
+    "toast": {
+      "creating": "Creating driver...",
+      "createSuccess": "Driver created successfully.",
+      "createError": "Failed to create driver.",
+      "updating": "Updating driver...",
+      "updateSuccess": "Driver updated successfully.",
+      "updateError": "Failed to update driver.",
+      "deleting": "Deleting driver...",
+      "deleteSuccess": "Driver deleted successfully.",
+      "deleteError": "Failed to delete driver.",
+      "deleteConfirm": "Are you sure you want to delete this driver?"
     }
   }
 }

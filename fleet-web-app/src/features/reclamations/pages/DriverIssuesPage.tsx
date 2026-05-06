@@ -214,62 +214,6 @@ const DriverIssuesPage = () => {
     }));
   }, [drivers, getDriverLabel, getVehicleLabel, navigate, t, vehicles]);
 
-  const handleScheduleFromIssue = useCallback((item: ReclamationRecord) => {
-    const matchedVehicle =
-      (item.vehicleId ? vehicles.find((v) => String(v.id) === String(item.vehicleId)) : undefined) ||
-      (item.vehiclePlate ? vehicles.find((v) => normalize(v.plaque_immatriculation) === normalize(item.vehiclePlate)) : undefined) ||
-      findVehicleFromAssignedValue(
-        drivers.find((d) => String(d.id) === String(item.userId))?.assignedVehicle,
-        vehicles
-      );
-    const vehicleId = item.vehicleId || matchedVehicle?.id || item.vehicle?.id || '';
-    const vehiclePlate =
-      item.vehiclePlate ||
-      matchedVehicle?.plaque_immatriculation ||
-      item.vehicle?.plaque_immatriculation ||
-      '';
-    const vehicleName =
-      item.vehicleName ||
-      matchedVehicle?.name ||
-      item.vehicle?.name ||
-      item.vehicle?.model ||
-      '';
-
-    const metadata = item.metadata ?? {};
-    const maintenanceType = metadataString(metadata, 'maintenanceType') || 'General Inspection';
-    const priority = normalizePriority(metadataString(metadata, 'maintenancePriority'));
-    const estimatedCost = metadataString(metadata, 'estimatedCost') || '0';
-    const currentMileage = metadataString(metadata, 'currentMileage');
-    const maintenanceNotes = metadataString(metadata, 'maintenanceNotes');
-
-    navigate(buildMaintenancePrefillUrl({
-      source: 'reclamation',
-      reclamationId: item.id,
-      vehicleId,
-      vehiclePlate,
-      vehicleName,
-      type: maintenanceType,
-      priority,
-      technician: 'Pending assignment',
-      cost: estimatedCost,
-      mileage: currentMileage,
-      description: [
-        `Created from driver issue: ${item.subject}`,
-        '',
-        `Requested maintenance: ${maintenanceType}`,
-        `Priority: ${priority}`,
-        estimatedCost ? `Estimated cost: ${estimatedCost} TND` : '',
-        currentMileage ? `Current mileage: ${currentMileage} km` : '',
-        maintenanceNotes ? `Maintenance notes: ${maintenanceNotes}` : '',
-        '',
-        item.message,
-        '',
-        `Driver: ${getDriverLabel(item)}`,
-        `Vehicle: ${getVehicleLabel(item)}`,
-      ].filter(Boolean).join('\n'),
-    }));
-  }, [drivers, getDriverLabel, getVehicleLabel, navigate, vehicles]);
-
   const filteredItems = useMemo(() => {
     const normalizedSearch = searchQuery.trim().toLowerCase();
 

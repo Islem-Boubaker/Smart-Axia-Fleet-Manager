@@ -1,12 +1,37 @@
 {
   "drivers": {
     "title": "Conducteurs",
+    "section_label": "Flotte",
+    "subtitle": "Gérez les profils, permis et affectations véhicule.",
     "description": "Gérez les profils, permis et affectations véhicule.",
     "addNew": "Ajouter un conducteur",
     "edit": "Modifier le conducteur",
     "searchPlaceholder": "Rechercher par nom, e-mail, permis…",
+    "search_placeholder": "Rechercher par nom, e-mail, permis…",
     "addAria": "Ajouter un conducteur",
     "addButton": "Ajouter un conducteur",
+    "table": {
+      "loading": "Chargement des conducteurs...",
+      "empty": "Aucun conducteur trouvé.",
+      "avatar": "Avatar",
+      "driver": "Conducteur",
+      "email": "E-mail",
+      "phone": "Téléphone",
+      "status": "Statut",
+      "assigned_vehicle": "Véhicule assigné",
+      "trips": "Trajets",
+      "actions": "Actions",
+      "aria": "Table des conducteurs",
+      "noLicense": "Sans permis"
+    },
+    "filters": {
+      "allStatuses": "Tous les statuts",
+      "allScores": "Tous les scores",
+      "score90Plus": "90+",
+      "score80to89": "80–89",
+      "score70to79": "70–79",
+      "scoreBelow70": "Moins de 70"
+    },
     "form": {
       "submitCreate": "Créer le conducteur",
       "submitUpdate": "Mettre à jour le conducteur",
@@ -18,6 +43,18 @@
       "vehicle": "Véhicule",
       "rating": "Note",
       "since": "Depuis"
+    },
+    "toast": {
+      "creating": "Création du conducteur...",
+      "createSuccess": "Conducteur créé avec succès.",
+      "createError": "Échec de la création du conducteur.",
+      "updating": "Mise à jour du conducteur...",
+      "updateSuccess": "Conducteur mis à jour avec succès.",
+      "updateError": "Échec de la mise à jour du conducteur.",
+      "deleting": "Suppression du conducteur...",
+      "deleteSuccess": "Conducteur supprimé avec succès.",
+      "deleteError": "Échec de la suppression du conducteur.",
+      "deleteConfirm": "Êtes-vous sûr de vouloir supprimer ce conducteur ?"
     }
   }
 }

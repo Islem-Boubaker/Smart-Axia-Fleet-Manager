@@ -1,17 +1,37 @@
 {
   "reclamations": {
     "title": "Problèmes conducteurs",
+    "section_label": "Problèmes conducteurs",
     "subtitle": "Examinez et résolvez les signalements des conducteurs.",
     "filters": {
-      "searchPlaceholder": "Recherche : sujet, message, conducteur, véhicule"
+      "searchPlaceholder": "Recherche : sujet, message, conducteur, véhicule",
+      "search_placeholder": "Recherche : sujet, message, conducteur, véhicule",
+      "search_label": "Rechercher",
+      "all": "Tous",
+      "driver_label": "Conducteur",
+      "vehicle_label": "Véhicule",
+      "all_drivers": "Tous les conducteurs",
+      "all_vehicles": "Tous les véhicules"
     },
     "table": {
       "empty": "Aucun problème ne correspond aux filtres.",
-      "loading": "Chargement des problèmes..."
+      "loading": "Chargement des problèmes...",
+      "subject": "Objet",
+      "driver": "Conducteur",
+      "vehicle": "Véhicule",
+      "status": "Statut",
+      "submitted": "Soumis le",
+      "actions": "Actions",
+      "aria": "Table des problèmes conducteurs"
     },
     "details": {
       "title": "Détails du problème",
-      "close": "Fermer"
+      "close": "Fermer",
+      "issue_description": "Description du problème",
+      "attachments": "Pièces jointes",
+      "files": "{{count}} fichier(s)",
+      "attachment_alt": "Pièce jointe {{index}}",
+      "open_preview": "Ouvrir l'aperçu"
     }
   }
 }

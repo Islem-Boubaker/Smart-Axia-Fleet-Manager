@@ -174,6 +174,32 @@
     "arrow": "←",
     "checkmark": "✓",
     "dashBullet": " · ",
-    "rangeArrow": " ← "
+    "rangeArrow": " ← ",
+    "no_trips": "لا رحلات",
+    "unknownVehicle": "مركبة غير معروفة",
+    "deleted": "محذوف",
+    "saving": "جاري الحفظ…",
+    "showing_results": "عرض {{count}} نتيجة"
+  },
+  "status": {
+    "available": "متاح",
+    "in_use": "قيد الاستخدام",
+    "maintenance": "صيانة",
+    "inactive": "غير نشط",
+    "active": "نشط",
+    "on_leave": "في إجازة",
+    "scheduled": "مجدول",
+    "ongoing": "جاري",
+    "completed": "مكتمل",
+    "cancelled": "ملغى",
+    "pending": "قيد الانتظار",
+    "in_progress": "جاري",
+    "resolved": "محلول",
+    "rejected": "مرفوض"
+  },
+  "priority": {
+    "high": "عالية",
+    "medium": "متوسطة",
+    "low": "منخفضة"
   }
 }

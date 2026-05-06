@@ -12,12 +12,10 @@ import {
   FiAlertCircle,
   FiSettings,
   FiX,
-  FiPlus,
-  FiMinus,
+  FiChevronRight,
   FiUser,
   FiBell,
   FiShield,
-  FiChevronRight,
 } from "react-icons/fi";
 import { ROUTES } from "../../../utils/constants";
 
@@ -60,6 +58,7 @@ export const Sidebar = memo(
     const [settingsOpen, setSettingsOpen] = useState(
       location.pathname.startsWith(ROUTES.SETTINGS),
     );
+
     const localizedSettingsSubItems = useMemo(
       () =>
         settingsSubItems.map((item) => ({
@@ -75,33 +74,28 @@ export const Sidebar = memo(
           icon: FiHome,
           label: t("nav.dashboard"),
           path: ROUTES.DASHBOARD,
-          hasAdd: true,
         },
         {
           icon: FiTruck,
           label: t("nav.vehicles"),
           path: ROUTES.VEHICLES,
-          hasAdd: true,
         },
-        { icon: FiUsers, label: t("nav.drivers"), path: ROUTES.DRIVERS, hasAdd: true },
-        { icon: FiMapPin, label: t("nav.trips"), path: ROUTES.TRIPS, hasAdd: true },
+        { icon: FiUsers, label: t("nav.drivers"), path: ROUTES.DRIVERS },
+        { icon: FiMapPin, label: t("nav.trips"), path: ROUTES.TRIPS },
         {
           icon: FiTool,
           label: t("nav.maintenance"),
           path: ROUTES.MAINTENANCE,
-          hasAdd: false,
         },
         {
           icon: FiBarChart2,
           label: t("nav.reports"),
           path: ROUTES.REPORTS,
-          hasAdd: false,
         },
         {
           icon: FiAlertCircle,
           label: t("nav.reclamations"),
           path: ROUTES.DRIVER_ISSUES,
-          hasAdd: false,
         },
         {
           icon: FiSettings,
@@ -113,9 +107,6 @@ export const Sidebar = memo(
       ],
       [localizedSettingsSubItems, t],
     );
-
-    const primaryItems = menuItems.slice(0, 7);
-    const settingsItem = menuItems[7];
 
     const base = dark
       ? {
@@ -148,6 +139,126 @@ export const Sidebar = memo(
       const searchParams = new URLSearchParams(location.search);
       return (
         location.pathname === ROUTES.SETTINGS && searchParams.get("tab") === tab
+      );
+    };
+
+    // Helper to render nav item (used for both primary and settings items)
+    const renderNavItem = (item: typeof menuItems[0]) => {
+      const isActive = location.pathname === item.path || location.pathname.startsWith(item.path);
+      const Icon = item.icon;
+      const hasChildren = item.hasCollapse && item.children;
+
+      if (hasChildren) {
+        // Settings item with collapse
+        return (
+          <div key={item.path} className="space-y-2">
+            {/* Main Settings Button */}
+            <button
+              onClick={() => {
+                setSettingsOpen(!settingsOpen);
+              }}
+              className={`
+                w-full flex items-center justify-between
+                ${expanded ? "gap-3 px-3 py-2.5" : "justify-center px-0 py-0"}
+                rounded-2xl
+                transition-colors duration-150
+                ${isActive ? base.activeBg : `${base.sub} ${base.hover}`}
+              `}
+            >
+              <div className={`${expanded ? "h-6 w-6" : "h-12 w-full"} flex items-center justify-center shrink-0`}>
+                <Icon className="text-[15px]" />
+              </div>
+              {expanded && (
+                <>
+                  <span className="truncate text-sm font-bold flex-1">{item.label}</span>
+                  <FiChevronRight
+                    size={16}
+                    className={`shrink-0 transition-transform ${settingsOpen ? "rotate-90" : ""}`}
+                  />
+                </>
+              )}
+            </button>
+
+            {/* Settings Sub-items (show when expanded AND settingsOpen) */}
+            {expanded && settingsOpen && item.children && (
+              <div className={`space-y-1.5 ${isRtl ? "pr-4" : "pl-4"}`}>
+                {item.children.map((child) => {
+                  const isChildActive = isSubItemActive(child.tab);
+                  const ChildIcon = child.icon;
+                  return (
+                    <Link
+                      key={child.path}
+                      to={child.path}
+                      onClick={() => setIsOpen(false)}
+                      className={`
+                        flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-bold
+                        transition-colors duration-100
+                        ${
+                          isChildActive
+                            ? base.subitemActive
+                            : `${base.sub} ${base.subitemHover}`
+                        }
+                      `}
+                    >
+                      <ChildIcon size={13} className="shrink-0" />
+                      <span className="truncate">{child.label}</span>
+                    </Link>
+                  );
+                })}
+              </div>
+            )}
+
+            {/* Show collapsed icon when not expanded and settingsOpen */}
+            {!expanded && settingsOpen && item.children && (
+              <div className="space-y-1.5">
+                {item.children.map((child) => {
+                  const isChildActive = isSubItemActive(child.tab);
+                  const ChildIcon = child.icon;
+                  return (
+                    <Link
+                      key={child.path}
+                      to={child.path}
+                      onClick={() => setIsOpen(false)}
+                      title={child.label}
+                      className={`
+                        h-10 w-full flex items-center justify-center rounded-xl text-[13px]
+                        transition-colors duration-100
+                        ${
+                          isChildActive
+                            ? base.subitemActive
+                            : `${base.sub} ${base.subitemHover}`
+                        }
+                      `}
+                    >
+                      <ChildIcon size={14} className="shrink-0" />
+                    </Link>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        );
+      }
+
+      // Regular nav item
+      return (
+        <Link
+          key={item.path}
+          to={item.path}
+          onClick={() => setIsOpen(false)}
+          className={`
+            flex items-center
+            ${expanded ? "gap-3 px-3 py-2.5" : "justify-center px-0 py-0"}
+            rounded-2xl
+            transition-colors duration-150
+            ${isActive ? base.activeBg : `${base.sub} ${base.hover}`}
+          `}
+        >
+          <div className={`${expanded ? "h-6 w-6" : "h-12 w-full"} flex items-center justify-center shrink-0`}>
+            <item.icon className="text-[15px]" />
+          </div>
+          {expanded && <span className="truncate text-sm font-bold">{item.label}</span>}
+        </Link>
       );
     };
 
@@ -192,9 +303,7 @@ export const Sidebar = memo(
           </button>
 
           {/* ── Logo ── */}
-          <div
-            className="flex items-center justify-center px-3 pb-5 pt-6"
-          >
+          <div className="flex items-center justify-center px-3 pb-5 pt-6">
             <Link
               to={ROUTES.DASHBOARD}
               className={`flex items-center min-w-0 ${expanded ? "w-full justify-start gap-3 px-2" : "justify-center"}`}
@@ -221,154 +330,10 @@ export const Sidebar = memo(
           </div>
 
           {/* ── Navigation ── */}
-          <nav className="flex-1 overflow-hidden px-2 py-3">
+          <nav className="flex-1 overflow-y-auto px-2 py-3">
             <div className="space-y-3">
-            {primaryItems.map((item) => {
-              const isActive = location.pathname === item.path;
-              const isSettingsItem = item.path === ROUTES.SETTINGS;
-              const Icon = item.icon;
-
-              return (
-                <div key={item.path}>
-                  {/* Nav row */}
-                  {isSettingsItem ? (
-                    <Link
-                      to={item.path}
-                      onClick={() => {
-                        setSettingsOpen((o) => !o);
-                      }}
-                      className={`
-                      group w-full flex items-center justify-between
-                      px-0 py-0 rounded-2xl text-left
-                      transition-colors duration-150
-                      ${
-                        isActive || location.pathname.startsWith(item.path)
-                          ? base.activeBg
-                          : `${base.sub} ${base.hover}`
-                      }
-                    `}
-                    >
-                      <div className="flex h-10 w-full items-center justify-center">
-                        <Icon className="text-[15px] shrink-0" />
-                      </div>
-                      <span
-                        className="hidden"
-                      >
-                        {item.label}
-                      </span>
-                      <span className="sr-only">{item.label}</span>
-                      <span className="hidden">
-                        {settingsOpen ? (
-                          <FiMinus size={13} />
-                        ) : (
-                          <FiPlus size={13} />
-                        )}
-                      </span>
-                    </Link>
-                  ) : (
-                    <Link
-                      to={item.path}
-                      onClick={() => setIsOpen(false)}
-                      className={`
-                      group flex items-center
-                      ${expanded ? "justify-start gap-3 px-3 py-2.5" : "justify-center px-0 py-0"}
-                      rounded-2xl
-                      transition-colors duration-150
-                      ${isActive ? base.activeBg : `${base.sub} ${base.hover}`}
-                    `}
-                    >
-                      <div className={`${expanded ? "h-6 w-6" : "h-12 w-full"} flex items-center justify-center`}>
-                        <Icon className="text-[15px] shrink-0" />
-                        <span className="sr-only">{item.label}</span>
-                      </div>
-                      {expanded && <span className="truncate text-sm font-bold">{item.label}</span>}
-                    </Link>
-                  )}
-
-                  {/* Settings sub-items */}
-                  {isSettingsItem && settingsOpen && item.children && (
-                    <div className="mt-2 space-y-2 pb-1">
-                      {item.children.map((child) => {
-                        const isChildActive = isSubItemActive(child.tab);
-                        const ChildIcon = child.icon;
-                        return (
-                          <Link
-                            key={child.path}
-                            to={child.path}
-                            onClick={() => setIsOpen(false)}
-                            className={`
-                            flex h-9 items-center justify-center rounded-xl text-[13px]
-                            transition-colors duration-100
-                            ${
-                              isChildActive
-                                ? base.subitemActive
-                                : `${base.sub} ${base.subitemHover}`
-                            }
-                          `}
-                          >
-                            <ChildIcon size={14} className="shrink-0" />
-                            <span className="sr-only">{child.label}</span>
-                          </Link>
-                        );
-                      })}
-                    </div>
-                  )}
-                </div>
-              );
-            })}
+              {menuItems.map((item) => renderNavItem(item))}
             </div>
-
-            {settingsItem ? (
-              <div className="mt-8">
-                {(() => {
-                  const item = settingsItem;
-                  const isActive = location.pathname === item.path;
-                  const Icon = item.icon;
-                  return (
-                    <Link
-                      to={item.path}
-                      onClick={() => {
-                        setSettingsOpen((o) => !o);
-                      }}
-                      className={`group flex w-full items-center rounded-2xl text-left transition-colors duration-150 ${
-                        expanded ? "justify-start gap-3 px-3 py-2.5" : "justify-center px-0 py-0"
-                      } ${
-                        isActive || location.pathname.startsWith(item.path)
-                          ? base.activeBg
-                          : `${base.sub} ${base.hover}`
-                      }`}
-                    >
-                      <div className={`${expanded ? "h-6 w-6" : "h-12 w-full"} flex items-center justify-center`}>
-                        <Icon className="text-[15px] shrink-0" />
-                      </div>
-                      <span className="sr-only">{item.label}</span>
-                      {expanded && <span className="truncate text-sm font-bold">{item.label}</span>}
-                    </Link>
-                  );
-                })()}
-                {expanded && settingsOpen && settingsItem.children ? (
-                    <div className={`mt-2 space-y-1 ${isRtl ? "pr-4" : "pl-4"}`}>
-                    {settingsItem.children.map((child) => {
-                      const ChildIcon = child.icon;
-                      const isChildActive = isSubItemActive(child.tab);
-                      return (
-                        <Link
-                          key={child.path}
-                          to={child.path}
-                          onClick={() => setIsOpen(false)}
-                          className={`flex items-center gap-2 rounded-xl px-3 py-2 text-xs font-bold transition-colors ${
-                            isChildActive ? base.subitemActive : `${base.sub} ${base.subitemHover}`
-                          }`}
-                        >
-                          <ChildIcon size={13} />
-                          {child.label}
-                        </Link>
-                      );
-                    })}
-                  </div>
-                ) : null}
-              </div>
-            ) : null}
           </nav>
 
           {/* ── User Avatar ── */}

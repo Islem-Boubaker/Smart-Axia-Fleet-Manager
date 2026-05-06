@@ -2,20 +2,50 @@
   "maintenance": {
     "title": "الصيانة",
     "subtitle": "جدولة ومتابعة صيانة المركبات.",
+    "sectionLabel": "الأسطول",
     "add": "جدولة صيانة",
     "table": {
       "empty": "لا سجلات صيانة بعد.",
-      "loading": "جاري تحميل الصيانة..."
+      "loading": "جاري تحميل الصيانة...",
+      "technician": "الفني",
+      "tbd": "لم يُحدَّد",
+      "startMaintenance": "بدء",
+      "completeMaintenance": "إنهاء",
+      "noAction": "—",
+      "aria": "جدول الصيانة"
     },
     "form": {
       "titleNew": "صيانة جديدة",
       "titleEdit": "تعديل الصيانة",
       "submit": "حفظ الصيانة",
+      "submitUpdate": "تحديث الصيانة",
+      "type": "النوع",
+      "scheduledDate": "تاريخ الجدولة",
+      "technicianPlaceholder": "مثال: أحمد الميكانيكي",
+      "estimatedCost": "التكلفة التقديرية",
+      "costPlaceholder": "مثال: 150",
+      "currentMileage": "المسافة الحالية",
+      "mileagePlaceholder": "مثال: 45230",
+      "descriptionNotes": "الوصف / الملاحظات",
+      "selectVehicle": "اختر مركبة",
+      "noVehiclesFound": "لا مركبات",
+      "selectType": "اختر النوع",
       "types": {
         "routine": "دورية",
         "repair": "إصلاح",
         "inspection": "فحص"
       }
+    },
+    "types": {
+      "oil_change": "تغيير الزيت",
+      "tire_rotation": "تدوير الإطارات",
+      "brake_inspection": "فحص الفرامل",
+      "engine_tune_up": "ضبط المحرك",
+      "battery_replacement": "تبديل البطارية",
+      "general_inspection": "فحص عام",
+      "technical_visit": "الفحص الفني",
+      "insurance_renewal": "تجديد التأمين",
+      "other": "أخرى"
     }
   }
 }

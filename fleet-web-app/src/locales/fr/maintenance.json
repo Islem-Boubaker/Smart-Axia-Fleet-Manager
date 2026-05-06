@@ -2,20 +2,50 @@
   "maintenance": {
     "title": "Maintenance",
     "subtitle": "Planifiez et suivez la maintenance des véhicules.",
+    "sectionLabel": "Flotte",
     "add": "Planifier une maintenance",
     "table": {
       "empty": "Aucun enregistrement de maintenance.",
-      "loading": "Chargement de la maintenance..."
+      "loading": "Chargement de la maintenance...",
+      "technician": "Technicien",
+      "tbd": "À définir",
+      "startMaintenance": "Démarrer",
+      "completeMaintenance": "Terminer",
+      "noAction": "—",
+      "aria": "Table de maintenance"
     },
     "form": {
       "titleNew": "Nouvelle maintenance",
       "titleEdit": "Modifier la maintenance",
       "submit": "Enregistrer la maintenance",
+      "submitUpdate": "Mettre à jour la maintenance",
+      "type": "Type",
+      "scheduledDate": "Date planifiée",
+      "technicianPlaceholder": "ex. Ahmed Mécanicien",
+      "estimatedCost": "Coût estimé",
+      "costPlaceholder": "ex. 150",
+      "currentMileage": "Kilométrage actuel",
+      "mileagePlaceholder": "ex. 45230",
+      "descriptionNotes": "Description / Notes",
+      "selectVehicle": "Sélectionner un véhicule",
+      "noVehiclesFound": "Aucun véhicule trouvé",
+      "selectType": "Sélectionner le type",
       "types": {
         "routine": "Routine",
         "repair": "Réparation",
         "inspection": "Inspection"
       }
+    },
+    "types": {
+      "oil_change": "Vidange d'huile",
+      "tire_rotation": "Rotation des pneus",
+      "brake_inspection": "Inspection des freins",
+      "engine_tune_up": "Réglage moteur",
+      "battery_replacement": "Remplacement batterie",
+      "general_inspection": "Inspection générale",
+      "technical_visit": "Visite technique",
+      "insurance_renewal": "Renouvellement assurance",
+      "other": "Autre"
     }
   }
 }

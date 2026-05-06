@@ -57,6 +57,14 @@
       "statusOngoing": "جاري",
       "statusCancelled": "ملغى",
       "statusScheduled": "مجدول"
+    },
+    "podium": {
+      "title": "أفضل السائقين",
+      "viewFull": "عرض الترتيب الكامل",
+      "none": "لا بيانات للسائقين في هذه الفترة.",
+      "first": "الأول",
+      "second": "الثاني",
+      "third": "الثالث"
     }
   }
 }

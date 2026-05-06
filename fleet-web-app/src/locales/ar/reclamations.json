@@ -1,17 +1,37 @@
 {
   "reclamations": {
     "title": "بلاغات السائقين",
+    "section_label": "بلاغات السائقين",
     "subtitle": "مراجعة وحل المشكلات المُبلَّغ عنها.",
     "filters": {
-      "searchPlaceholder": "بحث سريع: الموضوع، الرسالة، السائق، المركبة"
+      "searchPlaceholder": "بحث سريع: الموضوع، الرسالة، السائق، المركبة",
+      "search_placeholder": "بحث سريع: الموضوع، الرسالة، السائق، المركبة",
+      "search_label": "بحث",
+      "all": "الكل",
+      "driver_label": "السائق",
+      "vehicle_label": "المركبة",
+      "all_drivers": "جميع السائقين",
+      "all_vehicles": "جميع المركبات"
     },
     "table": {
       "empty": "لا بلاغات تطابق الفلاتر.",
-      "loading": "جاري تحميل البلاغات..."
+      "loading": "جاري تحميل البلاغات...",
+      "subject": "الموضوع",
+      "driver": "السائق",
+      "vehicle": "المركبة",
+      "status": "الحالة",
+      "submitted": "تاريخ التقديم",
+      "actions": "إجراءات",
+      "aria": "جدول بلاغات السائقين"
     },
     "details": {
       "title": "تفاصيل البلاغ",
-      "close": "إغلاق"
+      "close": "إغلاق",
+      "issue_description": "وصف المشكلة",
+      "attachments": "المرفقات",
+      "files": "{{count}} ملف",
+      "attachment_alt": "مرفق {{index}}",
+      "open_preview": "فتح المعاينة"
     }
   }
 }

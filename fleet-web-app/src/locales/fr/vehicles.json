@@ -1,10 +1,23 @@
 {
   "vehicles": {
     "title": "Véhicules",
+    "subtitle": "Gérez les véhicules, les affectations et les signaux de maintenance.",
     "description": "Gérez les véhicules, les affectations et les signaux de maintenance.",
     "addNew": "Ajouter un véhicule",
+    "add_button": "Ajouter un véhicule",
     "edit": "Modifier le véhicule",
     "searchPlaceholder": "Rechercher par nom ou ID...",
+    "search_placeholder": "Rechercher par nom ou ID...",
+    "filter_type": "Type : {{value}}",
+    "filter_status": "Statut : {{value}}",
+    "types": {
+      "all": "Tous",
+      "car": "Voiture",
+      "suv": "SUV",
+      "truck": "Camion",
+      "motorcycle": "Moto",
+      "van": "Fourgon"
+    },
     "status": {
       "available": "Disponible",
       "inUse": "En utilisation",
@@ -25,6 +38,12 @@
       "colLastTrip": "Dernier trajet",
       "colMaintenance": "Recommandation maintenance",
       "colActions": "Actions",
+      "vehicle": "Véhicule",
+      "status": "Statut",
+      "driver": "Conducteur",
+      "last_trip": "Dernier trajet",
+      "maintenance_recommendation": "Recommandation maintenance",
+      "actions": "Actions",
       "noImage": "Pas d'image",
       "noRecommendations": "Aucune recommandation",
       "showMore": "Afficher {{n}} de plus",
@@ -37,12 +56,29 @@
       "deleteVehicle": "Supprimer le véhicule",
       "dataTableAria": "Table des véhicules"
     },
+    "toast": {
+      "creating": "Création du véhicule...",
+      "createSuccess": "Véhicule créé avec succès.",
+      "updating": "Mise à jour du véhicule...",
+      "updateSuccess": "Véhicule mis à jour avec succès.",
+      "deleting": "Suppression du véhicule...",
+      "deleteSuccess": "Véhicule supprimé avec succès.",
+      "deleteConfirm": "Êtes-vous sûr de vouloir supprimer ce véhicule ?"
+    },
     "details": {
       "title": "Détails du véhicule",
       "loading": "Chargement des détails...",
       "closeAria": "Fermer les détails",
       "editAria": "Modifier ce véhicule",
       "vehicleId": "ID véhicule",
+      "assignmentTitle": "Affectation en cours",
+      "noAssignment": "Aucune affectation active.",
+      "maintenanceHistoryTitle": "Historique de maintenance",
+      "noMaintenance": "Aucun enregistrement de maintenance.",
+      "maintenanceLine": "{{date}} · {{status}} · {{priority}}",
+      "costLine": "Coût : {{cost}} {{currency}}",
+      "generating": "Génération…",
+      "regenerate": "Régénérer",
       "assignmentDriver": "Conducteur :",
       "assignmentRoute": "Itinéraire :",
       "assignmentStatus": "Statut :",
@@ -54,7 +90,16 @@
       "submitCreate": "Créer le véhicule",
       "submitUpdate": "Mettre à jour le véhicule",
       "activeLabel": "Véhicule actif",
-      "needsMaintenanceLabel": "Nécessite une maintenance"
+      "needsMaintenanceLabel": "Nécessite une maintenance",
+      "newTitle": "Nouveau véhicule",
+      "operationalStatus": "Statut opérationnel",
+      "tireCondition": "État des pneus",
+      "conditionNew": "Neuf",
+      "conditionGood": "Bon",
+      "conditionWornOut": "Usé",
+      "brakeCondition": "État des freins",
+      "batteryStatus": "État de la batterie",
+      "conditionWeak": "Faible"
     }
   }
 }
