@@ -1,5 +1,5 @@
-import { AppDataTable, AppRowActions, AppStatusBadge, AppTd, AppTr } from '../../../shared/components';
 import { useTranslation } from 'react-i18next';
+import { AppDataTable, AppRowActions, AppStatusBadge, AppTd, AppTr } from '../../../shared/components';
 import type { ReclamationRecord, ReclamationStatus } from '../services/reclamations.service';
 
 interface DriverIssuesTableProps {
@@ -27,11 +27,13 @@ const DriverIssuesTable = ({
   statusLabel,
 }: DriverIssuesTableProps) => {
   const { t, i18n } = useTranslation();
+
   const formatDateTime = (value: string) => {
     const date = new Date(value);
     if (Number.isNaN(date.getTime())) return value;
     return date.toLocaleString(i18n.language);
   };
+
   return (
     <AppDataTable
       columns={[
@@ -45,6 +47,7 @@ const DriverIssuesTable = ({
       totalResults={items.length}
       dark={dark}
       ariaLabel={t('reclamations.table.aria')}
+      title={t('reclamations.title')}
       pageSize={7}
     >
       {items.map((item) => (

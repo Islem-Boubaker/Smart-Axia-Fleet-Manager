@@ -29,8 +29,8 @@ const formatDateTime = (value: string, locale: string) => {
   return date.toLocaleString(locale);
 };
 
-const formatIssueType = (value?: string) => {
-  if (!value) return 'General';
+const formatIssueType = (value: string | undefined, fallback: string) => {
+  if (!value) return fallback;
   return value
     .replace(/[_-]+/g, ' ')
     .replace(/\b\w/g, (char) => char.toUpperCase());
@@ -49,7 +49,6 @@ const DriverIssueDetailsModal = ({
   isUpdatingStatus = false,
 }: DriverIssueDetailsModalProps) => {
   const { t, i18n } = useTranslation();
-
   if (!isOpen || !issue) return null;
 
   const panelClass = dark
@@ -65,7 +64,7 @@ const DriverIssueDetailsModal = ({
   const nextStatuses: ReclamationStatus[] = ['PENDING', 'IN_PROGRESS', 'RESOLVED', 'REJECTED'];
 
   return (
-    <GlobalCard isOpen={isOpen} onClose={onClose} title={t('reclamations.details.title')} maxWidth="2xl">
+    <GlobalCard isOpen={isOpen} onClose={onClose} title={t('reclamations.title')} maxWidth="2xl">
       <div className="space-y-4">
         <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
           <div className="min-w-0">
@@ -85,9 +84,7 @@ const DriverIssueDetailsModal = ({
         <section className={`rounded-[18px] border p-4 ${panelClass}`}>
           <div className="mb-2 flex items-center gap-2">
             <FiFileText className={dark ? 'text-slate-400' : 'text-slate-500'} />
-            <p className={`text-sm font-semibold ${dark ? 'text-slate-200' : 'text-slate-800'}`}>
-              {t('common.description')}
-            </p>
+            <p className={`text-sm font-semibold ${dark ? 'text-slate-200' : 'text-slate-800'}`}>{t('reclamations.details.issue_description')}</p>
           </div>
           <p className={`whitespace-pre-wrap text-sm leading-6 ${bodyClass}`}>{issue.message}</p>
         </section>
@@ -126,7 +123,7 @@ const DriverIssueDetailsModal = ({
             </p>
             <p className={`flex items-center gap-2 text-sm font-medium ${dark ? 'text-slate-200' : 'text-slate-800'}`}>
               <FiTool className={dark ? 'text-slate-500' : 'text-slate-500'} />
-              {formatIssueType(issue.type)}
+              {formatIssueType(issue.type, t('common.unknown'))}
             </p>
           </div>
 
@@ -174,12 +171,8 @@ const DriverIssueDetailsModal = ({
         {(issue.images?.length ?? 0) > 0 ? (
           <section>
             <div className="mb-3 flex items-center justify-between">
-              <p className={`text-sm font-semibold ${dark ? 'text-slate-200' : 'text-slate-800'}`}>
-                {t('reclamations.details.attachments')}
-              </p>
-              <p className={`text-xs ${dark ? 'text-slate-500' : 'text-slate-500'}`}>
-                {t('reclamations.details.files', { count: issue.images?.length ?? 0 })}
-              </p>
+              <p className={`text-sm font-semibold ${dark ? 'text-slate-200' : 'text-slate-800'}`}>{t('reclamations.details.attachments')}</p>
+              <p className={`text-xs ${dark ? 'text-slate-500' : 'text-slate-500'}`}>{t('reclamations.details.files', { count: issue.images?.length ?? 0 })}</p>
             </div>
 
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
@@ -195,13 +188,11 @@ const DriverIssueDetailsModal = ({
                 >
                   <img
                     src={image}
-                    alt={t('reclamations.details.attachmentAlt', { index: index + 1 })}
+                    alt={t('reclamations.details.attachment_alt', { index: index + 1 })}
                     className="h-36 w-full object-cover transition-transform duration-300 group-hover:scale-105"
                   />
                   <div className="absolute inset-0 flex items-end bg-gradient-to-t from-black/45 via-transparent to-transparent p-3 opacity-0 transition-opacity duration-300 group-hover:opacity-100">
-                    <span className="rounded-md bg-white/90 px-2 py-1 text-xs font-medium text-slate-900">
-                      {t('reclamations.details.openPreview')}
-                    </span>
+                    <span className="rounded-md bg-white/90 px-2 py-1 text-xs font-medium text-slate-900">{t('reclamations.details.open_preview')}</span>
                   </div>
                 </a>
               ))}
@@ -209,7 +200,7 @@ const DriverIssueDetailsModal = ({
           </section>
         ) : null}
 
-        <div className="flex flex-col gap-3 pt-1 sm:flex-row sm:justify-end">
+      <div className="flex flex-col gap-3 pt-1 sm:flex-row sm:justify-end">
           {isMaintenanceIssue && onScheduleMaintenance ? (
             <Button
               type="button"

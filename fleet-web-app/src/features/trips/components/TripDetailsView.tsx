@@ -1,10 +1,10 @@
 import { useEffect, useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { CircleMarker, MapContainer, Polyline, Popup, TileLayer, useMap } from 'react-leaflet';
 import type { LatLngExpression } from 'leaflet';
 import type { Trip } from '../../../types';
 import 'leaflet/dist/leaflet.css';
 import { compactLocationLabel } from '../utils/locationLabel';
-import { useTranslation } from 'react-i18next';
 import { tripsService, type TripLiveLocation } from '../services/trips.service';
 
 type TripDetailsViewProps = {
@@ -46,20 +46,20 @@ const formatNumber = (value: number | undefined, suffix: string, fallback: strin
   return `${value.toFixed(1)}${suffix}`;
 };
 
-const formatRelativeTime = (value?: string) => {
-  if (!value) return 'unknown time';
+const formatRelativeTime = (value: string | undefined, t: (key: string, options?: Record<string, unknown>) => string) => {
+  if (!value) return t('trips.details.live.unknownTime');
   const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return 'unknown time';
+  if (Number.isNaN(date.getTime())) return t('trips.details.live.unknownTime');
 
   const diffSeconds = Math.max(0, Math.round((Date.now() - date.getTime()) / 1000));
-  if (diffSeconds < 10) return 'just now';
-  if (diffSeconds < 60) return `${diffSeconds}s ago`;
+  if (diffSeconds < 10) return t('trips.details.live.justNow');
+  if (diffSeconds < 60) return t('trips.details.live.secondsAgo', { count: diffSeconds });
 
   const diffMinutes = Math.round(diffSeconds / 60);
-  if (diffMinutes < 60) return `${diffMinutes}m ago`;
+  if (diffMinutes < 60) return t('trips.details.live.minutesAgo', { count: diffMinutes });
 
   const diffHours = Math.round(diffMinutes / 60);
-  return `${diffHours}h ago`;
+  return t('trips.details.live.hoursAgo', { count: diffHours });
 };
 
 const geocodeLocation = async (query: string, signal: AbortSignal): Promise<GeoPoint | null> => {
@@ -131,8 +131,6 @@ const MapAutoFit = ({ points }: MapAutoFitProps) => {
 
 const TripDetailsView = ({ trip, dark = false }: TripDetailsViewProps) => {
   const { t, i18n } = useTranslation();
-  const normalizeStatusKey = (value: string) =>
-    value.toLowerCase().replace(/\s+/g, '_').replace(/-+/g, '_');
   const [startMarker, setStartMarker] = useState<GeoPoint | null>(null);
   const [endMarker, setEndMarker] = useState<GeoPoint | null>(null);
   const [isGeocoding, setIsGeocoding] = useState(false);
@@ -346,29 +344,23 @@ const TripDetailsView = ({ trip, dark = false }: TripDetailsViewProps) => {
   const liveLocationStatus = useMemo(() => {
     if (!isOngoingTrip) return null;
     if (liveLocation) {
-      const accuracy = typeof liveLocation.accuracy === 'number' ? ` • accuracy ~${Math.round(liveLocation.accuracy)}m` : '';
-      const stale = liveLocation.isStale ? ' • signal is old' : '';
-      return `Driver phone location updated ${formatRelativeTime(liveLocation.recordedAt)}${accuracy}${stale}`;
+      const accuracy = typeof liveLocation.accuracy === 'number' ? ` ${t('common.dashBullet')}${t('trips.details.live.accuracy', { count: Math.round(liveLocation.accuracy) })}` : '';
+      const stale = liveLocation.isStale ? ` ${t('common.dashBullet')}${t('trips.details.live.signalOld')}` : '';
+      return `${t('trips.details.live.updated', { when: formatRelativeTime(liveLocation.recordedAt, t) })}${accuracy}${stale}`;
     }
-    if (isLiveLocationLoading) return 'Waiting for the driver phone location...';
+    if (isLiveLocationLoading) return t('trips.details.live.waiting');
     if (liveLocationError) return liveLocationError;
-    return 'No driver phone location has been received yet. Ask the driver to open live navigation.';
-  }, [isLiveLocationLoading, isOngoingTrip, liveLocation, liveLocationError]);
+    return t('trips.details.live.notReceived');
+  }, [isLiveLocationLoading, isOngoingTrip, liveLocation, liveLocationError, t]);
 
 
   const summaryItems: Array<[string, string]> = [
-    [t('common.status'), t(`status.${normalizeStatusKey(trip.status)}`)],
+    [t('common.status'), t(`status.${String(trip.status || '').toLowerCase().replace(/\s+/g, '_')}`)],
     [t('common.driver'), trip.driver?.name || t('common.unassigned')],
-    [
-      t('common.vehicle'),
-      [trip.vehicle?.name, trip.vehicle?.plaque_immatriculation].filter(Boolean).join(' - ') || t('trips.card.unknownVehicle'),
-    ],
+    [t('common.vehicle'), [trip.vehicle?.name, trip.vehicle?.plaque_immatriculation].filter(Boolean).join(' - ') || t('common.unknownVehicle')],
     [t('common.distance'), formatNumber(trip.distance, ` ${t('common.kmUnit')}`, t('common.na'))],
     [t('common.fuel'), formatNumber(trip.fuel, ` ${t('common.liters')}`, t('common.na'))],
-    [
-      t('common.revenue'),
-      typeof trip.revenue === 'number' ? `${trip.revenue.toFixed(1)} ${t('common.currencyTnd')}` : t('common.na'),
-    ],
+    [t('common.revenue'), typeof trip.revenue === 'number' ? `${trip.revenue.toFixed(1)} ${t('common.currencyTnd')}` : t('common.na')],
     [t('common.start'), formatDateTime(trip.startTime, i18n.language, t('common.na'))],
     [t('common.end'), formatDateTime(trip.endTime, i18n.language, t('common.na'))],
   ];
@@ -379,7 +371,7 @@ const TripDetailsView = ({ trip, dark = false }: TripDetailsViewProps) => {
         <p className={`text-xs font-semibold uppercase tracking-wide ${dark ? 'text-slate-400' : 'text-slate-500'}`}>{t('common.route')}</p>
         <p className={`mt-2 text-base font-semibold ${dark ? 'text-white' : 'text-slate-900'}`}>
           {compactLocationLabel(trip.startLocation)}
-          <span className="mx-2 opacity-60">→</span>
+          <span className="mx-2 opacity-60">{t('common.arrow')}</span>
           {compactLocationLabel(trip.endLocation)}
         </p>
       </div>
@@ -411,8 +403,7 @@ const TripDetailsView = ({ trip, dark = false }: TripDetailsViewProps) => {
                   {compactLocationLabel(stop.locationName)}
                 </p>
                 <p className={`text-xs ${dark ? 'text-slate-400' : 'text-slate-600'}`}>
-                  {t('common.status')}: {t(`trips.stopStatus.${normalizeStatusKey(stop.status)}`, { defaultValue: stop.status })}{' '}
-                  {stop.arrivalTime ? t('trips.details.arrivalBullet', { date: formatDateTime(stop.arrivalTime, i18n.language, t('common.na')) }) : ''}
+                  {t('common.status')}: {t(`trips.stopStatus.${String(stop.status || '').toLowerCase()}`)} {stop.arrivalTime ? `${t('common.dashBullet')}${formatDateTime(stop.arrivalTime, i18n.language, t('common.na'))}` : ''}
                 </p>
               </div>
             ))}
@@ -441,7 +432,7 @@ const TripDetailsView = ({ trip, dark = false }: TripDetailsViewProps) => {
           <p className={`text-sm ${dark ? 'text-slate-400' : 'text-slate-600'}`}>
             {isGeocoding
               ? t('trips.details.resolvingMarkers')
-              : t('trips.details.mapUnavailable')}
+                  : t('trips.details.mapUnavailable')}
           </p>
         ) : (
           <div className="space-y-2">
@@ -482,11 +473,11 @@ const TripDetailsView = ({ trip, dark = false }: TripDetailsViewProps) => {
                     >
                       <Popup>
                         <div className="space-y-1">
-                          <p className="font-semibold">Driver location</p>
-                          <p>{liveLocation?.driver?.name || trip.driver?.name || 'Assigned driver'}</p>
-                          <p>Updated {formatRelativeTime(liveLocation?.recordedAt)}</p>
+                          <p className="font-semibold">{t('trips.details.live.driverLocation')}</p>
+                          <p>{liveLocation?.driver?.name || trip.driver?.name || t('common.driverLabel')}</p>
+                          <p>{t('trips.details.live.updated', { when: formatRelativeTime(liveLocation?.recordedAt, t) })}</p>
                           {typeof liveLocation?.accuracy === 'number' ? (
-                            <p>Accuracy ~{Math.round(liveLocation.accuracy)}m</p>
+                            <p>{t('trips.details.live.accuracy', { count: Math.round(liveLocation.accuracy) })}</p>
                           ) : null}
                         </div>
                       </Popup>

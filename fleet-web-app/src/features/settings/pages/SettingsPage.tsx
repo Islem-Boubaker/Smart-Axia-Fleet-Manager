@@ -1,12 +1,12 @@
 import { useState, useEffect } from 'react';
-import { useOutletContext, useLocation } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
+import { useOutletContext, useLocation, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { FiEdit2 } from 'react-icons/fi';
 import { Card, Button } from '../../../shared/components';
 import ProfileSettings from '../components/ProfileSettings';
 import NotificationSettings from '../components/NotificationSettings';
 import SecuritySettings from '../components/SecuritySettings';
-import { useTranslation } from 'react-i18next';
 import type { NotificationPreferences, ProfileData } from '../settings.types';
 import { useAppSelector, useAppDispatch } from '../../../shared/hooks';
 import { setUser } from '../../../store/authSlice';
@@ -15,6 +15,7 @@ import { settingsService } from '../services/settings.service';
 import { toast } from '../../../shared/components';
 import { pageShellClasses } from '../../../shared/utils/pageShell';
 import { queryKeys } from '../../../shared/services/queryKeys';
+import { ROUTES } from '../../../utils/constants';
 
 interface ThemeContext {
   dark: boolean;
@@ -39,30 +40,27 @@ const ProfileFieldTiles = ({
 }: {
   items: Array<{ label: string; value: string }>;
   dark: boolean;
-}) => {
-  const { t } = useTranslation();
-  return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
-      {items.map((item) => (
-        <div
-          key={item.label}
-          className={`rounded-xl px-3 py-2.5 sm:px-2 sm:py-3.5 border transition-colors ${
-            dark
-              ? 'border-slate-700/50 bg-slate-800/35 hover:bg-slate-800/55'
-              : 'border-slate-200/80 bg-slate-50/80 hover:bg-white'
-          }`}
-        >
-          <p className={`text-[10px] sm:text-[11px] font-semibold uppercase tracking-[0.1em] ${dark ? 'text-slate-500' : 'text-slate-500'}`}>
-            {item.label}
-          </p>
-          <p className={`mt-1 sm:mt-2 text-xs sm:text-xs font-medium leading-snug ${dark ? 'text-slate-100' : 'text-slate-900'}`}>
-            {item.value || t('common.emDash')}
-          </p>
-        </div>
-      ))}
-    </div>
-  );
-};
+}) => (
+  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+    {items.map((item) => (
+      <div
+        key={item.label}
+        className={`rounded-xl px-3 py-2.5 sm:px-2 sm:py-3.5 border transition-colors ${
+          dark
+            ? 'border-slate-700/50 bg-slate-800/35 hover:bg-slate-800/55'
+            : 'border-slate-200/80 bg-slate-50/80 hover:bg-white'
+        }`}
+      >
+        <p className={`text-[10px] sm:text-[11px] font-semibold uppercase tracking-[0.1em] ${dark ? 'text-slate-500' : 'text-slate-500'}`}>
+          {item.label}
+        </p>
+        <p className={`mt-1 sm:mt-2 text-xs sm:text-xs font-medium leading-snug ${dark ? 'text-slate-100' : 'text-slate-900'}`}>
+          {item.value || '—'}
+        </p>
+      </div>
+    ))}
+  </div>
+);
 
 const ProfileOverview = ({
   profileData,
@@ -100,7 +98,7 @@ const ProfileOverview = ({
                   .filter(Boolean)
                   .slice(0, 2)
                   .map((part) => part[0])
-                  .join('') || t('settings.profile.default_user')
+                  .join('') || t('settings.profile.default_user').slice(0, 1).toUpperCase()
               )}
             </div>
             <div className="min-w-0 space-y-1">
@@ -163,8 +161,9 @@ const ProfileOverview = ({
 
 const SettingsPage = () => {
   const { dark } = useOutletContext<ThemeContext>();
-  const location = useLocation();
   const { t } = useTranslation();
+  const location = useLocation();
+  const navigate = useNavigate();
   const { user } = useAppSelector((state) => state.auth);
   const dispatch = useAppDispatch();
   const { changePassword, updateNotifications, isLoading: isSettingsLoading } = useSettings();
@@ -183,12 +182,17 @@ const SettingsPage = () => {
   };
 
   const activeTab = getActiveTab();
+  const tabs = [
+    { id: 'profile', label: t('settings.tabs.profile') },
+    { id: 'notifications', label: t('settings.tabs.notifications') },
+    { id: 'security', label: t('settings.tabs.security') },
+  ] as const;
 
   const profileData: ProfileData = {
     name: user?.name || '',
     email: user?.email || '',
     phone: (user as { phone?: string } | null)?.phone || '',
-    company: (user as any)?.company || t('common.axiaFleetManager'),
+    company: (user as any)?.company || 'AXIA Fleet Manager',
     role: user?.role || '',
     avatar: user?.avatar,
     country: (user as any)?.country || '',
@@ -311,7 +315,7 @@ const SettingsPage = () => {
                 onClick={() => setIsEditingProfile(false)}
                 className={dark ? '!text-slate-300 hover:!bg-slate-800' : ''}
               >
-                ← {t('settings.profile.back_to_overview')}
+                {`← ${t('settings.profile.back_to_overview')}`}
               </Button>
               <ProfileSettings profileData={profileData} onSave={handleSaveProfile} dark={dark} />
             </div>
@@ -342,17 +346,46 @@ const SettingsPage = () => {
   };
 
   const shell = pageShellClasses(dark);
+  const tabTitle: Record<string, string> = {
+    profile: t('settings.profile.title'),
+    security: t('settings.security.title'),
+    notifications: t('settings.tabs.notifications'),
+  };
 
   return (
     <div className={`${shell} overflow-hidden animate-fade-in`}>
       <div className="max-w-5xl mx-auto p-6 sm:p-8 lg:p-10">
-        <h2 className={`text-2xl sm:text-3xl font-extrabold tracking-tight mb-6 lg:mb-8 ${dark ? 'text-white' : 'text-slate-900'}`}>
-          {activeTab === 'profile'
-            ? t('settings.profile.title')
-            : activeTab === 'security'
-              ? t('settings.security.title')
-              : t('settings.tabs.notifications')}
-        </h2>
+        <div className="fleet-hero mb-6 lg:mb-8">
+          <p className="fleet-hero-kicker">{t('common.settings')}</p>
+          <h2 className="fleet-hero-title">
+            {tabTitle[activeTab] ?? t('settings.pageTitle')}
+          </h2>
+        </div>
+        <div className="mb-6 overflow-x-auto">
+          <div className="inline-flex min-w-full gap-2 rounded-2xl border border-slate-200/80 bg-white/70 p-2 shadow-sm dark:border-slate-700/60 dark:bg-slate-900/50 sm:min-w-0">
+            {tabs.map((tab) => {
+              const isActive = activeTab === tab.id;
+              return (
+                <button
+                  key={tab.id}
+                  type="button"
+                  onClick={() => navigate(`${ROUTES.SETTINGS}?tab=${tab.id}`)}
+                  className={`flex-1 whitespace-nowrap rounded-xl px-4 py-2.5 text-sm font-semibold transition-colors sm:flex-none ${
+                    isActive
+                      ? dark
+                        ? 'bg-cyan-300/15 text-cyan-100 ring-1 ring-cyan-200/20'
+                        : 'bg-slate-950 text-white'
+                      : dark
+                        ? 'text-slate-300 hover:bg-slate-800/70'
+                        : 'text-slate-600 hover:bg-white'
+                  }`}
+                >
+                  {tab.label}
+                </button>
+              );
+            })}
+          </div>
+        </div>
         <div className="space-y-6 lg:space-y-8">{renderTabContent()}</div>
       </div>
     </div>

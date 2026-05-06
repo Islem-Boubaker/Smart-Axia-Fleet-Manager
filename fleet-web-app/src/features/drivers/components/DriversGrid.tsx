@@ -1,4 +1,5 @@
 import { AppDataTable, AppRowActions, AppStatusBadge, AppTd, AppTr } from '../../../shared/components';
+import { Badge } from '../../../shared/components';
 import { useTranslation } from 'react-i18next';
 import type { Driver } from '../../../types';
 
@@ -12,8 +13,8 @@ interface Props {
 
 const DriversGrid = ({ drivers, isLoading, onEdit, onDelete, dark = false }: Props) => {
   const { t } = useTranslation();
-  const normalizeStatusKey = (value: string) =>
-    value.toLowerCase().replace(/\s+/g, '_').replace(/-+/g, '_');
+  const normalizeStatusKey = (value: string) => value.toLowerCase().replace(/\s+/g, '_').replace(/-+/g, '_');
+
   if (isLoading)
     return (
       <div className={`text-center py-16 rounded-2xl border ${dark ? 'border-slate-700 text-slate-400' : 'border-slate-200 text-slate-500'}`}>
@@ -38,10 +39,6 @@ const DriversGrid = ({ drivers, isLoading, onEdit, onDelete, dark = false }: Pro
     return 'neutral';
   };
 
-  const statusLabel = (status: Driver['status']) => {
-    return t(`status.${normalizeStatusKey(status)}`);
-  };
-
   return (
     <AppDataTable
       columns={[
@@ -57,6 +54,7 @@ const DriversGrid = ({ drivers, isLoading, onEdit, onDelete, dark = false }: Pro
       totalResults={drivers.length}
       dark={dark}
       ariaLabel={t('drivers.table.aria')}
+      title={t('drivers.title')}
     >
       {drivers.map((driver) => (
         <AppTr key={driver.id}>
@@ -93,7 +91,10 @@ const DriversGrid = ({ drivers, isLoading, onEdit, onDelete, dark = false }: Pro
 
           <AppTd className={dark ? 'text-slate-100' : 'text-slate-900'}>
             <div>
-              <p className="font-semibold">{driver.name}</p>
+              <div className="flex items-center gap-2">
+                <p className="font-semibold">{driver.name}</p>
+                {driver.experienceBadge ? <Badge size="sm" variant="info">{driver.experienceBadge.label}</Badge> : null}
+              </div>
               <p className={`text-xs ${dark ? 'text-slate-400' : 'text-slate-500'}`}>
                 {driver.licenseNumber || t('drivers.table.noLicense')}
               </p>
@@ -104,11 +105,18 @@ const DriversGrid = ({ drivers, isLoading, onEdit, onDelete, dark = false }: Pro
           <AppTd className={dark ? 'text-slate-300' : 'text-slate-600'}>{driver.phone || t('common.na')}</AppTd>
 
           <AppTd>
-            <AppStatusBadge variant={statusVariant(driver.status)}>{statusLabel(driver.status)}</AppStatusBadge>
+            <AppStatusBadge variant={statusVariant(driver.status)}>{t(`status.${normalizeStatusKey(driver.status)}`)}</AppStatusBadge>
           </AppTd>
 
           <AppTd className={dark ? 'text-slate-300' : 'text-slate-600'}>{driver.assignedVehicle || t('common.unassigned')}</AppTd>
-          <AppTd className={dark ? 'text-slate-300' : 'text-slate-600'}>{driver.totalTrips ?? 0}</AppTd>
+          <AppTd className={dark ? 'text-slate-300' : 'text-slate-600'}>
+            <div className="space-y-1">
+              <p>{driver.totalTrips ?? 0}</p>
+              {typeof driver.driverScore === 'number' ? (
+                <p className="text-xs text-slate-400 dark:text-slate-500">{t('common.scoreLabel', { score: driver.driverScore })}</p>
+              ) : null}
+            </div>
+          </AppTd>
 
           <AppTd>
             <AppRowActions

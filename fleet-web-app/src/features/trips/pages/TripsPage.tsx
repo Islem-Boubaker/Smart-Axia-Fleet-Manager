@@ -1,14 +1,14 @@
 import { useEffect, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useOutletContext, useSearchParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { useTranslation } from 'react-i18next';
 import TripsHeader from '../components/TripsHeader';
 import TripsFilters from '../components/TripsFilters';
 import TripsList from '../components/TripsList';
 import TripForm from '../components/TripForm';
 import TripDetailsView from '../components/TripDetailsView';
 import { useTrips } from '../hooks/useTrips';
-import { tripsService, type RankedRecommendationItem } from '../services/trips.service';
+import { tripsService } from '../services/trips.service';
 import { Button, GlobalCard, Input, Select } from '../../../shared/components';
 import { vehiclesService } from '../../vehicles/services/vehicles.service';
 import { driversService } from '../../drivers/services/drivers.service';
@@ -84,10 +84,6 @@ const toEditValues = (trip: Trip): TripEditValues => ({
   notes: trip.notes || '',
 });
 
-const buildVehicleLabel = (vehicle: Vehicle) => (
-  vehicle.plaque_immatriculation ? `${vehicle.name} (${vehicle.plaque_immatriculation})` : vehicle.name
-);
-
 const TripsPage = () => {
   const { dark } = useOutletContext<ThemeContext>();
   const { t } = useTranslation();
@@ -109,7 +105,7 @@ const TripsPage = () => {
   const [editStops, setEditStops] = useState<EditableStop[]>([]);
   const [editErrors, setEditErrors] = useState<Partial<Record<keyof TripEditValues, string>>>({});
   const [editStopsError, setEditStopsError] = useState<string | null>(null);
-  const [recommendations, setRecommendations] = useState<{ drivers: RankedRecommendationItem[]; vehicles: RankedRecommendationItem[] } | null>(null);
+  const [recommendations, setRecommendations] = useState<{ drivers: Driver[]; vehicles: Vehicle[] } | null>(null);
   const [isFetchingRecs, setIsFetchingRecs] = useState(false);
   const dismissedFocusedTripIdRef = useRef<string | null>(null);
 
@@ -235,19 +231,9 @@ const TripsPage = () => {
     vehicleId: string;
     userId: string;
     startLocation: string;
-    startLatitude?: number;
-    startLongitude?: number;
     endLocation: string;
-    endLatitude?: number;
-    endLongitude?: number;
     startTime: string;
-    endTime?: string;
-    region?: string;
-    requiredCapacity?: number;
-    loadType?: 'general' | 'cold' | 'fragile' | 'heavy';
     distance: number;
-    distance_in_meters?: number;
-    estimated_duration_seconds?: number;
     fuel?: number;
     revenue?: number;
     notes?: string;
@@ -303,7 +289,7 @@ const TripsPage = () => {
 
     const distance = Number(editValues.distance);
     if (Number.isNaN(distance) || distance <= 0) {
-      nextErrors.distance = t('trips.form.errors.distancePositive');
+      nextErrors.distance = 'Distance must be a positive number.';
     }
 
     if (editValues.endTime) {
@@ -470,7 +456,7 @@ const TripsPage = () => {
       const response = (err as { response?: { data?: { message?: string; errors?: string[] } } })?.response;
       const message = response?.data?.message;
       const detailed = Array.isArray(response?.data?.errors) ? response?.data?.errors.join(' | ') : null;
-      setEditError(detailed || message || t('trips.errors.updateFailed'));
+      setEditError(detailed || message || 'Failed to update trip.');
     } finally {
       setIsEditSubmitting(false);
     }
@@ -482,30 +468,16 @@ const TripsPage = () => {
       return;
     }
 
-    const distanceValue = Number(editValues.distance);
-    if (!Number.isFinite(distanceValue) || distanceValue <= 0) {
-      setEditError(t('trips.errors.recDistance'));
-      return;
-    }
-
-    const capacityValue = Number(editValues.requiredCapacity);
-    if (!Number.isFinite(capacityValue) || capacityValue <= 0) {
-      setEditError(t('trips.errors.recCapacity'));
-      return;
-    }
-
     try {
       setIsFetchingRecs(true);
       setEditError(null);
       
       const recs = await tripsService.getTripRecommendations({
-        action: 'assignment',
         startTime: new Date(editValues.startTime).toISOString(),
         endTime: editValues.endTime ? new Date(editValues.endTime).toISOString() : undefined,
         region: editValues.region.trim(),
-        distance: distanceValue,
-        requiredCapacity: capacityValue,
-        loadType: 'general',
+        distance: Number(editValues.distance) || 0,
+        requiredCapacity: Number(editValues.requiredCapacity) || 0
       });
 
       setRecommendations(recs);
@@ -524,58 +496,35 @@ const TripsPage = () => {
     }
   };
 
-  const vehicleOptions = recommendations?.vehicles?.length
-    ? [
-        { value: '', label: t('trips.form.selectVehicle') },
-        ...[...recommendations.vehicles]
-          .map((vehicle) => {
-            const score = vehicle.score;
-            const baseLabel = vehicle.name || t('common.vehicleDefaultName');
-            const scoreLabel = score ? t('common.scoreLabel', { score: Math.round(score) }) : '';
-            return {
-              value: vehicle.id,
-              label: `${baseLabel}${scoreLabel}`,
-              score: score || 0,
-            };
-          })
-          .sort((a, b) => b.score - a.score || (a.label || '').localeCompare(b.label || '')),
-      ]
-    : [
-        { value: '', label: t('trips.form.selectVehicle') },
-        ...[...vehicles]
-          .map((vehicle) => ({
-            value: vehicle.id,
-            label: buildVehicleLabel(vehicle),
-            score: 0,
-          }))
-          .sort((a, b) => (a.label || '').localeCompare(b.label || '')),
-      ];
+  const vehicleOptions = [
+    { value: '', label: t('common.selectVehicle') },
+    ...[...vehicles]
+      .map((vehicle) => {
+        const rec = recommendations?.vehicles?.find((v) => v.id === vehicle.id);
+        const score = (rec as any)?.ml_score;
+        return {
+          value: vehicle.id,
+          label: (vehicle.plaque_immatriculation ? `${vehicle.name} (${vehicle.plaque_immatriculation})` : vehicle.name) + (score ? ` (Score: ${Math.round(score)})` : ''),
+          score: score || 0
+        };
+      })
+      .sort((a, b) => b.score - a.score || (a.label || '').localeCompare(b.label || '')),
+  ];
 
-  const driverOptions = recommendations?.drivers?.length
-    ? [
-        { value: '', label: t('trips.form.selectDriver') },
-        ...[...recommendations.drivers]
-          .map((driver) => {
-            const score = driver.score;
-            const scoreLabel = score ? t('common.scoreLabel', { score: Math.round(score) }) : '';
-            return {
-              value: driver.id,
-              label: `${driver.name}${scoreLabel}`,
-              score: score || 0,
-            };
-          })
-          .sort((a, b) => b.score - a.score || (a.label || '').localeCompare(b.label || '')),
-      ]
-    : [
-        { value: '', label: t('trips.form.selectDriver') },
-        ...[...drivers]
-          .map((driver) => ({
-            value: driver.id,
-            label: driver.name,
-            score: 0,
-          }))
-          .sort((a, b) => (a.label || '').localeCompare(b.label || '')),
-      ];
+  const driverOptions = [
+    { value: '', label: t('common.selectDriver') },
+    ...[...drivers]
+      .map((driver) => {
+        const rec = recommendations?.drivers?.find((d) => d.id === driver.id);
+        const score = (rec as any)?.ml_score;
+        return {
+          value: driver.id, 
+          label: driver.name + (score ? ` (Score: ${Math.round(score)})` : ''),
+          score: score || 0
+        };
+      })
+      .sort((a, b) => b.score - a.score || (a.label || '').localeCompare(b.label || '')),
+  ];
 
 
   return (
@@ -652,11 +601,7 @@ const TripsPage = () => {
       <GlobalCard
         isOpen={Boolean(selectedTrip)}
         onClose={closeTripDetails}
-        title={
-          selectedTrip
-            ? t('trips.modals.detailsTitleWithId', { id: selectedTrip.id })
-            : t('trips.modals.detailsTitle')
-        }
+        title={t('trips.modals.detailsTitle')}
         maxWidth="2xl"
       >
         {selectedTrip ? <TripDetailsView trip={selectedTrip} dark={dark} /> : null}
@@ -673,11 +618,7 @@ const TripsPage = () => {
           setEditStopsError(null);
           setEditError(null);
         }}
-        title={
-          editingTrip
-            ? t('trips.modals.editTitleWithId', { id: editingTrip.id })
-            : t('trips.modals.editTitle')
-        }
+        title={t('trips.modals.editTitle')}
         maxWidth="2xl"
       >
         {editError && (
@@ -827,13 +768,13 @@ const TripsPage = () => {
             <div className={`rounded-2xl border p-4 space-y-3 ${dark ? 'border-slate-700/80 bg-slate-900/30' : 'border-slate-200/90 bg-white/70'}`}>
               <div className="flex items-center justify-between gap-3">
                 <div>
-                    <p className={`text-sm font-semibold ${dark ? 'text-slate-100' : 'text-slate-900'}`}>{t('trips.edit.stopsTitle')}</p>
-                    <p className={`text-xs ${dark ? 'text-slate-400' : 'text-slate-500'}`}>
-                      {t('trips.edit.stopsHint')}
-                    </p>
+                  <p className={`text-sm font-semibold ${dark ? 'text-slate-100' : 'text-slate-900'}`}>{t('trips.edit.stopsTitle')}</p>
+                  <p className={`text-xs ${dark ? 'text-slate-400' : 'text-slate-500'}`}>
+                    {t('trips.edit.stopsHint')}
+                  </p>
                 </div>
                 <Button type="button" size="sm" variant="secondary" onClick={handleAddEditStop} disabled={isEditSubmitting}>
-                    {t('trips.form.addStop')}
+                  {t('trips.form.addStop')}
                 </Button>
               </div>
 
@@ -841,13 +782,13 @@ const TripsPage = () => {
 
               <div className="space-y-3">
                 {editStops.length === 0 ? (
-                    <p className={`text-sm ${dark ? 'text-slate-400' : 'text-slate-500'}`}>{t('trips.edit.noStops')}</p>
+                  <p className={`text-sm ${dark ? 'text-slate-400' : 'text-slate-500'}`}>{t('trips.edit.noStops')}</p>
                 ) : (
                   editStops.map((stop, index) => (
                     <div key={stop.tempId} className={`rounded-xl border p-3 ${dark ? 'border-slate-700 bg-slate-800/40' : 'border-slate-200 bg-slate-50/80'}`}>
                       <div className="flex items-center justify-between gap-2 mb-3">
                         <p className={`text-xs font-semibold uppercase tracking-wide ${dark ? 'text-slate-400' : 'text-slate-500'}`}>
-                            {t('trips.edit.stopNumber', { n: index + 1 })}
+                          {t('trips.edit.stopNumber', { n: index + 1 })}
                         </p>
                         <div className="flex items-center gap-2">
                           <Button
@@ -857,7 +798,7 @@ const TripsPage = () => {
                             onClick={() => moveEditStop(index, index - 1)}
                             disabled={isEditSubmitting || editingTrip?.status !== 'scheduled' || index === 0}
                           >
-                              {t('trips.edit.moveUp')}
+                            {t('trips.edit.moveUp')}
                           </Button>
                           <Button
                             type="button"
@@ -866,7 +807,7 @@ const TripsPage = () => {
                             onClick={() => moveEditStop(index, index + 1)}
                             disabled={isEditSubmitting || editingTrip?.status !== 'scheduled' || index === editStops.length - 1}
                           >
-                              {t('trips.edit.moveDown')}
+                            {t('trips.edit.moveDown')}
                           </Button>
                           <Button
                             type="button"
@@ -875,19 +816,19 @@ const TripsPage = () => {
                             onClick={() => handleRemoveEditStop(stop.tempId)}
                             disabled={isEditSubmitting}
                           >
-                              {t('common.remove')}
+                            {t('common.remove')}
                           </Button>
                         </div>
                       </div>
 
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                         <Input
-                            label={t('trips.edit.stopName')}
+                          label={t('trips.edit.stopName')}
                           value={stop.locationName}
                           onChange={(e) => handleEditStopField(stop.tempId, 'locationName', e.target.value)}
                         />
                         <Input
-                            label={t('trips.edit.estimatedArrival')}
+                          label={t('trips.edit.estimatedArrival')}
                           type="datetime-local"
                           value={stop.estimatedArrival}
                           onChange={(e) => handleEditStopField(stop.tempId, 'estimatedArrival', e.target.value)}
@@ -895,7 +836,7 @@ const TripsPage = () => {
                       </div>
 
                       <div className="mt-3">
-                          <label className="block text-[13px] text-gray-500 dark:text-slate-400 mb-1.5">{t('trips.edit.stopNotesLabel')}</label>
+                        <label className="block text-[13px] text-gray-500 dark:text-slate-400 mb-1.5">{t('trips.edit.stopNotesLabel')}</label>
                         <textarea
                           value={stop.notes}
                           onChange={(e) => handleEditStopField(stop.tempId, 'notes', e.target.value)}
@@ -905,7 +846,7 @@ const TripsPage = () => {
                               ? 'bg-slate-800/50 border-slate-700 text-white placeholder:text-slate-500 hover:border-slate-600'
                               : 'bg-white border-gray-200 text-gray-900 placeholder:text-gray-400 hover:border-gray-300'
                           }`}
-                            placeholder={t('trips.edit.stopNotesPlaceholder')}
+                          placeholder={t('trips.edit.stopNotesPlaceholder')}
                         />
                       </div>
                     </div>

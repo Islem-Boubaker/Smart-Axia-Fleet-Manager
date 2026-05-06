@@ -84,6 +84,35 @@ const VehicleDetailsModal = ({
   const sectionTitleClass = dark
     ? 'text-sm font-bold text-slate-50'
     : 'text-sm font-semibold text-slate-900';
+  const summaryPanelClass = dark
+    ? 'relative grid grid-cols-1 gap-4 overflow-hidden rounded-[22px] border border-sky-300/14 bg-[#0e2136] p-5 shadow-[inset_0_1px_0_rgba(255,255,255,0.07),0_18px_50px_rgba(0,0,0,0.24)] sm:grid-cols-2'
+    : 'grid grid-cols-1 gap-3 rounded-[20px] border border-slate-200 bg-slate-50/70 p-4 sm:grid-cols-2';
+  const detailPanelClass = dark
+    ? 'mt-2 rounded-[20px] border border-cyan-200/12 bg-[#0f1d31]/82 p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.05)]'
+    : 'mt-2 rounded-[18px] border border-slate-200 bg-white p-4';
+  const detailLabelClass = dark
+    ? 'text-xs font-bold uppercase tracking-[0.14em] text-cyan-100/60'
+    : 'text-xs font-semibold uppercase tracking-wide text-slate-500';
+  const detailValueClass = dark
+    ? 'text-sm font-bold text-white'
+    : 'text-sm font-semibold text-slate-900';
+  const identityItemClass = dark
+    ? 'relative z-10 rounded-2xl border border-sky-200/10 bg-[#132b43] p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.045)]'
+    : '';
+  const detailTextClass = dark ? 'text-sm text-slate-300' : 'text-sm text-slate-700';
+  const detailStrongClass = dark ? 'font-bold text-white' : 'font-semibold text-slate-900';
+  const mutedPanelClass = dark
+    ? 'mt-2 rounded-[20px] border border-cyan-200/12 bg-[#0f1d31]/72 p-4 text-sm text-slate-300 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]'
+    : 'mt-2 rounded-[18px] border border-slate-200 bg-white/80 p-4 text-sm text-slate-500';
+  const maintenanceCardClass = dark
+    ? 'rounded-[18px] border border-cyan-200/12 bg-[#0f1d31]/78 p-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]'
+    : 'rounded-[16px] border border-slate-200 bg-white p-3';
+  const secondaryButtonClass = dark
+    ? 'border-slate-700 bg-slate-800 text-slate-100 hover:bg-slate-700'
+    : '';
+  const primaryButtonClass = dark
+    ? '!bg-none !bg-cyan-400 text-slate-950 hover:!bg-cyan-300'
+    : '';
   const generateButtonClass = dark
     ? 'flex items-center gap-1.5 rounded-full bg-cyan-400 px-3 py-1.5 text-xs font-bold text-slate-950 shadow-[0_10px_24px_rgba(34,211,238,0.18)] transition-colors hover:bg-cyan-300 disabled:cursor-not-allowed disabled:opacity-60'
     : 'flex items-center gap-1.5 rounded-full bg-blue-600 px-3 py-1.5 text-xs font-semibold text-white shadow-sm transition-colors hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60';
@@ -121,87 +150,93 @@ const VehicleDetailsModal = ({
       maxWidth="2xl"
       footer={
         <div className="flex items-center justify-end gap-2">
-          <Button variant="secondary" onClick={onClose} aria-label={t('vehicles.details.closeAria')}>
+          <Button
+            variant="secondary"
+            onClick={onClose}
+            aria-label={t('vehicles.details.closeAria')}
+            className={secondaryButtonClass}
+          >
             {t('common.close')}
           </Button>
-          <Button onClick={onEdit} disabled={!vehicle || isLoading} aria-label={t('vehicles.details.editAria')}>
+          <Button
+            onClick={onEdit}
+            disabled={!vehicle || isLoading}
+            aria-label={t('vehicles.details.editAria')}
+            className={primaryButtonClass}
+          >
             {t('common.edit')}
           </Button>
         </div>
       }
     >
-      {isLoading && <p className="text-sm text-slate-500">{t('vehicles.details.loading')}</p>}
+      {isLoading && <p className={dark ? 'text-sm text-slate-400' : 'text-sm text-slate-500'}>{t('vehicles.details.loading')}</p>}
 
       {error && !isLoading && (
         <div className={dark ? 'rounded-xl border border-rose-500/25 bg-rose-950/35 px-4 py-3 text-sm text-rose-200' : 'rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700'}>{error}</div>
       )}
 
       {!isLoading && !error && vehicle && (
-        <div className="space-y-6">
-          <section className="grid grid-cols-1 gap-3 rounded-xl border border-slate-200 bg-slate-50/70 p-4 sm:grid-cols-2">
-            <div>
-              <p className="text-xs text-slate-500">{t('common.name')}</p>
-              <p className="text-sm font-semibold text-slate-900">{vehicle.name}</p>
+        <div className="space-y-5">
+          <section className={summaryPanelClass}>
+            {dark ? (
+              <div
+                aria-hidden="true"
+                className="pointer-events-none absolute -right-16 -top-16 h-36 w-36 rounded-full bg-cyan-300/16 blur-3xl"
+              />
+            ) : null}
+            <div className={identityItemClass}>
+              <p className={detailLabelClass}>{t('common.name')}</p>
+              <p className={detailValueClass}>{vehicle.name}</p>
             </div>
-            <div>
-              <p className="text-xs text-slate-500">{t('vehicles.details.vehicleId')}</p>
-              <p className="text-sm font-semibold text-slate-900">{vehicle.id}</p>
+            <div className={identityItemClass}>
+              <p className={detailLabelClass}>{t('common.plate')}</p>
+              <p className={detailValueClass}>{vehicle.plaque_immatriculation || t('common.na')}</p>
             </div>
-            <div>
-              <p className="text-xs text-slate-500">{t('common.plate')}</p>
-              <p className="text-sm font-semibold text-slate-900">{vehicle.plaque_immatriculation || t('common.na')}</p>
-            </div>
-            <div>
-              <p className="text-xs text-slate-500">{t('common.model')}</p>
-              <p className="text-sm font-semibold text-slate-900">{vehicle.Vehicle_Model}</p>
+            <div className={identityItemClass}>
+              <p className={detailLabelClass}>{t('common.model')}</p>
+              <p className={detailValueClass}>{vehicle.Vehicle_Model}</p>
             </div>
           </section>
 
           <section>
             <h3 className={sectionTitleClass}>{t('vehicles.details.assignmentTitle')}</h3>
             {assignment ? (
-              <div className="mt-2 rounded-xl border border-slate-200 p-4">
-                <p className="text-sm text-slate-700">
-                  {t('vehicles.details.assignmentDriver')}{' '}
-                  <span className="font-semibold text-slate-900">{assignment.driverName ?? t('common.unassigned')}</span>
+              <div className={detailPanelClass}>
+                <p className={detailTextClass}>
+                  {t('vehicles.details.assignmentDriver')} <span className={detailStrongClass}>{assignment.driverName}</span>
                 </p>
-                <p className="text-sm text-slate-700">
-                  {t('vehicles.details.assignmentRoute')}{' '}
-                  <span className="font-semibold text-slate-900">{assignment.startLocation} {'->'} {assignment.endLocation}</span>
+                <p className={detailTextClass}>
+                  {t('vehicles.details.assignmentRoute')} <span className={detailStrongClass}>{assignment.startLocation} {'->'} {assignment.endLocation}</span>
                 </p>
-                <p className="text-sm text-slate-700">
-                  {t('vehicles.details.assignmentStatus')}{' '}
-                  <span className="font-semibold capitalize text-slate-900">
-                    {assignment.tripStatus ? t(`trips.status.${assignment.tripStatus}`) : t('common.na')}
-                  </span>
+                <p className={detailTextClass}>
+                  {t('vehicles.details.assignmentStatus')} <span className={`capitalize ${detailStrongClass}`}>{t(`status.${String(assignment.tripStatus || '').toLowerCase().replace(/\s+/g, '_')}`)}</span>
                 </p>
-                <p className="text-sm text-slate-700">
-                  {t('vehicles.details.assignmentStart')}{' '}
-                  <span className="font-semibold text-slate-900">{prettyDate(assignment.startTime, i18n.language, t('common.na'))}</span>
+                <p className={detailTextClass}>
+                  {t('vehicles.details.assignmentStart')} <span className={detailStrongClass}>{prettyDate(assignment.startTime, i18n.language, t('common.na'))}</span>
                 </p>
               </div>
             ) : (
-              <p className="mt-2 rounded-xl border border-slate-200 p-4 text-sm text-slate-500">{t('vehicles.details.noAssignment')}</p>
+              <p className={mutedPanelClass}>{t('vehicles.details.noAssignment')}</p>
             )}
           </section>
 
           <section>
             <h3 className={sectionTitleClass}>{t('vehicles.details.maintenanceHistoryTitle')}</h3>
             {maintenanceHistory.length === 0 ? (
-              <p className="mt-2 rounded-xl border border-slate-200 p-4 text-sm text-slate-500">{t('vehicles.details.noMaintenance')}</p>
+              <p className={mutedPanelClass}>{t('vehicles.details.noMaintenance')}</p>
             ) : (
               <div className="mt-2 space-y-2">
                 {maintenanceHistory.slice(0, 6).map((record) => (
-                  <div key={record.id} className="rounded-xl border border-slate-200 p-3">
-                    <p className="text-sm font-semibold text-slate-900">{record.description || t('common.maintenanceTask')}</p>
-                    <p className="text-xs text-slate-500">
+                  <div key={record.id} className={maintenanceCardClass}>
+                    <p className={dark ? 'text-sm font-bold text-white' : 'text-sm font-semibold text-slate-900'}>{record.description || t('common.maintenanceTask')}</p>
+                    <p className={dark ? 'text-xs text-slate-400' : 'text-xs text-slate-500'}>
                       {t('vehicles.details.maintenanceLine', {
                         date: prettyDate(record.scheduledDate, i18n.language, t('common.na')),
-                        status: record.status,
-                        priority: record.priority,
+                        status: t(`status.${String(record.status || '').toLowerCase().replace(/\s+/g, '_')}`),
+                        priority: t(`priority.${String(record.priority || '').toLowerCase()}`),
                       })}
                     </p>
-                    <p className="text-xs text-slate-500">
+                    <p className={dark ? 'text-xs text-slate-400' : 'text-xs text-slate-500'}>
                       {t('vehicles.details.costLine', {
                         cost: record.cost.toLocaleString(i18n.language),
                         currency: t('common.currencyDzd'),
@@ -215,7 +250,9 @@ const VehicleDetailsModal = ({
 
           <section>
             <div className="flex items-center justify-between mb-3">
-              <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100">{t('vehicles.details.recommendationsTitle')}</h3>
+              <h3 className={sectionTitleClass}>
+                {t('vehicles.details.recommendationsHeading')}
+              </h3>
               <button
                 onClick={handleGenerateRecommendations}
                 disabled={isGenerating || !vehicle}
@@ -241,7 +278,7 @@ const VehicleDetailsModal = ({
             </div>
 
             {displayedRecommendations.length === 0 ? (
-              <p className="text-xs text-slate-400 italic">{t('common.noRecommendationsYet')}</p>
+              <p className={dark ? 'text-xs italic text-slate-500' : 'text-xs italic text-slate-400'}>{t('common.noRecommendationsYet')}</p>
             ) : (
               <div className="space-y-2">
                 {displayedRecommendations.map((rec, index) => (

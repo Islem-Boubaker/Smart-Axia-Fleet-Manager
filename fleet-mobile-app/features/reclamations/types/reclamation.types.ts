@@ -59,6 +59,7 @@ export type ReclamationType =
   | "vehicle"
   | "maintenance"
   | "trip"
+  | "accident"
   | "damage"
   | "delay"
   | "technical"

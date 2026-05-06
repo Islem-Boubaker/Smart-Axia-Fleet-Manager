@@ -9,6 +9,7 @@ interface AppDataTableProps {
   dark?: boolean;
   ariaLabel?: string;
   pageSize?: number;
+  title?: string;
 }
 
 interface AppTdProps {
@@ -27,6 +28,7 @@ const AppDataTable = ({
   dark = false,
   ariaLabel,
   pageSize = 7,
+  title,
 }: AppDataTableProps) => {
   const { t } = useTranslation();
   const rowNodes = useMemo(() => Children.toArray(children), [children]);
@@ -48,7 +50,8 @@ const AppDataTable = ({
 
   const resultsCount =
     typeof totalResults === "number" ? totalResults : rowNodes.length;
-  const resolvedAriaLabel = ariaLabel ?? t("dataTable.aria");
+  void title;
+  const resolvedAriaLabel = ariaLabel || t('dataTable.aria');
 
   const pageButtons = useMemo(() => {
     if (totalPages <= 5) {
@@ -270,9 +273,7 @@ const AppDataTable = ({
           }`}
         >
           <span>
-            {resultsCount === 1
-              ? t("dataTable.showing_one", { count: resultsCount })
-              : t("dataTable.showing_other", { count: resultsCount })}
+            {t('common.showing_results', { count: resultsCount })}
           </span>
 
           {rowNodes.length > pageSize && (
@@ -287,7 +288,7 @@ const AppDataTable = ({
                 onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
                 disabled={safeCurrentPage === 1}
               >
-                {t("dataTable.prev")}
+                {t('dataTable.prev')}
               </button>
 
               {pageButtons.map((page) => (
@@ -304,7 +305,7 @@ const AppDataTable = ({
                         : "text-slate-600 hover:bg-white/80"
                   }`}
                   onClick={() => setCurrentPage(page)}
-                  aria-label={t("dataTable.page", { page })}
+                  aria-label={t('dataTable.page', { page })}
                 >
                   {page}
                 </button>
@@ -322,7 +323,7 @@ const AppDataTable = ({
                 }
                 disabled={safeCurrentPage === totalPages}
               >
-                {t("dataTable.next")}
+                {t('dataTable.next')}
               </button>
             </div>
           )}

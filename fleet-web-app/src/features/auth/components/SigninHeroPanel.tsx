@@ -59,19 +59,27 @@ export default function SigninHeroPanel() {
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
           <div
             style={{
-              width: '38px',
-              height: '38px',
-              background: 'linear-gradient(135deg,#2F2FE4,#2F2FE4)',
-              borderRadius: '11px',
+              width: '52px',
+              height: '52px',
+              borderRadius: '16px',
+              background: 'rgba(8, 11, 20, 0.82)',
+              border: '1px solid rgba(255,255,255,0.12)',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
+              overflow: 'hidden',
+              boxShadow: '0 14px 34px rgba(0,0,0,0.28)',
             }}
           >
-            <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-              <path d="M3 13l4-5 3 3 3-4 4 6H3z" fill="white" opacity="0.95" />
-              <circle cx="15" cy="5" r="2.5" fill="white" />
-            </svg>
+            <img
+              src="/images/OFFICIAL LOGO.png"
+              alt={t('brand.fleetManager')}
+              style={{
+                width: '80%',
+                height: '80%',
+                objectFit: 'contain',
+              }}
+            />
           </div>
           <div
             style={{

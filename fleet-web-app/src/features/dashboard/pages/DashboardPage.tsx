@@ -27,8 +27,8 @@ interface ThemeContext {
 }
 
 const DashboardPage = () => {
-  const { t, i18n } = useTranslation();
   const { dark } = useOutletContext<ThemeContext>();
+  const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const [selectedTrip, setSelectedTrip] = useState<Trip | null>(null);
   const {
@@ -83,16 +83,16 @@ const DashboardPage = () => {
     navigate(ROUTES.SETTINGS);
   };
 
-  const todayLabel = useMemo(() => {
-    const lng = (i18n.language || 'en').split('-')[0];
-    const locale = lng === 'ar' ? 'ar' : lng === 'fr' ? 'fr-FR' : 'en-GB';
-    return new Date().toLocaleDateString(locale, {
-      weekday: 'long',
-      day: 'numeric',
-      month: 'long',
-      year: 'numeric',
-    });
-  }, [i18n.language]);
+  const todayLabel = useMemo(
+    () =>
+      new Date().toLocaleDateString(i18n.language || 'en', {
+        weekday: 'long',
+        day: 'numeric',
+        month: 'long',
+        year: 'numeric',
+      }),
+    [i18n.language]
+  );
 
   if (loading) {
     return (
@@ -127,8 +127,9 @@ const DashboardPage = () => {
     <div className={`${pageShellClasses(dark)} ${pageShellInnerSpacing} animate-fade-in`}>
       <div className="fleet-hero relative grid grid-cols-1 lg:grid-cols-2 gap-4 items-center">
         <div>
-          <h1 className="text-xl md:text-2xl font-semibold tracking-tight text-gray-900 dark:text-white">{t('dashboard.title')}</h1>
-          <p className="text-gray-500 dark:text-gray-400 text-sm">{t('dashboard.overviewLine', { date: todayLabel })}</p>
+          <p className="fleet-hero-kicker">{t('dashboard.sectionLabel')}</p>
+          <h1 className="fleet-hero-title">{t('dashboard.title')}</h1>
+          <p className="fleet-hero-subtitle">{t('dashboard.overviewLine', { date: todayLabel })}</p>
         </div>
         <div className="justify-self-start lg:justify-self-end">
           <Button onClick={() => navigate(ROUTES.TRIPS)} className="rounded-full shadow-sm">
@@ -157,7 +158,7 @@ const DashboardPage = () => {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         <RecentTripsCard trips={recentTrips} onTripClick={setSelectedTrip} />
-        <TopDriversCard drivers={topDrivers} />
+        <TopDriversCard drivers={topDrivers} onViewFull={() => navigate(ROUTES.DRIVERS)} />
         <FuelUsageCard fuelByDay={fuelByDay} activeVehicles={stats.activeVehicles} />
       </div>
 
@@ -173,7 +174,7 @@ const DashboardPage = () => {
       <GlobalCard
         isOpen={Boolean(selectedTrip)}
         onClose={() => setSelectedTrip(null)}
-        title={selectedTrip ? t('dashboard.tripDetailsWithId', { id: selectedTrip.id }) : t('dashboard.tripDetails')}
+        title={t('dashboard.tripDetails')}
         maxWidth="2xl"
       >
         {selectedTrip ? <TripDetailsView trip={selectedTrip} dark={dark} /> : null}

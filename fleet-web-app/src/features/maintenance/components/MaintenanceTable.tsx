@@ -12,10 +12,12 @@ interface MaintenanceTableProps {
   onRemove?: (record: Maintenance) => Promise<void> | void;
 }
 
+const normalizeKey = (value: string) => String(value || '').toLowerCase().replace(/[\s-]+/g, '_');
+
 const MaintenanceTable = memo(({ data, dark = false, onUpdate, onTransition, onEdit, onRemove }: MaintenanceTableProps) => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const records = useMemo(() => data ?? [], [data]);
-  const normalizeKey = (value: string) => value.toLowerCase().replace(/\s+/g, '_').replace(/-+/g, '_');
+  const locale = i18n.language || 'en';
 
   const getStatusColor = (status: string) => {
     const normalized = String(status).replace(/_/g, '-');
@@ -45,6 +47,13 @@ const MaintenanceTable = memo(({ data, dark = false, onUpdate, onTransition, onE
     if (onUpdate) onUpdate();
   };
 
+  const formatDate = (value?: string) => {
+    if (!value) return t('common.na');
+    const parsed = new Date(value);
+    if (Number.isNaN(parsed.getTime())) return value;
+    return parsed.toLocaleDateString(locale);
+  };
+
   return (
     <AppDataTable
       columns={[
@@ -60,21 +69,22 @@ const MaintenanceTable = memo(({ data, dark = false, onUpdate, onTransition, onE
       totalResults={records.length}
       dark={dark}
       ariaLabel={t('maintenance.table.aria')}
+      title={t('maintenance.title')}
       pageSize={7}
     >
       {records.map((record) => (
         <AppTr key={record.id}>
           <AppTd className={dark ? 'text-slate-100' : 'text-slate-900'}>
-            {record.type ? t(`maintenance.types.${normalizeKey(record.type)}`, { defaultValue: record.type }) : t('maintenance.title')}
+            {record.type ? t(`maintenance.types.${normalizeKey(record.type)}`, { defaultValue: record.type }) : t('common.maintenance')}
           </AppTd>
 
           <AppTd className={dark ? 'text-slate-200' : 'text-slate-700'}>
             {record.vehicleName
               ? `${record.vehicleName}${record.vehiclePlate ? ` (${record.vehiclePlate})` : ''}`
-                : record.vehiclePlate || t('common.na')}
+              : record.vehiclePlate || t('common.na')}
           </AppTd>
 
-          <AppTd className={dark ? 'text-slate-300' : 'text-slate-600'}>{record.scheduledDate}</AppTd>
+          <AppTd className={dark ? 'text-slate-300' : 'text-slate-600'}>{formatDate(record.scheduledDate)}</AppTd>
           <AppTd className={dark ? 'text-slate-300' : 'text-slate-600'}>{record.technician || t('maintenance.table.tbd')}</AppTd>
 
           <AppTd>

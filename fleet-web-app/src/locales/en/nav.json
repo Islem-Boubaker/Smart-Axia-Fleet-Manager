@@ -11,7 +11,9 @@
     "fleet": "Fleet",
     "profile": "Profile",
     "notifications": "Notifications",
-    "security": "Security"
+    "security": "Security",
+    "expandSidebar": "Expand sidebar",
+    "collapseSidebar": "Collapse sidebar"
   },
   "brand": {
     "axia": "Smart Axia",

@@ -1,10 +1,12 @@
 import { useEffect, useMemo, useRef, useState, useCallback } from "react";
+import { useTranslation } from 'react-i18next';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { io, Socket } from "socket.io-client";
 import notificationApi from "../services/notification.api";
 import type { NotificationRecord } from "../services/notification.api";
 import { toast } from "../components";
 import { queryKeys } from '../services/queryKeys';
+import { localizeNotificationText } from '../utils/localizeNotification';
 
 export interface HeaderNotificationItem {
   id: string;
@@ -41,16 +43,21 @@ function toHeaderType(notification: NotificationRecord): HeaderNotificationItem[
   return "success";
 }
 
-function toHeaderNotification(notification: NotificationRecord): HeaderNotificationItem {
+function toHeaderNotification(
+  notification: NotificationRecord,
+  title: string,
+  message: string,
+  locale: string
+): HeaderNotificationItem {
   return {
     id: notification.id,
     type: toHeaderType(notification),
     notificationType: notification.type,
     group: notification.group,
     priority: notification.priority,
-    title: notification.title,
-    message: notification.message,
-    timestamp: new Date(notification.createdAt).toLocaleString(),
+    title,
+    message,
+    timestamp: new Date(notification.createdAt).toLocaleString(locale),
     createdAt: notification.createdAt,
     updatedAt: notification.updatedAt,
     actionUrl: notification.actionUrl,
@@ -73,6 +80,7 @@ function extractNotifications(payload: unknown): NotificationRecord[] {
 }
 
 export function useNotificationSocket({ token }: UseNotificationSocketOptions = {}) {
+  const { t, i18n } = useTranslation();
   const queryClient = useQueryClient();
   const socketRef = useRef<Socket | null>(null);
   const shownToastIdsRef = useRef<Set<string>>(new Set());
@@ -123,10 +131,11 @@ export function useNotificationSocket({ token }: UseNotificationSocketOptions = 
         return [notification, ...previousItems];
       });
 
+      const localized = localizeNotificationText(notification, t, i18n.language || 'en');
       if (!shownToastIdsRef.current.has(notification.id)) {
         shownToastIdsRef.current.add(notification.id);
-        toast.info(notification.message, {
-          title: notification.title,
+        toast.info(localized.message, {
+          title: localized.title,
           duration: 5000,
         });
       }
@@ -145,7 +154,14 @@ export function useNotificationSocket({ token }: UseNotificationSocketOptions = 
     };
   }, [queryClient, token]);
 
-  const notifications = useMemo(() => items.map(toHeaderNotification), [items]);
+  const notifications = useMemo(
+    () =>
+      items.map((item) => {
+        const localized = localizeNotificationText(item, t, i18n.language || 'en');
+        return toHeaderNotification(item, localized.title, localized.message, i18n.language || 'en');
+      }),
+    [i18n.language, items, t]
+  );
 
   const markAsRead = useCallback(async (id: string) => {
     queryClient.setQueryData(queryKeys.notifications.list({ limit: 20 }), (old: unknown) => {

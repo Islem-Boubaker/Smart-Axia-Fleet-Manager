@@ -1,5 +1,6 @@
 import { useCallback, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { driverRankingService } from '../services/driverRanking.service';
 import { driversService } from '../services/drivers.service';
 import type { Driver } from '../../../types';
 import { queryKeys } from '../../../shared/services/queryKeys';
@@ -10,7 +11,24 @@ export const useDrivers = () => {
 
   const driversQuery = useQuery({
     queryKey: queryKeys.drivers.lists(),
-    queryFn: driversService.getDrivers,
+    queryFn: async () => {
+      const drivers = await driversService.getDrivers();
+      const leaderboard = await driverRankingService.getLeaderboard(Math.max(drivers.length, 10));
+      const rankingMap = new Map(leaderboard.map((entry) => [String(entry.driver.id), entry]));
+
+      return drivers.map((driver) => {
+        const ranking = rankingMap.get(String(driver.id));
+        return ranking
+          ? {
+              ...driver,
+              totalTrips: ranking.completedTrips,
+              driverScore: ranking.score,
+              driverRank: ranking.rank,
+              experienceBadge: ranking.badge,
+            }
+          : driver;
+      });
+    },
   });
 
   const createMutation = useMutation({

@@ -70,6 +70,15 @@ const DriverIssuesPage = () => {
   const [selected, setSelected] = useState<ReclamationRecord | null>(null);
   const [statusError, setStatusError] = useState<string | null>(null);
   const updateStatusMutation = useUpdateReclamationStatus();
+  const statusLabel = useMemo<Record<ReclamationStatus, string>>(
+    () => ({
+      PENDING: t('status.pending'),
+      IN_PROGRESS: t('status.in_progress'),
+      RESOLVED: t('status.resolved'),
+      REJECTED: t('status.rejected'),
+    }),
+    [t],
+  );
 
   const requestedId = searchParams.get('reclamationId');
 
@@ -108,10 +117,10 @@ const DriverIssuesPage = () => {
       const message =
         (err as { response?: { data?: { message?: string } } })?.response?.data?.message ||
         (err as Error)?.message ||
-        'Failed to update issue status.';
+        t('common.unexpectedError');
       setStatusError(message);
     }
-  }, [updateStatusMutation]);
+  }, [t, updateStatusMutation]);
 
   const selectedIssue = useMemo(() => {
     if (selected) return selected;
@@ -130,10 +139,10 @@ const DriverIssuesPage = () => {
     if (item.vehicleName || item.vehiclePlate) {
       return item.vehicleName && item.vehiclePlate
         ? `${item.vehicleName} (${item.vehiclePlate})`
-        : item.vehicleName || item.vehiclePlate || 'N/A';
+        : item.vehicleName || item.vehiclePlate || t('common.na');
     }
     if (item.vehicle?.name || item.vehicle?.plaque_immatriculation || item.vehicle?.model) {
-      const name = item.vehicle.name || item.vehicle.model || 'Vehicle';
+      const name = item.vehicle.name || item.vehicle.model || t('common.vehicleDefaultName');
       const plate = item.vehicle.plaque_immatriculation;
       return plate ? `${name} (${plate})` : name;
     }
@@ -147,7 +156,63 @@ const DriverIssuesPage = () => {
     if (assignedMatch) return buildVehicleLabel(assignedMatch);
 
     return item.vehicleId || t('common.na');
-  }, [drivers, vehicles, t]);
+  }, [drivers, t, vehicles]);
+
+  const handleScheduleFromIssue = useCallback((item: ReclamationRecord) => {
+    const matchedVehicle =
+      (item.vehicleId ? vehicles.find((v) => String(v.id) === String(item.vehicleId)) : undefined) ||
+      (item.vehiclePlate ? vehicles.find((v) => normalize(v.plaque_immatriculation) === normalize(item.vehiclePlate)) : undefined) ||
+      findVehicleFromAssignedValue(
+        drivers.find((d) => String(d.id) === String(item.userId))?.assignedVehicle,
+        vehicles
+      );
+    const vehicleId = item.vehicleId || matchedVehicle?.id || item.vehicle?.id || '';
+    const vehiclePlate =
+      item.vehiclePlate ||
+      matchedVehicle?.plaque_immatriculation ||
+      item.vehicle?.plaque_immatriculation ||
+      '';
+    const vehicleName =
+      item.vehicleName ||
+      matchedVehicle?.name ||
+      item.vehicle?.name ||
+      item.vehicle?.model ||
+      '';
+
+    const metadata = item.metadata ?? {};
+    const maintenanceType = metadataString(metadata, 'maintenanceType') || 'General Inspection';
+    const priority = normalizePriority(metadataString(metadata, 'maintenancePriority'));
+    const estimatedCost = metadataString(metadata, 'estimatedCost') || '0';
+    const currentMileage = metadataString(metadata, 'currentMileage');
+    const maintenanceNotes = metadataString(metadata, 'maintenanceNotes');
+
+    navigate(buildMaintenancePrefillUrl({
+      source: 'reclamation',
+      reclamationId: item.id,
+      vehicleId,
+      vehiclePlate,
+      vehicleName,
+      type: maintenanceType,
+      priority,
+      technician: t('maintenance.table.tbd'),
+      cost: estimatedCost,
+      mileage: currentMileage,
+      description: [
+        `Created from driver issue: ${item.subject}`,
+        '',
+        `Requested maintenance: ${maintenanceType}`,
+        `Priority: ${priority}`,
+        estimatedCost ? `Estimated cost: ${estimatedCost} TND` : '',
+        currentMileage ? `Current mileage: ${currentMileage} km` : '',
+        maintenanceNotes ? `Maintenance notes: ${maintenanceNotes}` : '',
+        '',
+        item.message,
+        '',
+        `Driver: ${getDriverLabel(item)}`,
+        `Vehicle: ${getVehicleLabel(item)}`,
+      ].filter(Boolean).join('\n'),
+    }));
+  }, [drivers, getDriverLabel, getVehicleLabel, navigate, t, vehicles]);
 
   const handleScheduleFromIssue = useCallback((item: ReclamationRecord) => {
     const matchedVehicle =
@@ -243,15 +308,8 @@ const DriverIssuesPage = () => {
 
   const vehicleSelectOptions = useMemo(
     () => vehicleFilterOptions.map((option) => ({ value: option, label: option === 'all' ? t('reclamations.filters.all_vehicles') : option })),
-    [vehicleFilterOptions, t]
+    [t, vehicleFilterOptions]
   );
-
-  const statusLabel = useMemo(() => ({
-    PENDING: t('status.pending'),
-    IN_PROGRESS: t('status.in_progress'),
-    RESOLVED: t('status.resolved'),
-    REJECTED: t('status.rejected'),
-  }), [t]);
 
   const closeDetails = () => {
     setSelected(null);
@@ -264,14 +322,10 @@ const DriverIssuesPage = () => {
 
   return (
     <div className={`${pageShellClasses(dark)} ${pageShellInnerSpacing} animate-fade-in`}>
-      <div className="space-y-1 px-1">
-        <p className={`text-xs font-semibold uppercase tracking-[0.12em] ${dark ? 'text-slate-500' : 'text-slate-400'}`}>
-          {t('reclamations.section_label')}
-        </p>
-        <h1 className={`text-2xl font-bold tracking-tight ${dark ? 'text-white' : 'text-slate-900'}`}>{t('reclamations.title')}</h1>
-        <p className={`text-sm ${dark ? 'text-slate-400' : 'text-slate-600'}`}>
-          {t('reclamations.subtitle')}
-        </p>
+      <div className="fleet-hero space-y-1">
+        <p className="fleet-hero-kicker">{t('reclamations.section_label')}</p>
+        <h1 className="fleet-hero-title">{t('reclamations.title')}</h1>
+        <p className="fleet-hero-subtitle">{t('reclamations.subtitle')}</p>
       </div>
 
       <DriverIssuesFilters

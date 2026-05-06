@@ -7,24 +7,19 @@ interface Props {
   dark?: boolean;
 }
 
-const DriversHeader = ({ onAdd, dark = false }: Props) => {
+const DriversHeader = ({ onAdd }: Props) => {
   const { t } = useTranslation();
+
   return (
-    <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-6">
+    <div className="fleet-hero flex flex-col gap-6 sm:flex-row sm:items-end sm:justify-between">
       <div className="space-y-1">
-        <p className={`text-xs font-semibold uppercase tracking-[0.12em] ${dark ? 'text-slate-500' : 'text-slate-400'}`}>
-          {t('drivers.section_label')}
-        </p>
-        <h1 className={`text-3xl sm:text-4xl font-extrabold tracking-tight ${dark ? 'text-white' : 'text-slate-900'}`}>
-          {t('drivers.title')}
-        </h1>
-        <p className={`text-sm sm:text-base max-w-xl leading-relaxed ${dark ? 'text-slate-400' : 'text-slate-500'}`}>
-          {t('drivers.subtitle')}
-        </p>
+        <p className="fleet-hero-kicker">{t('drivers.section_label')}</p>
+        <h1 className="fleet-hero-title">{t('drivers.title')}</h1>
+        <p className="fleet-hero-subtitle max-w-xl">{t('drivers.subtitle')}</p>
       </div>
-      <Button onClick={onAdd} aria-label={t('drivers.addAria')} className="rounded-xl shrink-0 shadow-soft">
+      <Button onClick={onAdd} aria-label={t('drivers.addAria')} className="rounded-full shrink-0 shadow-soft">
         <FiPlus className="mr-2" />
-        {t('drivers.add_button')}
+        {t('drivers.addButton')}
       </Button>
     </div>
   );

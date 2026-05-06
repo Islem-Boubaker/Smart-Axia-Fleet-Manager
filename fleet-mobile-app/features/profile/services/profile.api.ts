@@ -35,6 +35,39 @@ export interface ChangePasswordPayload {
   newPassword: string;
 }
 
+export interface DriverExperienceBadge {
+  key: string;
+  label: string;
+  minTrips: number;
+}
+
+export interface DriverRankingEvent {
+  id: string;
+  eventType: string;
+  pointsDelta: number;
+  scoreAfter: number;
+  occurredAt: string;
+  reason: string;
+  metadata?: Record<string, unknown>;
+}
+
+export interface DriverRankingProfile {
+  rank: number;
+  leaderboardSize: number;
+  score: number;
+  completedTrips: number;
+  eventCount: number;
+  badge: DriverExperienceBadge;
+  recentEvents: DriverRankingEvent[];
+  trend: DriverRankingEvent[];
+  driver: {
+    id: string;
+    name: string;
+    email?: string;
+    avatar?: string | null;
+  };
+}
+
 /* ================= PROFILE ================= */
 
 export const profileApi = {
@@ -68,6 +101,11 @@ export const profileApi = {
   // 🔹 Notification settings
   getNotificationSettings: async (): Promise<NotificationSettings> => {
     const { data } = await api.get<ApiEnvelope<NotificationSettings>>("/user/me/notifications");
+    return data.data;
+  },
+
+  getMyRanking: async (): Promise<DriverRankingProfile> => {
+    const { data } = await api.get<ApiEnvelope<DriverRankingProfile>>("/user/me/ranking");
     return data.data;
   },
 

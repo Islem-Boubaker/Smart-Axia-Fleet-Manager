@@ -4,6 +4,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { useSelector } from "react-redux";
 
 import ProfileCard from "../components/ProfileCard";
+import RankingSection from "../components/RankingSection";
 import AccountSection from "../components/AccountSection";
 import NotificationsSection from "../components/NotificationsSection";
 import PreferenceSection from "../components/PreferenceSection";
@@ -16,7 +17,7 @@ import { requestPushPermission } from "@/features/notifications/utils/pushNotifi
 
 export default function ProfileScreen() {
   const user = useSelector((state: RootState) => state.auth.user);
-  const { notificationSettings, updateNotificationSettings, isSaving } = useProfile();
+  const { ranking, notificationSettings, updateNotificationSettings, isSaving } = useProfile();
   const { isDark, setTheme } = useAppTheme();
 
   const pushNotif = useMemo(
@@ -100,7 +101,8 @@ export default function ProfileScreen() {
       </View>
 
       <ScrollView className="pb-8" showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 96 }}>
-        <ProfileCard user={user} />
+        <ProfileCard user={user} badgeLabel={ranking?.badge?.label} />
+        <RankingSection ranking={ranking} />
         <AccountSection />
         <NotificationsSection
           pushNotif={pushNotif}

@@ -1,4 +1,5 @@
 import { FiSave } from 'react-icons/fi';
+import { useTranslation } from 'react-i18next';
 import { Button } from '../../../shared/components';
 import NotificationGroup from './NotificationGroup';
 import type { NotificationPreferences } from '../settings.types';
@@ -13,6 +14,7 @@ interface Props {
 }
 
 const NotificationSettings = ({ notifications, onChange, onSave, isSaving = false, dark = false }: Props) => {
+  const { t } = useTranslation();
   const handleToggle = (key: string, checked: boolean) => {
     onChange({ ...notifications, [key]: checked });
   };
@@ -35,14 +37,14 @@ const NotificationSettings = ({ notifications, onChange, onSave, isSaving = fals
     // >
       <div className="space-y-8">
         <NotificationGroup
-          title="Email"
+          title={t('settings.notifications.email')}
           entries={emailEntries}
           prefix="email"
           onChange={handleToggle}
           dark={dark}
         />
         <NotificationGroup
-          title="Push"
+          title={t('settings.notifications.push')}
           entries={pushEntries}
           prefix="push"
           onChange={handleToggle}
@@ -51,7 +53,7 @@ const NotificationSettings = ({ notifications, onChange, onSave, isSaving = fals
         <div className="flex justify-end">
           <Button className="rounded-xl" onClick={onSave} isLoading={isSaving}>
             <FiSave className="mr-2" />
-            Save changes
+            {t('settings.notifications.save')}
           </Button>
         </div>
       </div>

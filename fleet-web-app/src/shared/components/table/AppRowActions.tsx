@@ -13,6 +13,7 @@ const baseClass =
 
 const AppRowActions = ({ onView, onEdit, onDelete, disabled = false }: AppRowActionsProps) => {
   const { t } = useTranslation();
+
   return (
     <div className="flex items-center gap-1" role="group" aria-label={t('dataTable.rowActions')}>
       {onView && (
@@ -29,7 +30,7 @@ const AppRowActions = ({ onView, onEdit, onDelete, disabled = false }: AppRowAct
         <button
           type="button"
           aria-label={t('dataTable.deleteRow')}
-          className="inline-flex h-8 w-8 items-center justify-center rounded-md text-slate-500 transition-colors hover:bg-rose-100 hover:text-rose-600 disabled:cursor-not-allowed disabled:opacity-50"
+          className="inline-flex h-8 w-8 items-center justify-center rounded-full text-slate-500 transition-colors hover:bg-rose-100 hover:text-rose-600 dark:text-slate-400 dark:hover:bg-rose-400/10 dark:hover:text-rose-300 disabled:cursor-not-allowed disabled:opacity-50"
           onClick={onDelete}
           disabled={disabled}
         >

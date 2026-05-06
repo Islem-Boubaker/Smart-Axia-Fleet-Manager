@@ -1,5 +1,5 @@
 import { api } from '../../../shared/services/api';
-import type { Trip, TripStop } from '../../../types';
+import type { Driver, Trip, TripStop, Vehicle } from '../../../types';
 
 export interface PaginationMeta {
   totalItems: number;
@@ -34,11 +34,8 @@ export interface CreateTripRequest {
   endLongitude?: number;
   startTime: string;
   distance: number;
-  distance_in_meters?: number;
-  estimated_duration_seconds?: number;
   region?: string;
   requiredCapacity?: number;
-  loadType?: 'general' | 'cold' | 'fragile' | 'heavy';
   notes?: string;
   endTime?: string;
   fuel?: number;
@@ -53,10 +50,22 @@ export interface CreateTripRequest {
   }>;
 }
 
-export interface RankedRecommendationItem {
+export interface TripLiveLocation {
   id: string;
-  name: string;
-  score: number;
+  tripId: string;
+  userId: string;
+  driver?: {
+    id: string;
+    name?: string;
+    email?: string;
+  } | null;
+  latitude: number;
+  longitude: number;
+  accuracy?: number | null;
+  speed?: number | null;
+  heading?: number | null;
+  recordedAt: string;
+  isStale?: boolean;
 }
 
 export interface TripLiveLocation {
@@ -193,16 +202,13 @@ export const tripsService = {
   },
 
   getTripRecommendations: async (data: {
-    action?: 'drivers' | 'vehicles' | 'assignment' | 'apply';
-    tripId?: string;
     startTime: string;
     endTime?: string;
     region?: string;
     requiredCapacity?: number;
     distance?: number;
-    loadType?: 'general' | 'cold' | 'fragile' | 'heavy';
-  }): Promise<{ drivers: RankedRecommendationItem[]; vehicles: RankedRecommendationItem[] }> => {
-    const response = await api.post<{ success: boolean; data: { drivers: RankedRecommendationItem[]; vehicles: RankedRecommendationItem[] } }>(
+  }): Promise<{ drivers: Driver[]; vehicles: Vehicle[] }> => {
+    const response = await api.post<{ success: boolean; data: { drivers: Driver[]; vehicles: Vehicle[] } }>(
       '/trips/recommendations',
       data
     );

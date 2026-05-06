@@ -1,5 +1,5 @@
+import { FiCalendar, FiDroplet, FiTool, FiTruck } from 'react-icons/fi';
 import { useTranslation } from 'react-i18next';
-import { FiActivity, FiCalendar, FiDroplet, FiTool } from 'react-icons/fi';
 import DashboardCard from './DashboardCard';
 import type { DashboardStats } from '../hooks/useDashboard';
 
@@ -9,26 +9,26 @@ interface DashboardStatsGridProps {
 
 const DashboardStatsGrid = ({ stats }: DashboardStatsGridProps) => {
   const { t, i18n } = useTranslation();
-  const countLocale = (i18n.language || 'en').split('-')[0] === 'ar' ? 'ar' : (i18n.language || 'en').split('-')[0] === 'fr' ? 'fr-FR' : 'en-TN';
-  const formatTnd = (value: number) => t('dashboard.stats.tnd', { n: Math.round(value).toLocaleString(countLocale) });
+  const locale = i18n.language || 'en';
+  const formatTnd = (value: number) => t('dashboard.stats.tnd', { n: Math.round(value).toLocaleString(locale) });
 
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
       <DashboardCard
         label={t('dashboard.stats.activeVehicles')}
-        value={stats.activeVehicles.toLocaleString(countLocale)}
-        icon={<FiActivity className="h-4 w-4" />}
+        value={stats.activeVehicles.toLocaleString(locale)}
+        icon={<FiTruck className="h-4 w-4" />}
         accentClassName="bg-gradient-to-r from-emerald-500 to-teal-500"
       />
       <DashboardCard
         label={t('dashboard.stats.tripsToday')}
-        value={stats.tripsToday.toLocaleString(countLocale)}
+        value={stats.tripsToday.toLocaleString(locale)}
         icon={<FiCalendar className="h-4 w-4" />}
         accentClassName="bg-gradient-to-r from-blue-500 to-cyan-500"
       />
       <DashboardCard
         label={t('dashboard.stats.maintenanceDue')}
-        value={stats.maintenanceDue.toLocaleString(countLocale)}
+        value={stats.maintenanceDue.toLocaleString(locale)}
         valueClassName={stats.maintenanceDue > 0 ? 'text-amber-500' : ''}
         icon={<FiTool className="h-4 w-4" />}
         accentClassName="bg-gradient-to-r from-amber-500 to-orange-500"

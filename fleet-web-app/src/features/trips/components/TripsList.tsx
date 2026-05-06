@@ -16,8 +16,8 @@ interface Props {
 
 const TripsList = ({ trips, dark = false, actionTripId = null, onViewDetails, onEdit, onCancel }: Props) => {
   const { t, i18n } = useTranslation();
-  const normalizeStatusKey = (value: string) =>
-    value.toLowerCase().replace(/\s+/g, '_').replace(/-+/g, '_');
+  const normalizeStatusKey = (value: string) => value.toLowerCase().replace(/\s+/g, '_').replace(/-+/g, '_');
+
   if (trips.length === 0)
     return (
       <div
@@ -58,6 +58,7 @@ const TripsList = ({ trips, dark = false, actionTripId = null, onViewDetails, on
       totalResults={trips.length}
       dark={dark}
       ariaLabel={t('trips.table.aria')}
+      title={t('trips.title')}
     >
       {trips.map((trip) => {
         const isBusy = actionTripId === trip.id;
@@ -73,16 +74,12 @@ const TripsList = ({ trips, dark = false, actionTripId = null, onViewDetails, on
               {trip.vehicle?.name || t('common.unknownVehicle')}
             </AppTd>
 
-            <AppTd className={dark ? 'text-slate-300' : 'text-slate-600'}>
-              {t('common.km', { n: trip.distance ?? 0 })}
-            </AppTd>
+            <AppTd className={dark ? 'text-slate-300' : 'text-slate-600'}>{trip.distance ?? 0} {t('common.kmUnit')}</AppTd>
 
             <AppTd className={dark ? 'text-slate-300' : 'text-slate-600'}>{formatDate(trip.startTime)}</AppTd>
 
             <AppTd>
-              <AppStatusBadge variant={statusVariant(trip.status)}>
-                {t(`status.${normalizeStatusKey(trip.status)}`)}
-              </AppStatusBadge>
+              <AppStatusBadge variant={statusVariant(trip.status)}>{t(`status.${normalizeStatusKey(trip.status)}`)}</AppStatusBadge>
             </AppTd>
 
             <AppTd>

@@ -240,7 +240,8 @@
     "on_leave": "في إجازة"
   },
   "dashboard": {
-    "title": "لوحة التحكم",
+    "sectionLabel": "العمليات",
+    "title": "لوحة الأسطول",
     "overviewLine": "نظرة عامة على العمليات ليوم {{date}}",
     "newTrip": "رحلة جديدة",
     "tripDetails": "تفاصيل الرحلة",
@@ -248,7 +249,18 @@
     "alerts": {
       "title": "تنبيهات نشطة",
       "none": "لا توجد تنبيهات نشطة.",
-      "viewAll": "عرض الكل"
+      "viewAll": "عرض الكل",
+      "daysOverdue": "متأخر {{count}} يومًا",
+      "dueInDays": "خلال {{count}} يومًا",
+      "insuranceOverdueTitle": "تأخر التأمين - {{vehicle}}",
+      "insuranceDueSoonTitle": "التأمين مستحق قريبًا - {{vehicle}}",
+      "insuranceMessage": "ينتهي تأمين {{vehicle}} في {{date}} ({{whenText}}).",
+      "techVisitOverdueTitle": "تأخرت الزيارة الفنية - {{vehicle}}",
+      "techVisitDueSoonTitle": "الزيارة الفنية مستحقة قريبًا - {{vehicle}}",
+      "techVisitMessage": "تنتهي الزيارة الفنية لـ {{vehicle}} في {{date}} ({{whenText}}).",
+      "prefillInsurance": "تم الإنشاء من تنبيه انتهاء التأمين.",
+      "prefillTechVisit": "تم الإنشاء من تنبيه انتهاء الزيارة الفنية.",
+      "vehicleLine": "المركبة: {{vehicle}}"
     },
     "fleetOverview": {
       "title": "حالة الأسطول",
@@ -273,6 +285,17 @@
       "none": "لا بيانات للسائقين هذا الشهر.",
       "kmOnTime": "{{km}} كم · {{pct}}% في الوقت"
     },
+    "podium": {
+      "title": "منصة السائقين",
+      "subtitle": "ترتيب دائم يعتمد على الحوادث والانحراف عن المسار والالتزام بالوقت.",
+      "none": "لا توجد بيانات لترتيب السائقين حتى الآن.",
+      "viewFull": "عرض الترتيب الكامل",
+      "first": "الأول",
+      "second": "الثاني",
+      "third": "الثالث",
+      "score": "النقاط",
+      "completedTrips": "{{count}} رحلة مكتملة"
+    },
     "fuel": {
       "title": "استهلاك الوقود — آخر 7 أيام",
       "totalWeek": "الإجمالي هذا الأسبوع",
@@ -281,9 +304,9 @@
     },
     "quickActions": {
       "title": "إجراءات سريعة",
-      "newTrip": " رحلة جديدة",
-      "addVehicle": " إضافة مركبة",
-      "scheduleMaintenance": " جدولة صيانة",
+      "newTrip": "+ رحلة جديدة",
+      "addVehicle": "+ إضافة مركبة",
+      "scheduleMaintenance": "+ جدولة صيانة",
       "generateReport": "إنشاء تقرير"
     },
     "maintenance": {
@@ -322,6 +345,16 @@
     "section_label": "الأشخاص",
     "add_button": " إضافة سائق",
     "search_placeholder": "البحث بالاسم أو البريد أو الرخصة...",
+    "filters": {
+      "statusLabel": "الحالة",
+      "scoreLabel": "النقاط",
+      "allStatuses": "جميع الحالات",
+      "allScores": "جميع النقاط",
+      "score90Plus": "90+",
+      "score80to89": "80–89",
+      "score70to79": "70–79",
+      "scoreBelow70": "أقل من 70"
+    },
     "showing_results": "عرض {{count}} نتائج",
     "description": "إدارة الملفات والرخص وتعيين المركبات.",
     "addNew": "إضافة سائق",
@@ -390,6 +423,10 @@
     "searchPlaceholder": "ابحث في الأسطول والرحلات والسائقين…",
     "notifications": "الإشعارات",
     "language": "اللغة",
+    "goodMorning": "صباح الخير",
+    "goodAfternoon": "مساء الخير",
+    "goodEvening": "مساء الخير",
+    "activitySubtitle": "اطّلع على أحدث نشاط تشغيلي لأسطولك.",
     "openMenu": "فتح القائمة",
     "lightMode": "الوضع الفاتح",
     "darkMode": "الوضع الداكن",
@@ -414,6 +451,12 @@
       "titleNew": "صيانة جديدة",
       "titleEdit": "تعديل الصيانة",
       "submit": "جدولة الصيانة",
+      "selectVehicle": "اختر مركبة",
+      "noVehiclesFound": "لا توجد مركبات",
+      "selectType": "اختر النوع",
+      "technicianPlaceholder": "اسم الفني",
+      "costPlaceholder": "مثال: 150",
+      "mileagePlaceholder": "مثال: 45230",
       "types": {
         "routine": "روتينية",
         "repair": "إصلاح",
@@ -440,6 +483,8 @@
       "engine_tune_up": "ضبط المحرك",
       "battery_replacement": "استبدال البطارية",
       "general_inspection": "فحص عام",
+      "technical_visit": "زيارة فنية",
+      "insurance_renewal": "تجديد التأمين",
       "other": "أخرى"
     },
     "remove": {
@@ -471,7 +516,9 @@
     "fleet": "الأسطول",
     "profile": "الملف الشخصي",
     "notifications": "الإشعارات",
-    "security": "الأمان"
+    "security": "الأمان",
+    "expandSidebar": "توسيع الشريط الجانبي",
+    "collapseSidebar": "طيّ الشريط الجانبي"
   },
   "brand": {
     "axia": "Smart Axia",
@@ -525,6 +572,13 @@
     "subtitle": "تحليلات الأسطول مع رؤى عملية.",
     "section_label": "التحليلات",
     "export_pdf": "تصدير PDF",
+    "embed": {
+      "refreshReport": "تحديث التقرير",
+      "openInNewTab": "فتح التقرير في علامة تبويب جديدة",
+      "open": "فتح",
+      "notConfigured": "لم يتم إعداد Tableau بعد",
+      "configExample": "VITE_TABLEAU_EMBED_URL=https://public.tableau.com/views/your-workbook/your-view?:showVizHome=no"
+    },
     "filters": {
       "dateRange": "نطاق التاريخ",
       "export": "تصدير",
@@ -708,6 +762,20 @@
       "email": "البريد",
       "push": "إشعارات فورية",
       "save": "حفظ التفضيلات",
+      "items": {
+        "emailTrips": "رسائل الرحلات",
+        "emailMaintenance": "رسائل الصيانة",
+        "emailDrivers": "رسائل السائقين",
+        "emailAI": "رسائل تنبيهات الذكاء الاصطناعي",
+        "emailSystem": "رسائل النظام",
+        "pushTrips": "إشعارات الرحلات الفورية",
+        "pushMaintenance": "إشعارات الصيانة الفورية",
+        "pushDrivers": "إشعارات السائقين الفورية",
+        "pushAI": "إشعارات تنبيهات الذكاء الاصطناعي الفورية",
+        "pushSystem": "إشعارات النظام الفورية",
+        "pushAlerts": "إشعارات التنبيهات العامة الفورية",
+        "smsAlerts": "تنبيهات الرسائل القصيرة"
+      },
       "toast_saving": "جاري حفظ إعدادات الإشعارات...",
       "toast_success": "تم حفظ إعدادات الإشعارات.",
       "toast_failed": "فشل حفظ إعدادات الإشعارات"
@@ -784,6 +852,7 @@
       "selectVehicle": "اختر مركبة",
       "selectDriver": "اختر سائقاً",
       "recMapErrorStart": "حدد نقطة الانطلاق أولاً للحصول على توصيات دقيقة.",
+      "recMapErrorStartLocation": "حدّد وقت وموقع الانطلاق أولاً للحصول على توصيات دقيقة.",
       "recMapErrorTime": "حدد وقت الانطلاق قبل طلب التوصيات.",
       "recMapErrorDistance": "قدّم عناوين البداية والنهاية لحساب المسافة.",
       "recFetchError": "تعذّر جلب توصيات التعلم الآلي. تُستخدم القوائم العادية.",
@@ -805,6 +874,11 @@
       "optimizing": "جاري تحسين المسار والمسافة...",
       "startDateTime": "تاريخ/وقت الانطلاق",
       "endDateTime": "تاريخ/وقت الوصول",
+      "startTimeForEta": "حدّد وقت الانطلاق لحساب وقت الوصول المتوقع.",
+      "completeRouteForEta": "أكمل نقاط المسار لحساب وقت الوصول المتوقع من الخريطة.",
+      "etaHelper": "مدة المسار على الخريطة {{duration}} + ساعة احتياطية.",
+      "etaLabel": "وقت الوصول المتوقع",
+      "etaPlaceholder": "يُحسب من المسار + ساعة",
       "regionPlaceholder": "مثال: تونس، صفاقس",
       "reqCapacity": "السعة المطلوبة (كغ)",
       "minCapacityPh": "الحد الأدنى للسعة",
@@ -814,6 +888,9 @@
       "revenueTnd": "الإيراد (د.ت)",
       "notesOptional": "ملاحظات (اختياري)",
       "notesPlaceholder": "تعليمات الرحلة أو البضاعة أو ما يهم السائق...",
+      "estimatedFuel": "استهلاك الوقود التقديري",
+      "estimatedFuelFromConsumption": "{{fuel}} ل (بناءً على {{consumption}} ل/100كم)",
+      "estimatedFuelHint": "اختر مركبة تملك معدل استهلاك (ل/100كم) وأكمل نقاط المسار لتقدير الوقود.",
       "smartRecTitle": "توصية ذكية",
       "smartRecHint": "رتّب السائقين والمركبات لهذا المسار.",
       "refreshSuggestions": "تحديث الاقتراحات",
@@ -828,6 +905,8 @@
         "destinationRequired": "الوجهة مطلوبة.",
         "startTimeRequired": "وقت الانطلاق مطلوب.",
         "endTimeRequired": "وقت الانتهاء مطلوب.",
+        "etaRequired": "يُحسب وقت الوصول المتوقع بعد تحديد المسار ووقت الانطلاق.",
+        "etaAfterStart": "يجب أن يكون وقت الوصول المتوقع بعد وقت الانطلاق.",
         "regionRequired": "المنطقة مطلوبة.",
         "capacityPositive": "يجب أن تكون السعة أكبر من 0.",
         "distancePositive": "يجب أن تكون المسافة رقماً موجباً.",
@@ -891,7 +970,20 @@
       "resolvingMarkers": "جاري تحديد علامتَي البداية والوجهة...",
       "mapUnavailable": "الخريطة غير متاحة لهذه الرحلة لأنه لم يُعثر على إحداثيات قابلة للرسم.",
       "calculatingRoute": "جاري حساب مسار الطريق...",
-      "routeFallback": "مسار الطريق غير متاح الآن. عرض روابط مباشرة بين النقاط."
+      "routeFallback": "مسار الطريق غير متاح الآن. عرض روابط مباشرة بين النقاط.",
+      "live": {
+        "unknownTime": "وقت غير معروف",
+        "justNow": "الآن",
+        "secondsAgo": "منذ {{count}} ث",
+        "minutesAgo": "منذ {{count}} د",
+        "hoursAgo": "منذ {{count}} س",
+        "accuracy": "دقة تقريبية {{count}}م",
+        "signalOld": "الإشارة قديمة",
+        "updated": "تم تحديث موقع هاتف السائق {{when}}",
+        "waiting": "بانتظار موقع هاتف السائق...",
+        "notReceived": "لم يتم استلام موقع هاتف السائق بعد. اطلب من السائق فتح التنقل المباشر.",
+        "driverLocation": "موقع السائق"
+      }
     },
     "stopStatus": {
       "pending": "في الانتظار",
@@ -1003,7 +1095,7 @@
       "noAssignment": "لا يوجد تعيين نشط.",
       "maintenanceHistoryTitle": "سجل الصيانة",
       "noMaintenance": "لا توجد سجلات صيانة بعد.",
-      "maintenanceLine": "{{date}} · {{status}} · {{priority}}",
+      "maintenanceLine": "{{date}} • {{status}} • الأولوية {{priority}}",
       "costLine": "{{cost}} {{currency}}",
       "recommendationsTitle": "التوصيات",
       "generating": "جاري الإنشاء...",
@@ -1015,6 +1107,7 @@
       "activeLabel": "المركبة نشطة",
       "needsMaintenanceLabel": "تحتاج صيانة",
       "newTitle": "مركبة جديدة",
+      "operationalStatus": "الحالة التشغيلية",
       "tireCondition": "حالة الإطارات",
       "brakeCondition": "حالة الفرامل",
       "batteryStatus": "حالة البطارية",

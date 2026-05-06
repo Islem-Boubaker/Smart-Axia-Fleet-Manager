@@ -11,7 +11,9 @@
     "fleet": "الأسطول",
     "profile": "الملف الشخصي",
     "notifications": "الإشعارات",
-    "security": "الأمان"
+    "security": "الأمان",
+    "expandSidebar": "توسيع الشريط الجانبي",
+    "collapseSidebar": "طي الشريط الجانبي"
   },
   "brand": {
     "axia": "Smart Axia",

@@ -21,42 +21,51 @@ import {
 } from "react-icons/fi";
 import { ROUTES } from "../../../utils/constants";
 
+const BRAND_LOGO_SRC = "/images/OFFICIAL%20LOGO.png";
+
 interface SidebarProps {
   isOpen: boolean;
   setIsOpen: (open: boolean) => void;
+  expanded: boolean;
+  setExpanded: (expanded: boolean) => void;
   dark?: boolean;
 }
 
+const settingsSubItems = [
+  {
+    icon: FiUser,
+    label: "Profile",
+    path: `${ROUTES.SETTINGS}?tab=profile`,
+    tab: "profile",
+  },
+  {
+    icon: FiBell,
+    label: "Notifications",
+    path: `${ROUTES.SETTINGS}?tab=notifications`,
+    tab: "notifications",
+  },
+  {
+    icon: FiShield,
+    label: "Security",
+    path: `${ROUTES.SETTINGS}?tab=security`,
+    tab: "security",
+  },
+];
+
 export const Sidebar = memo(
-  ({ isOpen, setIsOpen, dark = false }: SidebarProps) => {
-    const { t } = useTranslation();
+  ({ isOpen, setIsOpen, expanded, setExpanded, dark = false }: SidebarProps) => {
+    const { t, i18n } = useTranslation();
     const location = useLocation();
+    const isRtl = (i18n.language || "en").split("-")[0] === "ar";
     const [settingsOpen, setSettingsOpen] = useState(
       location.pathname.startsWith(ROUTES.SETTINGS),
     );
-    const [expanded, setExpanded] = useState(false);
-
-    const settingsSubItems = useMemo(
-      () => [
-        {
-          icon: FiUser,
-          label: t("settings.sidebar.profile"),
-          path: `${ROUTES.SETTINGS}?tab=profile`,
-          tab: "profile",
-        },
-        {
-          icon: FiBell,
-          label: t("settings.sidebar.notifications"),
-          path: `${ROUTES.SETTINGS}?tab=notifications`,
-          tab: "notifications",
-        },
-        {
-          icon: FiShield,
-          label: t("settings.sidebar.security"),
-          path: `${ROUTES.SETTINGS}?tab=security`,
-          tab: "security",
-        },
-      ],
+    const localizedSettingsSubItems = useMemo(
+      () =>
+        settingsSubItems.map((item) => ({
+          ...item,
+          label: t(`settings.sidebar.${item.tab}`),
+        })),
       [t],
     );
 
@@ -74,18 +83,8 @@ export const Sidebar = memo(
           path: ROUTES.VEHICLES,
           hasAdd: true,
         },
-        {
-          icon: FiUsers,
-          label: t("nav.drivers"),
-          path: ROUTES.DRIVERS,
-          hasAdd: true,
-        },
-        {
-          icon: FiMapPin,
-          label: t("nav.trips"),
-          path: ROUTES.TRIPS,
-          hasAdd: true,
-        },
+        { icon: FiUsers, label: t("nav.drivers"), path: ROUTES.DRIVERS, hasAdd: true },
+        { icon: FiMapPin, label: t("nav.trips"), path: ROUTES.TRIPS, hasAdd: true },
         {
           icon: FiTool,
           label: t("nav.maintenance"),
@@ -109,10 +108,10 @@ export const Sidebar = memo(
           label: t("nav.settings"),
           path: ROUTES.SETTINGS,
           hasCollapse: true,
-          children: settingsSubItems,
+          children: localizedSettingsSubItems,
         },
       ],
-      [t, settingsSubItems],
+      [localizedSettingsSubItems, t],
     );
 
     const primaryItems = menuItems.slice(0, 7);
@@ -172,23 +171,24 @@ export const Sidebar = memo(
         {/* Sidebar */}
         <aside
           className={`
-          fixed inset-y-0 left-0 z-30
+          fixed inset-y-0 ${isRtl ? "right-0" : "left-0"} z-30
           ${expanded ? "w-[236px] lg:w-[236px]" : "w-[64px] lg:w-[64px]"}
           transform transition-transform duration-300 ease-out
-          ${isOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"}
-          ${base.bg} border-r ${base.border}
+          ${isOpen ? "translate-x-0" : isRtl ? "translate-x-full lg:translate-x-0" : "-translate-x-full lg:translate-x-0"}
+          ${base.bg} ${isRtl ? "border-l" : "border-r"} ${base.border}
           flex h-screen flex-col overflow-visible
         `}
+          dir={isRtl ? "rtl" : "ltr"}
         >
           <button
             type="button"
-            onClick={() => setExpanded((value) => !value)}
-            className="absolute -right-[18px] top-[30px] z-50 hidden h-9 w-9 items-center justify-center rounded-full border-2 border-white bg-[#07111F] text-white shadow-[0_10px_24px_rgba(2,6,23,0.38)] transition-transform hover:scale-105 lg:flex"
-            aria-label={expanded ? "Collapse sidebar" : "Expand sidebar"}
+            onClick={() => setExpanded(!expanded)}
+            className={`absolute top-[30px] z-50 hidden h-9 w-9 items-center justify-center rounded-full border-2 border-white bg-[#07111F] text-white shadow-[0_10px_24px_rgba(2,6,23,0.38)] transition-transform hover:scale-105 lg:flex ${isRtl ? "-left-[18px]" : "-right-[18px]"}`}
+            aria-label={expanded ? t("nav.collapseSidebar") : t("nav.expandSidebar")}
             aria-expanded={expanded}
-            title={expanded ? "Collapse sidebar" : "Expand sidebar"}
+            title={expanded ? t("nav.collapseSidebar") : t("nav.expandSidebar")}
           >
-            <FiChevronRight className={`h-4 w-4 transition-transform ${expanded ? "rotate-180" : ""}`} />
+            <FiChevronRight className={`h-4 w-4 transition-transform ${expanded ? isRtl ? "" : "rotate-180" : isRtl ? "rotate-180" : ""}`} />
           </button>
 
           {/* ── Logo ── */}
@@ -200,23 +200,13 @@ export const Sidebar = memo(
               className={`flex items-center min-w-0 ${expanded ? "w-full justify-start gap-3 px-2" : "justify-center"}`}
               onClick={() => setIsOpen(false)}
             >
-              <div className="w-9 h-9 rounded-xl bg-blue-50 flex items-center justify-center shrink-0">
-                <FiTruck className="text-blue-600 w-4 h-4" />
-              </div>
-              <div className="min-w-0">
-                <h2
-                  className={`text-[13px] font-bold tracking-widest truncate uppercase ${dark ? "text-white" : "text-slate-900"}`}
-                >
-                  {t("brand.axia")}
-                </h2>
-                <p className="text-[11px] font-medium text-blue-500 truncate">
-                  {t("brand.fleetManager")}
-                </p>
+              <div className="w-10 h-10 overflow-hidden rounded-2xl flex items-center justify-center shrink-0 bg-slate-950 ring-1 ring-sky-300/20">
+                <img src={BRAND_LOGO_SRC} alt="AXIA Fleet Manager" className="h-full w-full object-cover" />
               </div>
               {expanded && (
                 <div className="min-w-0">
                   <p className="truncate text-xs font-black uppercase tracking-[0.18em] text-white">Smart Axia</p>
-                  <p className="truncate text-[11px] font-bold text-sky-400">Fleet Manager</p>
+                  <p className="truncate text-[11px] font-bold text-sky-400">{t("brand.fleetManager")}</p>
                 </div>
               )}
             </Link>
@@ -357,7 +347,7 @@ export const Sidebar = memo(
                   );
                 })()}
                 {expanded && settingsOpen && settingsItem.children ? (
-                  <div className="mt-2 space-y-1 pl-4">
+                    <div className={`mt-2 space-y-1 ${isRtl ? "pr-4" : "pl-4"}`}>
                     {settingsItem.children.map((child) => {
                       const ChildIcon = child.icon;
                       const isChildActive = isSubItemActive(child.tab);

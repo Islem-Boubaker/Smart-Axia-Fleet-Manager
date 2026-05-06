@@ -2,6 +2,7 @@ import { Op } from "sequelize";
 import Reclamation from "../models/reclamation.model.js";
 import User from "../models/user.model.js";
 import Vehicle from "../models/vehicle.model.js";
+import { recordAccidentReclamationScoreEvent } from "./driverScore.service.js";
 import { eventBus, FLEET_EVENTS } from "../events/eventBus.js";
 
 // ─────────────────────────────────────────────
@@ -55,7 +56,7 @@ const getUserDisplayName = async (userId) => {
 
 const normalizeType = (type) => {
   const normalized = String(type || "general").trim().toLowerCase();
-  const allowed = new Set(["general", "vehicle", "maintenance", "trip", "delay", "technical", "other"]);
+  const allowed = new Set(["general", "vehicle", "maintenance", "trip", "delay", "technical", "damage", "accident", "other"]);
   return allowed.has(normalized) ? normalized : "general";
 };
 
@@ -217,6 +218,7 @@ export const createVehicleReclamationSvc = async (
     'SYSTEM_ALERT'
   );
 
+  await recordAccidentReclamationScoreEvent(reclamation.id);
   return hydrateReclamation(reclamation);
 };
 
@@ -267,6 +269,7 @@ export const createReclamationSvc = async (userId, payloadOrSubject, maybeMessag
     "SYSTEM_ALERT"
   );
 
+  await recordAccidentReclamationScoreEvent(reclamation.id);
   return hydrateReclamation(reclamation);
 };
 

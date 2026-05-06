@@ -295,6 +295,28 @@ export const updateMyPushToken = async (req, res, next) => {
   }
 };
 
+export const getDriverLeaderboard = async (req, res, next) => {
+  try {
+    const limit = Number(req.query?.limit || 10);
+    const leaderboard = await userService.getDriverLeaderboardSvc(limit);
+    res.status(StatusCodes.OK).json({ success: true, data: leaderboard });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const getMyDriverRanking = async (req, res, next) => {
+  try {
+    const ranking = await userService.getMyDriverRankingSvc(req.user.id);
+    if (!ranking) {
+      return res.status(StatusCodes.NOT_FOUND).json({ success: false, message: 'Driver ranking not found' });
+    }
+    res.status(StatusCodes.OK).json({ success: true, data: ranking });
+  } catch (error) {
+    next(error);
+  }
+};
+
 // // Backward-compatible aliases
 // export const createUser = createUser;
 // export const updateUserAvatar = updateUserAvatar;

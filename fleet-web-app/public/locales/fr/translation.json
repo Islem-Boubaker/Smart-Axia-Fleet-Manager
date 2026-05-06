@@ -240,7 +240,8 @@
     "on_leave": "En congé"
   },
   "dashboard": {
-    "title": "Tableau de bord",
+    "sectionLabel": "Opérations",
+    "title": "Tableau de bord flotte",
     "overviewLine": "Vue d'ensemble des opérations pour le {{date}}",
     "newTrip": "Nouveau trajet",
     "tripDetails": "Détails du trajet",
@@ -248,7 +249,18 @@
     "alerts": {
       "title": "Alertes actives",
       "none": "Aucune alerte active.",
-      "viewAll": "Tout voir"
+      "viewAll": "Tout voir",
+      "daysOverdue": "{{count}} jour(s) de retard",
+      "dueInDays": "dans {{count}} jour(s)",
+      "insuranceOverdueTitle": "Assurance expirée - {{vehicle}}",
+      "insuranceDueSoonTitle": "Assurance bientôt à échéance - {{vehicle}}",
+      "insuranceMessage": "L'assurance de {{vehicle}} expire le {{date}} ({{whenText}}).",
+      "techVisitOverdueTitle": "Visite technique expirée - {{vehicle}}",
+      "techVisitDueSoonTitle": "Visite technique bientôt à échéance - {{vehicle}}",
+      "techVisitMessage": "La visite technique de {{vehicle}} expire le {{date}} ({{whenText}}).",
+      "prefillInsurance": "Créé depuis l'alerte d'expiration d'assurance.",
+      "prefillTechVisit": "Créé depuis l'alerte d'expiration de visite technique.",
+      "vehicleLine": "Véhicule : {{vehicle}}"
     },
     "fleetOverview": {
       "title": "État de la flotte",
@@ -260,7 +272,7 @@
     "stats": {
       "activeVehicles": "Véhicules actifs",
       "tripsToday": "Trajets aujourd'hui",
-      "maintenanceDue": "Maintenance due",
+      "maintenanceDue": "Maintenance à venir",
       "fuelCostMonth": "Coût carburant ce mois-ci",
       "tnd": "{{n}} TND"
     },
@@ -273,6 +285,17 @@
       "none": "Aucune donnée conducteur ce mois-ci.",
       "kmOnTime": "{{km}} km · {{pct}}% à l'heure"
     },
+    "podium": {
+      "title": "Podium des conducteurs",
+      "subtitle": "Classement global basé sur les accidents, les écarts de route et la ponctualité.",
+      "none": "Aucune donnée de classement conducteur pour le moment.",
+      "viewFull": "Voir le classement complet",
+      "first": "1er",
+      "second": "2e",
+      "third": "3e",
+      "score": "Score",
+      "completedTrips": "{{count}} trajets terminés"
+    },
     "fuel": {
       "title": "Consommation carburant — 7 derniers jours",
       "totalWeek": "Total cette semaine",
@@ -281,9 +304,9 @@
     },
     "quickActions": {
       "title": "Actions rapides",
-      "newTrip": "Nouveau trajet",
-      "addVehicle": "Ajouter un véhicule",
-      "scheduleMaintenance": "Planifier une maintenance",
+      "newTrip": "+ Nouveau trajet",
+      "addVehicle": "+ Ajouter un véhicule",
+      "scheduleMaintenance": "+ Planifier une maintenance",
       "generateReport": "Générer un rapport"
     },
     "maintenance": {
@@ -322,6 +345,16 @@
     "section_label": "PERSONNES",
     "add_button": " Ajouter un conducteur",
     "search_placeholder": "Rechercher par nom, email, permis...",
+    "filters": {
+      "statusLabel": "Statut",
+      "scoreLabel": "Score",
+      "allStatuses": "Tous les statuts",
+      "allScores": "Tous les scores",
+      "score90Plus": "90+",
+      "score80to89": "80–89",
+      "score70to79": "70–79",
+      "scoreBelow70": "Moins de 70"
+    },
     "showing_results": "Affichage de {{count}} résultats",
     "description": "Gérez les profils, permis et affectations véhicule.",
     "addNew": "Ajouter un conducteur",
@@ -390,6 +423,10 @@
     "searchPlaceholder": "Rechercher flotte, trajets, conducteurs…",
     "notifications": "Notifications",
     "language": "Langue",
+    "goodMorning": "Bonjour",
+    "goodAfternoon": "Bon après-midi",
+    "goodEvening": "Bonsoir",
+    "activitySubtitle": "Consultez la dernière activité opérationnelle de votre flotte.",
     "openMenu": "Ouvrir le menu",
     "lightMode": "Mode clair",
     "darkMode": "Mode sombre",
@@ -414,6 +451,12 @@
       "titleNew": "Nouvelle maintenance",
       "titleEdit": "Modifier la maintenance",
       "submit": "Planifier la maintenance",
+      "selectVehicle": "Sélectionner un véhicule",
+      "noVehiclesFound": "Aucun véhicule trouvé",
+      "selectType": "Sélectionner un type",
+      "technicianPlaceholder": "Nom du technicien",
+      "costPlaceholder": "ex. 150",
+      "mileagePlaceholder": "ex. 45230",
       "types": {
         "routine": "Routine",
         "repair": "Réparation",
@@ -440,6 +483,8 @@
       "engine_tune_up": "Réglage moteur",
       "battery_replacement": "Remplacement de batterie",
       "general_inspection": "Inspection générale",
+      "technical_visit": "Visite technique",
+      "insurance_renewal": "Renouvellement d'assurance",
       "other": "Autre"
     },
     "remove": {
@@ -471,7 +516,9 @@
     "fleet": "Flotte",
     "profile": "Profil",
     "notifications": "Notifications",
-    "security": "Sécurité"
+    "security": "Sécurité",
+    "expandSidebar": "Développer la barre latérale",
+    "collapseSidebar": "Réduire la barre latérale"
   },
   "brand": {
     "axia": "Smart Axia",
@@ -525,6 +572,13 @@
     "subtitle": "Analyses de flotte avec des insights opérationnels.",
     "section_label": "ANALYSES",
     "export_pdf": "Exporter PDF",
+    "embed": {
+      "refreshReport": "Actualiser le rapport",
+      "openInNewTab": "Ouvrir le rapport dans un nouvel onglet",
+      "open": "Ouvrir",
+      "notConfigured": "Tableau n'est pas encore configuré",
+      "configExample": "VITE_TABLEAU_EMBED_URL=https://public.tableau.com/views/your-workbook/your-view?:showVizHome=no"
+    },
     "filters": {
       "dateRange": "Plage de dates",
       "export": "Exporter",
@@ -708,6 +762,20 @@
       "email": "E-mail",
       "push": "Notifications push",
       "save": "Enregistrer les préférences",
+      "items": {
+        "emailTrips": "E-mails des trajets",
+        "emailMaintenance": "E-mails de maintenance",
+        "emailDrivers": "E-mails conducteurs",
+        "emailAI": "E-mails alertes IA",
+        "emailSystem": "E-mails système",
+        "pushTrips": "Notifications push des trajets",
+        "pushMaintenance": "Notifications push de maintenance",
+        "pushDrivers": "Notifications push conducteurs",
+        "pushAI": "Notifications push alertes IA",
+        "pushSystem": "Notifications push système",
+        "pushAlerts": "Notifications push d'alertes générales",
+        "smsAlerts": "Alertes SMS"
+      },
       "toast_saving": "Enregistrement des paramètres de notification...",
       "toast_success": "Paramètres de notification enregistrés.",
       "toast_failed": "Échec de l'enregistrement des paramètres de notification"
@@ -784,6 +852,7 @@
       "selectVehicle": "Sélectionner un véhicule",
       "selectDriver": "Sélectionner un conducteur",
       "recMapErrorStart": "Définissez d'abord un lieu de départ pour des recommandations précises.",
+      "recMapErrorStartLocation": "Définissez l'heure et le lieu de départ pour obtenir des recommandations précises.",
       "recMapErrorTime": "Définissez l'heure de départ avant de demander des recommandations.",
       "recMapErrorDistance": "Indiquez les adresses de départ et d'arrivée pour calculer la distance.",
       "recFetchError": "Échec des recommandations ML. Listes standard utilisées.",
@@ -805,6 +874,11 @@
       "optimizing": "Optimisation de l'itinéraire et de la distance...",
       "startDateTime": "Date/heure de départ",
       "endDateTime": "Date/heure d'arrivée",
+      "startTimeForEta": "Définissez l'heure de départ pour calculer l'ETA.",
+      "completeRouteForEta": "Complétez les points du trajet pour calculer l'ETA depuis la carte.",
+      "etaHelper": "Temps du trajet sur la carte : {{duration}} + 1h de marge.",
+      "etaLabel": "Heure ETA",
+      "etaPlaceholder": "Calculée depuis l'itinéraire + 1h",
       "regionPlaceholder": "ex. Tunis, Sfax",
       "reqCapacity": "Capacité requise (kg)",
       "minCapacityPh": "Capacité minimale",
@@ -814,6 +888,9 @@
       "revenueTnd": "Revenu (TND)",
       "notesOptional": "Notes (facultatif)",
       "notesPlaceholder": "Consignes, détails de cargaison ou informations importantes pour le conducteur...",
+      "estimatedFuel": "Consommation estimée de carburant",
+      "estimatedFuelFromConsumption": "{{fuel}} L (sur la base de {{consumption}} L/100km)",
+      "estimatedFuelHint": "Sélectionnez un véhicule avec une consommation (L/100km) et complétez le trajet pour estimer le carburant.",
       "smartRecTitle": "Recommandation intelligente",
       "smartRecHint": "Classez conducteurs et véhicules pour cet itinéraire.",
       "refreshSuggestions": "Actualiser les suggestions",
@@ -828,6 +905,8 @@
         "destinationRequired": "La destination est obligatoire.",
         "startTimeRequired": "L'heure de départ est obligatoire.",
         "endTimeRequired": "L'heure d'arrivée est obligatoire.",
+        "etaRequired": "L'ETA est calculée après définition du trajet et de l'heure de départ.",
+        "etaAfterStart": "L'ETA doit être postérieure à l'heure de départ.",
         "regionRequired": "La région est obligatoire.",
         "capacityPositive": "La capacité doit être supérieure à 0.",
         "distancePositive": "La distance doit être un nombre positif.",
@@ -891,7 +970,20 @@
       "resolvingMarkers": "Résolution des marqueurs de départ et de destination...",
       "mapUnavailable": "La carte est indisponible pour ce trajet car aucune coordonnée exploitable n'a été trouvée.",
       "calculatingRoute": "Calcul de l'itinéraire routier...",
-      "routeFallback": "Itinéraire routier indisponible pour le moment. Affichage de liens directs entre les points."
+      "routeFallback": "Itinéraire routier indisponible pour le moment. Affichage de liens directs entre les points.",
+      "live": {
+        "unknownTime": "heure inconnue",
+        "justNow": "à l'instant",
+        "secondsAgo": "il y a {{count}} s",
+        "minutesAgo": "il y a {{count}} min",
+        "hoursAgo": "il y a {{count}} h",
+        "accuracy": "précision ~{{count}}m",
+        "signalOld": "signal ancien",
+        "updated": "Position du téléphone du conducteur mise à jour {{when}}",
+        "waiting": "En attente de la position du téléphone du conducteur...",
+        "notReceived": "Aucune position du téléphone du conducteur n'a encore été reçue. Demandez-lui d'ouvrir la navigation en direct.",
+        "driverLocation": "Position du conducteur"
+      }
     },
     "stopStatus": {
       "pending": "En attente",
@@ -1003,7 +1095,7 @@
       "noAssignment": "Aucune affectation active.",
       "maintenanceHistoryTitle": "Historique de maintenance",
       "noMaintenance": "Aucun dossier de maintenance.",
-      "maintenanceLine": "{{date}} · {{status}} · {{priority}}",
+      "maintenanceLine": "{{date}} • {{status}} • Priorité {{priority}}",
       "costLine": "{{cost}} {{currency}}",
       "recommendationsTitle": "Recommandations",
       "generating": "Génération...",
@@ -1015,6 +1107,7 @@
       "activeLabel": "Véhicule actif",
       "needsMaintenanceLabel": "Nécessite une maintenance",
       "newTitle": "Nouveau véhicule",
+      "operationalStatus": "Statut opérationnel",
       "tireCondition": "État des pneus",
       "brakeCondition": "État des freins",
       "batteryStatus": "État de la batterie",

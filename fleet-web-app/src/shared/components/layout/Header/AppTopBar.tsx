@@ -2,6 +2,8 @@ import { memo, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { FiMenu, FiMoon, FiSun } from 'react-icons/fi';
 import { useAppSelector } from '../../../hooks';
+import { HeaderNotifications } from './HeaderNotifications';
+import UserMenu from '../../ui/UserMenu';
 import { LanguageSelector } from '../../LanguageSelector';
 import UserMenu from '../../ui/UserMenu';
 import { HeaderNotifications } from './HeaderNotifications';
@@ -13,9 +15,10 @@ export interface AppTopBarProps {
 }
 
 export const AppTopBar = memo(({ dark, setDark, onMenuClick }: AppTopBarProps) => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const user = useAppSelector((state) => state.auth.user);
   const [now, setNow] = useState(() => new Date());
+  const isRtl = (i18n.language || 'en').split('-')[0] === 'ar';
   const greeting = useMemo(() => {
     const hour = now.getHours();
     if (hour < 12) return t('header.goodMorning');
@@ -52,19 +55,18 @@ export const AppTopBar = memo(({ dark, setDark, onMenuClick }: AppTopBarProps) =
           <FiMenu className="w-5 h-5" />
         </button>
 
-        <div className="min-w-0">
+        <div className={`min-w-0 ${isRtl ? 'text-right' : ''}`}>
           <h1 className={`truncate text-2xl font-black tracking-tight ${dark ? 'text-slate-50' : 'text-slate-950'}`}>
-            {t('header.greetingWithName', {
-              greeting,
-              name: user?.name?.split(' ')[0] || t('header.defaultName'),
-            })}
+            {greeting}, {user?.name?.split(' ')[0] || 'there'}
           </h1>
           <p className={`hidden sm:block truncate text-sm font-bold ${dark ? 'text-slate-400' : 'text-slate-500'}`}>
-            {t('header.operationalActivity')}
+            {t('header.activitySubtitle')}
           </p>
         </div>
 
-        <div className="flex items-center gap-1 sm:gap-2 ml-auto">
+        <div className={`flex items-center gap-1 sm:gap-2 ${isRtl ? 'mr-auto flex-row-reverse' : 'ml-auto'}`}>
+          <LanguageSelector dark={dark} />
+
           <div
             className={`flex rounded-full p-0.5 border ${
               dark ? 'border-cyan-200/10 bg-[#081220]/90' : 'border-slate-200 bg-slate-100/80'
@@ -92,12 +94,12 @@ export const AppTopBar = memo(({ dark, setDark, onMenuClick }: AppTopBarProps) =
             </button>
           </div>
 
-          <LanguageSelector dark={dark} />
-
           <HeaderNotifications />
 
           <div
-            className={`pl-2 border-l ${dark ? 'border-cyan-200/10' : 'border-slate-200'} [&_button]:py-1.5 [&_button]:px-2`}
+            className={`${
+              isRtl ? 'pr-2 border-r' : 'pl-2 border-l'
+            } ${dark ? 'border-cyan-200/10' : 'border-slate-200'} [&_button]:py-1.5 [&_button]:px-2`}
           >
             <UserMenu />
           </div>

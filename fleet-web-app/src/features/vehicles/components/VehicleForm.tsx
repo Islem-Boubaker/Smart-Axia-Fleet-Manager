@@ -227,15 +227,15 @@ const VehicleForm = ({ vehicle, dark = false, onSubmit, onCancel, error }: Vehic
 
         {/* Operational Status */}
         <div className="md:col-span-2">
-          <label className={labelClass}>Operational Status</label>
+          <label className={labelClass}>{t('vehicles.form.operationalStatus')}</label>
           <Select
             value={formData.status}
             onChange={(value) => handleSelectChange('status', value)}
             dark={dark}
             options={[
-              { value: 'AVAILABLE', label: 'Active' },
-              { value: 'OUT_OF_SERVICE', label: 'Inactive' },
-              { value: 'IN_MAINTENANCE', label: 'Maintenance' },
+              { value: 'AVAILABLE', label: t('status.available') },
+              { value: 'OUT_OF_SERVICE', label: t('status.inactive') },
+              { value: 'IN_MAINTENANCE', label: t('status.maintenance') },
             ]}
           />
         </div>
@@ -324,30 +324,6 @@ const VehicleForm = ({ vehicle, dark = false, onSubmit, onCancel, error }: Vehic
           />
         </div>
 
-        {/* Checkboxes */}
-        <div className="md:col-span-2 flex items-center gap-6 pt-2">
-          <label className="flex items-center gap-2 cursor-pointer group">
-            <div className="relative flex items-center justify-center">
-              <input type="checkbox" name="Active" checked={formData.Active} onChange={handleChange} className="peer sr-only" />
-              <div className="w-5 h-5 border-2 border-gray-300 dark:border-slate-600 rounded peer-checked:bg-gray-900 dark:peer-checked:bg-brand peer-checked:border-gray-900 dark:peer-checked:border-brand transition-colors"></div>
-              <svg className="absolute w-3.5 h-3.5 text-white opacity-0 peer-checked:opacity-100 pointer-events-none transition-opacity" viewBox="0 0 14 10" fill="none">
-                <path d="M1 5L4.5 8.5L13 1" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-              </svg>
-            </div>
-            <span className="text-[13px] font-medium text-gray-700 dark:text-slate-300 group-hover:text-gray-900 dark:group-hover:text-white transition-colors">{t('vehicles.form.activeLabel')}</span>
-          </label>
-          
-          <label className="flex items-center gap-2 cursor-pointer group">
-            <div className="relative flex items-center justify-center">
-              <input type="checkbox" name="Need_Maintenance" checked={formData.Need_Maintenance} onChange={handleChange} className="peer sr-only" />
-              <div className="w-5 h-5 border-2 border-gray-300 dark:border-slate-600 rounded peer-checked:bg-brand peer-checked:border-brand transition-colors"></div>
-              <svg className="absolute w-3.5 h-3.5 text-white opacity-0 peer-checked:opacity-100 pointer-events-none transition-opacity" viewBox="0 0 14 10" fill="none">
-                <path d="M1 5L4.5 8.5L13 1" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-              </svg>
-            </div>
-            <span className="text-[13px] font-medium text-gray-700 dark:text-slate-300 group-hover:text-gray-900 dark:group-hover:text-white transition-colors">{t('vehicles.form.needsMaintenanceLabel')}</span>
-          </label>
-        </div>
       </div>
 
       <div className="flex items-center justify-between pt-3">

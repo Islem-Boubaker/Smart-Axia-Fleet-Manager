@@ -1,15 +1,15 @@
 import { useCallback, useMemo, useState } from 'react';
-import { useTranslation } from 'react-i18next';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { vehiclesService } from '../services/vehicles.service';
 import { tripsService } from '../../trips/services/trips.service';
 import { maintenanceService } from '../../maintenance/services/maintenance.service';
 import type { Maintenance, Trip, Vehicle } from '../../../types';
 import { queryKeys } from '../../../shared/services/queryKeys';
+import { getVehicleStatusLabel, type VehicleStatusLabel } from '../utils/vehicleStatus';
 
 export type VehicleStatusFilter = 'all' | 'available' | 'in_use' | 'maintenance' | 'inactive';
 export type VehicleTypeFilter = Vehicle['type'] | 'all';
-export type VehicleStatusKey = 'available' | 'in_use' | 'maintenance' | 'inactive';
+export type { VehicleStatusLabel };
 
 export interface MaintenanceRecommendation {
   overview: string;
@@ -21,7 +21,7 @@ interface MaintenanceRecommendationPayload {
 }
 
 export interface VehicleAssignmentSummary {
-  driverName: string | null;
+  driverName: string;
   tripStatus: Trip['status'];
   startLocation: string;
   endLocation: string;
@@ -30,9 +30,8 @@ export interface VehicleAssignmentSummary {
 
 export interface VehicleTableRow {
   vehicle: Vehicle;
-  status: VehicleStatusKey;
-  driverName: string | null;
-  isDriverAssigned: boolean;
+  statusLabel: VehicleStatusLabel;
+  driverName: string;
   lastTripLabel: string;
   lastTripTime?: string;
   currentAssignment: VehicleAssignmentSummary | null;
@@ -69,31 +68,23 @@ const matchesVehicleMaintenance = (vehicle: Vehicle, maintenance: Maintenance): 
   return plate.length > 0 && plate === maintenancePlate;
 };
 
-const formatTripLabel = (date: string | undefined, t: (key: string, options?: Record<string, unknown>) => string, locale: string): string => {
-  if (!date) return t('common.noTrips');
+const formatTripLabel = (date?: string): string => {
+  if (!date) return 'No trips';
   const parsed = new Date(date);
-  if (Number.isNaN(parsed.getTime())) return t('common.noTrips');
+  if (Number.isNaN(parsed.getTime())) return 'No trips';
 
   const now = Date.now();
   const diffMs = now - parsed.getTime();
   const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
 
   if (diffDays <= 0) {
-    return t('common.todayAt', {
-      time: parsed.toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' }),
-    });
+    return `Today, ${parsed.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
   }
 
-  if (diffDays === 1) return t('common.yesterday');
-  if (diffDays < 7) return t('common.daysAgo', { count: diffDays });
+  if (diffDays === 1) return 'Yesterday';
+  if (diffDays < 7) return `${diffDays} days ago`;
 
-  return parsed.toLocaleDateString(locale);
-};
-
-const resolveStatus = (vehicle: Vehicle, activeTrip: Trip | undefined): VehicleStatusKey => {
-  if (vehicle.Need_Maintenance) return 'maintenance';
-  if (activeTrip) return 'in_use';
-  return vehicle.Active ? 'available' : 'inactive';
+  return parsed.toLocaleDateString();
 };
 
 const applyMaintenanceRecommendationsToVehicle = (
@@ -167,7 +158,6 @@ export const parseMaintenanceRecommendation = (vehicle: Vehicle): MaintenanceRec
 };
 
 export const useVehicles = () => {
-  const { t, i18n } = useTranslation();
   const queryClient = useQueryClient();
 
   const [searchQuery, setSearchQuery] = useState('');
@@ -274,7 +264,7 @@ export const useVehicles = () => {
     deleteVehicleMutation.isPending;
 
   const queryError = vehiclesQuery.error || tripsQuery.error || maintenanceQuery.error;
-  const error = queryError ? getErrorMessage(queryError, t('vehicles.errors.fetch')) : null;
+  const error = queryError ? getErrorMessage(queryError, 'Failed to fetch vehicles') : null;
 
   const fetchVehicles = useCallback(async () => {
     await Promise.all([
@@ -293,11 +283,12 @@ export const useVehicles = () => {
       const activeTrip = relatedTrips.find((trip) => trip.status === 'ongoing');
       const latestTrip = relatedTrips[0];
 
-      const driverName = activeTrip?.driver?.name || latestTrip?.driver?.name || null;
+      const driverName =
+        activeTrip?.driver?.name || latestTrip?.driver?.name || 'Unassigned';
 
       const currentAssignment: VehicleAssignmentSummary | null = activeTrip
         ? {
-            driverName: activeTrip.driver?.name || null,
+            driverName: activeTrip.driver?.name || 'Unassigned',
             tripStatus: activeTrip.status,
             startLocation: activeTrip.startLocation,
             endLocation: activeTrip.endLocation,
@@ -311,23 +302,22 @@ export const useVehicles = () => {
 
       return {
         vehicle,
-        status: resolveStatus(vehicle, activeTrip),
+        statusLabel: getVehicleStatusLabel(vehicle),
         driverName,
-        isDriverAssigned: Boolean(driverName),
-        lastTripLabel: formatTripLabel(latestTrip?.startTime, t, i18n.language),
+        lastTripLabel: formatTripLabel(latestTrip?.startTime),
         lastTripTime: latestTrip?.startTime,
         currentAssignment,
         maintenanceHistory: vehicleMaintenanceHistory,
         maintenanceRecommendations: parseMaintenanceRecommendation(vehicle),
       };
     });
-  }, [maintenanceRecords, trips, vehicles, t, i18n.language]);
+  }, [maintenanceRecords, trips, vehicles]);
 
   const filteredVehicles = useMemo<VehicleTableRow[]>(() => {
     const normalizedSearch = searchQuery.trim().toLowerCase();
 
     return vehicleRows.filter((row) => {
-      const { vehicle, status } = row;
+      const { vehicle, statusLabel } = row;
 
       const matchesSearch =
         normalizedSearch.length === 0 ||
@@ -335,7 +325,12 @@ export const useVehicles = () => {
           .toLowerCase()
           .includes(normalizedSearch);
 
-      const matchesStatus = statusFilter === 'all' || statusFilter === status;
+      const matchesStatus =
+        statusFilter === 'all' ||
+        (statusFilter === 'available' && statusLabel === 'Available') ||
+        (statusFilter === 'in_use' && statusLabel === 'In Use') ||
+        (statusFilter === 'maintenance' && statusLabel === 'Maintenance') ||
+        (statusFilter === 'inactive' && statusLabel === 'Inactive');
 
       const matchesType = typeFilter === 'all' || vehicle.type === typeFilter;
 
@@ -377,7 +372,7 @@ export const useVehicles = () => {
   const selectedVehicleDetails = selectedVehicleDetailsQuery.data ?? null;
   const isDetailsLoading = selectedVehicleDetailsQuery.isLoading || selectedVehicleDetailsQuery.isFetching;
   const detailsError = selectedVehicleDetailsQuery.error
-    ? getErrorMessage(selectedVehicleDetailsQuery.error, t('vehicles.errors.details'))
+    ? getErrorMessage(selectedVehicleDetailsQuery.error, 'Failed to load vehicle details')
     : null;
 
   return {

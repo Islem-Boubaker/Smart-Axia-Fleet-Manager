@@ -6,6 +6,7 @@ import type { AppDispatch, RootState } from "@/store";
 import { setUser } from "@/store/slices/authSlice";
 
 import {
+  type DriverRankingProfile,
   profileApi,
   type ChangePasswordPayload,
   type NotificationSettings,
@@ -24,6 +25,7 @@ const DEFAULT_SETTINGS: NotificationSettings = {
 
 type ProfileState = {
   user: User | null;
+  ranking: DriverRankingProfile | null;
   notificationSettings: NotificationSettings;
   isLoading: boolean;
   isSaving: boolean;
@@ -46,6 +48,7 @@ export function useProfile() {
 
   const [state, setState] = useState<ProfileState>({
     user: reduxUser,
+    ranking: null,
     notificationSettings: DEFAULT_SETTINGS,
     isLoading: true,
     isSaving: false,
@@ -65,15 +68,17 @@ export function useProfile() {
     setState((prev) => ({ ...prev, isLoading: true, error: null }));
 
     try {
-      const [user, settings] = await Promise.all([
+      const [user, settings, ranking] = await Promise.all([
         profileApi.getCurrentUser(),
         profileApi.getNotificationSettings().catch(() => DEFAULT_SETTINGS),
+        profileApi.getMyRanking().catch(() => null),
       ]);
 
       syncUser(user);
       if (isMountedRef.current) {
         setState((prev) => ({
           ...prev,
+          ranking,
           notificationSettings: settings ?? DEFAULT_SETTINGS,
           isLoading: false,
         }));
@@ -179,6 +184,7 @@ export function useProfile() {
   return useMemo(
     () => ({
       user: state.user,
+      ranking: state.ranking,
       notificationSettings: state.notificationSettings,
       isLoading: state.isLoading,
       isSaving: state.isSaving,

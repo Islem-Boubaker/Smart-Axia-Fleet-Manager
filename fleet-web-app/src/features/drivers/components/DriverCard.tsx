@@ -55,7 +55,8 @@ const DriverCard = memo(({ driver, onEdit, onDelete, dark = false }: DriverCardP
           </div>
           <div className="min-w-0">
             <h3 className={`text-lg font-semibold truncate ${textClass}`}>{driver.name}</h3>
-            <div className="flex items-center gap-2 mt-1">
+            <div className="flex items-center gap-2 mt-1 flex-wrap">
+              {driver.experienceBadge ? <Badge variant="info" size="sm">{driver.experienceBadge.label}</Badge> : null}
               <span
                 className={`inline-flex items-center px-2 py-1 rounded-lg text-sm font-medium ${
                   dark ? 'bg-amber-500/15 text-amber-300' : 'bg-amber-50 text-amber-800'
@@ -63,6 +64,13 @@ const DriverCard = memo(({ driver, onEdit, onDelete, dark = false }: DriverCardP
               >
                 ⭐ {driver.rating || '4.8'}
               </span>
+              {typeof driver.driverScore === 'number' ? (
+                <span className={`inline-flex items-center px-2 py-1 rounded-lg text-sm font-medium ${
+                  dark ? 'bg-blue-500/15 text-blue-300' : 'bg-blue-50 text-blue-800'
+                }`}>
+                  {driver.driverScore}/100
+                </span>
+              ) : null}
             </div>
           </div>
         </div>

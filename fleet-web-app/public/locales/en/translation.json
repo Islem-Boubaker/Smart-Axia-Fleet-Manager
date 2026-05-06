@@ -240,7 +240,8 @@
     "on_leave": "On leave"
   },
   "dashboard": {
-    "title": "Dashboard",
+    "sectionLabel": "Operations",
+    "title": "Fleet Dashboard",
     "overviewLine": "Operations center overview for {{date}}",
     "newTrip": "New Trip",
     "tripDetails": "Trip details",
@@ -248,7 +249,18 @@
     "alerts": {
       "title": "Active alerts",
       "none": "No active alerts.",
-      "viewAll": "View all"
+      "viewAll": "View all",
+      "daysOverdue": "{{count}} day(s) overdue",
+      "dueInDays": "due in {{count}} day(s)",
+      "insuranceOverdueTitle": "Insurance overdue - {{vehicle}}",
+      "insuranceDueSoonTitle": "Insurance due soon - {{vehicle}}",
+      "insuranceMessage": "{{vehicle}} insurance expires on {{date}} ({{whenText}}).",
+      "techVisitOverdueTitle": "Tech visit overdue - {{vehicle}}",
+      "techVisitDueSoonTitle": "Tech visit due soon - {{vehicle}}",
+      "techVisitMessage": "{{vehicle}} technical visit expires on {{date}} ({{whenText}}).",
+      "prefillInsurance": "Created from insurance expiry alert.",
+      "prefillTechVisit": "Created from technical visit expiry alert.",
+      "vehicleLine": "Vehicle: {{vehicle}}"
     },
     "fleetOverview": {
       "title": "Fleet status overview",
@@ -273,6 +285,17 @@
       "none": "No driver data for this month.",
       "kmOnTime": "{{km}} km · {{pct}}% on-time"
     },
+    "podium": {
+      "title": "Driver podium",
+      "subtitle": "Lifetime ranking based on accidents, route deviations, and trip punctuality.",
+      "none": "No driver ranking data available yet.",
+      "viewFull": "View full ranking",
+      "first": "1st",
+      "second": "2nd",
+      "third": "3rd",
+      "score": "Score",
+      "completedTrips": "{{count}} completed trips"
+    },
     "fuel": {
       "title": "Fuel usage — last 7 days",
       "totalWeek": "Total this week",
@@ -281,9 +304,9 @@
     },
     "quickActions": {
       "title": "Quick actions",
-      "newTrip": " New Trip",
-      "addVehicle": " Add Vehicle",
-      "scheduleMaintenance": " Schedule Maintenance",
+      "newTrip": "+ New Trip",
+      "addVehicle": "+ Add Vehicle",
+      "scheduleMaintenance": "+ Schedule Maintenance",
       "generateReport": "Generate Report"
     },
     "maintenance": {
@@ -322,6 +345,16 @@
     "section_label": "PEOPLE",
     "add_button": " Add driver",
     "search_placeholder": "Search drivers by name, email, license...",
+    "filters": {
+      "statusLabel": "Status",
+      "scoreLabel": "Score",
+      "allStatuses": "All statuses",
+      "allScores": "All scores",
+      "score90Plus": "90+",
+      "score80to89": "80–89",
+      "score70to79": "70–79",
+      "scoreBelow70": "Below 70"
+    },
     "showing_results": "Showing {{count}} results",
     "description": "Manage driver profiles, licenses, and vehicle assignments.",
     "addNew": "Add New Driver",
@@ -390,6 +423,10 @@
     "searchPlaceholder": "Search fleet, trips, drivers…",
     "notifications": "Notifications",
     "language": "Language",
+    "goodMorning": "Good Morning",
+    "goodAfternoon": "Good Afternoon",
+    "goodEvening": "Good Evening",
+    "activitySubtitle": "Check your fleet's latest operational activity.",
     "openMenu": "Open menu",
     "lightMode": "Light mode",
     "darkMode": "Dark mode",
@@ -414,6 +451,12 @@
       "titleNew": "New maintenance",
       "titleEdit": "Edit maintenance",
       "submit": "Schedule Maintenance",
+      "selectVehicle": "Select vehicle",
+      "noVehiclesFound": "No vehicles found",
+      "selectType": "Select type",
+      "technicianPlaceholder": "Technician name",
+      "costPlaceholder": "e.g., 150",
+      "mileagePlaceholder": "e.g., 45230",
       "types": {
         "routine": "Routine",
         "repair": "Repair",
@@ -440,6 +483,8 @@
       "engine_tune_up": "Engine Tune-up",
       "battery_replacement": "Battery Replacement",
       "general_inspection": "General Inspection",
+      "technical_visit": "Technical Visit",
+      "insurance_renewal": "Insurance Renewal",
       "other": "Other"
     },
     "remove": {
@@ -471,7 +516,9 @@
     "fleet": "Fleet",
     "profile": "Profile",
     "notifications": "Notifications",
-    "security": "Security"
+    "security": "Security",
+    "expandSidebar": "Expand sidebar",
+    "collapseSidebar": "Collapse sidebar"
   },
   "brand": {
     "axia": "Smart Axia",
@@ -525,6 +572,13 @@
     "subtitle": "Fleet analytics with actionable operational insights.",
     "section_label": "ANALYTICS",
     "export_pdf": "Export PDF",
+    "embed": {
+      "refreshReport": "Refresh report",
+      "openInNewTab": "Open report in new tab",
+      "open": "Open",
+      "notConfigured": "Tableau is not configured yet",
+      "configExample": "VITE_TABLEAU_EMBED_URL=https://public.tableau.com/views/your-workbook/your-view?:showVizHome=no"
+    },
     "filters": {
       "dateRange": "Date range",
       "export": "Export",
@@ -708,6 +762,20 @@
       "email": "Email",
       "push": "Push",
       "save": "Save preferences",
+      "items": {
+        "emailTrips": "Trip emails",
+        "emailMaintenance": "Maintenance emails",
+        "emailDrivers": "Driver emails",
+        "emailAI": "AI alert emails",
+        "emailSystem": "System emails",
+        "pushTrips": "Trip push notifications",
+        "pushMaintenance": "Maintenance push notifications",
+        "pushDrivers": "Driver push notifications",
+        "pushAI": "AI alert push notifications",
+        "pushSystem": "System push notifications",
+        "pushAlerts": "General alert push notifications",
+        "smsAlerts": "SMS alerts"
+      },
       "toast_saving": "Saving notification settings...",
       "toast_success": "Notification settings saved.",
       "toast_failed": "Failed to save notification settings"
@@ -784,6 +852,7 @@
       "selectVehicle": "Select a vehicle",
       "selectDriver": "Select a driver",
       "recMapErrorStart": "Please set a start location first to get accurate recommendations.",
+      "recMapErrorStartLocation": "Please set a start time and location first to get accurate recommendations.",
       "recMapErrorTime": "Please set a start time before requesting recommendations.",
       "recMapErrorDistance": "Please provide start/end addresses so distance can be calculated.",
       "recFetchError": "Failed to fetch ML recommendations. Using standard lists.",
@@ -805,6 +874,11 @@
       "optimizing": "Optimizing best route and total distance...",
       "startDateTime": "Start date/time",
       "endDateTime": "End date/time",
+      "startTimeForEta": "Set a start time to calculate ETA.",
+      "completeRouteForEta": "Complete the route points to calculate ETA from the map.",
+      "etaHelper": "Map route time {{duration}} + 1h spare time.",
+      "etaLabel": "ETA time",
+      "etaPlaceholder": "Calculated from route + 1h",
       "regionPlaceholder": "e.g. Tunis, Sfax",
       "reqCapacity": "Req. Capacity (kg)",
       "minCapacityPh": "Min capacity",
@@ -814,6 +888,9 @@
       "revenueTnd": "Revenue (TND)",
       "notesOptional": "Notes (optional)",
       "notesPlaceholder": "Trip instructions, cargo details, or anything important for the driver...",
+      "estimatedFuel": "Estimated fuel consumption",
+      "estimatedFuelFromConsumption": "{{fuel}} L (based on {{consumption}} L/100km)",
+      "estimatedFuelHint": "Select a vehicle with Consumption (L/100km) and complete route points to estimate fuel.",
       "smartRecTitle": "Smart Recommendation",
       "smartRecHint": "Rank drivers and vehicles for this specific route.",
       "refreshSuggestions": "Refresh Suggestions",
@@ -828,6 +905,8 @@
         "destinationRequired": "Destination is required.",
         "startTimeRequired": "Start time is required.",
         "endTimeRequired": "End time is required.",
+        "etaRequired": "ETA is calculated after route points and start time are set.",
+        "etaAfterStart": "ETA must be after the start time.",
         "regionRequired": "Region is required.",
         "capacityPositive": "Capacity must be greater than 0.",
         "distancePositive": "Distance must be a positive number.",
@@ -891,7 +970,20 @@
       "resolvingMarkers": "Resolving start and destination markers...",
       "mapUnavailable": "Map is unavailable for this trip because no mappable coordinates were found.",
       "calculatingRoute": "Calculating road route...",
-      "routeFallback": "Road route unavailable right now. Showing direct links between points."
+      "routeFallback": "Road route unavailable right now. Showing direct links between points.",
+      "live": {
+        "unknownTime": "unknown time",
+        "justNow": "just now",
+        "secondsAgo": "{{count}}s ago",
+        "minutesAgo": "{{count}}m ago",
+        "hoursAgo": "{{count}}h ago",
+        "accuracy": "accuracy ~{{count}}m",
+        "signalOld": "signal is old",
+        "updated": "Driver phone location updated {{when}}",
+        "waiting": "Waiting for the driver phone location...",
+        "notReceived": "No driver phone location has been received yet. Ask the driver to open live navigation.",
+        "driverLocation": "Driver location"
+      }
     },
     "stopStatus": {
       "pending": "Pending",
@@ -1003,7 +1095,7 @@
       "noAssignment": "No active assignment.",
       "maintenanceHistoryTitle": "Maintenance history",
       "noMaintenance": "No maintenance records yet.",
-      "maintenanceLine": "{{date}} ? {{status}} ? {{priority}}",
+      "maintenanceLine": "{{date}} • {{status}} • Priority {{priority}}",
       "costLine": "{{cost}} {{currency}}",
       "recommendationsTitle": "Recommendations",
       "generating": "Generating...",
@@ -1015,6 +1107,7 @@
       "activeLabel": "Vehicle is active",
       "needsMaintenanceLabel": "Needs maintenance",
       "newTitle": "New vehicle",
+      "operationalStatus": "Operational Status",
       "tireCondition": "Tire condition",
       "brakeCondition": "Brake condition",
       "batteryStatus": "Battery status",

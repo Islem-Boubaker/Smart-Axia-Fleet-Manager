@@ -1,6 +1,6 @@
 ﻿import { memo, useState } from "react";
-import { useTranslation } from 'react-i18next';
 import type { Vehicle } from "../../../types";
+import { useTranslation } from "react-i18next";
 import type { VehicleTableRow } from "../hooks/useVehicles";
 import { AppDataTable, AppStatusBadge, AppTd, AppTr } from '../../../shared/components';
 import RowActions from "./RowActions";
@@ -15,10 +15,10 @@ interface VehiclesTableProps {
   onDelete: (vehicleId: string) => void;
 }
 
-const statusVariant = (status: VehicleTableRow['status']) => {
-  if (status === 'available') return 'success';
-  if (status === 'in_use') return 'info';
-  if (status === 'maintenance') return 'danger';
+const statusVariant = (status: VehicleTableRow["statusLabel"]) => {
+  if (status === "Available") return "success";
+  if (status === "In Use") return "info";
+  if (status === "Maintenance") return "danger";
   return "neutral";
 };
 
@@ -56,9 +56,11 @@ const VehiclesTable = memo(
   }: VehiclesTableProps) => {
     const { t } = useTranslation();
     const [expandedRows, setExpandedRows] = useState<Record<string, boolean>>({});
-
-    const normalizeStatusKey = (value: string) =>
-      value.toLowerCase().replace(/\s+/g, '_').replace(/-+/g, '_');
+    const normalizeStatusKey = (value: string) => value.toLowerCase().replace(/\s+/g, '_').replace(/-+/g, '_');
+    const translatePriority = (value: VehicleTableRow['maintenanceRecommendations'][number]['level']) => {
+      const key = value.toLowerCase();
+      return ['high', 'medium', 'low'].includes(key) ? t(`priority.${key}`) : value;
+    };
 
     const toggleRow = (vehicleId: string) => {
       setExpandedRows((current) => ({
@@ -106,8 +108,6 @@ const VehiclesTable = memo(
       );
     }
 
-    const statusLabel = (status: VehicleTableRow['status']) => t(`status.${normalizeStatusKey(status)}`);
-
     return (
       <AppDataTable
         columns={[
@@ -121,6 +121,7 @@ const VehiclesTable = memo(
         totalResults={rows.length}
         dark={dark}
         ariaLabel={t('vehicles.table.dataTableAria')}
+        title={t('vehicles.title')}
       >
         {rows.map((row) => {
           const vehicleImage = row.vehicle.photos?.[0] ?? null;
@@ -170,25 +171,25 @@ const VehiclesTable = memo(
 
               {/* ── Status ── */}
               <AppTd>
-                <AppStatusBadge variant={statusVariant(row.status)}>
-                  {statusLabel(row.status)}
+                <AppStatusBadge variant={statusVariant(row.statusLabel)}>
+                  {t(`status.${normalizeStatusKey(row.statusLabel)}`)}
                 </AppStatusBadge>
               </AppTd>
 
               {/* ── Driver ── */}
               <AppTd
                 className={
-                  !row.isDriverAssigned
+                  row.driverName === "Unassigned"
                     ? dark ? 'italic text-slate-400' : 'italic text-slate-500'
                     : dark ? 'text-slate-100' : 'text-slate-900'
                 }
               >
-                {row.driverName ?? t('common.unassigned')}
+                {row.driverName === 'Unassigned' ? t('common.unassigned') : row.driverName}
               </AppTd>
 
               {/* ── Last Trip ── */}
               <AppTd className={dark ? 'text-slate-300' : 'text-slate-500'}>
-                {row.lastTripLabel}
+                {row.lastTripLabel === 'No trips' ? t('common.no_trips') : row.lastTripLabel}
               </AppTd>
 
               {/* ── Maintenance ── */}
@@ -201,7 +202,7 @@ const VehiclesTable = memo(
                   <div className="space-y-2 max-w-sm">
                     <div className="flex flex-wrap items-start gap-2">
                       <AppStatusBadge variant={priorityVariant(primaryRecommendation.level)}>
-                        {primaryRecommendation.level}
+                        {translatePriority(primaryRecommendation.level)}
                       </AppStatusBadge>
                       <p
                         className={`min-w-0 flex-1 text-xs leading-relaxed line-clamp-2 ${levelStyle(primaryRecommendation.level)}`}
@@ -238,7 +239,7 @@ const VehiclesTable = memo(
                             {recommendations.slice(1).map((rec, index) => (
                               <div key={`${row.vehicle.id}-rec-${index}`} className="flex flex-wrap items-start gap-2">
                                 <AppStatusBadge variant={priorityVariant(rec.level)}>
-                                  {rec.level}
+                                  {translatePriority(rec.level)}
                                 </AppStatusBadge>
                                 <p
                                   className={`min-w-0 flex-1 text-xs leading-relaxed line-clamp-2 ${levelStyle(rec.level)}`}
