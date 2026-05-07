@@ -1,8 +1,10 @@
 import { View, Text, TouchableOpacity } from "react-native";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
+import { useTranslation } from "react-i18next";
 import { STATUS_CONFIG } from "../config/trips.config";
 import type { Trip } from "../types/trip.types";
 import { useAppTheme } from "@/shared/theme/ThemeProvider";
+import { getStatusTranslationKey } from "@/shared/utils/translateStatus";
 
 interface Props {
   trip: Trip;
@@ -11,6 +13,7 @@ interface Props {
 
 export function TripCard({ trip, onPress }: Props) {
   const { isDark } = useAppTheme();
+  const { t } = useTranslation();
   // ✅ Guard — if trip is undefined/null, render nothing
   if (!trip) return null;
 
@@ -55,7 +58,7 @@ export function TripCard({ trip, onPress }: Props) {
               className="text-[10px] font-bold uppercase tracking-wide"
               style={{ color: cfg.badgeText }}
             >
-              {cfg.label}
+              {t(getStatusTranslationKey(status))}
             </Text>
           </View>
         </View>
@@ -127,7 +130,7 @@ export function TripCard({ trip, onPress }: Props) {
           </Text>
         </View>
         <Text className="text-[11px] font-bold text-emerald-600">
-          View details ›
+          {t("trips.viewDetails")}
         </Text>
       </View>
     </TouchableOpacity>

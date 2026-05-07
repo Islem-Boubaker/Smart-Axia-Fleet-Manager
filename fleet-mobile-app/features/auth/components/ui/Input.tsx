@@ -15,7 +15,7 @@ interface InputProps extends TextInputProps {
   onChangeText: (value: string) => void;
   editable?: boolean;
   isPassword?: boolean;
-  icon?: string;
+  icon?: keyof typeof MaterialCommunityIcons.glyphMap;
 }
 
 export function Input({

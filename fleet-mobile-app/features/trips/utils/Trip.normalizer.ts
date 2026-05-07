@@ -1,4 +1,15 @@
-import type { Trip, TripApiResponse } from "../types/trip.types";
+import type { BackendTripStatus, Trip } from "../types/trip.types";
+
+type TripApiResponse = {
+  id: string;
+  status: BackendTripStatus;
+  startLocation: string;
+  endLocation: string;
+  startTime: string;
+  endTime: string | null;
+  vehicleId?: string;
+  distance?: string | number;
+};
 
 // ─── Status mapping ───────────────────────────────────────────────────────────
 const mapStatus = (apiStatus: TripApiResponse["status"]): Trip["status"] => {
@@ -13,7 +24,7 @@ const mapStatus = (apiStatus: TripApiResponse["status"]): Trip["status"] => {
 
 // ─── Duration helper ──────────────────────────────────────────────────────────
 const computeDuration = (start: string, end: string | null): string => {
-  if (!end) return "In progress";
+  if (!end) return "—";
   const ms = new Date(end).getTime() - new Date(start).getTime();
   if (ms <= 0) return "—";
   const totalMins = Math.round(ms / 60_000);
@@ -50,11 +61,12 @@ export const normalizeTrip = (raw: TripApiResponse): Trip => ({
   lng:        0,
   date:       formatDate(raw.startTime),
   duration:   computeDuration(raw.startTime, raw.endTime),
-  vehicle:    raw.vehicleId.slice(-6).toUpperCase(), // until vehicle lookup is wired up
-  distance:   `${raw.distance} km`,
+  vehicle:    raw.vehicleId ? raw.vehicleId.slice(-6).toUpperCase() : "—", // until vehicle lookup is wired up
+  distance:   raw.distance != null ? `${raw.distance} km` : "",
   score:      null,
   status:     mapStatus(raw.status),
-  _raw:       raw,
+  pickupLocation: { address: raw.startLocation, city: "" },
+  destinationLocation: { address: raw.endLocation, city: "" },
 });
 
 export const normalizeTrips = (items: unknown): Trip[] => {

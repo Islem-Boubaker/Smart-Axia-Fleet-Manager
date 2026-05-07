@@ -12,12 +12,14 @@ import {
   Platform,
   ActivityIndicator,
   Alert,
+  I18nManager,
 } from "react-native";
 import MapView, { Marker, Polyline } from "react-native-maps";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { BlurView } from "expo-blur";
 import { Accordion } from "../components/ui/Accordion";
-import { ArrowLeft, ChevronDown, ChevronUp, Clock, Fuel, Gauge, RefreshCw } from "lucide-react-native";
+import { ArrowLeft, ArrowRight, ChevronDown, ChevronUp, Clock, Fuel, Gauge, RefreshCw } from "lucide-react-native";
+import { useTranslation } from "react-i18next";
 import { useTripDetail } from "../hooks/useTripDetail";
 import { useTripActions } from "../hooks/useTripActions";
 import { useRoutePolyline } from "../hooks/useRoutePolyline"; // ← new
@@ -26,6 +28,7 @@ import { filterDestinationDuplicateStops } from "../utils/routeDedup";
 import type { UiTripStatus } from "../types/trip.types";
 import { useAppTheme } from "@/shared/theme/ThemeProvider";
 import { tripsApi } from "../services/trips.api";
+import { getStatusTranslationKey } from "@/shared/utils/translateStatus";
 
 if (Platform.OS === "android") {
   UIManager.setLayoutAnimationEnabledExperimental?.(true);
@@ -79,6 +82,7 @@ function getRegion(coords: LatLng[]) {
 export default function TripDetailScreen() {
   const router = useRouter();
   const { isDark } = useAppTheme();
+  const { t } = useTranslation();
   const { id } = useLocalSearchParams<{ id: string }>();
   const mapRef = useRef<MapView | null>(null);
   const geocodeCache = useRef<Record<string, LatLng>>({});
@@ -324,7 +328,7 @@ export default function TripDetailScreen() {
       <View style={{ flex: 1, alignItems: "center", justifyContent: "center", backgroundColor: "#F9FAFB" }}>
       
         <ActivityIndicator size="large" color="#6B21F5" />
-        <Text style={{ marginTop: 12, color: colors.subtext, fontSize: 14 }}>Loading trip…</Text>
+        <Text style={{ marginTop: 12, color: colors.subtext, fontSize: 14 }}>{t("trips.loadingTrip")}</Text>
       </View>
     );
   }
@@ -334,10 +338,10 @@ export default function TripDetailScreen() {
     return (
       <View style={{ flex: 1, alignItems: "center", justifyContent: "center", backgroundColor: colors.pageBg, padding: 32 }}>
         <Text style={{ fontSize: 16, fontWeight: "600", color: colors.text, marginBottom: 8 }}>
-          Failed to load trip
+          {t("trips.failedToLoad")}
         </Text>
         <Text style={{ color: colors.subtext, fontSize: 13, textAlign: "center" }}>
-          {error ?? "Trip not found"}
+          {error ?? t("trips.notFound")}
         </Text>
         <View style={{ flexDirection: "row", gap: 12, marginTop: 20 }}>
           <TouchableOpacity
@@ -345,13 +349,13 @@ export default function TripDetailScreen() {
             style={{ backgroundColor: colors.primarySoft, paddingHorizontal: 20, paddingVertical: 12, borderRadius: 12, flexDirection: "row", alignItems: "center", gap: 6 }}
           >
             <RefreshCw size={14} color={colors.primary} />
-            <Text style={{ color: colors.primary, fontWeight: "500" }}>Retry</Text>
+            <Text style={{ color: colors.primary, fontWeight: "500" }}>{t("shared.retry")}</Text>
           </TouchableOpacity>
           <TouchableOpacity
             onPress={handleGoBack}
             style={{ backgroundColor: "#6B21F5", paddingHorizontal: 20, paddingVertical: 12, borderRadius: 12 }}
           >
-            <Text style={{ color: "white", fontWeight: "500" }}>Go Back</Text>
+            <Text style={{ color: "white", fontWeight: "500" }}>{t("shared.goBack")}</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -373,8 +377,8 @@ export default function TripDetailScreen() {
       await tripsApi.startTrip(trip.id);
       await reload();
     } catch (err) {
-      const message = err instanceof Error ? err.message : "Unable to start trip right now.";
-      Alert.alert("Start Trip Failed", message);
+      const message = err instanceof Error ? err.message : t("trips.errors.startTrip");
+      Alert.alert(t("trips.errors.startTripTitle"), message);
     } finally {
       setIsNavigating(false);
     }
@@ -397,8 +401,8 @@ export default function TripDetailScreen() {
       await markStopReached(trip.id, nextPendingStop.id, new Date().toISOString());
       await reload();
     } catch (err) {
-      const message = err instanceof Error ? err.message : "Unable to mark the next stop as reached.";
-      Alert.alert("Stop Update Failed", message);
+      const message = err instanceof Error ? err.message : t("trips.errors.stopUpdate");
+      Alert.alert(t("trips.errors.stopUpdateTitle"), message);
     }
   };
 
@@ -431,8 +435,8 @@ export default function TripDetailScreen() {
         {originCoord && (
           <Marker
             coordinate={originCoord}
-            title={originAddress || "Start"}
-            description="Start location"
+            title={originAddress || t("trips.start")}
+            description={t("trips.startLocation")}
             pinColor="#22C55E"
           />
         )}
@@ -441,8 +445,8 @@ export default function TripDetailScreen() {
           <Marker
             key={stop.id}
             coordinate={{ latitude: stop.latitude!, longitude: stop.longitude! }}
-            title={`Stop ${stop.stopOrder}: ${stop.locationName}`}
-            description={`Stop ${stop.stopOrder} · ${stop.status}`}
+            title={t("trips.stopWithNumber", { number: stop.stopOrder, name: stop.locationName })}
+            description={t("trips.stopStatus", { number: stop.stopOrder, status: t(getStatusTranslationKey(stop.status)) })}
             pinColor="#2563EB"
           />
         ))}
@@ -450,8 +454,8 @@ export default function TripDetailScreen() {
         {destinationCoord && (
           <Marker
             coordinate={destinationCoord}
-            title={destinationAddress || "End"}
-            description="Destination"
+            title={destinationAddress || t("trips.end")}
+            description={t("trips.destination")}
             pinColor="#DC2626"
           />
         )}
@@ -466,7 +470,7 @@ export default function TripDetailScreen() {
       >
         <BlurView intensity={80} tint={colors.blurTint as "light" | "dark"} style={{ borderRadius: 12, overflow: "hidden" }}>
           <TouchableOpacity onPress={handleGoBack} style={{ padding: 10 }}>
-            <ArrowLeft size={22} color={colors.icon} />
+            {I18nManager.isRTL ? <ArrowRight size={22} color={colors.icon} /> : <ArrowLeft size={22} color={colors.icon} />}
           </TouchableOpacity>
         </BlurView>
 
@@ -515,7 +519,7 @@ export default function TripDetailScreen() {
           }}
         >
           <Text style={{ fontSize: 11, color: colors.subtext }}>
-            {sheetExpanded ? "▼ collapse" : "▲ expand"}
+            {sheetExpanded ? t("trips.live.collapse") : t("trips.live.expand")}
           </Text>
         </TouchableOpacity>
 
@@ -542,7 +546,7 @@ export default function TripDetailScreen() {
               }}
             >
               <Text style={{ fontSize: 11, color: statusStyle.text, fontWeight: "600", textTransform: "capitalize" }}>
-                {backendStatus}
+                {t(getStatusTranslationKey(backendStatus))}
               </Text>
             </View>
           </View>
@@ -558,9 +562,9 @@ export default function TripDetailScreen() {
 
           {/* Stats */}
           <View style={{ flexDirection: "row", gap: 8, marginTop: 12 }}>
-            <StatCard icon={<Gauge size={14} color={colors.primary} />} label="distance" value={trip.distance} isDark={isDark} />
-            <StatCard icon={<Fuel size={14} color={colors.primary} />} label="fuel" value={trip.fuel ?? "—"} isDark={isDark} />
-            <StatCard icon={<Clock size={14} color={colors.primary} />} label="fare" value={trip.fare != null ? `${trip.fare} TND` : "—"} isDark={isDark} />
+            <StatCard icon={<Gauge size={14} color={colors.primary} />} label={t("trips.distance")} value={trip.distance} isDark={isDark} />
+            <StatCard icon={<Fuel size={14} color={colors.primary} />} label={t("trips.fuel")} value={trip.fuel ?? "—"} isDark={isDark} />
+            <StatCard icon={<Clock size={14} color={colors.primary} />} label={t("trips.fare")} value={trip.fare != null ? `${trip.fare} TND` : "—"} isDark={isDark} />
           </View>
 
           {/* ── Stops header ── */}
@@ -575,11 +579,11 @@ export default function TripDetailScreen() {
             
             }}
           >
-            <Text style={{ fontSize: 14, fontWeight: "600", color: colors.text }}>Trip stops</Text>
+            <Text style={{ fontSize: 14, fontWeight: "600", color: colors.text }}>{t("trips.tripStops")}</Text>
             <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
               <View style={{ backgroundColor: colors.mutedSurface, paddingHorizontal: 8, paddingVertical: 3, borderRadius: 20 }}>
                 <Text style={{ fontSize: 11, color: colors.subtext }}>
-                  {visibleStops.length} {visibleStops.length === 1 ? "stop" : "stops"}
+                  {t(visibleStops.length === 1 ? "trips.stopCount" : "trips.stopsWithCount", { count: visibleStops.length })}
                 </Text>
               </View>
               {stopsOpen ? <ChevronUp size={16} color={colors.subtext} /> : <ChevronDown size={16} color={colors.subtext} />}
@@ -595,7 +599,7 @@ export default function TripDetailScreen() {
                
                 <Accordion
                   items={visibleStops.map((stop) => ({
-                    title: `Stop ${stop.stopOrder}: ${stop.locationName}`,
+                    title: t("trips.stopWithNumber", { number: stop.stopOrder, name: stop.locationName }),
                     content: stop.notes ?? null,
                   }))}
                   defaultOpenIndex={0}
@@ -624,7 +628,7 @@ export default function TripDetailScreen() {
                   fontSize: 15,
                 }}
               >
-                {isNavigating ? "Starting Trip..." : "Start Trip"}
+                {isNavigating ? t("trips.startingTrip") : t("trips.startTrip")}
               </Text>
             </TouchableOpacity>
           )}
@@ -650,8 +654,10 @@ export default function TripDetailScreen() {
                 }}
               >
                 {isSubmittingTripAction
-                  ? "Updating Stop..."
-                  : `Stop Reached${nextPendingStop.locationName ? ` · ${nextPendingStop.locationName}` : ""}`}
+                  ? t("trips.live.updatingStop")
+                  : nextPendingStop.locationName
+                    ? t("trips.live.stopReachedWithName", { name: nextPendingStop.locationName })
+                    : t("trips.live.stopReached")}
               </Text>
             </TouchableOpacity>
           )}
@@ -678,12 +684,12 @@ export default function TripDetailScreen() {
               }}
             >
               {backendStatus === "ongoing"
-                ? "Navigate Now"
+                ? t("trips.live.navigateNow")
                 : backendStatus === "scheduled"
-                ? "Trip Not Started Yet"
+                ? t("trips.notStartedYet")
                 : backendStatus === "completed"
-                ? "Trip Completed"
-                : "Trip Cancelled"}
+                ? t("trips.completed")
+                : t("trips.cancelled")}
             </Text>
           </TouchableOpacity>
         </ScrollView>

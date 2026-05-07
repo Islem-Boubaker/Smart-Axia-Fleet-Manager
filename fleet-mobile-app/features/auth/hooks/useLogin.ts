@@ -1,11 +1,13 @@
 import { useCallback, useMemo, useState } from "react";
 import { useRouter } from "expo-router";
 import { Platform } from "react-native";
+import { useTranslation } from "react-i18next";
 import type { LoginCredentials } from "../types/auth.types";
 import { useAuthActions } from "./useAuth";
 
 export function useLogin() {
   const router = useRouter();
+  const { t } = useTranslation();
   const {
     loginWithGoogle,
     loginWithApple,
@@ -24,6 +26,25 @@ export function useLogin() {
   >(null);
   const [error, setError] = useState<string | null>(null);
   const [linkSent, setLinkSent] = useState(false);
+
+  const getLoginErrorMessage = useCallback(
+    (err: any) => {
+      const status = err?.response?.status;
+      const message = String(err?.message ?? "").toLowerCase();
+      if (
+        status === 401 ||
+        status === 403 ||
+        message.includes("credential") ||
+        message.includes("password") ||
+        message.includes("login failed") ||
+        message.includes("sign-in failed")
+      ) {
+        return t("auth.login.errors.invalidCredentials");
+      }
+      return t("auth.login.errors.generic");
+    },
+    [t],
+  );
 
   const onEmailChange = useCallback((email: string) => {
     setCredentials((prev) => ({ ...prev, email }));
@@ -48,11 +69,11 @@ export function useLogin() {
       router.replace("/(tabs)/home");
     } catch (err: any) {
       if (String(err?.message || "").toLowerCase().includes("cancel")) return;
-      setError(err?.message || "Google sign-in failed.");
+      setError(t("auth.login.errors.generic"));
     } finally {
       setLoadingProvider(null);
     }
-  }, [loginWithGoogle, router]);
+  }, [loginWithGoogle, router, t]);
 
   const onLoginWithApple = useCallback(async () => {
     try {
@@ -67,21 +88,21 @@ export function useLogin() {
       ) {
         return;
       }
-      setError(err?.message || "Apple sign-in failed.");
+      setError(t("auth.login.errors.generic"));
     } finally {
       setLoadingProvider(null);
     }
-  }, [loginWithApple, router]);
+  }, [loginWithApple, router, t]);
 
   const onSubmit = useCallback(async () => {
     const email = credentials.email.trim();
     if (!email) {
-      setError("Please enter your email.");
+      setError(t("auth.login.errors.emailRequired"));
       return;
     }
 
     if (!credentials.password) {
-      setError("Please enter your password.");
+      setError(t("auth.login.errors.passwordRequired"));
       return;
     }
 
@@ -91,16 +112,16 @@ export function useLogin() {
       await loginWithEmailPassword(email, credentials.password);
       router.replace("/(tabs)/home");
     } catch (err: any) {
-      setError(err?.message || "Sign-in failed. Please try again.");
+      setError(getLoginErrorMessage(err));
     } finally {
       setLoadingProvider(null);
     }
-  }, [credentials.email, credentials.password, loginWithEmailPassword, router]);
+  }, [credentials.email, credentials.password, getLoginErrorMessage, loginWithEmailPassword, router, t]);
 
   const onSendMagicLink = useCallback(async () => {
     const email = credentials.email.trim();
     if (!email) {
-      setError("Please enter your email to receive a magic link.");
+      setError(t("auth.login.errors.emailRequired"));
       return;
     }
 
@@ -110,11 +131,11 @@ export function useLogin() {
       await sendEmailOtp(email);
       setLinkSent(true);
     } catch (err: any) {
-      setError(err?.message || "Failed to send magic link.");
+      setError(t("auth.login.errors.generic"));
     } finally {
       setLoadingProvider(null);
     }
-  }, [credentials.email, sendEmailOtp]);
+  }, [credentials.email, sendEmailOtp, t]);
 
   const onForgotPassword = useCallback(() => {
     router.push("/(auth)/forgotPassword");

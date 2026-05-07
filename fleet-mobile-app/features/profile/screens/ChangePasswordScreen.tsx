@@ -1,8 +1,9 @@
 import React, { useState } from "react";
-import { Text, View, TouchableOpacity } from "react-native";
+import { I18nManager, Text, View, TouchableOpacity } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { ChevronLeft } from "lucide-react-native";
+import { ChevronLeft, ChevronRight } from "lucide-react-native";
 import { useRouter } from "expo-router";
+import { useTranslation } from "react-i18next";
 import { InputField } from "../components/ui/InputField";
 import { FormCard } from "../components/ui/FormCard";
 import { SubmitButton } from "../components/ui/SubmitButton";
@@ -11,6 +12,7 @@ import { useAppTheme } from "@/shared/theme/ThemeProvider";
 export default function ChangePasswordScreen() {
   const router = useRouter();
   const { isDark } = useAppTheme();
+  const { t } = useTranslation();
 
   const [current, setCurrent] = useState("");
   const [newPwd, setNewPwd] = useState("");
@@ -21,28 +23,32 @@ export default function ChangePasswordScreen() {
       {/* Header */}
       <View className="flex-row items-center mt-10 px-4 pb-4">
         <TouchableOpacity onPress={() => router.back()}>
-          <ChevronLeft size={22} color={isDark ? "#F8FAFC" : "#111827"} />
+          {I18nManager.isRTL ? (
+            <ChevronRight size={22} color={isDark ? "#F8FAFC" : "#111827"} />
+          ) : (
+            <ChevronLeft size={22} color={isDark ? "#F8FAFC" : "#111827"} />
+          )}
         </TouchableOpacity>
         <Text className="flex-1 text-center text-lg font-bold text-gray-900 dark:text-gray-50">
-          Change Password
+          {t("profile.changePassword")}
         </Text>
       </View>
 
       <FormCard>
         <InputField
-          label="Current Password"
+          label={t("profile.password.current")}
           value={current}
           onChangeText={setCurrent}
           secureTextEntry
         />
         <InputField
-          label="New Password"
+          label={t("profile.password.new")}
           value={newPwd}
           onChangeText={setNewPwd}
           secureTextEntry
         />
         <InputField
-          label="Confirm Password"
+          label={t("profile.password.confirm")}
           value={confirm}
           onChangeText={setConfirm}
           secureTextEntry
@@ -50,7 +56,7 @@ export default function ChangePasswordScreen() {
       </FormCard>
 
       <SubmitButton
-        label="Update Password"
+        label={t("profile.password.update")}
         onPress={() => console.log("update")}
       />
     </SafeAreaView>

@@ -1,9 +1,11 @@
 import { Tabs } from "expo-router";
 import { MaterialIcons } from "@expo/vector-icons";
+import { useTranslation } from "react-i18next";
 import { useAppTheme } from "@/shared/theme/ThemeProvider";
 
 export default function TabsLayout() {
   const { isDark } = useAppTheme();
+  const { t } = useTranslation();
 
   return (
     <Tabs
@@ -44,7 +46,7 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="home"
         options={{
-          title: "Home",
+          title: t("tabs.home"),
           tabBarIcon: ({ color, size }) => (
             <MaterialIcons name="home" size={size} color={color} />
           ),
@@ -54,7 +56,7 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="trips"
         options={{
-          title: "Trips",
+          title: t("tabs.trips"),
           tabBarIcon: ({ color, size }) => (
             <MaterialIcons name="directions-car" size={size} color={color} />
           ),
@@ -64,7 +66,7 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="reclamations"
         options={{
-          title: "Reports",
+          title: t("tabs.reports"),
           tabBarIcon: ({ color, size }) => (
             <MaterialIcons name="error-outline" size={size} color={color} />
           ),
@@ -74,7 +76,7 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="profile"
         options={{
-          title: "Profile",
+          title: t("tabs.profile"),
           tabBarIcon: ({ color, size }) => (
             <MaterialIcons name="person" size={size} color={color} />
           ),

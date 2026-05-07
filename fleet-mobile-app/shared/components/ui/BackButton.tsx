@@ -1,7 +1,7 @@
 import { BlurView } from "expo-blur";
-import { ArrowLeft } from "lucide-react-native";
+import { ArrowLeft, ArrowRight } from "lucide-react-native";
 
-import { TouchableOpacity } from "react-native";
+import { I18nManager, TouchableOpacity } from "react-native";
 import { useNavigation } from "expo-router";
 import { useAppTheme } from "@/shared/theme/ThemeProvider";
 export default function BackButton() {
@@ -25,7 +25,11 @@ export default function BackButton() {
           backgroundColor: isDark ? "rgba(15,23,42,0.5)" : "rgba(255,255,255,0.8)",
         }}
       >
-        <ArrowLeft size={20} color={isDark ? "#E2E8F0" : "#1F2937"} />
+        {I18nManager.isRTL ? (
+          <ArrowRight size={20} color={isDark ? "#E2E8F0" : "#1F2937"} />
+        ) : (
+          <ArrowLeft size={20} color={isDark ? "#E2E8F0" : "#1F2937"} />
+        )}
       </TouchableOpacity>
     </BlurView>
   );

@@ -1,8 +1,11 @@
 // import React, { useState } from "react";
 import { Text } from "react-native";
 import Svg, { Path } from "react-native-svg";
+import { useTranslation } from "react-i18next";
 
 export default function GoogleSignInButton() {
+  const { t } = useTranslation();
+
   return (
     <>
       <Svg width={20} height={20} viewBox="0 0 512 512">
@@ -23,7 +26,7 @@ export default function GoogleSignInButton() {
           d="M419.404,58.936l-82.933,67.896c-23.335-14.586-50.919-23.012-80.471-23.012c-66.729,0-123.429,42.957-143.965,102.724l-83.397-68.276h-0.014C71.23,56.123,157.06,0,256,0C318.115,0,375.068,22.126,419.404,58.936z"
         />
       </Svg>
-      <Text className="font-bold ml-2 text-gray-700">Google</Text>
+      <Text className="font-bold ml-2 text-gray-700">{t("auth.login.googleSignIn")}</Text>
     </>
   );
 }

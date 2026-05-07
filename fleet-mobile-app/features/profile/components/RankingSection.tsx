@@ -1,6 +1,7 @@
 import React, { useMemo } from "react";
 import { Text, View } from "react-native";
 import { Award, Crown, TrendingUp, Trophy } from "lucide-react-native";
+import { useTranslation } from "react-i18next";
 
 import type { DriverRankingProfile } from "../services/profile.api";
 
@@ -11,6 +12,8 @@ type RankingSectionProps = {
 const formatDelta = (value: number) => `${value > 0 ? "+" : ""}${value}`;
 
 export default function RankingSection({ ranking }: RankingSectionProps) {
+  const { t } = useTranslation();
+
   const trendPoints = useMemo(() => {
     if (!ranking?.trend?.length) return [];
     const maxScore = Math.max(...ranking.trend.map((point) => point.scoreAfter), 100);
@@ -29,10 +32,10 @@ export default function RankingSection({ ranking }: RankingSectionProps) {
       <View className="flex-row items-center justify-between">
         <View>
           <Text className="text-gray-900 text-base font-semibold dark:text-gray-100">
-            Driver ranking
+            {t("profile.driverRanking")}
           </Text>
           <Text className="text-gray-500 text-xs mt-0.5 dark:text-slate-400">
-            Lifetime score and experience badge
+            {t("profile.rankingSubtitle")}
           </Text>
         </View>
         <View className="rounded-2xl bg-amber-100 px-3 py-2 dark:bg-amber-500/15">
@@ -47,7 +50,7 @@ export default function RankingSection({ ranking }: RankingSectionProps) {
           <View className="flex-row items-center gap-2">
             <Trophy size={16} color="#2563EB" />
             <Text className="text-xs font-medium text-slate-500 dark:text-slate-400">
-              Score
+              {t("profile.score")}
             </Text>
           </View>
           <Text className="mt-3 text-3xl font-extrabold text-slate-950 dark:text-white">
@@ -59,14 +62,14 @@ export default function RankingSection({ ranking }: RankingSectionProps) {
           <View className="flex-row items-center gap-2">
             <Crown size={16} color="#7C3AED" />
             <Text className="text-xs font-medium text-slate-500 dark:text-slate-400">
-              Rank
+              {t("profile.rank")}
             </Text>
           </View>
           <Text className="mt-3 text-3xl font-extrabold text-slate-950 dark:text-white">
             #{ranking.rank}
           </Text>
           <Text className="mt-1 text-xs text-slate-500 dark:text-slate-400">
-            out of {ranking.leaderboardSize}
+            {t("profile.outOf", { n: ranking.leaderboardSize })}
           </Text>
         </View>
       </View>
@@ -76,7 +79,7 @@ export default function RankingSection({ ranking }: RankingSectionProps) {
           <View className="flex-row items-center gap-2">
             <Award size={16} color="#0F172A" />
             <Text className="text-xs font-medium text-slate-500 dark:text-slate-400">
-              Completed trips
+              {t("profile.completedTrips")}
             </Text>
           </View>
           <Text className="mt-3 text-2xl font-bold text-slate-950 dark:text-white">
@@ -88,7 +91,7 @@ export default function RankingSection({ ranking }: RankingSectionProps) {
           <View className="flex-row items-center gap-2">
             <TrendingUp size={16} color="#16A34A" />
             <Text className="text-xs font-medium text-slate-500 dark:text-slate-400">
-              Score events
+              {t("profile.scoreEvents")}
             </Text>
           </View>
           <Text className="mt-3 text-2xl font-bold text-slate-950 dark:text-white">
@@ -99,7 +102,7 @@ export default function RankingSection({ ranking }: RankingSectionProps) {
 
       <View className="mt-4 rounded-3xl bg-slate-50 px-4 py-4 dark:bg-slate-800/90">
         <Text className="text-sm font-semibold text-slate-900 dark:text-slate-100">
-          Score trend
+          {t("profile.scoreTrend")}
         </Text>
         {trendPoints.length > 0 ? (
           <View className="mt-4 flex-row items-end gap-2">
@@ -117,14 +120,14 @@ export default function RankingSection({ ranking }: RankingSectionProps) {
           </View>
         ) : (
           <Text className="mt-2 text-xs text-slate-500 dark:text-slate-400">
-            No score changes recorded yet.
+            {t("profile.noScoreChanges")}
           </Text>
         )}
       </View>
 
       <View className="mt-4 rounded-3xl bg-slate-50 px-4 py-4 dark:bg-slate-800/90">
         <Text className="text-sm font-semibold text-slate-900 dark:text-slate-100">
-          Recent score changes
+          {t("profile.recentScoreChanges")}
         </Text>
         {ranking.recentEvents.length > 0 ? (
           <View className="mt-3 gap-3">
@@ -146,7 +149,7 @@ export default function RankingSection({ ranking }: RankingSectionProps) {
           </View>
         ) : (
           <Text className="mt-2 text-xs text-slate-500 dark:text-slate-400">
-            No score changes recorded yet.
+            {t("profile.noScoreChanges")}
           </Text>
         )}
       </View>

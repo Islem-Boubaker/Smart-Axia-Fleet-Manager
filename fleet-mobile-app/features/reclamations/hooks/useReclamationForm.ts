@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Alert } from "react-native";
 import { useSelector } from "react-redux";
+import { useTranslation } from "react-i18next";
 
 import { useImagePicker } from "./useImagePicker";
 import { useReclamation } from "./useReclamation";
@@ -37,30 +38,30 @@ const parseOptionalPositiveNumber = (value?: string) => {
   return Number.isFinite(parsed) ? parsed : Number.NaN;
 };
 
-function validateForm(form: ReclamationFormData): ReclamationFormErrors {
+function validateForm(form: ReclamationFormData, t: (key: string) => string): ReclamationFormErrors {
   const errors: ReclamationFormErrors = {};
 
   if (form.subject.trim().length < 3) {
-    errors.subject = "Subject must be at least 3 characters.";
+    errors.subject = t("reclamations.errors.subjectRequired");
   }
 
   if (form.message.trim().length < 10) {
-    errors.message = "Description must be at least 10 characters.";
+    errors.message = t("reclamations.errors.descriptionRequired");
   }
 
   if (form.type === "maintenance") {
     if (!form.maintenanceType?.trim()) {
-      errors.maintenanceType = "Choose the maintenance type.";
+      errors.maintenanceType = t("reclamations.errors.maintenanceTypeRequired");
     }
 
     const estimatedCost = parseOptionalPositiveNumber(form.estimatedCost);
     if (estimatedCost !== null && (!Number.isFinite(estimatedCost) || estimatedCost < 0)) {
-      errors.estimatedCost = "Estimated cost must be a valid positive number.";
+      errors.estimatedCost = t("reclamations.errors.estimatedCostInvalid");
     }
 
     const currentMileage = parseOptionalPositiveNumber(form.currentMileage);
     if (currentMileage !== null && (!Number.isFinite(currentMileage) || currentMileage < 0)) {
-      errors.currentMileage = "Mileage must be a valid positive number.";
+      errors.currentMileage = t("reclamations.errors.currentMileageInvalid");
     }
   }
 
@@ -68,6 +69,7 @@ function validateForm(form: ReclamationFormData): ReclamationFormErrors {
 }
 
 export function useReclamationForm() {
+  const { t } = useTranslation();
   const { createReclamation, isLoading } = useReclamation();
   const user = useSelector((state: RootState) => state.auth.user);
 
@@ -119,7 +121,7 @@ export function useReclamationForm() {
           setContextError(
             error instanceof Error
               ? error.message
-              : "Could not load assigned vehicle context.",
+              : t("reclamations.errors.contextLoadFailed"),
           );
         }
       } finally {
@@ -132,7 +134,7 @@ export function useReclamationForm() {
     return () => {
       cancelled = true;
     };
-  }, [user?.name]);
+  }, [t, user?.name]);
 
   const updateImages = useCallback(
     (value: React.SetStateAction<ReclamationImage[]>) => {
@@ -207,7 +209,7 @@ export function useReclamationForm() {
   }, []);
 
   const goNext = useCallback(() => {
-    const nextErrors = validateForm(form);
+    const nextErrors = validateForm(form, t);
 
     if (currentStep === 0 && (nextErrors.subject || nextErrors.message)) {
       setErrors(nextErrors);
@@ -215,10 +217,10 @@ export function useReclamationForm() {
     }
 
     setCurrentStep((prev) => Math.min(STEPS.length - 1, prev + 1));
-  }, [currentStep, form]);
+  }, [currentStep, form, t]);
 
   const handleSubmit = useCallback(async () => {
-    const nextErrors = validateForm(form);
+    const nextErrors = validateForm(form, t);
 
     if (
       nextErrors.subject ||
@@ -269,17 +271,17 @@ export function useReclamationForm() {
         images: form.images,
       });
       setIsSuccess(true);
-      Alert.alert("Success", "Reclamation submitted successfully.");
+      Alert.alert(t("shared.success"), t("reclamations.success.submittedAlert"));
     } catch (error) {
-        let errorMessage = "Could not submit your reclamation. Please try again.";
+        let errorMessage = t("reclamations.errors.submitFailed");
         if (error instanceof Error) {
           errorMessage = error.message;
         } else if (typeof error === "object" && error !== null) {
           const axError = error as any;
           if (axError?.response?.status) {
-            errorMessage = `Server error (${axError.response.status}): ${axError.response.data?.message || axError.message}`;
+            errorMessage = t("shared.serverError", { status: axError.response.status, message: axError.response.data?.message || axError.message });
           } else if (axError?.code) {
-            errorMessage = `Network error: ${axError.code} - ${axError.message}`;
+            errorMessage = t("shared.networkError", { code: axError.code, message: axError.message });
           } else if (axError?.message) {
             errorMessage = axError.message;
           }
@@ -291,9 +293,9 @@ export function useReclamationForm() {
           responseStatus: (error as any)?.response?.status,
           errorCode: (error as any)?.code,
         });
-      Alert.alert("Submission failed", errorMessage);
+      Alert.alert(t("reclamations.errors.submissionFailedTitle"), errorMessage);
     }
-  }, [createReclamation, form, user?.name]);
+  }, [createReclamation, form, t, user?.name]);
 
   const resetForm = useCallback(() => {
     setForm(initialForm);
@@ -304,9 +306,9 @@ export function useReclamationForm() {
   }, []);
 
   const isFormValid = useMemo(() => {
-    const nextErrors = validateForm(form);
+    const nextErrors = validateForm(form, t);
     return !nextErrors.subject && !nextErrors.message;
-  }, [form]);
+  }, [form, t]);
 
   return {
     form,

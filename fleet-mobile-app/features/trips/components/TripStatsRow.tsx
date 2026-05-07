@@ -1,4 +1,5 @@
 import { View, Text } from "react-native";
+import { useTranslation } from "react-i18next";
 import type { Trip } from "../types/trip.types";
 
 interface Props {
@@ -6,16 +7,17 @@ interface Props {
 }
 
 const STATS = [
-  { key: "pending",   label: "PENDING",   fill: "#F59E0B", track: "#FEF3C7" },
-  { key: "completed", label: "DONE",      fill: "#10B981", track: "#D1FAE5" },
+  { key: "pending", labelKey: "status.pending", fill: "#F59E0B", track: "#FEF3C7" },
+  { key: "completed", labelKey: "status.done", fill: "#10B981", track: "#D1FAE5" },
 ] as const;
 
 export function TripStatsRow({ trips }: Props) {
+  const { t } = useTranslation();
   const total = trips.length || 1;
 
   return (
     <View className="flex-row gap-2.5 px-5 pt-4 mb-4">
-      {STATS.map(({ key, label, fill, track }) => {
+      {STATS.map(({ key, labelKey, fill, track }) => {
         const count = trips.filter((t) => t.status === key).length;
         const pct = (count / total) * 100;
 
@@ -27,7 +29,7 @@ export function TripStatsRow({ trips }: Props) {
           >
             <Text className="text-lg font-extrabold text-slate-900 dark:text-gray-50">{count}</Text>
             <Text className="text-[9px] font-bold text-gray-400 dark:text-slate-400 tracking-wide mt-0.5">
-              {label}
+              {t(labelKey)}
             </Text>
             {/* Mini progress bar */}
             <View

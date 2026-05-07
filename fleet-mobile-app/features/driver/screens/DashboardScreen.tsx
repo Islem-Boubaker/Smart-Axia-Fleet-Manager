@@ -2,6 +2,7 @@ import React, { useMemo, useState } from "react";
 import { View, Text, ScrollView, StatusBar, TouchableOpacity, Modal, Image } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { MaterialIcons } from "@expo/vector-icons";
+import { useTranslation } from "react-i18next";
 import TaskCard from "../components/TaskCard";
 import TripCard from "../components/TripCard";
 import { router } from "expo-router";
@@ -13,11 +14,11 @@ import { LoadingSpinner } from "@/shared/components/ui/LoadingSpinner";
 import { useAppTheme } from "@/shared/theme/ThemeProvider";
 import MainTopHeader from "@/shared/components/layout/MainTopHeader";
 
-const getGreeting = (): string => {
+const getGreetingKey = (): string => {
   const hour = new Date().getHours();
-  if (hour < 12) return "Good morning";
-  if (hour < 18) return "Good afternoon";
-  return "Good evening";
+  if (hour < 12) return "home.greeting.morning";
+  if (hour < 18) return "home.greeting.afternoon";
+  return "home.greeting.evening";
 };
 
 function firstDefined<T = unknown>(...values: T[]): T | null {
@@ -111,6 +112,7 @@ function normalizeVehicleDetails(raw: any, fallbackName: string, fallbackPlate: 
 
 function DashboardScreen() {
   const { isDark } = useAppTheme();
+  const { t } = useTranslation();
   const [vehicleModalVisible, setVehicleModalVisible] = useState(false);
   const [selectedVehicle, setSelectedVehicle] = useState<any | null>(null);
   const {
@@ -130,7 +132,7 @@ function DashboardScreen() {
 
   const assignedVehicleRaw = user?.assignedVehicle?.trim() ?? "";
   const assignedVehicleMatch = assignedVehicleRaw.match(/^(.+?)\s*\(([^)]+)\)\s*$/);
-  const vehicleName = assignedVehicleMatch ? assignedVehicleMatch[1].trim() : assignedVehicleRaw || "No vehicle assigned";
+  const vehicleName = assignedVehicleMatch ? assignedVehicleMatch[1].trim() : assignedVehicleRaw || t("home.noAssignedVehicle");
   const vehiclePlate = assignedVehicleMatch ? assignedVehicleMatch[2].trim() : "-";
   const tripVehicleCandidate = activeTrip ?? upcomingTrip;
   const tripVehicleRaw =
@@ -226,13 +228,13 @@ function DashboardScreen() {
   if (error) {
     return (
       <SafeAreaView className="flex-1 bg-gray-100 dark:bg-[#0B1220] px-5 items-center justify-center">
-        <Text className="text-red-500 font-semibold mb-2">Failed to load dashboard</Text>
+        <Text className="text-red-500 font-semibold mb-2">{t("dashboard.failedToLoad")}</Text>
         <Text className="text-gray-500 dark:text-slate-400 text-center mb-4">{error}</Text>
         <TouchableOpacity
           onPress={() => void refetch()}
           className="bg-blue-600 px-5 py-3 rounded-xl"
         >
-          <Text className="text-white font-semibold">Retry</Text>
+          <Text className="text-white font-semibold">{t("dashboard.retry")}</Text>
         </TouchableOpacity>
       </SafeAreaView>
     );
@@ -247,10 +249,10 @@ function DashboardScreen() {
       {/* GREETING */}
       <View className="px-5 mb-3">
         <Text className="text-2xl font-extrabold tracking-tight text-gray-900 dark:text-gray-50">
-          {`${getGreeting()}, ${user?.name?.split(' ')[0] ?? "Driver"}`}
+          {t(getGreetingKey(), { name: user?.name?.split(" ")[0] ?? t("dashboard.driver") })}
         </Text>
         <Text className="text-xs text-gray-400 dark:text-slate-400">
-          {`Pending ${pendingCount} - Completed ${completedCount}`}
+          {t("dashboard.pendingCompleted", { pending: pendingCount, completed: completedCount })}
         </Text>
       </View>
 
@@ -275,7 +277,7 @@ function DashboardScreen() {
           activeOpacity={0.7}
         >
           <View>
-            <Text className="text-xs text-gray-400 dark:text-slate-400 mb-1">Assigned Vehicle</Text>
+            <Text className="text-xs text-gray-400 dark:text-slate-400 mb-1">{t("dashboard.assignedVehicle")}</Text>
             <Text className="font-bold text-base text-gray-900 dark:text-gray-50">{vehicleName} - {vehiclePlate}</Text>
           </View>
           <MaterialIcons name="directions-car" size={32} color="#2D9B6F" />
@@ -292,7 +294,7 @@ function DashboardScreen() {
           <View className="flex-1 bg-black/70 justify-center items-center">
             <View className="bg-white dark:bg-slate-900 rounded-3xl p-6 w-[90%] max-w-[400px] items-center border border-gray-100 dark:border-slate-700">
               {vehicleDetailsLoading ? (
-                <Text className="text-gray-500 dark:text-slate-400">Loading vehicle details...</Text>
+                <Text className="text-gray-500 dark:text-slate-400">{t("dashboard.technicalDetails")}...</Text>
               ) : (
                 <>
                   <Text className="font-bold text-lg mb-2 text-gray-900 dark:text-gray-50">{vehicleDetailsToShow.name || 'N/A'} - {vehicleDetailsToShow.plaque_immatriculation || 'N/A'}</Text>
@@ -302,21 +304,21 @@ function DashboardScreen() {
                     <MaterialIcons name="directions-car" size={80} color="#2D9B6F" />
                   )}
                   <View className="mt-4 w-full">
-                    <Text className="font-semibold text-base mb-2 text-gray-900 dark:text-gray-50">Technical Details</Text>
-                    <Text className="text-gray-700 dark:text-slate-300">Mileage: <Text className="font-bold">{vehicleDetailsToShow.Mileage !== undefined && vehicleDetailsToShow.Mileage !== null ? vehicleDetailsToShow.Mileage.toLocaleString() : 'N/A'} km</Text></Text>
-                    <Text className="text-gray-700 dark:text-slate-300">Vehicle Age: <Text className="font-bold">{vehicleDetailsToShow.Vehicle_Age !== undefined && vehicleDetailsToShow.Vehicle_Age !== null ? vehicleDetailsToShow.Vehicle_Age : 'N/A'} years</Text></Text>
-                    <Text className="text-gray-700 dark:text-slate-300">Type: <Text className="font-bold">{vehicleDetailsToShow.type || 'N/A'}</Text></Text>
-                    <Text className="text-gray-700 dark:text-slate-300">Engine Size: <Text className="font-bold">{vehicleDetailsToShow.Engine_Size !== undefined && vehicleDetailsToShow.Engine_Size !== null ? vehicleDetailsToShow.Engine_Size : 'N/A'} cc</Text></Text>
-                    <Text className="text-gray-700 dark:text-slate-300">Battery Status: <Text className="font-bold">{vehicleDetailsToShow.Battery_Status || 'N/A'}</Text></Text>
-                    <Text className="text-gray-700 dark:text-slate-300">Tire Condition: <Text className="font-bold">{vehicleDetailsToShow.Tire_Condition || 'N/A'}</Text></Text>
-                    <Text className="text-gray-700 dark:text-slate-300">Brake Condition: <Text className="font-bold">{vehicleDetailsToShow.Brake_Condition || 'N/A'}</Text></Text>
-                    <Text className="text-gray-700 dark:text-slate-300">Insurance Expiry: <Text className="font-bold">{vehicleDetailsToShow.insurance_expiry_date ? new Date(vehicleDetailsToShow.insurance_expiry_date).toLocaleDateString() : 'N/A'}</Text></Text>
-                    <Text className="text-gray-700 dark:text-slate-300">Tech Visit Expiry: <Text className="font-bold">{vehicleDetailsToShow.tech_visit_expiry_date ? new Date(vehicleDetailsToShow.tech_visit_expiry_date).toLocaleDateString() : 'N/A'}</Text></Text>
-                    <Text className="text-gray-700 dark:text-slate-300">Status: <Text className="font-bold">{vehicleDetailsToShow.Active === null ? 'N/A' : vehicleDetailsToShow.Active ? 'In Service' : 'Out of Service'}</Text></Text>
-                    {vehicleDetailsToShow.Need_Maintenance && <Text className="text-red-500 font-bold">Maintenance Required</Text>}
+                    <Text className="font-semibold text-base mb-2 text-gray-900 dark:text-gray-50">{t("dashboard.technicalDetails")}</Text>
+                    <Text className="text-gray-700 dark:text-slate-300">{t("dashboard.mileage")}: <Text className="font-bold">{vehicleDetailsToShow.Mileage !== undefined && vehicleDetailsToShow.Mileage !== null ? vehicleDetailsToShow.Mileage.toLocaleString() : 'N/A'} {t("dashboard.km")}</Text></Text>
+                    <Text className="text-gray-700 dark:text-slate-300">{t("dashboard.vehicleAge")}: <Text className="font-bold">{vehicleDetailsToShow.Vehicle_Age !== undefined && vehicleDetailsToShow.Vehicle_Age !== null ? vehicleDetailsToShow.Vehicle_Age : 'N/A'} {t("dashboard.years")}</Text></Text>
+                    <Text className="text-gray-700 dark:text-slate-300">{t("dashboard.type")}: <Text className="font-bold">{vehicleDetailsToShow.type || 'N/A'}</Text></Text>
+                    <Text className="text-gray-700 dark:text-slate-300">{t("dashboard.engineSize")}: <Text className="font-bold">{vehicleDetailsToShow.Engine_Size !== undefined && vehicleDetailsToShow.Engine_Size !== null ? vehicleDetailsToShow.Engine_Size : 'N/A'} {t("dashboard.cc")}</Text></Text>
+                    <Text className="text-gray-700 dark:text-slate-300">{t("dashboard.batteryStatus")}: <Text className="font-bold">{vehicleDetailsToShow.Battery_Status || 'N/A'}</Text></Text>
+                    <Text className="text-gray-700 dark:text-slate-300">{t("dashboard.tireCondition")}: <Text className="font-bold">{vehicleDetailsToShow.Tire_Condition || 'N/A'}</Text></Text>
+                    <Text className="text-gray-700 dark:text-slate-300">{t("dashboard.brakeCondition")}: <Text className="font-bold">{vehicleDetailsToShow.Brake_Condition || 'N/A'}</Text></Text>
+                    <Text className="text-gray-700 dark:text-slate-300">{t("dashboard.insuranceExpiry")}: <Text className="font-bold">{vehicleDetailsToShow.insurance_expiry_date ? new Date(vehicleDetailsToShow.insurance_expiry_date).toLocaleDateString() : 'N/A'}</Text></Text>
+                    <Text className="text-gray-700 dark:text-slate-300">{t("dashboard.techVisitExpiry")}: <Text className="font-bold">{vehicleDetailsToShow.tech_visit_expiry_date ? new Date(vehicleDetailsToShow.tech_visit_expiry_date).toLocaleDateString() : 'N/A'}</Text></Text>
+                    <Text className="text-gray-700 dark:text-slate-300">{t("dashboard.status")}: <Text className="font-bold">{vehicleDetailsToShow.Active === null ? 'N/A' : vehicleDetailsToShow.Active ? t("dashboard.inService") : t("dashboard.outOfService")}</Text></Text>
+                    {vehicleDetailsToShow.Need_Maintenance && <Text className="text-red-500 font-bold">{t("dashboard.maintenanceRequired")}</Text>}
                     {vehicleDetailsError && (
                       <Text className="text-[11px] text-amber-600 mt-2">
-                        Full vehicle record is unavailable for this account. Showing assigned summary.
+                        {t("dashboard.vehicleUnavailable")}
                       </Text>
                     )}
                   </View>
@@ -326,7 +328,7 @@ function DashboardScreen() {
                 className="mt-4 px-6 py-2 bg-blue-600 rounded-xl"
                 onPress={() => setVehicleModalVisible(false)}
               >
-                <Text className="text-white font-semibold">Close</Text>
+                <Text className="text-white font-semibold">{t("dashboard.close")}</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -352,16 +354,16 @@ function DashboardScreen() {
         </View>
 
         <View className="flex-row justify-between mb-2">
-          <Text className="font-bold text-gray-900 dark:text-gray-50">Recent Trips</Text>
-          <TouchableOpacity onPress={() => router.push("/trips")}> 
-            <Text className="text-blue-600">View all</Text>
+          <Text className="font-bold text-gray-900 dark:text-gray-50">{t("dashboard.recentTrips")}</Text>
+          <TouchableOpacity onPress={() => router.push("/trips")}>
+            <Text className="text-blue-600">{t("dashboard.viewAll")}</Text>
           </TouchableOpacity>
         </View>
 
         {recentTrips.length === 0 ? (
           <View className="bg-white dark:bg-slate-900 rounded-2xl p-4 mb-4 border border-gray-200 dark:border-slate-700">
-            <Text className="text-gray-600 dark:text-slate-200 font-medium">No trips found</Text>
-            <Text className="text-gray-400 dark:text-slate-400 text-xs mt-1">You have no completed trips yet.</Text>
+            <Text className="text-gray-600 dark:text-slate-200 font-medium">{t("dashboard.noTripsFound")}</Text>
+            <Text className="text-gray-400 dark:text-slate-400 text-xs mt-1">{t("dashboard.noCompletedTrips")}</Text>
           </View>
         ) : (
           recentTrips.map((trip) => <TripCard key={trip.id} trip={trip} />)

@@ -11,10 +11,12 @@ import {
 import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
+import { useTranslation } from "react-i18next";
 import { useAuthActions } from "../hooks/useAuth";
 
 export default function VerifyCodeScreen() {
   const router = useRouter();
+  const { t } = useTranslation();
   const { email } = useLocalSearchParams<{ email?: string | string[] }>();
   const { sendEmailOtp, isLoading } = useAuthActions();
   const [sent, setSent] = useState(false);
@@ -23,7 +25,7 @@ export default function VerifyCodeScreen() {
 
   const handleResend = async () => {
     if (!emailValue || !emailValue.includes("@")) {
-      Alert.alert("Missing email", "Please go back and enter your email.");
+      Alert.alert(t("auth.missingEmail"), t("auth.missingEmailMessage"));
       return;
     }
 
@@ -31,7 +33,7 @@ export default function VerifyCodeScreen() {
       await sendEmailOtp(emailValue);
       setSent(true);
     } catch (err: any) {
-      Alert.alert("Resend failed", err?.message || "Please try again.");
+      Alert.alert(t("auth.resendFailed"), err?.message || t("auth.tryAgain"));
     }
   };
 
@@ -81,10 +83,10 @@ export default function VerifyCodeScreen() {
           className="text-[26px] font-extrabold text-[#1A1233] tracking-tight text-center"
           style={{ fontFamily: Platform.OS === "ios" ? "Georgia" : "serif" }}
         >
-          Check Your Email
+          {t("auth.checkYourEmail")}
         </Text>
         <Text className="text-[13.5px] text-[#8E8BA8] mt-2 text-center leading-5">
-          We sent you a magic link. Tap the link in your email to continue.
+          {t("auth.magicLinkSent")}
           {"\n"}
           <Text className="text-[#6B21F5] font-semibold">{emailValue}</Text>
         </Text>
@@ -92,10 +94,10 @@ export default function VerifyCodeScreen() {
 
       {/* Resend */}
       <View className="flex-row justify-center mt-8">
-        <Text className="text-[13px] text-[#8E8BA8]">{"Didn't receive it? "}</Text>
+        <Text className="text-[13px] text-[#8E8BA8]">{t("auth.didntReceiveIt")}</Text>
         <TouchableOpacity onPress={handleResend} disabled={isLoading}>
           <Text className="text-[13px] font-bold text-[#6B21F5]">
-            Resend link
+            {t("auth.resendLink")}
           </Text>
         </TouchableOpacity>
       </View>
@@ -111,7 +113,7 @@ export default function VerifyCodeScreen() {
             }}
           >
             <Text className="text-[13px] text-[#4F0DCC] font-semibold">
-              Link resent. Check your inbox.
+              {t("auth.linkResent")}
             </Text>
           </View>
         </View>
@@ -131,7 +133,7 @@ export default function VerifyCodeScreen() {
             className="py-4 items-center"
           >
             <Text className="text-white text-[15px] font-bold tracking-wide">
-              Back to Sign In
+              {t("auth.backToSignIn")}
             </Text>
           </LinearGradient>
         </TouchableOpacity>

@@ -1,5 +1,6 @@
 import { View, Text, Switch, TouchableOpacity } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import { useTranslation } from "react-i18next";
 
 // ─── Types ────────────────────────────────────────────────────────
 interface RowProps {
@@ -35,11 +36,13 @@ function Row({ icon, label, value, onPress }: RowProps) {
 
 // ─── ProfileActions ───────────────────────────────────────────────
 export default function ProfileActions({ user, notifEnabled, setNotifEnabled }: Props) {
+  const { t } = useTranslation();
+
   return (
     <>
       {/* Section label */}
       <Text className="text-[11px] font-bold text-gray-400 tracking-widest px-6 mb-3">
-        ACCOUNT SETTING
+        {t("profile.accountSettings")}
       </Text>
 
       {/* bg-[#F0F5F0] container with gap between each bg-white card */}
@@ -47,14 +50,14 @@ export default function ProfileActions({ user, notifEnabled, setNotifEnabled }: 
 
         <Row
           icon="mail-outline"
-          label="Email"
+          label={t("editProfile.email")}
           value={user?.email}
           onPress={() => {}}
         />
 
         <Row
           icon="call-outline"
-          label="Phone"
+          label={t("editProfile.phoneNumber")}
           value={user?.phone}
           onPress={() => {}}
         />
@@ -62,7 +65,7 @@ export default function ProfileActions({ user, notifEnabled, setNotifEnabled }: 
       
         <View className="flex-row items-center px-4 py-4 bg-white rounded-2xl gap-3">
           <Ionicons name="notifications-outline" size={20} color="#4B5563" />
-          <Text className="flex-1 text-sm font-medium text-slate-900">Notification</Text>
+          <Text className="flex-1 text-sm font-medium text-slate-900">{t("profile.notifications.title")}</Text>
           <Switch
             value={notifEnabled}
             onValueChange={setNotifEnabled}
@@ -73,14 +76,14 @@ export default function ProfileActions({ user, notifEnabled, setNotifEnabled }: 
 
         <Row
           icon="location-outline"
-          label="Saved address"
+          label={t("profile.savedAddress")}
           onPress={() => {}}
         />
 
         <Row
           icon="language-outline"
-          label="Select language"
-          value={user?.language ?? "English"}
+          label={t("profile.language.title")}
+          value={user?.language ?? t("profile.language.english")}
           onPress={() => {}}
         />
 

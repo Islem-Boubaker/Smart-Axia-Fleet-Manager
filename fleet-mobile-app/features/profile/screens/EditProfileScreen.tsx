@@ -11,6 +11,7 @@ import {
 import { Camera } from "lucide-react-native";
 import { useSelector } from "react-redux";
 import * as ImagePicker from "expo-image-picker";
+import { useTranslation } from "react-i18next";
 
 import { InputField } from "../components/ui/InputField";
 import { FormCard } from "../components/ui/FormCard";
@@ -19,6 +20,7 @@ import BackButton from "@/shared/components/ui/BackButton";
 import { useProfile } from "../hooks/useProfile";
 
 export default function EditProfileScreen() {
+  const { t } = useTranslation();
   const user = useSelector((state: any) => state.auth.user);
   const { updateProfile, updateAvatar } = useProfile();
 
@@ -66,7 +68,7 @@ export default function EditProfileScreen() {
     // 1. Ask permission
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (status !== "granted") {
-      Alert.alert("Permission needed", "Please allow access to your photo library.");
+      Alert.alert(t("editProfile.permissionNeeded"), t("editProfile.permissionMessage"));
       return;
     }
 
@@ -114,13 +116,13 @@ export default function EditProfileScreen() {
       }
 
       if (isMounted.current) {
-        Alert.alert("Success", "Profile updated successfully.");
+        Alert.alert(t("editProfile.success"), t("editProfile.profileUpdated"));
       }
     } catch (error) {
       if (isMounted.current) {
         Alert.alert(
-          "Update failed",
-          error instanceof Error ? error.message : "Could not update profile.",
+          t("editProfile.updateFailed"),
+          error instanceof Error ? error.message : t("editProfile.couldNotUpdate"),
         );
       }
     } finally {
@@ -148,7 +150,7 @@ export default function EditProfileScreen() {
       >
         <BackButton />
         <Text className="flex-1 text-center text-lg font-bold text-gray-900 dark:text-gray-50">
-          Edit Profile
+          {t("editProfile.title")}
         </Text>
       </View>
 
@@ -171,23 +173,23 @@ export default function EditProfileScreen() {
 
       {/* Form */}
       <FormCard>
-        <InputField label="Name" value={name} onChangeText={setName} />
+        <InputField label={t("editProfile.name")} value={name} onChangeText={setName} />
 
         <View className="mb-4">
-          <Text className="text-gray-500 text-xs mb-1 dark:text-slate-400">Phone Number</Text>
+          <Text className="text-gray-500 text-xs mb-1 dark:text-slate-400">{t("editProfile.phoneNumber")}</Text>
           <View className="flex-row items-center bg-gray-100 rounded-xl px-4 py-3 dark:bg-slate-800">
             <Text className="flex-1 text-gray-900 dark:text-gray-100">{phone}</Text>
             <TouchableOpacity onPress={() => console.log("change phone")}>
-              <Text className="text-gray-500 font-medium dark:text-slate-300">Change</Text>
+              <Text className="text-gray-500 font-medium dark:text-slate-300">{t("editProfile.change")}</Text>
             </TouchableOpacity>
           </View>
         </View>
 
-        <InputField label="Email" value={email} onChangeText={setEmail} />
+        <InputField label={t("editProfile.email")} value={email} onChangeText={setEmail} />
       </FormCard>
 
       <SubmitButton
-        label={isLoading ? "Updating..." : "Update"}
+        label={isLoading ? t("editProfile.updating") : t("editProfile.update")}
         onPress={handleSubmit}
         disabled={isLoading}
         loading={isLoading}

@@ -3,7 +3,7 @@ import { View, Text, TouchableOpacity } from "react-native";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 
 interface SummaryCardProps {
-  icon: string;
+  icon: keyof typeof MaterialCommunityIcons.glyphMap;
   title: string;
   value: string | number;
   backgroundColor?: string;

@@ -11,7 +11,7 @@ export default function DriverInfoCard({ user }: any) {
         <Text className="text-lg font-bold text-slate-900">
           {user?.name ?? "—"}
         </Text>
-        <TouchableOpacity onPress={() => router.push("/profile/settings")}>
+        <TouchableOpacity onPress={() => router.push("/profile/edit")}>
           <MaterialIcons name="edit" size={20} color="#555" />
         </TouchableOpacity>
       </View>

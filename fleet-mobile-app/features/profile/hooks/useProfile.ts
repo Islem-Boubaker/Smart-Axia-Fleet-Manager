@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
+import { useTranslation } from "react-i18next";
 
 import type { User } from "@/features/auth/types/auth.types";
 import type { AppDispatch, RootState } from "@/store";
@@ -42,6 +43,7 @@ function readErrorMessage(error: unknown, fallback: string): string {
 }
 
 export function useProfile() {
+  const { t } = useTranslation();
   const dispatch = useDispatch<AppDispatch>();
   const reduxUser = useSelector((state: RootState) => state.auth.user);
   const isMountedRef = useRef(true);
@@ -89,11 +91,11 @@ export function useProfile() {
           ...prev,
           user: reduxUser,
           isLoading: false,
-          error: readErrorMessage(error, "Failed to load profile"),
+          error: readErrorMessage(error, t("profile.failedToLoad")),
         }));
       }
     }
-  }, [reduxUser, syncUser]);
+  }, [reduxUser, syncUser, t]);
 
   useEffect(() => {
     isMountedRef.current = true;
@@ -112,14 +114,14 @@ export function useProfile() {
         syncUser(updatedUser);
         return updatedUser;
       } catch (error) {
-        const message = readErrorMessage(error, "Failed to update profile");
+        const message = readErrorMessage(error, t("editProfile.updateFailed"));
         setState((prev) => ({ ...prev, error: message }));
         throw new Error(message);
       } finally {
         setState((prev) => ({ ...prev, isSaving: false }));
       }
     },
-    [syncUser],
+    [syncUser, t],
   );
 
   const changePassword = useCallback(
@@ -128,14 +130,14 @@ export function useProfile() {
       try {
         await profileApi.changePassword(payload);
       } catch (error) {
-        const message = readErrorMessage(error, "Failed to change password");
+        const message = readErrorMessage(error, t("profile.password.updateFailed"));
         setState((prev) => ({ ...prev, error: message }));
         throw new Error(message);
       } finally {
         setState((prev) => ({ ...prev, isSaving: false }));
       }
     },
-    [],
+    [t],
   );
 
   const updateAvatar = useCallback(
@@ -146,14 +148,14 @@ export function useProfile() {
         syncUser(updatedUser);
         return updatedUser;
       } catch (error) {
-        const message = readErrorMessage(error, "Failed to update avatar");
+        const message = readErrorMessage(error, t("profile.avatarUpdateFailed"));
         setState((prev) => ({ ...prev, error: message }));
         throw new Error(message);
       } finally {
         setState((prev) => ({ ...prev, isSaving: false }));
       }
     },
-    [syncUser],
+    [syncUser, t],
   );
 
   const updateNotificationSettings = useCallback(
@@ -167,14 +169,14 @@ export function useProfile() {
         }));
         return updatedSettings;
       } catch (error) {
-        const message = readErrorMessage(error, "Failed to update notification settings");
+        const message = readErrorMessage(error, t("profile.notifications.updateFailed"));
         setState((prev) => ({ ...prev, error: message }));
         throw new Error(message);
       } finally {
         setState((prev) => ({ ...prev, isSaving: false }));
       }
     },
-    [],
+    [t],
   );
 
   const refreshProfile = useCallback(async () => {

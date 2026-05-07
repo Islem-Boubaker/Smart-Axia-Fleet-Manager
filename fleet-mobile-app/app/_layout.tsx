@@ -1,4 +1,5 @@
 import "../index.css";
+import "../i18n";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { Stack } from "expo-router";
 import { Provider, useSelector } from "react-redux";

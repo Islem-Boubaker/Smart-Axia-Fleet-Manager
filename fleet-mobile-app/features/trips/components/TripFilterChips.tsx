@@ -1,4 +1,5 @@
 import { ScrollView, TouchableOpacity, Text, View } from "react-native";
+import { useTranslation } from "react-i18next";
 import { FILTER_BUTTONS, type FilterOption } from "../config/trips.config";
 import { useAppTheme } from "@/shared/theme/ThemeProvider";
 
@@ -9,6 +10,7 @@ interface Props {
 
 export function TripFilterChips({ selected, onChange }: Props) {
   const { isDark } = useAppTheme();
+  const { t } = useTranslation();
 
   return (
     <ScrollView
@@ -58,7 +60,7 @@ export function TripFilterChips({ selected, onChange }: Props) {
               }}
               
             >
-              {f.label}
+              {t(`trips.filters.${f.id}`)}
             </Text>
           </TouchableOpacity>
         );

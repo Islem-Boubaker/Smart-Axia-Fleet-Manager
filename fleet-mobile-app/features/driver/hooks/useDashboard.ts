@@ -1,6 +1,7 @@
 import { useFocusEffect, useRouter } from "expo-router";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
+import { useTranslation } from "react-i18next";
 
 import { tokenStorage } from "@/features/auth/services/tokenStorage";
 import { resolveApiBaseUrl } from "@/shared/utils/apiBase";
@@ -33,19 +34,20 @@ const normalizeTrips = (items: Trip[] = []): Trip[] =>
     stops: Array.isArray(trip.stops) ? trip.stops : [],
   }));
 
-function readErrorMessage(error: unknown): string {
+function readErrorMessage(error: unknown, fallback: string, timeoutFallback: string): string {
   if (
     error instanceof Error &&
     (error.name === "AbortError" || error.message.includes("timed out"))
   ) {
-    return "Dashboard request timed out. Check that the mobile app can reach the backend API.";
+    return timeoutFallback;
   }
   if (error instanceof Error) return error.message;
-  return "Failed to load dashboard data";
+  return fallback;
 }
 
 export function useDashboard(): DashboardData {
   const router = useRouter();
+  const { t } = useTranslation();
   const dispatch = useDispatch();
   const user = useSelector((state: RootState) => state.auth.user);
   const reduxToken = useSelector((state: RootState) => (state as RootState & { auth: { token?: string } }).auth.token);
@@ -84,7 +86,7 @@ export function useDashboard(): DashboardData {
         if (response.status === 401) {
           dispatch(clearUser());
           router.replace("/(auth)/login");
-          throw new Error("Session expired. Please login again.");
+          throw new Error(t("auth.sessionExpired"));
         }
 
         if (!response.ok) {
@@ -135,14 +137,14 @@ export function useDashboard(): DashboardData {
       setUnreadCount(unreadPayload?.count ?? 0);
     } catch (err) {
       if (!isMountedRef.current) return;
-      setError(readErrorMessage(err));
+      setError(readErrorMessage(err, t("dashboard.failedToLoad"), t("dashboard.requestTimedOut")));
     } finally {
       if (isMountedRef.current) {
         setIsLoading(false);
       }
       isFetchingRef.current = false;
     }
-  }, [fetchJson]);
+  }, [fetchJson, t]);
 
   useEffect(() => {
     isMountedRef.current = true;

@@ -1,25 +1,23 @@
 import { View, Text } from "react-native";
 import { MaterialIcons } from "@expo/vector-icons";
+import { useTranslation } from "react-i18next";
+import { getStatusTranslationKey } from "@/shared/utils/translateStatus";
 import type { Trip } from "../types/driver.types";
 
-const STATUS_CONFIG: Record<Trip["status"], { label: string; badge: string; text: string }> = {
+const STATUS_CONFIG: Record<Trip["status"], { badge: string; text: string }> = {
   completed: {
-    label: "COMPLETED",
     badge: "bg-emerald-50",
     text: "text-emerald-700",
   },
   scheduled: {
-    label: "SCHEDULED",
     badge: "bg-orange-50",
     text: "text-orange-600",
   },
   ongoing: {
-    label: "ONGOING",
     badge: "bg-blue-50",
     text: "text-blue-700",
   },
   cancelled: {
-    label: "CANCELLED",
     badge: "bg-gray-100",
     text: "text-gray-600",
   },
@@ -30,17 +28,19 @@ interface TripCardProps {
 }
 
 const formatStartTime = (value?: string): string => {
-  if (!value) return "No start time";
+  if (!value) return "";
   return new Date(value).toLocaleString();
 };
 
 export default function TripCard({ trip }: TripCardProps) {
+  const { t } = useTranslation();
   const st = STATUS_CONFIG[trip.status];
+  const startTimeLabel = formatStartTime(trip.startTime) || t("trips.noStartTime");
 
   const meta = [
     { icon: "place", value: `${trip.distance ?? 0} km` },
-    { icon: "alt-route", value: `${trip.stops?.length ?? 0} stops` },
-    { icon: "schedule", value: formatStartTime(trip.startTime) },
+    { icon: "alt-route", value: t("trips.stopsWithCount", { count: trip.stops?.length ?? 0 }) },
+    { icon: "schedule", value: startTimeLabel },
   ];
 
   return (
@@ -50,7 +50,7 @@ export default function TripCard({ trip }: TripCardProps) {
 
         <View className="flex-row items-center gap-1 mb-2">
           <MaterialIcons name="schedule" size={14} color="#9CA3AF" />
-          <Text className="text-xs text-gray-400 dark:text-slate-400">{formatStartTime(trip.startTime)}</Text>
+          <Text className="text-xs text-gray-400 dark:text-slate-400">{startTimeLabel}</Text>
         </View>
 
         <View className="flex-row flex-wrap gap-2">
@@ -65,7 +65,7 @@ export default function TripCard({ trip }: TripCardProps) {
         <View className="flex-row items-center mt-2 gap-2">
           <View className={`px-2 py-1 rounded-full ${st.badge}`}>
             <Text className={`text-[10px] font-bold ${st.text}`}>
-              {st.label}
+              {t(getStatusTranslationKey(trip.status))}
             </Text>
           </View>
         </View>

@@ -16,3 +16,5 @@ export const formatCurrency = (amount: number): string => {
     currency: 'USD',
   }).format(amount);
 };
+
+export { getStatusTranslationKey } from "./translateStatus";

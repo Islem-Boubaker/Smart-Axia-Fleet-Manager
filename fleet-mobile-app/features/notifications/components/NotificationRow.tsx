@@ -1,5 +1,6 @@
 import React from 'react';
 import { View, Text, TouchableOpacity } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import type { NotificationItem } from '../types/notification.types';
 import { NotificationAvatar } from './NotificationAvatar';
 
@@ -9,6 +10,8 @@ interface Props {
 }
 
 export function NotificationRow({ item, onPress }: Props) {
+  const { t } = useTranslation();
+
   return (
     <TouchableOpacity
       className={`flex-row items-center px-4 py-3.5 gap-3 ${
@@ -27,10 +30,10 @@ export function NotificationRow({ item, onPress }: Props) {
             item.unread ? 'font-bold' : 'font-medium'
           }`}
         >
-          {item.name}
+          {item.titleKey ? t(item.titleKey) : item.name}
         </Text>
         <Text className="text-xs text-gray-500 dark:text-slate-400 leading-[17px]" numberOfLines={2}>
-          {item.message}
+          {item.bodyKey ? t(item.bodyKey) : item.message}
         </Text>
       </View>
 

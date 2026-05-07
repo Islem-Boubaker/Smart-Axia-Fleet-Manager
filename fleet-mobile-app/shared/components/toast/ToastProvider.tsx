@@ -9,6 +9,7 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { MaterialIcons } from "@expo/vector-icons";
+import { useTranslation } from "react-i18next";
 import { subscribeToastActions, type ToastType } from "./toast";
 
 interface ToastItem {
@@ -40,10 +41,10 @@ const typeStyles = {
   },
 } as const;
 
-const defaultTitles: Record<ToastType, string> = {
-  success: "Success",
-  error: "Error",
-  info: "New Notification",
+const defaultTitleKeys: Record<ToastType, string> = {
+  success: "shared.success",
+  error: "shared.error",
+  info: "notifications.types.generic.title",
 };
 
 function ToastCard({
@@ -133,6 +134,7 @@ function ToastCard({
 
 export function ToastProvider({ children }: { children: React.ReactNode }) {
   const insets = useSafeAreaInsets();
+  const { t } = useTranslation();
   const [toasts, setToasts] = React.useState<ToastItem[]>([]);
 
   React.useEffect(() => {
@@ -145,7 +147,7 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
               id,
               type: action.type,
               message: action.message,
-              title: action.options?.title ?? defaultTitles[action.type],
+              title: action.options?.title ?? t(defaultTitleKeys[action.type]),
               duration: action.options?.duration ?? 4200,
             },
             ...prev,
@@ -157,7 +159,7 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
 
       setToasts((prev) => prev.filter((toast) => toast.id !== action.id));
     });
-  }, []);
+  }, [t]);
 
   const removeToast = React.useCallback((id: string) => {
     setToasts((prev) => prev.filter((toast) => toast.id !== id));

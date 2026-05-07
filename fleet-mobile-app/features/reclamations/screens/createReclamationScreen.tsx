@@ -11,6 +11,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { useTranslation } from "react-i18next";
 
 import BackButton from "@/shared/components/ui/BackButton";
 import { useAppTheme } from "@/shared/theme/ThemeProvider";
@@ -28,77 +29,62 @@ type TypeOption = {
   subject: string;
 };
 
-const TYPE_OPTIONS: TypeOption[] = [
-  {
-    type: "vehicle",
-    label: "Vehicle issue",
-    description: "Damage, breakdown, missing equipment, or vehicle availability.",
-    icon: "directions-car",
-    subject: "Vehicle issue",
-  },
-  {
-    type: "accident",
-    label: "Accident report",
-    description: "Collision, road accident, or any safety incident involving the vehicle.",
-    icon: "car-crash",
-    subject: "Accident report",
-  },
-  {
-    type: "maintenance",
-    label: "Maintenance needed",
-    description: "Ask operations to schedule a maintenance intervention.",
-    icon: "build",
-    subject: "Maintenance needed",
-  },
-  {
-    type: "trip",
-    label: "Trip problem",
-    description: "Delay, route problem, stop problem, or trip execution issue.",
-    icon: "timeline",
-    subject: "Trip problem",
-  },
-  {
-    type: "general",
-    label: "General report",
-    description: "Anything else the operations team should review.",
-    icon: "report-problem",
-    subject: "General report",
-  },
-];
+const TYPE_ICONS: Record<ReclamationType, keyof typeof MaterialIcons.glyphMap> = {
+  vehicle: "directions-car",
+  accident: "car-crash",
+  maintenance: "build",
+  trip: "timeline",
+  general: "report-problem",
+  damage: "directions-car",
+  delay: "schedule",
+  technical: "build",
+  other: "report-problem",
+};
 
-const MAINTENANCE_TYPE_OPTIONS = [
-  "General Inspection",
-  "Technical Visit",
-  "Insurance Renewal",
-  "Oil Change",
-  "Tire Rotation",
-  "Brake Inspection",
-  "Engine Tune-up",
-  "Battery Replacement",
-  "Other",
-];
-
-const MAINTENANCE_PRIORITY_OPTIONS: {
-  value: MaintenancePriority;
-  label: string;
-  color: string;
-}[] = [
-  { value: "low", label: "Low", color: "#22C55E" },
-  { value: "medium", label: "Medium", color: "#F59E0B" },
-  { value: "high", label: "High", color: "#EF4444" },
-];
+const MAINTENANCE_TYPE_KEYS = [
+  "generalInspection",
+  "technicalVisit",
+  "insuranceRenewal",
+  "oilChange",
+  "tireRotation",
+  "brakeInspection",
+  "engineTuneUp",
+  "batteryReplacement",
+  "other",
+] as const;
 
 const requiresVehicleContext = (type: ReclamationType) =>
   type === "vehicle" || type === "maintenance" || type === "accident";
 
-const vehicleLabel = (name?: string, plate?: string) => {
+const vehicleLabel = (name?: string, plate?: string, fallback?: string) => {
   if (name && plate) return `${name} (${plate})`;
-  return name || plate || "No assigned vehicle found";
+  return name || plate || fallback || "";
 };
 
 const CreateReclamationScreen: React.FC = () => {
   const hook = useReclamationForm();
   const { isDark } = useAppTheme();
+  const { t } = useTranslation();
+
+  const TYPE_OPTIONS: TypeOption[] = (["vehicle", "accident", "maintenance", "trip", "general"] as ReclamationType[]).map((type) => ({
+    type,
+    label: t(`reclamations.types.${type}`),
+    description: t(`reclamations.typeDescriptions.${type}`),
+    icon: TYPE_ICONS[type],
+    subject: t(`reclamations.types.${type}`),
+  }));
+
+  const MAINTENANCE_TYPE_OPTIONS = MAINTENANCE_TYPE_KEYS.map((key) => ({
+    key,
+    label: t(`reclamations.maintenanceTypes.${key}`),
+  }));
+
+  const MAINTENANCE_PRIORITY_OPTIONS: { value: MaintenancePriority; label: string; color: string }[] = [
+    { value: "low", label: t("reclamations.priorities.low"), color: "#22C55E" },
+    { value: "medium", label: t("reclamations.priorities.medium"), color: "#F59E0B" },
+    { value: "high", label: t("reclamations.priorities.high"), color: "#EF4444" },
+  ];
+
   const selectedOption =
     TYPE_OPTIONS.find((option) => option.type === hook.form.type) ?? TYPE_OPTIONS[0];
   const canProceed =
@@ -131,7 +117,7 @@ const CreateReclamationScreen: React.FC = () => {
           <View className="mb-4 flex-row items-center justify-between">
             <BackButton />
             <Text className="text-base font-bold tracking-tight text-gray-800 dark:text-gray-50">
-              Report an issue
+              {t("reclamations.reportAnIssue")}
             </Text>
             <View className="w-9" />
           </View>
@@ -146,11 +132,10 @@ const CreateReclamationScreen: React.FC = () => {
           contentContainerStyle={{ paddingTop: 20, paddingBottom: 40 }}
         >
           <Text className="text-2xl font-black text-gray-900 dark:text-white">
-            What happened?
+            {t("reclamations.whatHappened")}
           </Text>
           <Text className="mt-1 text-sm leading-5 text-gray-500 dark:text-slate-400">
-            Choose the report type first. Vehicle and maintenance reports are
-            linked automatically to your assigned vehicle.
+            {t("reclamations.whatHappenedSubtitle")}
           </Text>
 
           <View className="mt-5" style={{ gap: 10 }}>
@@ -204,7 +189,7 @@ const CreateReclamationScreen: React.FC = () => {
             <View className="mt-5 rounded-3xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-900">
               <View className="mb-3 flex-row items-center justify-between">
                 <Text className="text-xs font-black uppercase tracking-[1.5px] text-slate-400">
-                  Auto-filled context
+                  {t("reclamations.autoFilledContext")}
                 </Text>
                 {hook.isContextLoading ? (
                   <ActivityIndicator size="small" color="#2563EB" />
@@ -215,13 +200,13 @@ const CreateReclamationScreen: React.FC = () => {
                 <View className="flex-row items-center gap-3">
                   <MaterialIcons name="person" size={18} color="#64748B" />
                   <Text className="flex-1 text-sm font-semibold text-slate-800 dark:text-slate-200">
-                    {hook.form.driverName || "Driver name unavailable"}
+                    {hook.form.driverName || t("reclamations.driverNameUnavailable")}
                   </Text>
                 </View>
                 <View className="flex-row items-center gap-3">
                   <MaterialIcons name="local-shipping" size={18} color="#64748B" />
                   <Text className="flex-1 text-sm font-semibold text-slate-800 dark:text-slate-200">
-                    {vehicleLabel(hook.form.vehicleName, hook.form.vehiclePlate)}
+                    {vehicleLabel(hook.form.vehicleName, hook.form.vehiclePlate, t("reclamations.noAssignedVehicle"))}
                   </Text>
                 </View>
               </View>
@@ -242,25 +227,25 @@ const CreateReclamationScreen: React.FC = () => {
                 </View>
                 <View className="flex-1">
                   <Text className="text-sm font-black text-slate-900 dark:text-white">
-                    Maintenance details
+                    {t("reclamations.maintenanceDetails")}
                   </Text>
                   <Text className="text-xs text-slate-500 dark:text-slate-400">
-                    These fields will prefill the admin maintenance schedule.
+                    {t("reclamations.maintenanceDetailsSubtitle")}
                   </Text>
                 </View>
               </View>
 
               <Text className="mb-2 text-xs font-black uppercase tracking-[1.5px] text-slate-400">
-                Maintenance type
+                {t("reclamations.maintenanceType")}
               </Text>
               <View className="flex-row flex-wrap" style={{ gap: 8 }}>
                 {MAINTENANCE_TYPE_OPTIONS.map((option) => {
-                  const active = hook.form.maintenanceType === option;
+                  const active = hook.form.maintenanceType === option.key;
                   return (
                     <TouchableOpacity
-                      key={option}
+                      key={option.key}
                       activeOpacity={0.86}
-                      onPress={() => hook.setMaintenanceType(option)}
+                      onPress={() => hook.setMaintenanceType(option.key)}
                       className={`rounded-full border px-3 py-2 ${
                         active
                           ? "border-blue-500 bg-blue-600"
@@ -272,7 +257,7 @@ const CreateReclamationScreen: React.FC = () => {
                           active ? "text-white" : "text-slate-700 dark:text-slate-200"
                         }`}
                       >
-                        {option}
+                        {option.label}
                       </Text>
                     </TouchableOpacity>
                   );
@@ -285,7 +270,7 @@ const CreateReclamationScreen: React.FC = () => {
               ) : null}
 
               <Text className="mb-2 mt-5 text-xs font-black uppercase tracking-[1.5px] text-slate-400">
-                Priority
+                {t("reclamations.priority")}
               </Text>
               <View className="flex-row" style={{ gap: 8 }}>
                 {MAINTENANCE_PRIORITY_OPTIONS.map((option) => {
@@ -316,7 +301,7 @@ const CreateReclamationScreen: React.FC = () => {
 
               <View className="mt-5">
                 <FormInput
-                  label="Estimated Cost (TND)"
+                  label={t("reclamations.estimatedCost")}
                   value={hook.form.estimatedCost ?? ""}
                   onChangeText={hook.setEstimatedCost}
                   error={hook.errors.estimatedCost}
@@ -325,7 +310,7 @@ const CreateReclamationScreen: React.FC = () => {
                 />
 
                 <FormInput
-                  label="Current Mileage (km)"
+                  label={t("reclamations.currentMileage")}
                   value={hook.form.currentMileage ?? ""}
                   onChangeText={hook.setCurrentMileage}
                   error={hook.errors.currentMileage}
@@ -334,10 +319,10 @@ const CreateReclamationScreen: React.FC = () => {
                 />
 
                 <FormInput
-                  label="Maintenance Notes"
+                  label={t("reclamations.maintenanceNotes")}
                   value={hook.form.maintenanceNotes ?? ""}
                   onChangeText={hook.setMaintenanceNotes}
-                  placeholder="Specific parts, warning lights, noises, or preferred technician..."
+                  placeholder={t("reclamations.maintenanceNotesPlaceholder")}
                   multiline
                   numberOfLines={3}
                 />
@@ -347,7 +332,7 @@ const CreateReclamationScreen: React.FC = () => {
 
           <View className="mt-6">
             <FormInput
-              label="Subject"
+              label={t("reclamations.subject")}
               value={hook.form.subject}
               onChangeText={hook.setSubject}
               error={hook.errors.subject}
@@ -356,14 +341,14 @@ const CreateReclamationScreen: React.FC = () => {
             />
 
             <FormInput
-              label="Description"
+              label={t("reclamations.description")}
               value={hook.form.message}
               onChangeText={hook.setMessage}
               error={hook.errors.message}
               placeholder={
                 hook.form.type === "maintenance"
-                  ? "Describe the symptom, urgency, noise, warning light, or part that needs attention..."
-                  : "Describe the issue in detail..."
+                  ? t("reclamations.descriptionPlaceholderMaintenance")
+                  : t("reclamations.descriptionPlaceholder")
               }
               multiline
               numberOfLines={5}
@@ -407,7 +392,7 @@ const CreateReclamationScreen: React.FC = () => {
               <ActivityIndicator color="#fff" />
             ) : (
               <Text className="text-base font-bold text-white">
-                Submit {selectedOption.label}
+                {t("reclamations.submit", { label: selectedOption.label })}
               </Text>
             )}
           </TouchableOpacity>

@@ -10,6 +10,7 @@ import {
   TouchableOpacity,
   ScrollView,
 } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import type { ReclamationImage } from '../types/reclamation.types';
 
 interface ImageUploaderProps {
@@ -27,13 +28,14 @@ export const ImageUploader: React.FC<ImageUploaderProps> = ({
   onRemoveImage,
   maxImages = 5,
 }) => {
+  const { t } = useTranslation();
   const canAddMore = images.length < maxImages;
 
   return (
     <View className="mb-5">
       {/* Label */}
       <Text className="text-sm font-semibold text-gray-700 tracking-wide mb-2">
-        Attachments{' '}
+        {t("reclamations.attachments")}{' '}
         <Text className="text-gray-400 font-normal">
           ({images.length}/{maxImages})
         </Text>
@@ -99,7 +101,7 @@ export const ImageUploader: React.FC<ImageUploaderProps> = ({
             <Text className="text-white font-bold text-base leading-none">+</Text>
           </View>
           <Text className="text-gray-500 font-semibold text-sm">
-            {images.length === 0 ? 'Attach photos' : 'Add more photos'}
+            {images.length === 0 ? t("reclamations.attachPhotos") : t("reclamations.addMorePhotos")}
           </Text>
         </TouchableOpacity>
       )}
@@ -108,7 +110,7 @@ export const ImageUploader: React.FC<ImageUploaderProps> = ({
       {!canAddMore && (
         <View className="py-2 px-3 bg-amber-50 rounded-xl border border-amber-200">
           <Text className="text-amber-600 text-xs font-medium text-center">
-            Maximum {maxImages} photos reached
+            {t("reclamations.maxPhotosReached", { count: maxImages })}
           </Text>
         </View>
       )}

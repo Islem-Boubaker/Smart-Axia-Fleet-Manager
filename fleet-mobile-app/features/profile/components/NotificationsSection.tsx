@@ -1,9 +1,9 @@
 import { Bell, Mail } from "lucide-react-native";
-import {  Card } from "./ui/Card";
+import { Card } from "./ui/Card";
 import { SectionHeader } from "./ui/SectionHeader";
-import {Divider} from "./ui/Divider";
-
+import { Divider } from "./ui/Divider";
 import { ToggleRow } from "./ui/ToggleRow";
+import { useTranslation } from "react-i18next";
 
 type NotificationsSectionProps = {
   pushNotif: boolean;
@@ -20,13 +20,15 @@ export default function NotificationsSection({
   onToggleEmail,
   disabled = false,
 }: NotificationsSectionProps) {
+  const { t } = useTranslation();
+
   return (
     <>
-      <SectionHeader title="Notifications" />
+      <SectionHeader title={t("profile.notifications.title")} />
       <Card>
         <ToggleRow
           icon={<Bell size={16} color="#6b7280" />}
-          label="Push Notifications"
+          label={t("profile.notifications.push")}
           value={pushNotif}
           onToggle={onTogglePush}
           disabled={disabled}
@@ -34,7 +36,7 @@ export default function NotificationsSection({
         <Divider />
         <ToggleRow
           icon={<Mail size={16} color="#6b7280" />}
-          label="Email Updates"
+          label={t("profile.notifications.email")}
           value={emailUpdates}
           onToggle={onToggleEmail}
           disabled={disabled}

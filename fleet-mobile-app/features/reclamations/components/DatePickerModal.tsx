@@ -10,6 +10,7 @@ import {
   TouchableOpacity,
   Pressable,
 } from 'react-native';
+import { useTranslation } from 'react-i18next';
 
 interface DatePickerModalProps {
   visible: boolean;
@@ -18,11 +19,11 @@ interface DatePickerModalProps {
   onCancel: () => void;
 }
 
-const DAYS = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
-const MONTHS = [
-  'January', 'February', 'March', 'April', 'May', 'June',
-  'July', 'August', 'September', 'October', 'November', 'December',
-];
+const DAY_KEYS = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'] as const;
+const MONTH_KEYS = [
+  'january', 'february', 'march', 'april', 'may', 'june',
+  'july', 'august', 'september', 'october', 'november', 'december',
+] as const;
 
 function getDaysInMonth(year: number, month: number): number {
   return new Date(year, month + 1, 0).getDate();
@@ -40,6 +41,7 @@ export const DatePickerModal: React.FC<DatePickerModalProps> = ({
   onConfirm,
   onCancel,
 }) => {
+  const { t } = useTranslation();
   const today = new Date();
   const [viewYear, setViewYear] = useState(
     selectedDate ? selectedDate.getFullYear() : today.getFullYear()
@@ -128,7 +130,7 @@ export const DatePickerModal: React.FC<DatePickerModalProps> = ({
 
             <View className="items-center">
               <Text className="text-base font-bold text-gray-800 dark:text-gray-50">
-                {MONTHS[viewMonth]}
+                {t(`shared.months.${MONTH_KEYS[viewMonth]}`)}
               </Text>
               <Text className="text-xs text-gray-400 dark:text-slate-400 font-medium">{viewYear}</Text>
             </View>
@@ -143,9 +145,9 @@ export const DatePickerModal: React.FC<DatePickerModalProps> = ({
 
           {/* Day-of-week headers */}
           <View className="flex-row mb-3">
-            {DAYS.map((d, i) => (
+            {DAY_KEYS.map((d, i) => (
               <View key={i} className="flex-1 items-center">
-                <Text className="text-xs font-bold text-gray-400">{d}</Text>
+                <Text className="text-xs font-bold text-gray-400">{t(`shared.daysShort.${d}`)}</Text>
                 
               </View>
             ))}
@@ -195,7 +197,7 @@ export const DatePickerModal: React.FC<DatePickerModalProps> = ({
               onPress={onCancel}
               className="flex-1 py-3.5 rounded-2xl border border-gray-200 dark:border-slate-700 items-center"
             >
-              <Text className="text-gray-500 dark:text-slate-300 font-semibold text-sm">Cancel</Text>
+              <Text className="text-gray-500 dark:text-slate-300 font-semibold text-sm">{t("shared.cancel")}</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
@@ -205,7 +207,7 @@ export const DatePickerModal: React.FC<DatePickerModalProps> = ({
                 pickedDate ? 'bg-rose-500' : 'bg-rose-200'
               }`}
             >
-              <Text className="text-white font-bold text-sm">Confirm</Text>
+              <Text className="text-white font-bold text-sm">{t("shared.confirm")}</Text>
             </TouchableOpacity>
           </View>
         </Pressable>

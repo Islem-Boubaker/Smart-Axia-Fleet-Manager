@@ -3,12 +3,15 @@
 
 import React from 'react';
 import { View, Text, TouchableOpacity } from 'react-native';
+import { useTranslation } from 'react-i18next';
 
 interface SuccessScreenProps {
   onReset: () => void;
 }
 
 export const SuccessScreen: React.FC<SuccessScreenProps> = ({ onReset }) => {
+  const { t } = useTranslation();
+
   return (
     <View className="flex-1 items-center justify-center px-8">
       {/* Icon */}
@@ -26,15 +29,15 @@ export const SuccessScreen: React.FC<SuccessScreenProps> = ({ onReset }) => {
       </View>
 
       <Text className="text-2xl font-bold text-gray-800 mb-2 text-center">
-        Submitted!
+        {t("reclamations.success.title")}
       </Text>
       <Text className="text-sm text-gray-500 text-center leading-relaxed mb-8">
-        Your reclamation has been received.{'\n'}Our team will review it shortly.
+        {t("reclamations.success.message")}
       </Text>
 
       {/* Decorative reference */}
       <View className="bg-gray-50 rounded-2xl px-6 py-4 mb-8 border border-gray-100 w-full">
-        <Text className="text-xs text-gray-400 text-center mb-1">Reference ID</Text>
+        <Text className="text-xs text-gray-400 text-center mb-1">{t("reclamations.success.referenceId")}</Text>
         <Text className="text-base font-bold text-blue-500 text-center tracking-widest">
           RCL-{Date.now().toString().slice(-6)}
         </Text>
@@ -51,7 +54,7 @@ export const SuccessScreen: React.FC<SuccessScreenProps> = ({ onReset }) => {
           elevation: 6,
         }}
       >
-        <Text className="text-white font-bold text-base">Submit Another</Text>
+        <Text className="text-white font-bold text-base">{t("reclamations.success.submitAnother")}</Text>
       </TouchableOpacity>
     </View>
   );

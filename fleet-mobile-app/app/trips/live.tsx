@@ -4,6 +4,7 @@ import MapView, { Marker, Polyline } from "react-native-maps";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import * as Location from "expo-location";
+import { useTranslation } from "react-i18next";
 
 import BackButton from "@/shared/components/ui/BackButton";
 import { LoadingSpinner } from "@/shared/components/ui/LoadingSpinner";
@@ -14,6 +15,7 @@ import { useRoutePolyline } from "@/features/trips/hooks/useRoutePolyline";
 import { tripsApi } from "@/features/trips/services/trips.api";
 import { resolveTunisiaAddressToCoord } from "@/features/trips/utils/geocoding";
 import { filterDestinationDuplicateStops } from "@/features/trips/utils/routeDedup";
+import { getStatusTranslationKey } from "@/shared/utils/translateStatus";
 
 type LatLng = { latitude: number; longitude: number };
 type StopStatus = "pending" | "reached" | "skipped" | "unknown";
@@ -85,6 +87,7 @@ function getRegion(coords: LatLng[]) {
 
 export default function LiveTripScreen() {
   const { isDark } = useAppTheme();
+  const { t } = useTranslation();
   const router = useRouter();
   const mapRef = useRef<MapView | null>(null);
   const watchSubscriptionRef = useRef<Location.LocationSubscription | null>(null);
@@ -334,7 +337,7 @@ export default function LiveTripScreen() {
       const { status } = await Location.requestForegroundPermissionsAsync();
       if (status !== "granted") {
         if (mounted) {
-          setLocationError("Location permission denied. Enable it to use live navigation.");
+          setLocationError(t("trips.live.locationPermissionDenied"));
         }
         return;
       }
@@ -410,7 +413,7 @@ export default function LiveTripScreen() {
         watchSubscriptionRef.current = null;
       }
     };
-  }, [tripId]);
+  }, [t, tripId]);
 
   const routeInputPoints = useMemo(() => {
     const points: LatLng[] = [];
@@ -488,20 +491,20 @@ export default function LiveTripScreen() {
   if (!tripId || error || !trip) {
     return (
       <SafeAreaView className="flex-1 bg-gray-100 dark:bg-[#0B1220] items-center justify-center px-6">
-        <Text className="text-lg font-bold text-gray-900 dark:text-gray-50 mb-2">Failed to load live navigation</Text>
-        <Text className="text-sm text-gray-500 dark:text-slate-400 text-center mb-5">{error ?? "Trip data is unavailable."}</Text>
+        <Text className="text-lg font-bold text-gray-900 dark:text-gray-50 mb-2">{t("trips.live.failedToLoad")}</Text>
+        <Text className="text-sm text-gray-500 dark:text-slate-400 text-center mb-5">{error ?? t("trips.unavailable")}</Text>
         <View className="flex-row gap-3">
           <TouchableOpacity
             onPress={() => void reload()}
             className="px-4 py-2 rounded-xl bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700"
           >
-            <Text className="text-gray-800 dark:text-gray-100 font-semibold">Retry</Text>
+            <Text className="text-gray-800 dark:text-gray-100 font-semibold">{t("shared.retry")}</Text>
           </TouchableOpacity>
           <TouchableOpacity
             onPress={() => router.back()}
             className="px-4 py-2 rounded-xl bg-brand-600"
           >
-            <Text className="text-white font-semibold">Go Back</Text>
+            <Text className="text-white font-semibold">{t("shared.goBack")}</Text>
           </TouchableOpacity>
         </View>
       </SafeAreaView>
@@ -515,7 +518,7 @@ export default function LiveTripScreen() {
       <View className="absolute top-10 left-4 right-4 z-20 flex-row items-center justify-between">
         <BackButton />
         <View className="bg-white/95 dark:bg-slate-900/90 border border-gray-200 dark:border-slate-700 rounded-2xl px-4 py-2">
-          <Text className="text-xs text-gray-500 dark:text-slate-400">Live Navigation</Text>
+          <Text className="text-xs text-gray-500 dark:text-slate-400">{t("trips.live.title")}</Text>
           <Text className="text-sm font-bold text-gray-900 dark:text-gray-50">{trip.tripNumber}</Text>
         </View>
       </View>
@@ -552,47 +555,47 @@ export default function LiveTripScreen() {
             <Marker
               key={String(stop.id)}
               coordinate={resolvedStop.coordinate}
-              title={`Stop #${stop.stopOrder}`}
-              description={`${stop.locationName} · ${normalizedStatus}`}
+              title={t("trips.stopNumber", { number: stop.stopOrder })}
+              description={`${stop.locationName} · ${t(getStatusTranslationKey(normalizedStatus))}`}
               pinColor={pinColor}
             />
           );
         })}
 
         {destinationCoord ? (
-          <Marker coordinate={destinationCoord} title={destinationAddress || "Destination"} description="Trip destination" pinColor="#DC2626" />
+          <Marker coordinate={destinationCoord} title={destinationAddress || t("trips.destination")} description={t("trips.tripDestination")} pinColor="#DC2626" />
         ) : null}
 
       </MapView>
 
       <View className="absolute bottom-5 left-4 right-4 bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-3xl px-4 py-4 shadow-float">
         <Text className="text-[11px] font-semibold tracking-wide text-gray-500 dark:text-slate-400">
-          {nextStop ? "Next Stop" : "Destination"}
+          {nextStop ? t("trips.live.nextStop") : t("trips.destination")}
         </Text>
         <Text className="text-base font-bold text-gray-900 dark:text-gray-50 mt-0.5">
-          {nextStop?.locationName || destinationAddress || trip.to || "Destination unavailable"}
+          {nextStop?.locationName || destinationAddress || trip.to || t("trips.destinationUnavailable")}
         </Text>
 
         <View className="flex-row items-center justify-between mt-3">
           <Text className="text-xs text-gray-500 dark:text-slate-400">
             {isResolvingStops
-              ? "Resolving stop locations..."
+              ? t("trips.live.resolvingStops")
               : isResolvingDestination
-                ? "Resolving destination..."
+                ? t("trips.live.resolvingDestination")
                 : isFetchingRoute
-                  ? "Updating multi-stop route..."
+                  ? t("trips.live.updatingRoute")
                   : routeInputPoints.length > 2
-                    ? `Routing through ${Math.max(routeInputPoints.length - 1, 0)} remaining stops`
-                    : "Route ready"}
+                    ? t("trips.live.routingThroughStops", { count: Math.max(routeInputPoints.length - 1, 0) })
+                    : t("trips.live.routeReady")}
           </Text>
           {locationAccuracy != null ? (
             <Text className="text-xs text-gray-500 dark:text-slate-400">
-              Accuracy ~{Math.round(locationAccuracy)}m
+              {t("trips.live.accuracy", { value: Math.round(locationAccuracy) })}
             </Text>
           ) : null}
           {locationError ? (
-            <TouchableOpacity onPress={() => Alert.alert("Location", locationError)} className="px-3 py-1.5 rounded-xl bg-red-100">
-              <Text className="text-xs text-red-700 font-semibold">Location issue</Text>
+            <TouchableOpacity onPress={() => Alert.alert(t("trips.live.location"), locationError)} className="px-3 py-1.5 rounded-xl bg-red-100">
+              <Text className="text-xs text-red-700 font-semibold">{t("trips.live.locationIssue")}</Text>
             </TouchableOpacity>
           ) : null}
           {!locationError && !driverLocation ? (
@@ -604,8 +607,8 @@ export default function LiveTripScreen() {
           <TouchableOpacity
             onPress={() => {
               void handleMarkNextStopReached().catch((err) => {
-                const message = err instanceof Error ? err.message : "Unable to mark the next stop as reached.";
-                Alert.alert("Stop Update Failed", message);
+                const message = err instanceof Error ? err.message : t("trips.errors.stopUpdate");
+                Alert.alert(t("trips.errors.stopUpdateTitle"), message);
               });
             }}
             disabled={isSubmittingTripAction}
@@ -613,7 +616,7 @@ export default function LiveTripScreen() {
             style={{ opacity: isSubmittingTripAction ? 0.6 : 1 }}
           >
             <Text className="text-center text-white font-bold">
-              {isSubmittingTripAction ? "Updating Stop..." : "Stop Reached"}
+              {isSubmittingTripAction ? t("trips.live.updatingStop") : t("trips.live.stopReached")}
             </Text>
           </TouchableOpacity>
         ) : null}

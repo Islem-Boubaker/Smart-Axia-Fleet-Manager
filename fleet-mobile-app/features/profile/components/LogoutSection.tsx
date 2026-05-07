@@ -1,7 +1,10 @@
 import { TouchableOpacity, View, Text } from "react-native";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
+import { useTranslation } from "react-i18next";
 
 export default function LogoutSection({ onLogout }: any) {
+  const { t } = useTranslation();
+
   return (
     <TouchableOpacity
       className="mx-5 bg-red-50 rounded-2xl py-4 items-center"
@@ -9,7 +12,7 @@ export default function LogoutSection({ onLogout }: any) {
     >
       <View className="flex-row items-center gap-2">
         <MaterialIcons name="logout" size={18} color="#E74C3C" />
-        <Text className="text-sm font-bold text-red-500">Log out</Text>
+        <Text className="text-sm font-bold text-red-500">{t("profile.logout")}</Text>
       </View>
     </TouchableOpacity>
   );

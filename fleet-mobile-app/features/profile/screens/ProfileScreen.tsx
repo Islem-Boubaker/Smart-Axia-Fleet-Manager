@@ -2,12 +2,14 @@ import React, { useCallback, useMemo } from "react";
 import { ScrollView, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useSelector } from "react-redux";
+import { useTranslation } from "react-i18next";
 
 import ProfileCard from "../components/ProfileCard";
 import RankingSection from "../components/RankingSection";
 import AccountSection from "../components/AccountSection";
 import NotificationsSection from "../components/NotificationsSection";
 import PreferenceSection from "../components/PreferenceSection";
+import LanguageSection from "../components/LanguageSection";
 import LogoutButton from "../components/LogoutButton";
 import type { RootState } from "@/store";
 import { useProfile } from "../hooks/useProfile";
@@ -16,6 +18,7 @@ import { useAppTheme } from "@/shared/theme/ThemeProvider";
 import { requestPushPermission } from "@/features/notifications/utils/pushNotifications";
 
 export default function ProfileScreen() {
+  const { t } = useTranslation();
   const user = useSelector((state: RootState) => state.auth.user);
   const { ranking, notificationSettings, updateNotificationSettings, isSaving } = useProfile();
   const { isDark, setTheme } = useAppTheme();
@@ -42,10 +45,10 @@ export default function ProfileScreen() {
         if (value) {
           const permission = await requestPushPermission();
           if (permission.unsupportedInExpoGo) {
-            toast.error("Push delivery is unavailable in Expo Go. Preference will still be saved.");
+            toast.error(t("profile.pushUnavailable"));
           }
           if (!permission.unsupportedInExpoGo && !permission.granted) {
-            toast.error("Push permission denied. Enable it in phone settings.");
+            toast.error(t("profile.pushDenied"));
             return;
           }
         }
@@ -55,13 +58,13 @@ export default function ProfileScreen() {
           pushMaintenance: value,
           pushAlerts: value,
         });
-        toast.success(`Push notifications ${value ? "enabled" : "disabled"}.`);
+        toast.success(value ? t("profile.pushEnabled") : t("profile.pushDisabled"));
       } catch (error) {
-        const message = error instanceof Error ? error.message : "Failed to update push notifications";
+        const message = error instanceof Error ? error.message : t("profile.pushFailed");
         toast.error(message);
       }
     },
-    [updateNotificationSettings],
+    [updateNotificationSettings, t],
   );
 
   const setEmailUpdates = useCallback(
@@ -72,13 +75,13 @@ export default function ProfileScreen() {
           emailMaintenance: value,
           emailDrivers: value,
         });
-        toast.success(`Email notifications ${value ? "enabled" : "disabled"}.`);
+        toast.success(value ? t("profile.emailEnabled") : t("profile.emailDisabled"));
       } catch (error) {
-        const message = error instanceof Error ? error.message : "Failed to update email notifications";
+        const message = error instanceof Error ? error.message : t("profile.emailFailed");
         toast.error(message);
       }
     },
-    [updateNotificationSettings],
+    [updateNotificationSettings, t],
   );
 
   const setDarkMode = useCallback(
@@ -86,17 +89,17 @@ export default function ProfileScreen() {
       try {
         await setTheme(value ? "dark" : "light");
       } catch {
-        toast.error("Failed to update theme mode.");
+        toast.error(t("profile.themeFailed"));
       }
     },
-    [setTheme],
+    [setTheme, t],
   );
 
   return (
     <SafeAreaView className="flex-1 bg-[#F5F7FA] dark:bg-[#0B1220]">
       <View className="mt-10 px-4 pb-4">
         <Text className="text-[22px] font-extrabold tracking-tight text-gray-900 dark:text-gray-50">
-          Profile
+          {t("profile.title")}
         </Text>
       </View>
 
@@ -112,6 +115,7 @@ export default function ProfileScreen() {
           disabled={isSaving}
         />
         <PreferenceSection darkMode={isDark} setDarkMode={setDarkMode} />
+        <LanguageSection />
         <LogoutButton />
       </ScrollView>
     </SafeAreaView>

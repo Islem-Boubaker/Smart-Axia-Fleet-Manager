@@ -1,8 +1,9 @@
 import React, { useCallback, useMemo } from "react";
-import { Text, TouchableOpacity, View } from "react-native";
+import { I18nManager, Text, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
-import { ChevronLeft } from "lucide-react-native";
+import { ChevronLeft, ChevronRight } from "lucide-react-native";
+import { useTranslation } from "react-i18next";
 
 import NotificationsSection from "../components/NotificationsSection";
 import { useProfile } from "../hooks/useProfile";
@@ -12,6 +13,7 @@ import { requestPushPermission } from "@/features/notifications/utils/pushNotifi
 
 export default function EmailNotificationsScreen() {
   const router = useRouter();
+  const { t } = useTranslation();
   const { notificationSettings, updateNotificationSettings, isSaving } = useProfile();
   const { isDark } = useAppTheme();
 
@@ -37,10 +39,10 @@ export default function EmailNotificationsScreen() {
         if (value) {
           const permission = await requestPushPermission();
           if (permission.unsupportedInExpoGo) {
-            toast.error("Push delivery is unavailable in Expo Go. Preference will still be saved.");
+            toast.error(t("profile.pushUnavailable"));
           }
           if (!permission.unsupportedInExpoGo && !permission.granted) {
-            toast.error("Push permission denied. Enable it in phone settings.");
+            toast.error(t("profile.pushDenied"));
             return;
           }
         }
@@ -50,13 +52,13 @@ export default function EmailNotificationsScreen() {
           pushMaintenance: value,
           pushAlerts: value,
         });
-        toast.success(`Push notifications ${value ? "enabled" : "disabled"}.`);
+        toast.success(value ? t("profile.pushEnabled") : t("profile.pushDisabled"));
       } catch (error) {
-        const message = error instanceof Error ? error.message : "Failed to update push notifications";
+        const message = error instanceof Error ? error.message : t("profile.pushFailed");
         toast.error(message);
       }
     },
-    [updateNotificationSettings],
+    [t, updateNotificationSettings],
   );
 
   const setEmailUpdates = useCallback(
@@ -67,23 +69,27 @@ export default function EmailNotificationsScreen() {
           emailMaintenance: value,
           emailDrivers: value,
         });
-        toast.success(`Email notifications ${value ? "enabled" : "disabled"}.`);
+        toast.success(value ? t("profile.emailEnabled") : t("profile.emailDisabled"));
       } catch (error) {
-        const message = error instanceof Error ? error.message : "Failed to update email notifications";
+        const message = error instanceof Error ? error.message : t("profile.emailFailed");
         toast.error(message);
       }
     },
-    [updateNotificationSettings],
+    [t, updateNotificationSettings],
   );
 
   return (
     <SafeAreaView className="flex-1 bg-[#F5F7FA] dark:bg-[#0B1220]">
       <View className="flex-row items-center mt-10 px-4 pb-4">
         <TouchableOpacity onPress={() => router.back()}>
-          <ChevronLeft size={22} color={isDark ? "#F9FAFB" : "#111827"} />
+          {I18nManager.isRTL ? (
+            <ChevronRight size={22} color={isDark ? "#F9FAFB" : "#111827"} />
+          ) : (
+            <ChevronLeft size={22} color={isDark ? "#F9FAFB" : "#111827"} />
+          )}
         </TouchableOpacity>
         <Text className="flex-1 text-center text-lg font-bold text-gray-900 dark:text-gray-50">
-          Email Notifications
+          {t("profile.notifications.email")}
         </Text>
       </View>
 

@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { tripsApi } from "../services/trips.api";
 import type { Trip } from "../types/trip.types";
 
@@ -10,6 +11,7 @@ interface UseTripDetailState {
 }
 
 export function useTripDetail(tripId?: string): UseTripDetailState {
+  const { t } = useTranslation();
   const [trip, setTrip] = useState<Trip | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -27,13 +29,13 @@ export function useTripDetail(tripId?: string): UseTripDetailState {
       setTrip(data);
     } catch (err) {
       const message =
-        err instanceof Error ? err.message : "Failed to load trip detail";
+        err instanceof Error ? err.message : t("trips.failedToLoad");
       setError(message);
       setTrip(null);
     } finally {
       setIsLoading(false);
     }
-  }, [tripId]);
+  }, [t, tripId]);
 
   useEffect(() => {
     setIsLoading(true);

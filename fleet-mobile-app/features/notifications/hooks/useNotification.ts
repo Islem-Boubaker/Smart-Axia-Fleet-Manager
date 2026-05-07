@@ -14,11 +14,38 @@ const SOCKET_URL = resolveApiBaseUrl(process.env.EXPO_PUBLIC_API_URL);
 
 function mapType(rawType: string, group: string): NotificationType {
   const t = (rawType || group || "").toLowerCase();
+  if (t.includes("trip")) return "trip";
+  if (t.includes("reclamation") || t.includes("claim")) return "claim";
   if (t === "maintenance") return "alert";
   if (t === "warning") return "claim";
   if (t === "success") return "schedule";
   if (t === "trip") return "trip";
   return "admin";
+}
+
+function getKnownNotificationKeys(notification: RawNotification) {
+  const signal = [
+    notification.type,
+    notification.group,
+    notification.title,
+    notification.message,
+  ].join(" ").toLowerCase();
+
+  if (signal.includes("reclamation_submitted") || signal.includes("reclamation submitted")) {
+    return {
+      titleKey: "notifications.types.reclamationSubmitted.title",
+      bodyKey: "notifications.types.reclamationSubmitted.body",
+    };
+  }
+
+  if (signal.includes("trip_assigned") || signal.includes("new trip assigned") || signal.includes("trip assigned")) {
+    return {
+      titleKey: "notifications.types.newTripAssigned.title",
+      bodyKey: "notifications.types.newTripAssigned.body",
+    };
+  }
+
+  return {};
 }
 
 function formatTime(dateStr: string) {
@@ -49,10 +76,12 @@ function groupNotifications(items: RawNotification[]): NotificationGroup[] {
     const d = new Date(n.createdAt);
     const dateString = d.toDateString();
 
+    const knownKeys = getKnownNotificationKeys(n);
     const item: NotificationItem = {
       id: n.id,
       name: n.title,
       message: n.message,
+      ...knownKeys,
       time: formatTime(n.createdAt),
       type: mapType(n.type, n.group),
       unread: !n.read && !n.readAt,
@@ -68,10 +97,10 @@ function groupNotifications(items: RawNotification[]): NotificationGroup[] {
   });
 
   const groups: NotificationGroup[] = [];
-  if (today.length > 0) groups.push({ group: "TODAY", items: today });
+  if (today.length > 0) groups.push({ group: "today", items: today });
   if (yesterday.length > 0)
-    groups.push({ group: "YESTERDAY", items: yesterday });
-  if (older.length > 0) groups.push({ group: "OLDER", items: older });
+    groups.push({ group: "yesterday", items: yesterday });
+  if (older.length > 0) groups.push({ group: "older", items: older });
 
   return groups;
 }
@@ -104,7 +133,7 @@ export function useNotification() {
       );
     } catch (err) {
       console.error("Fetch errors", err);
-      setError("Failed to load notifications");
+      setError("notifications.failedToLoad");
     } finally {
       setLoading(false);
     }

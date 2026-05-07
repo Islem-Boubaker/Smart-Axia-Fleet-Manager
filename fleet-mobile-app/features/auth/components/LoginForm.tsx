@@ -10,6 +10,7 @@ import {
   View,
 } from "react-native";
 import Svg, { G, Path } from "react-native-svg";
+import { useTranslation } from "react-i18next";
 import type { LoginCredentials } from "../types/auth.types";
 
 type LoginFormProps = {
@@ -43,6 +44,7 @@ export function LoginForm({
   onLoginWithApple,
   onForgotPassword,
 }: LoginFormProps) {
+  const { t } = useTranslation();
   const commonShadow = {
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
@@ -79,7 +81,7 @@ export function LoginForm({
                       />
                     </G>
                   </Svg>
-                  <Text className="font-bold ml-2">Apple</Text>
+                  <Text className="font-bold ml-2">{t("auth.apple")}</Text>
                 </>
               )}
             </TouchableOpacity>
@@ -88,7 +90,7 @@ export function LoginForm({
           {/* Divider */}
           <View className="flex-row items-center my-6 gap-3">
             <View className="flex-1 h-px bg-[#E4E2F0]" />
-            <Text className="text-xs text-[#8E8BA8]">Or sign in with email</Text>
+            <Text className="text-xs text-[#8E8BA8]">{t("auth.orSignInWithEmail")}</Text>
             <View className="flex-1 h-px bg-[#E4E2F0]" />
           </View>
         </>
@@ -97,11 +99,11 @@ export function LoginForm({
       {/* Email Input */}
       <View>
         <Text className="text-xs font-bold text-[#1A1233] mb-2 tracking-wide uppercase">
-          Email
+          {t("auth.login.emailLabel")}
         </Text>
         <TextInput
           className="bg-[#FAFAFA] border border-[#E4E2F0] rounded-2xl px-4 py-3.5 text-sm text-[#1A1233]"
-          placeholder="example@gmail.com"
+          placeholder={t("auth.login.emailPlaceholder")}
           placeholderTextColor="#BDB8D4"
           keyboardType="email-address"
           autoCapitalize="none"
@@ -114,12 +116,12 @@ export function LoginForm({
       {/* Password Input */}
       <View className="mt-5">
         <Text className="text-xs font-bold text-[#1A1233] mb-2 tracking-wide uppercase">
-          Password
+          {t("auth.login.passwordLabel")}
         </Text>
         <View className="relative">
           <TextInput
             className="bg-[#FAFAFA] border border-[#E4E2F0] rounded-2xl px-4 py-3.5 text-sm text-[#1A1233] pr-12"
-            placeholder="••••••••••••"
+            placeholder={t("auth.login.passwordPlaceholder")}
             placeholderTextColor="#BDB8D4"
             secureTextEntry={!showPassword}
             value={credentials.password}
@@ -149,7 +151,7 @@ export function LoginForm({
       <View className="flex-row items-center justify-between mt-3">
         <TouchableOpacity onPress={onForgotPassword} disabled={isLoading}>
           <Text className="text-[12.5px] font-bold text-blue-600">
-            Forgot Password?
+            {t("auth.login.forgotPassword")}
           </Text>
         </TouchableOpacity>
       </View>
@@ -173,7 +175,7 @@ export function LoginForm({
             <ActivityIndicator color="#fff" />
           ) : (
             <Text className="text-white text-[15px] font-bold tracking-wide">
-              Sign In
+              {t("auth.login.submit")}
             </Text>
           )}
         </LinearGradient>

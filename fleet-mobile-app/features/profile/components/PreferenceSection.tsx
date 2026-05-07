@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import { SectionHeader } from "./ui/SectionHeader";
 import { ToggleRow } from "./ui/ToggleRow";
 import { Card } from "./ui/Card";
@@ -10,13 +11,15 @@ export default function PreferenceSection({
   darkMode: boolean;
   setDarkMode: (darkMode: boolean) => void;
 }) {
+  const { t } = useTranslation();
+
   return (
     <>
-      <SectionHeader title="Preferences" />
+      <SectionHeader title={t("profile.preferences.title")} />
       <Card>
         <ToggleRow
           icon={<Moon size={16} color="#6b7280" />}
-          label="Dark Mode"
+          label={t("profile.preferences.darkMode")}
           value={darkMode}
           onToggle={setDarkMode}
         />

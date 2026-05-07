@@ -20,6 +20,8 @@ export interface NotificationItem {
   id: string;
   name: string;
   message: string;
+  titleKey?: string;
+  bodyKey?: string;
   time: string;
   type: NotificationType;
   unread: boolean;

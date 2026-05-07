@@ -1,7 +1,10 @@
 import { View, Text, TouchableOpacity } from "react-native";
 import { User } from "lucide-react-native";
+import { useTranslation } from "react-i18next";
 import UserAvatar from "@/shared/components/ui/userAvatar";
 export default function ProfileCard({ user, badgeLabel }: any) {
+  const { t } = useTranslation();
+
   return (
     <View className="mx-4 mt-2 mb-2 rounded-3xl bg-white border border-gray-200 px-4 py-4 flex-row items-center justify-between dark:bg-slate-900 dark:border-slate-700 shadow-card">
       
@@ -12,7 +15,7 @@ export default function ProfileCard({ user, badgeLabel }: any) {
         {/* User Info */}
         <View>
           <Text className="text-gray-900 text-base font-semibold dark:text-gray-100">
-            {user?.name || "Unknown User"}
+            {user?.name || t("profile.unknownUser")}
           </Text>
           {badgeLabel ? (
             <View className="mt-1 self-start rounded-full bg-amber-100 px-2.5 py-1 dark:bg-amber-500/15">
@@ -22,7 +25,7 @@ export default function ProfileCard({ user, badgeLabel }: any) {
             </View>
           ) : null}
           <Text className="text-gray-500 text-xs mt-0.5 dark:text-slate-400">
-            {user?.role || "Driver"}
+            {user?.role || t("reclamations.driver")}
           </Text>
         </View>
       </View>

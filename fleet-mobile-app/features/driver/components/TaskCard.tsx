@@ -1,4 +1,5 @@
 import { View, Text, TouchableOpacity } from "react-native";
+import { useTranslation } from "react-i18next";
 import type { Trip } from "../types/driver.types";
 
 interface TaskCardProps {
@@ -8,16 +9,18 @@ interface TaskCardProps {
 }
 
 const formatTaskTime = (trip: Trip | null): string => {
-  if (!trip?.startTime) return "No schedule";
+  if (!trip?.startTime) return "";
   return new Date(trip.startTime).toLocaleString();
 };
 
 const formatVehicleLabel = (trip: Trip | null): string => {
-  if (!trip) return "No task assigned";
+  if (!trip) return "";
   return `${trip.startLocation} -> ${trip.endLocation}`;
 };
 
 export default function TaskCard({ trip, isCurrent, onPress }: TaskCardProps) {
+  const { t } = useTranslation();
+
   return (
     <TouchableOpacity
       className={`flex-1 rounded-2xl p-4 ${
@@ -31,7 +34,7 @@ export default function TaskCard({ trip, isCurrent, onPress }: TaskCardProps) {
           isCurrent ? "text-white/70" : "text-blue-500"
         }`}
       >
-        {isCurrent ? "CURRENT TASK" : "UPCOMING TASK"}
+        {isCurrent ? t("home.currentTask") : t("home.upcomingTask")}
       </Text>
 
       <Text
@@ -39,7 +42,7 @@ export default function TaskCard({ trip, isCurrent, onPress }: TaskCardProps) {
           isCurrent ? "text-white" : "text-gray-900 dark:text-gray-50"
         }`}
       >
-        {formatVehicleLabel(trip)}
+        {trip ? formatVehicleLabel(trip) : t("home.noTaskAssigned")}
       </Text>
 
       <Text
@@ -47,7 +50,7 @@ export default function TaskCard({ trip, isCurrent, onPress }: TaskCardProps) {
           isCurrent ? "text-white/70" : "text-gray-400 dark:text-slate-400"
         }`}
       >
-        {formatTaskTime(trip)}
+        {formatTaskTime(trip) || t("home.noSchedule")}
       </Text>
 
       <View
@@ -60,7 +63,7 @@ export default function TaskCard({ trip, isCurrent, onPress }: TaskCardProps) {
             isCurrent ? "text-white" : "text-gray-900 dark:text-gray-100"
           }`}
         >
-          Task details
+          {t("home.taskDetails")}
         </Text>
       </View>
     </TouchableOpacity>

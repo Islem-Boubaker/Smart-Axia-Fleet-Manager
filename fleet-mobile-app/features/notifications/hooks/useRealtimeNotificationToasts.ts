@@ -1,4 +1,5 @@
 import { useEffect, useRef } from "react";
+import { useTranslation } from "react-i18next";
 import { io, type Socket } from "socket.io-client";
 import { useSelector } from "react-redux";
 import type { RootState } from "@/store";
@@ -9,7 +10,36 @@ import { resolveApiBaseUrl } from "@/shared/utils/apiBase";
 
 const SOCKET_URL = resolveApiBaseUrl(process.env.EXPO_PUBLIC_API_URL);
 
+function getKnownNotificationText(notification: RawNotification, t: (key: string) => string) {
+  const signal = [
+    notification.type,
+    notification.group,
+    notification.title,
+    notification.message,
+  ].join(" ").toLowerCase();
+
+  if (signal.includes("reclamation_submitted") || signal.includes("reclamation submitted")) {
+    return {
+      title: t("notifications.types.reclamationSubmitted.title"),
+      message: t("notifications.types.reclamationSubmitted.body"),
+    };
+  }
+
+  if (signal.includes("trip_assigned") || signal.includes("new trip assigned") || signal.includes("trip assigned")) {
+    return {
+      title: t("notifications.types.newTripAssigned.title"),
+      message: t("notifications.types.newTripAssigned.body"),
+    };
+  }
+
+  return {
+    title: notification.title || t("notifications.types.generic.title"),
+    message: notification.message,
+  };
+}
+
 export function useRealtimeNotificationToasts() {
+  const { t } = useTranslation();
   const isAuthenticated = useSelector(
     (state: RootState) => state.auth.isAuthenticated,
   );
@@ -53,8 +83,9 @@ export function useRealtimeNotificationToasts() {
           shownToastIdsRef.current.add(notification.id);
         }
 
-        toast.info(notification.message, {
-          title: notification.title || "New Notification",
+        const text = getKnownNotificationText(notification, t);
+        toast.info(text.message, {
+          title: text.title,
           duration: 5000,
         });
       });
@@ -69,5 +100,5 @@ export function useRealtimeNotificationToasts() {
       }
       socketRef.current = null;
     };
-  }, [isAuthenticated]);
+  }, [isAuthenticated, t]);
 }

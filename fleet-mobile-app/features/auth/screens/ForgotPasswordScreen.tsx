@@ -12,12 +12,14 @@ import {
 import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
+import { useTranslation } from "react-i18next";
 import { useAuthActions } from "../hooks/useAuth";
 import BackButton from "@/shared/components/ui/BackButton";
 import RefreshLockIcon from "../components/ui/RefreshLockIcon";
 
 export default function ForgotPasswordScreen() {
   const router = useRouter();
+  const { t } = useTranslation();
   const { resetPassword, isLoading } = useAuthActions();
   const [email, setEmail] = useState("");
   const [sent, setSent] = useState(false);
@@ -26,7 +28,7 @@ export default function ForgotPasswordScreen() {
   const handleSubmit = async () => {
     setErrorMsg("");
     if (!email.includes("@")) {
-      Alert.alert("Invalid email", "Please enter a valid email address.");
+      Alert.alert(t("auth.invalidEmail"), t("auth.invalidEmailMessage"));
       return;
     }
 
@@ -34,7 +36,7 @@ export default function ForgotPasswordScreen() {
       await resetPassword(email.trim());
       setSent(true);
     } catch (err: any) {
-      setErrorMsg(err?.message || "Could not send reset link.");
+      setErrorMsg(err?.message || t("auth.couldNotSendReset"));
     }
   };
 
@@ -58,10 +60,10 @@ export default function ForgotPasswordScreen() {
           className="text-[26px] font-extrabold text-[#1A1233] tracking-tight text-center"
           style={{ fontFamily: Platform.OS === "ios" ? "Georgia" : "serif" }}
         >
-          Forgot Password?
+          {t("auth.forgotPasswordTitle")}
         </Text>
         <Text className="text-[13.5px] text-[#8E8BA8] mt-2 text-center leading-5 px-4">
-          No worries! Enter your email and we'll send you reset instructions.
+          {t("auth.forgotPasswordSubtitle")}
         </Text>
       </View>
 
@@ -69,7 +71,7 @@ export default function ForgotPasswordScreen() {
       <View className="px-7 mt-10">
         {/* Email field */}
         <Text className="text-xs font-bold text-[#1A1233] mb-2 tracking-wide uppercase">
-          Email Address
+          {t("auth.emailAddress")}
         </Text>
         <View className="relative">
           <TextInput
@@ -109,7 +111,7 @@ export default function ForgotPasswordScreen() {
           >
             <Text style={{ fontSize: 18 }}>📧</Text>
             <Text className="text-[13px] text-blue-500   font-semibold flex-1">
-              Reset link sent! Check your inbox.
+              {t("auth.resetLinkSent")}
             </Text>
           </View>
         )}
@@ -134,7 +136,7 @@ export default function ForgotPasswordScreen() {
             className="py-4 items-center"
           >
             <Text className="text-white text-[15px] font-bold tracking-wide">
-              Send Reset Link
+              {t("auth.sendResetLink")}
             </Text>
           </LinearGradient>
         </TouchableOpacity>
@@ -142,10 +144,10 @@ export default function ForgotPasswordScreen() {
         {/* Back to sign in */}
         <View className="flex-row justify-center mt-6">
           <Text className="text-[13px] text-[#8E8BA8]">
-            Remember your password?{" "}
+            {t("auth.rememberPassword")}
           </Text>
           <TouchableOpacity onPress={() => router.push("/(auth)/login")}>
-            <Text className="text-[13px] font-bold text-blue-500">Sign In</Text>
+            <Text className="text-[13px] font-bold text-blue-500">{t("auth.signIn")}</Text>
           </TouchableOpacity>
         </View>
       </View>

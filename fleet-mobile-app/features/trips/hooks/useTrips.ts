@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { tripsApi } from "../services/trips.api";
 import type { Trip, TripFilters } from "../types/trip.types";
 
@@ -11,6 +12,7 @@ interface UseTripsState {
 }
 
 export function useTrips(filters?: TripFilters): UseTripsState {
+  const { t } = useTranslation();
   const [trips, setTrips] = useState<Trip[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -23,13 +25,13 @@ export function useTrips(filters?: TripFilters): UseTripsState {
       setTrips(data);
     } catch (err) {
       const message =
-        err instanceof Error ? err.message : "Failed to load trips";
+        err instanceof Error ? err.message : t("trips.failedToLoad");
       setError(message);
     } finally {
       setIsLoading(false);
       setIsRefreshing(false);
     }
-  }, [filters]);
+  }, [filters, t]);
 
   useEffect(() => {
     setIsLoading(true);

@@ -13,6 +13,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
+import { useTranslation } from "react-i18next";
 import { LoadingSpinner } from "@/shared/components/ui/LoadingSpinner";
 import { TripCard } from "../components/TripCard";
 import { TripEmptyState } from "../components/TripEmptyState";
@@ -50,8 +51,8 @@ const normalizeTrip = (raw: TripLike, index: number): Trip => ({
     raw?.status === "pending"
       ? raw.status
       : "pending",
-  pickupLocation: (typeof raw?.pickupLocation === 'string' ? { address: raw.pickupLocation } : raw?.pickupLocation) ?? { address: raw?.from ?? "" },
-  destinationLocation: (typeof raw?.destinationLocation === 'string' ? { address: raw.destinationLocation } : raw?.destinationLocation) ?? { address: raw?.to ?? "" },
+  pickupLocation: (typeof raw?.pickupLocation === 'string' ? { address: raw.pickupLocation, city: "" } : raw?.pickupLocation) ?? { address: raw?.from ?? "", city: "" },
+  destinationLocation: (typeof raw?.destinationLocation === 'string' ? { address: raw.destinationLocation, city: "" } : raw?.destinationLocation) ?? { address: raw?.to ?? "", city: "" },
 });
 
 // ✅ Guard against data itself being undefined/null
@@ -66,6 +67,7 @@ const normalizeTrips = (items: unknown): Trip[] => {
 export function TripsScreen() {
   const router = useRouter();
   const { isDark } = useAppTheme();
+  const { t } = useTranslation();
  
   const [trips, setTrips] = useState<Trip[]>([]);
   const [filter, setFilter] = useState<FilterOption>("all");
@@ -81,7 +83,7 @@ export function TripsScreen() {
       const normalized = normalizeTrips(apiData);
       setTrips(normalized.length > 0 ? normalized : []);
     } catch (err: any) {
-      setError(err?.message ?? "Failed to load trips");
+      setError(err?.message ?? t("trips.failedToLoad"));
       setTrips([]);
     } finally {
       setIsLoading(false);
@@ -136,11 +138,11 @@ export function TripsScreen() {
       <View className="flex-row justify-between items-center px-5 mb-2 mt-1">
         <Text className="text-[13px] font-bold text-gray-700 dark:text-slate-200 tracking-wide">
           {filter === "all"
-            ? "All trips"
-            : `${filter.charAt(0).toUpperCase() + filter.slice(1)} trips`}
+            ? t("trips.allTrips")
+            : t("trips.filterTrips", { filter: t(`trips.filters.${filter}`) })}
         </Text>
         <Text className="text-[11px] text-gray-400 dark:text-slate-400">
-          {filtered.length} result{filtered.length !== 1 ? "s" : ""}
+          {filtered.length} {filtered.length !== 1 ? t("trips.results") : t("trips.result")}
         </Text>
       </View>
 
@@ -150,7 +152,7 @@ export function TripsScreen() {
           <MaterialIcons name="error-outline" size={16} color="#EF4444" />
           <Text className="text-xs text-red-600 flex-1">{error}</Text>
           <TouchableOpacity onPress={fetchTrips}>
-            <Text className="text-xs font-bold text-red-500">Retry</Text>
+            <Text className="text-xs font-bold text-red-500">{t("shared.retry")}</Text>
           </TouchableOpacity>
         </View>
       )}

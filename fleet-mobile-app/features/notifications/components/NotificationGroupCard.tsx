@@ -1,5 +1,6 @@
 import React from 'react';
 import { View, Text } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import type { NotificationGroup } from '../types/notification.types';
 import { NotificationRow } from './NotificationRow';
 
@@ -9,11 +10,13 @@ interface Props {
 }
 
 export function NotificationGroupCard({ group, onItemPress }: Props) {
+  const { t } = useTranslation();
+
   return (
     <View className="mb-5">
       {/* Group label e.g. TODAY / YESTERDAY */}
       <Text className="text-[11px] font-bold text-gray-400 dark:text-slate-400 tracking-widest mb-2 px-1">
-        {group.group}
+        {t(`notifications.groups.${group.group}`)}
       </Text>
 
       {/* Card containing rows */}

@@ -13,6 +13,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
+import { useTranslation } from "react-i18next";
 import { LoadingSpinner } from "@/shared/components/ui/LoadingSpinner";
 import FilterChips from "../components/FilterChips";
 import ReclamationCard from "../components/ReclamationCard";
@@ -37,9 +38,9 @@ interface Reclamation {
   images: string[];
 }
 
-const toScreenReclamation = (item: any): Reclamation => ({
+const toScreenReclamation = (item: any, untitled: string): Reclamation => ({
   id: String(item.id),
-  title: item.subject ?? "Untitled",
+  title: item.subject ?? untitled,
   description: item.message ?? "",
   status:
     String(item.status ?? "").toLowerCase() === "resolved"
@@ -70,19 +71,16 @@ const toScreenReclamation = (item: any): Reclamation => ({
 // ─── Config ───────────────────────────────────────────────────────
 const STATUS_CONFIG = {
   pending: {
-    label: "Pending",
     badgeClass: "bg-amber-100",
     textClass: "text-amber-700",
     borderColor: "#F59E0B",
   },
   in_progress: {
-    label: "In Progress",
     badgeClass: "bg-blue-100",
     textClass: "text-blue-700",
     borderColor: "#3B82F6",
   },
   resolved: {
-    label: "Resolved",
     badgeClass: "bg-emerald-100",
     textClass: "text-emerald-700",
     borderColor: "#10B981",
@@ -90,29 +88,48 @@ const STATUS_CONFIG = {
 };
 
 const TYPE_CONFIG = {
-  general: { label: "General", icon: "report-problem" },
-  vehicle: { label: "Vehicle", icon: "directions-car" },
-  maintenance: { label: "Maintenance", icon: "build" },
-  trip: { label: "Trip", icon: "timeline" },
-  accident: { label: "Accident", icon: "car-crash" },
-  damage: { label: "Damage", icon: "directions-car" },
-  delay: { label: "Delay", icon: "schedule" },
-  technical: { label: "Technical", icon: "build" },
-  other: { label: "Other", icon: "report-problem" },
+  general: { icon: "report-problem" },
+  vehicle: { icon: "directions-car" },
+  maintenance: { icon: "build" },
+  trip: { icon: "timeline" },
+  accident: { icon: "car-crash" },
+  damage: { icon: "directions-car" },
+  delay: { icon: "schedule" },
+  technical: { icon: "build" },
+  other: { icon: "report-problem" },
 };
-
-const FILTERS = [
-  { key: "all", label: "All" },
-  { key: "pending", label: "Pending" },
-  { key: "in_progress", label: "In Progress" },
-  { key: "resolved", label: "Resolved" },
-];
 
 // ─── Screen ───────────────────────────────────────────────────────
 export default function ReclamationsScreen() {
   const router = useRouter();
   const { isDark } = useAppTheme();
+  const { t } = useTranslation();
   const { getAllReclamations } = useReclamation();
+
+  const statusConfig = {
+    pending: { ...STATUS_CONFIG.pending, label: t("reclamations.status.pending") },
+    in_progress: { ...STATUS_CONFIG.in_progress, label: t("reclamations.status.in_progress") },
+    resolved: { ...STATUS_CONFIG.resolved, label: t("reclamations.status.resolved") },
+  };
+
+  const typeConfig = {
+    general: { ...TYPE_CONFIG.general, label: t("reclamations.types.general") },
+    vehicle: { ...TYPE_CONFIG.vehicle, label: t("reclamations.types.vehicle") },
+    maintenance: { ...TYPE_CONFIG.maintenance, label: t("reclamations.types.maintenance") },
+    trip: { ...TYPE_CONFIG.trip, label: t("reclamations.types.trip") },
+    accident: { ...TYPE_CONFIG.accident, label: t("reclamations.types.accident") },
+    damage: { ...TYPE_CONFIG.damage, label: t("reclamations.types.damage") },
+    delay: { ...TYPE_CONFIG.delay, label: t("reclamations.types.delay") },
+    technical: { ...TYPE_CONFIG.technical, label: t("reclamations.types.technical") },
+    other: { ...TYPE_CONFIG.other, label: t("reclamations.types.other") },
+  };
+
+  const filters = [
+    { key: "all", label: t("reclamations.filters.all") },
+    { key: "pending", label: t("reclamations.filters.pending") },
+    { key: "in_progress", label: t("reclamations.filters.in_progress") },
+    { key: "resolved", label: t("reclamations.filters.resolved") },
+  ];
 
   const [reclamations, setReclamations] = useState<Reclamation[]>([]);
   const [activeFilter, setActiveFilter] = useState<FilterOption>("all");
@@ -125,15 +142,15 @@ export default function ReclamationsScreen() {
     try {
       setError(null);
       const data = await getAllReclamations();
-      setReclamations((data ?? []).map(toScreenReclamation));
+      setReclamations((data ?? []).map((item) => toScreenReclamation(item, t("reclamations.untitled"))));
     } catch (err: any) {
-      setError(err?.message ?? "Failed to load reclamations");
+      setError(err?.message ?? t("reclamations.failedToLoad"));
     } finally {
       // ✅ Always runs — turns off both spinner and pull-to-refresh
       setIsLoading(false);
       setIsRefreshing(false);
     }
-  }, [getAllReclamations]);
+  }, [getAllReclamations, t]);
 
   // Re-fetch every time this tab is focused
   useFocusEffect(
@@ -175,7 +192,7 @@ export default function ReclamationsScreen() {
       {/* ── Filters ── */}
       <View style={{ height: 52 }}>
         <FilterChips
-          filters={FILTERS}
+          filters={filters}
           activeFilter={activeFilter}
           setActiveFilter={setActiveFilter}
         />
@@ -193,7 +210,7 @@ export default function ReclamationsScreen() {
           <MaterialIcons name="error-outline" size={16} color="#EF4444" />
           <Text className="text-xs text-red-600 flex-1">{error}</Text>
           <TouchableOpacity onPress={fetchReclamations}>
-            <Text className="text-xs font-bold text-red-500">Retry</Text>
+            <Text className="text-xs font-bold text-red-500">{t("shared.retry")}</Text>
           </TouchableOpacity>
         </View>
       )}
@@ -215,7 +232,7 @@ export default function ReclamationsScreen() {
           <View className="items-center py-16">
             <MaterialIcons name="inbox" size={52} color="#D1D5DB" />
             <Text className="text-sm text-gray-400 dark:text-slate-400 mt-3">
-              No reclamations found
+              {t("reclamations.noReclamationsFound")}
             </Text>
           </View>
         ) : (
@@ -223,8 +240,8 @@ export default function ReclamationsScreen() {
             <ReclamationCard
               key={item.id}
               item={item}
-              config={STATUS_CONFIG}
-              typeConfig={TYPE_CONFIG}
+              config={statusConfig}
+              typeConfig={typeConfig}
               onPress={() =>
                 router.push({
                   pathname: "/reclamations/[id]",

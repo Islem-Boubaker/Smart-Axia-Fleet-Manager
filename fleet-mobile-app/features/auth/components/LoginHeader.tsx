@@ -1,7 +1,10 @@
 import React from "react";
 import { Image, Platform, Text, View } from "react-native";
+import { useTranslation } from "react-i18next";
 
 function LoginHeader() {
+  const { t } = useTranslation();
+
   return (
     <View>
       {/* Title */}
@@ -18,11 +21,11 @@ function LoginHeader() {
           className="text-[28px] font-extrabold text-[#1A1233] tracking-tight mb-3"
           style={{ fontFamily: Platform.OS === "ios" ? "Georgia" : "serif" }}
         >
-          Sign In
+          {t("auth.login.title")}
         </Text>
 
         <Text className="text-[13.5px] text-[#8E8BA8] mt-1.5">
-          Hi! Welcome back. Please sign in to continue.
+          {t("auth.login.subtitle")}
         </Text>
       </View>
     </View>

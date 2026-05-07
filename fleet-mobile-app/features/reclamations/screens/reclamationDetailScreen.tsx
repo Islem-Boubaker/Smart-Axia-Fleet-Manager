@@ -14,6 +14,8 @@ import {
   Platform,
 } from "react-native";
 import { useReclamation } from "../hooks/useReclamation";
+import { useTranslation } from "react-i18next";
+import { getStatusTranslationKey } from "@/shared/utils/translateStatus";
 
 const { width } = Dimensions.get("window");
 const IMAGE_WIDTH = width;
@@ -47,28 +49,24 @@ type ReclamationDetailScreenProps = {
 
 const STATUS_CONFIG: Record<
   ReclamationStatus,
-  { label: string; bg: string; text: string; dot: string }
+  { bg: string; text: string; dot: string }
 > = {
   pending: {
-    label: "Pending",
     bg: "bg-amber-100",
     text: "text-amber-700",
     dot: "bg-amber-500",
   },
   resolved: {
-    label: "Resolved",
     bg: "bg-green-100",
     text: "text-green-700",
     dot: "bg-green-500",
   },
   rejected: {
-    label: "Rejected",
     bg: "bg-red-100",
     text: "text-red-700",
     dot: "bg-red-500",
   },
   in_progress: {
-    label: "In Progress",
     bg: "bg-blue-100",
     text: "text-blue-700",
     dot: "bg-blue-500",
@@ -116,6 +114,7 @@ function parseRouteReclamation(
 // ─── Status Badge ────────────────────────────────────────────────────────────
 
 function StatusBadge({ status }: { status: ReclamationStatus }) {
+  const { t } = useTranslation();
   const config = STATUS_CONFIG[status] ?? STATUS_CONFIG.pending;
   return (
     <View
@@ -123,7 +122,7 @@ function StatusBadge({ status }: { status: ReclamationStatus }) {
     >
       <View className={`w-2 h-2 rounded-full mr-2 ${config.dot}`} />
       <Text className={`text-xs font-semibold ${config.text}`}>
-        {config.label}
+        {t(getStatusTranslationKey(status))}
       </Text>
     </View>
   );
@@ -183,6 +182,7 @@ export default function ReclamationDetailScreen({
   navigation,
 }: ReclamationDetailScreenProps) {
   const { getReclamationDetail } = useReclamation();
+  const { t } = useTranslation();
 
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -274,7 +274,7 @@ export default function ReclamationDetailScreen({
       setError(
         err instanceof Error
           ? err.message
-          : "Failed to load reclamation details",
+            : t("reclamations.failedToLoadDetails"),
       );
     } finally {
       setIsLoading(false);
@@ -317,7 +317,7 @@ export default function ReclamationDetailScreen({
           style={{ flex: 1, textAlign: "center" }}
           numberOfLines={1}
         >
-          Reclamation Detail
+          {t("reclamations.detailTitle")}
         </Text>
 
         {/* Right: refresh button — fixed width to mirror left side */}
@@ -347,7 +347,7 @@ export default function ReclamationDetailScreen({
             style={{ borderStyle: "dashed" }}
           >
             <Text className="text-3xl mb-1">📋</Text>
-            <Text className="text-xs text-slate-400 dark:text-slate-300">No attachments</Text>
+            <Text className="text-xs text-slate-400 dark:text-slate-300">{t("reclamations.noAttachments")}</Text>
           </View>
         )}
 
@@ -373,17 +373,17 @@ export default function ReclamationDetailScreen({
             <View className="mb-4 rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-900">
               {reclamation.type ? (
                 <Text className="mb-2 text-xs font-bold uppercase tracking-widest text-slate-400">
-                  {String(reclamation.type).replace(/_/g, " ")}
+                  {t(`reclamations.types.${reclamation.type}`, { defaultValue: String(reclamation.type).replace(/_/g, " ") })}
                 </Text>
               ) : null}
               {reclamation.driverName ? (
                 <Text className="text-sm font-semibold text-slate-700 dark:text-slate-200">
-                  Driver: {reclamation.driverName}
+                  {t("reclamations.driver")}: {reclamation.driverName}
                 </Text>
               ) : null}
               {vehicleContext ? (
                 <Text className="mt-1 text-sm font-semibold text-slate-700 dark:text-slate-200">
-                  Vehicle: {vehicleContext}
+                  {t("reclamations.vehicle")}: {vehicleContext}
                 </Text>
               ) : null}
             </View>
@@ -394,7 +394,7 @@ export default function ReclamationDetailScreen({
             className="text-lg font-semibold text-slate-400 dark:text-slate-400 uppercase mb-2"
             style={{ letterSpacing: 1 }}
           >
-            Description
+            {t("reclamations.description")}
           </Text>
           <Text className="text-base text-slate-700 dark:text-slate-300 leading-6 ">{message}</Text>
         </View>

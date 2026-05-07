@@ -4,6 +4,7 @@ import { MaterialIcons } from "@expo/vector-icons";
 import { useFocusEffect, useRouter } from "expo-router";
 import * as Location from "expo-location";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useTranslation } from "react-i18next";
 
 import UserAvatar from "@/shared/components/ui/userAvatar";
 import { useAppTheme } from "@/shared/theme/ThemeProvider";
@@ -134,15 +135,27 @@ const refreshLocationLabel = async (onInterimLabel?: (label: string) => void) =>
 export default function MainTopHeader() {
   const router = useRouter();
   const { isDark } = useAppTheme();
+  const { t } = useTranslation();
   const [unreadCount, setUnreadCount] = useState(0);
   const [currentLocation, setCurrentLocation] = useState<string>(
     cachedLocationLabel || "Locating...",
   );
+  const locationLabel =
+    currentLocation === "Locating..."
+      ? t("shared.locating")
+      : currentLocation === "Unknown location"
+        ? t("shared.unknownLocation")
+        : currentLocation === "Location unavailable"
+          ? t("shared.locationUnavailable")
+          : currentLocation === "Location permission denied"
+            ? t("shared.locationPermissionDenied")
+            : currentLocation;
 
   const fetchUnreadCount = useCallback(async () => {
     try {
       const res = await api.get<UnreadResponse>("/notifications/unread-count");
-      const count = res.data?.count ?? res.data?.data?.count ?? 0;
+      const payload = res.data as { count?: number; data?: { count?: number } };
+      const count = payload.count ?? payload.data?.count ?? 0;
       setUnreadCount(Number.isFinite(count) ? count : 0);
     } catch {
       setUnreadCount(0);
@@ -173,9 +186,9 @@ export default function MainTopHeader() {
     <View className="flex-row justify-between px-5 py-3 items-center">
       <View>
         <Text className="text-[11px] font-semibold tracking-wide text-gray-400 dark:text-slate-400">
-          Current Location
+          {t("home.currentLocation")}
         </Text>
-        <Text className="font-extrabold text-gray-900 dark:text-gray-50">{currentLocation}</Text>
+        <Text className="font-extrabold text-gray-900 dark:text-gray-50">{locationLabel}</Text>
       </View>
 
       <View className="flex-row gap-3 justify-center items-center">
