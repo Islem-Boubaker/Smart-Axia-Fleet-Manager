@@ -21,6 +21,12 @@
     "showing_one": "Affichage de {{count}} résultat",
     "showing_other": "Affichage de {{count}} résultats",
     "prev": "Page précédente",
-    "next": "Page suivante"
+    "next": "Page suivante",
+    "rowActions": "Actions de la ligne",
+    "viewDetails": "Voir les détails",
+    "editRow": "Modifier",
+    "deleteRow": "Supprimer",
+    "cancelAction": "Annuler",
+    "startAction": "Démarrer"
   }
 }

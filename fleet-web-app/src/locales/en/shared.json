@@ -21,6 +21,12 @@
     "showing_one": "Showing {{count}} result",
     "showing_other": "Showing {{count}} results",
     "prev": "Previous page",
-    "next": "Next page"
+    "next": "Next page",
+    "rowActions": "Row actions",
+    "viewDetails": "View Details",
+    "editRow": "Edit",
+    "deleteRow": "Delete",
+    "cancelAction": "Cancel",
+    "startAction": "Start"
   }
 }

@@ -21,6 +21,12 @@
     "showing_one": "عرض {{count}} نتيجة",
     "showing_other": "عرض {{count}} نتائج",
     "prev": "الصفحة السابقة",
-    "next": "الصفحة التالية"
+    "next": "الصفحة التالية",
+    "rowActions": "إجراءات الصف",
+    "viewDetails": "عرض التفاصيل",
+    "editRow": "تعديل",
+    "deleteRow": "حذف",
+    "cancelAction": "إلغاء",
+    "startAction": "بدء"
   }
 }

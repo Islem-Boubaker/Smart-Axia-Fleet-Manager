@@ -1,4 +1,4 @@
-import { AppDataTable, AppRowActions, AppStatusBadge, AppTd, AppTr, Button } from '../../../shared/components';
+import { AppDataTable, AppRowActions, AppStatusBadge, AppTd, AppTr } from '../../../shared/components';
 import { useTranslation } from 'react-i18next';
 import type { Trip } from '../../../types';
 
@@ -83,19 +83,16 @@ const TripsList = ({ trips, dark = false, actionTripId = null, onViewDetails, on
             </AppTd>
 
             <AppTd>
-              <div className="flex flex-wrap items-center gap-2">
-                {(trip.status === 'scheduled' || trip.status === 'ongoing') && (
-                  <Button type="button" size="sm" variant="secondary" onClick={() => onCancel?.(trip.id)} disabled={isBusy}>
-                    {t('common.cancel')}
-                  </Button>
-                )}
-
-                <AppRowActions
-                  onView={onViewDetails ? () => onViewDetails(trip) : undefined}
-                  onEdit={onEdit ? () => onEdit(trip) : undefined}
-                  disabled={isBusy}
-                />
-              </div>
+              <AppRowActions
+                onView={onViewDetails ? () => onViewDetails(trip) : undefined}
+                onEdit={onEdit ? () => onEdit(trip) : undefined}
+                onCancel={
+                  onCancel && (trip.status === 'scheduled' || trip.status === 'ongoing')
+                    ? () => onCancel(trip.id)
+                    : undefined
+                }
+                disabled={isBusy}
+              />
             </AppTd>
           </AppTr>
         );

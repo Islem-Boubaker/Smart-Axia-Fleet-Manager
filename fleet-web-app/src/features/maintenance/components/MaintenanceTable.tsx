@@ -1,6 +1,6 @@
 import { memo, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { AppDataTable, AppRowActions, AppStatusBadge, AppTd, AppTr, Button } from '../../../shared/components';
+import { AppDataTable, AppRowActions, AppStatusBadge, AppTd, AppTr } from '../../../shared/components';
 import type { Maintenance } from '../../../types';
 
 interface MaintenanceTableProps {
@@ -102,14 +102,20 @@ const MaintenanceTable = memo(({ data, dark = false, onUpdate, onTransition, onE
           <AppTd className={dark ? 'text-slate-300' : 'text-slate-600'}>{record.cost}</AppTd>
 
           <AppTd>
-            <div className="flex items-center gap-2">
-              {(record.status === 'scheduled' || record.status === 'pending' || record.status === 'in_progress') && (
-                <Button type="button" size="sm" variant="secondary" onClick={() => handleTransition(record)}>
-                  {getActionLabel(record.status)}
-                </Button>
-              )}
-              <AppRowActions onEdit={() => onEdit?.(record)} onDelete={() => onRemove?.(record)} />
-            </div>
+            <AppRowActions
+              onStart={
+                record.status === 'scheduled' || record.status === 'pending' || record.status === 'in_progress'
+                  ? () => handleTransition(record)
+                  : undefined
+              }
+              startLabel={
+                record.status === 'scheduled' || record.status === 'pending' || record.status === 'in_progress'
+                  ? getActionLabel(record.status)
+                  : undefined
+              }
+              onEdit={() => onEdit?.(record)}
+              onDelete={() => onRemove?.(record)}
+            />
           </AppTd>
         </AppTr>
       ))}
