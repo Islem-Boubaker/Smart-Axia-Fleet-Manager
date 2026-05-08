@@ -2,13 +2,13 @@
 import { Navigate, Outlet } from "react-router-dom";
 import { useSelector } from "react-redux";
 import { type RootState} from "../store";
-import { LogoLoadingScreen } from "../shared/components";
+import { SimpleLoader } from "../shared/components";
 
 export default function PublicRoute() {
   const { isAuthenticated, loading } = useSelector((state: RootState) => state.auth);
 
   if (loading) {
-    return <LogoLoadingScreen />;
+    return <SimpleLoader />;
   }
 
   // Redirect to dashboard if already authenticated

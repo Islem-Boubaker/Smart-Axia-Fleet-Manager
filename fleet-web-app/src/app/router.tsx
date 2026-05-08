@@ -4,7 +4,7 @@ import { lazy, Suspense } from "react";
 import { ROUTES } from "../utils/constants";
 import ProtectedRoute from "./ProtectedRoute";
 import PublicRoute from "./PublicRoute";
-import { LogoLoadingScreen } from "../shared/components";
+import { SimpleLoader } from "../shared/components";
 
 // Lazy load components
 const SignIn = lazy(() => import("../features/auth/pages/Signin"));
@@ -36,7 +36,7 @@ const SettingsPage = lazy(
 export default function AppRouter() {
   return (
     <BrowserRouter>
-      <Suspense fallback={<LogoLoadingScreen />}>
+      <Suspense fallback={<SimpleLoader />}>
         <Routes>
           {/* Root redirect */}
           <Route path="/" element={<Navigate to="/signin" replace />} />

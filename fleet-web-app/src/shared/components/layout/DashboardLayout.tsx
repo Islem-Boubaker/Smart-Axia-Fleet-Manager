@@ -61,7 +61,7 @@ export const DashboardLayout = memo(() => {
               : 'overflow-y-auto overflow-x-hidden px-1 pb-2 sm:px-2'
           } ${dark ? 'text-slate-100' : 'text-slate-900'}`}
         >
-          <div className={isReportsPage ? 'h-full w-full' : 'mx-auto w-full max-w-[1480px]'}>
+          <div className={isReportsPage ? 'h-full w-full' : 'w-full'}>
             <Outlet context={{ dark, setDark }} />
           </div>
         </main>
