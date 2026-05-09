@@ -17,34 +17,6 @@ function I18nDocumentSync() {
   return null;
 }
 
-function AuthBootstrap() {
-  const dispatch = useAppDispatch();
-
-  useEffect(() => {
-    let active = true;
-
-    const bootstrap = async () => {
-      dispatch(setLoading(true));
-      try {
-        const user = await authAPI.getMe();
-        if (!active) return;
-        dispatch(setUser(user));
-      } catch {
-        if (!active) return;
-        dispatch(clearUser());
-      } finally {
-        if (active) dispatch(setLoading(false));
-      }
-    };
-
-    bootstrap();
-    return () => {
-      active = false;
-    };
-  }, [dispatch]);
-
-  return null;
-}
 
 export default function App() {
   const dispatch = useAppDispatch();
