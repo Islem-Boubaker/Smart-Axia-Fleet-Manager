@@ -78,6 +78,7 @@
     "dateAppliedExpiry": "Date Applied / Expiry",
     "assignedVehicle": "Assigned Vehicle",
     "selectVehicle": "Select vehicle",
+    "selectDriver": "Select a driver",
     "activeAlert": "Active alert",
     "onTrip": "On trip",
     "available": "Available",

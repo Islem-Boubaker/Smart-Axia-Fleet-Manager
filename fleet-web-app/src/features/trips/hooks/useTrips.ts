@@ -83,8 +83,12 @@ export const useTrips = (filters: TripFilters = {}) => {
   const isLoading = tripsQuery.isLoading || createMutation.isPending;
   const error = actionError ?? (tripsQuery.error ? buildApiErrorMessage(tripsQuery.error, 'Failed to fetch trips.') : null);
 
+  const sortedTrips = [...(tripsQuery.data?.items ?? [])].sort(
+    (a, b) => new Date(b.startTime as string).getTime() - new Date(a.startTime as string).getTime()
+  ) as Trip[];
+
   return {
-    trips: (tripsQuery.data?.items ?? []) as Trip[],
+    trips: sortedTrips,
     meta: tripsQuery.data?.meta ?? fallbackMeta,
     isLoading,
     error,

@@ -620,6 +620,7 @@ export const getTrips = async (filters = {}, pagination = {}, callerRole, caller
     offset,
     order: [["startTime", "DESC"]],
     include: [...tripRelationInclude],
+    subQuery: false,
   };
 
   if (includeStops) {

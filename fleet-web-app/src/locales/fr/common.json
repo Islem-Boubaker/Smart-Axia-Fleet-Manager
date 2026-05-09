@@ -78,6 +78,7 @@
     "dateAppliedExpiry": "Date délivrance / expiration",
     "assignedVehicle": "Véhicule assigné",
     "selectVehicle": "Sélectionner un véhicule",
+    "selectDriver": "Sélectionner un conducteur",
     "activeAlert": "Alerte active",
     "onTrip": "En trajet",
     "available": "Disponible",

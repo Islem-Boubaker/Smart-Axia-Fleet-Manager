@@ -40,4 +40,12 @@ i18n
     react: { useSuspense: false },
   });
 
+// Restore document direction on startup so RTL persists across page reloads
+const restoreDir = () => {
+  const lang = (localStorage.getItem('i18nextLng') ?? 'en').split('-')[0];
+  document.documentElement.lang = lang;
+  document.documentElement.dir = lang === 'ar' ? 'rtl' : 'ltr';
+};
+restoreDir();
+
 export default i18n;

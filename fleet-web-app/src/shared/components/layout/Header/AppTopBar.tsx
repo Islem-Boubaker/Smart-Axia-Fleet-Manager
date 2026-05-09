@@ -40,7 +40,7 @@ export const AppTopBar = memo(({ dark, setDark, onMenuClick }: AppTopBarProps) =
           dark
             ? 'border-cyan-200/10 bg-[#0F1B2D]/92 shadow-[0_20px_70px_rgba(0,0,0,0.24),inset_0_1px_0_rgba(255,255,255,0.04)]'
             : 'border-white/90 bg-white/95'
-        }`}
+        } ${isRtl ? 'flex-row-reverse' : ''}`}
       >
         <button
           type="button"
@@ -53,7 +53,7 @@ export const AppTopBar = memo(({ dark, setDark, onMenuClick }: AppTopBarProps) =
           <FiMenu className="w-5 h-5" />
         </button>
 
-        <div className={`min-w-0 ${isRtl ? 'text-right' : ''}`}>
+        <div className={`flex-1 min-w-0 ${isRtl ? 'text-right' : ''}`}>
           <h1 className={`truncate text-2xl font-black tracking-tight ${dark ? 'text-slate-50' : 'text-slate-950'}`}>
             {greeting}, {user?.name?.split(' ')[0] || 'there'}
           </h1>
@@ -62,7 +62,7 @@ export const AppTopBar = memo(({ dark, setDark, onMenuClick }: AppTopBarProps) =
           </p>
         </div>
 
-        <div className={`flex items-center gap-1 sm:gap-2 ${isRtl ? 'mr-auto flex-row-reverse' : 'ml-auto'}`}>
+        <div className="flex items-center gap-1 sm:gap-2">
           <LanguageSelector dark={dark} />
 
           <div

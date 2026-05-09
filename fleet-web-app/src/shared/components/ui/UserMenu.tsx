@@ -67,7 +67,7 @@ const UserMenu = () => {
       >
         {/* Mobile/tablet: avatar only */}
         <span className="flex lg:hidden p-1 sm:p-1.5">
-          <UserAvatar />
+          <UserAvatar compact />
         </span>
 
         {/* Desktop: avatar + chevron */}
