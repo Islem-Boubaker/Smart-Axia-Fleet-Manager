@@ -55,7 +55,7 @@ export interface TripLiveLocation {
   tripId: string;
   userId: string;
   driver?: {
-    id: string;
+    id?: string;
     name?: string;
     email?: string;
   } | null;
@@ -65,20 +65,8 @@ export interface TripLiveLocation {
   speed?: number | null;
   heading?: number | null;
   recordedAt: string;
-  isStale?: boolean;
-}
-
-export interface TripLiveLocation {
-  latitude: number;
-  longitude: number;
-  recordedAt?: string;
   source?: string;
-  accuracy?: number | null;
   isStale?: boolean;
-  driver?: {
-    id?: string;
-    name?: string;
-  } | null;
 }
 
 export const tripsService = {

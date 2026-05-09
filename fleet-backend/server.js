@@ -5,7 +5,19 @@ import "./models/index.js";
 import { closeIO, initSocket } from "./config/socket.js";
 import "./events/notification.handlers.js";
 
-const PORT = Number(process.env.PORT);
+const REQUIRED_ENV = [
+  'DATABASE_URL',
+  'JWT_SECRET',
+  'JWT_REFRESH_SECRET',
+  'REDIS_URL',
+];
+const missing = REQUIRED_ENV.filter((k) => !process.env[k]);
+if (missing.length > 0) {
+  console.error(`❌ Missing required environment variables: ${missing.join(', ')}`);
+  process.exit(1);
+}
+
+const PORT = Number(process.env.PORT) || 8080;
 const ENV = process.env.NODE_ENV || "development";
 const MAX_PORT_RETRIES = 10;
 

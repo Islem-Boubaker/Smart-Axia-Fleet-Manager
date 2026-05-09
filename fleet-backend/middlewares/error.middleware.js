@@ -1,4 +1,9 @@
 export const errorHandler = (err, req, res, _next) => {
+  const statusCode = err.statusCode || err.status || 500;
+  if (statusCode >= 500) {
+    console.error(`[ERROR] ${req.method} ${req.path}`, err);
+  }
+
   // ── Sequelize validation errors (e.g. allowNull, isEmail) ──
   if (err.name === 'SequelizeValidationError') {
     const messages = err.errors.map((e) => e.message);
@@ -27,7 +32,6 @@ export const errorHandler = (err, req, res, _next) => {
   }
 
   // ── Application errors with an explicit statusCode ──
-  const statusCode = err.statusCode || 500;
   res.status(statusCode).json({
     success: false,
     message: statusCode === 500 ? 'Internal server error' : err.message,
