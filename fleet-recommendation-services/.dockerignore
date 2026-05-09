@@ -1,0 +1,28 @@
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.env
+.env.*
+
+# Training data — not needed at runtime
+driver_data.csv
+vehicle_data.csv
+
+# Training script — not needed at runtime
+train.py
+
+# Git internals
+.git/
+.gitignore
+
+# Docs
+README.md
+README-DEPLOY.md
+MODEL_GOAL.md
+
+# IDE / OS artefacts
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

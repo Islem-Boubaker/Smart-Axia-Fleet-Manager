@@ -5,37 +5,32 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
-const {
-  JWT_SECRET,
-  JWT_REFRESH_SECRET,
-  JWT_EXPIRES_IN ,
-  JWT_REFRESH_EXPIRES_IN,
-} = process.env;
-
-
+const getSecret = (name) => {
+  const value = process.env[name];
+  if (!value) throw new Error(`Missing required environment variable: ${name}`);
+  return value;
+};
 
 export const generateAccessToken = (payload) => {
-  return jwt.sign(payload, JWT_SECRET, {
-    expiresIn: JWT_EXPIRES_IN,
+  return jwt.sign(payload, getSecret('JWT_SECRET'), {
+    expiresIn: process.env.JWT_EXPIRES_IN || '30m',
     algorithm: 'HS256',
   });
 };
 
 export const generateRefreshToken = (payload) => {
-  return jwt.sign(payload, JWT_REFRESH_SECRET, {
-    expiresIn: JWT_REFRESH_EXPIRES_IN,
+  return jwt.sign(payload, getSecret('JWT_REFRESH_SECRET'), {
+    expiresIn: process.env.JWT_REFRESH_EXPIRES_IN || '7d',
     algorithm: 'HS256',
   });
 };
 
-
-
 export const verifyAccessToken = (token) => {
-  return jwt.verify(token, JWT_SECRET, { algorithms: ['HS256'] });
+  return jwt.verify(token, getSecret('JWT_SECRET'), { algorithms: ['HS256'] });
 };
 
 export const verifyRefreshToken = (token) => {
-  return jwt.verify(token, JWT_REFRESH_SECRET, { algorithms: ['HS256'] });
+  return jwt.verify(token, getSecret('JWT_REFRESH_SECRET'), { algorithms: ['HS256'] });
 };
 
 export const decodeToken = (token) => {

@@ -1,9 +1,10 @@
 import json
+import os
 import sys
 import joblib
 import pandas as pd
 
-MODEL_PATH = "models/vehicle_pipeline.pkl"
+MODEL_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "models", "vehicle_pipeline.pkl")
 FEATURE_ORDER = [
     "mileage",
     "age",

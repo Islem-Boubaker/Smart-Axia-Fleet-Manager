@@ -11,21 +11,28 @@ import os
 app = Flask(__name__)
 CORS(app)
 
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+
 # ─── Load models on startup ───────────────────────────────────
 driver_model = DriverModel()
 vehicle_model = VehicleModel()
 
-try:
-    driver_model.load('models/driver_model.pkl')
-    print("Driver model loaded")
-except Exception as e:
-    print(f"Driver model not found: {e}. Run python train.py first.")
+_driver_load_error: str | None = None
+_vehicle_load_error: str | None = None
 
 try:
-    vehicle_model.load('models/vehicle_model.pkl')
-    print("Vehicle model loaded")
+    driver_model.load(os.path.join(BASE_DIR, 'models', 'driver_model.pkl'))
+    print("✅ Driver model loaded")
 except Exception as e:
-    print(f"Vehicle model not found: {e}. Run python train.py first.")
+    _driver_load_error = str(e)
+    print(f"❌ Driver model failed to load: {e}")
+
+try:
+    vehicle_model.load(os.path.join(BASE_DIR, 'models', 'vehicle_model.pkl'))
+    print("✅ Vehicle model loaded")
+except Exception as e:
+    _vehicle_load_error = str(e)
+    print(f"❌ Vehicle model failed to load: {e}")
 
 
 # ─── Root ─────────────────────────────────────────────────────
@@ -47,10 +54,16 @@ def index():
 # ─── Health ───────────────────────────────────────────────────
 @app.route('/health', methods=['GET'])
 def health():
-    return jsonify({
-        'status': 'healthy',
-        'model_loaded': driver_model.model is not None and vehicle_model.model is not None,
-    })
+    driver_ok = driver_model.model is not None
+    vehicle_ok = vehicle_model.model is not None
+    payload = {
+        'status': 'ok' if driver_ok and vehicle_ok else 'degraded',
+        'models': {
+            'driver': 'loaded' if driver_ok else f'error: {_driver_load_error}',
+            'vehicle': 'loaded' if vehicle_ok else f'error: {_vehicle_load_error}',
+        },
+    }
+    return jsonify(payload), 200 if driver_ok and vehicle_ok else 503
 
 
 # ─── Predict single driver ────────────────────────────────────
@@ -106,5 +119,5 @@ def batch_predict_vehicles():
 
 
 if __name__ == '__main__':
-    port = int(os.getenv('PORT', 5000))
-    app.run(host='0.0.0.0', port=port, debug=True)
+    port = int(os.getenv('PORT', 8000))
+    app.run(host='0.0.0.0', port=port, debug=False)
