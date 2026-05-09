@@ -42,5 +42,5 @@ jobs:
       - name: Deploy to Azure App Service
         uses: azure/webapps-deploy@v3
         with:
-          app-name: 'smart-axia-fleet-recommendation'
+          app-name: 'fleet-recommendation-services'
           images: '${{ secrets.ACR_LOGIN_SERVER }}/fleet-ml:${{ github.sha }}'
