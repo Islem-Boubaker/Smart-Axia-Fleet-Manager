@@ -148,6 +148,13 @@ def main():
     print("  ✓ models/vehicle_model.pkl")
 
     print("\nAll models ready.")
+    
+    
+    
+    
+    
+    
+    
 
 
 if __name__ == "__main__":
