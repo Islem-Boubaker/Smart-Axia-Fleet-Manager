@@ -207,6 +207,7 @@ const TripForm = ({ vehicles, drivers, dark = false, isSubmitting = false, onSub
   const [recommendations, setRecommendations] = useState<{ drivers: Driver[]; vehicles: Vehicle[] } | null>(null);
   const [isFetchingRecs, setIsFetchingRecs] = useState(false);
   const endpointLookupTimeoutsRef = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
+  const startLookupTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
 
   const sortedVehicles = useMemo(
@@ -521,6 +522,39 @@ const TripForm = ({ vehicles, drivers, dark = false, isSubmitting = false, onSub
     }, 550);
   };
 
+  const handleStartLocationChange = (label: string) => {
+    onFieldChange('startLocation', label);
+    setMapError(null);
+
+    if (startLookupTimeoutRef.current) clearTimeout(startLookupTimeoutRef.current);
+
+    if (label.trim().length < 2) {
+      setStartPoint(null);
+      return;
+    }
+
+    startLookupTimeoutRef.current = setTimeout(async () => {
+      try {
+        setIsResolvingLocation(true);
+        const point = await resolvePointFromAddress(label);
+        if (!point) {
+          setMapError(t('trips.form.tech.couldNotLocateOnMap', { label }));
+          setStartPoint(null);
+          return;
+        }
+        setStartPoint(point);
+        setMapCenter(point);
+        setErrors((prev) => ({ ...prev, startLocation: undefined }));
+      } catch (error) {
+        const message = error instanceof Error ? error.message : t('trips.form.tech.couldNotResolvePoint');
+        setMapError(message);
+        setStartPoint(null);
+      } finally {
+        setIsResolvingLocation(false);
+      }
+    }, 550);
+  };
+
   const handleMapClick = async (event: LeafletMouseEvent) => {
     const lat = event.latlng.lat;
     const lng = event.latlng.lng;
@@ -742,6 +776,7 @@ const TripForm = ({ vehicles, drivers, dark = false, isSubmitting = false, onSub
   useEffect(() => {
     return () => {
       Object.values(endpointLookupTimeoutsRef.current).forEach((timeoutId) => clearTimeout(timeoutId));
+      if (startLookupTimeoutRef.current) clearTimeout(startLookupTimeoutRef.current);
     };
   }, []);
 
@@ -853,7 +888,7 @@ const TripForm = ({ vehicles, drivers, dark = false, isSubmitting = false, onSub
         <Input
           label={t('trips.form.startLocation')}
           value={values.startLocation}
-          onChange={(e) => onFieldChange('startLocation', e.target.value)}
+          onChange={(e) => handleStartLocationChange(e.target.value)}
           error={errors.startLocation}
           placeholder={t('trips.form.startPlaceholder')}
         />
