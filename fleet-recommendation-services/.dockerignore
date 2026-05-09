@@ -5,12 +5,9 @@ __pycache__/
 .env
 .env.*
 
-# Training data — not needed at runtime
-driver_data.csv
-vehicle_data.csv
-
-# Training script — not needed at runtime
-train.py
+# Pre-trained pkl files are not needed — Docker builds them via train.py
+models/*.pkl
+models/*.joblib
 
 # Git internals
 .git/

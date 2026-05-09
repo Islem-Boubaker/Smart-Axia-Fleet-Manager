@@ -1,20 +1,23 @@
-# ─── Stage 1: builder ─────────────────────────────────────────────────────────
+# ─── Stage 1: builder — install deps + train models ──────────────────────────
 FROM python:3.11-slim AS builder
 
 WORKDIR /build
 
-# Install only what's needed to compile wheels (no caching bloat in final image)
 RUN apt-get update && apt-get install -y --no-install-recommends \
     gcc \
     && rm -rf /var/lib/apt/lists/*
 
 COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
 
-# Install into an isolated prefix so we can COPY just this tree into production
-RUN pip install --no-cache-dir --prefix=/install -r requirements.txt
+# Copy training resources (CSVs + scripts needed at build time only)
+COPY train.py model.py driver_data.csv vehicle_data.csv ./
+
+# Train all four models; outputs land in /build/models/
+RUN python train.py
 
 
-# ─── Stage 2: production ──────────────────────────────────────────────────────
+# ─── Stage 2: production — lean runtime image ─────────────────────────────────
 FROM python:3.11-slim AS production
 
 # Non-root user for security
@@ -23,16 +26,16 @@ RUN groupadd --system --gid 1001 appgroup \
 
 WORKDIR /app
 
-# Pull only the installed packages from the builder stage
-COPY --from=builder /install /usr/local
+# Copy only the installed packages from the builder (no gcc, no CSVs, no train.py)
+COPY --from=builder /usr/local/lib /usr/local/lib
+COPY --from=builder /usr/local/bin /usr/local/bin
 
-# Copy application source (no CSVs, no train.py — see .dockerignore)
+# Copy application source
 COPY app.py model.py predict_driver.py predict_vehicle.py ./
 
-# Bake model artefacts into the image (required — Azure cannot mount volumes)
-COPY models/ ./models/
+# Copy the freshly-trained model artefacts (baked into the image)
+COPY --from=builder /build/models ./models/
 
-# Ownership so the non-root user can write to /app if needed (e.g. temp files)
 RUN chown -R appuser:appgroup /app
 
 USER appuser

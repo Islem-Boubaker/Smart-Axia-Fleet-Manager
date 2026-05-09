@@ -111,23 +111,43 @@ def main():
     print("Training Fleet Recommendation Pipelines\n")
     os.makedirs("models", exist_ok=True)
 
+    # ── Driver ──────────────────────────────────────────────────────────────────
     print("Loading driver training data from driver_data.csv...")
     driver_df_raw = pd.read_csv("driver_data.csv")
+
+    # sklearn Pipeline (used by predict_driver.py)
     driver_df = _build_driver_training_frame(driver_df_raw)
     driver_pipeline = _build_pipeline(DRIVER_NUMERIC, DRIVER_CATEGORICAL)
     driver_pipeline.fit(driver_df[DRIVER_FEATURES], driver_df["score"])
     joblib.dump(driver_pipeline, "models/driver_pipeline.pkl")
-    print("Driver pipeline trained & saved -> models/driver_pipeline.pkl")
+    print("  ✓ models/driver_pipeline.pkl")
 
+    # Custom DriverModel (used by app.py / Flask API)
+    from model import DriverModel
+    dm = DriverModel()
+    dm.train(driver_df_raw)
+    dm.save("models/driver_model.pkl")
+    print("  ✓ models/driver_model.pkl")
+
+    # ── Vehicle ─────────────────────────────────────────────────────────────────
     print("Loading vehicle training data from vehicle_data.csv...")
     vehicle_df_raw = pd.read_csv("vehicle_data.csv")
+
+    # sklearn Pipeline (used by predict_vehicle.py)
     vehicle_df = _build_vehicle_training_frame(vehicle_df_raw)
     vehicle_pipeline = _build_pipeline(VEHICLE_NUMERIC, VEHICLE_CATEGORICAL)
     vehicle_pipeline.fit(vehicle_df[VEHICLE_FEATURES], vehicle_df["score"])
     joblib.dump(vehicle_pipeline, "models/vehicle_pipeline.pkl")
-    print("Vehicle pipeline trained & saved -> models/vehicle_pipeline.pkl")
+    print("  ✓ models/vehicle_pipeline.pkl")
 
-    print("All pipelines ready")
+    # Custom VehicleModel (used by app.py / Flask API)
+    from model import VehicleModel
+    vm = VehicleModel()
+    vm.train(vehicle_df_raw)
+    vm.save("models/vehicle_model.pkl")
+    print("  ✓ models/vehicle_model.pkl")
+
+    print("\nAll models ready.")
 
 
 if __name__ == "__main__":
