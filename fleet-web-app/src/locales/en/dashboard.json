@@ -1,5 +1,6 @@
 {
   "dashboard": {
+    "sectionLabel": "Dashboard",
     "title": "Dashboard",
     "overviewLine": "Operations center overview for {{date}}",
     "newTrip": "New Trip",

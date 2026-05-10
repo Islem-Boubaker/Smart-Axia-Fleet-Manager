@@ -1,8 +1,15 @@
 {
   "shared": {
     "userMenu": {
+      "account": "Compte",
+      "viewProfile": "Voir le profil",
       "settings": "Paramètres",
-      "logout": "Déconnexion"
+      "helpSupport": "Aide et support",
+      "displayAccessibility": "Affichage et accessibilité",
+      "sendFeedback": "Envoyer un commentaire",
+      "logout": "Se déconnecter",
+      "menuAria": "Menu du compte",
+      "closeMenu": "Fermer le menu"
     },
     "notifications": {
       "title": "Notifications",

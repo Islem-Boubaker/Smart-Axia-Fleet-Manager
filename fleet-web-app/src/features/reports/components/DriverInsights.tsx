@@ -1,5 +1,6 @@
 import { Card } from '../../../shared/components';
 import { useTranslation } from 'react-i18next';
+import { useEffect, useRef } from 'react';
 
 interface DriverInsightsProps {
   summary: {
@@ -19,7 +20,15 @@ interface DriverInsightsProps {
 }
 
 const DriverInsights = ({ summary, rows, dark = false }: DriverInsightsProps) => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const isRtl = (i18n.language || "en").split("-")[0] === "ar";
+  const scrollRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    el.scrollLeft = isRtl ? el.scrollWidth - el.clientWidth : 0;
+  }, [isRtl, rows]);
   const statBox = dark
     ? 'bg-slate-900/50 border-slate-700/80 text-slate-100'
     : 'bg-gray-50/90 border-gray-200 text-slate-900';
@@ -60,25 +69,35 @@ const DriverInsights = ({ summary, rows, dark = false }: DriverInsightsProps) =>
         </div>
       </div>
 
-      <div className="overflow-x-auto -mx-2 px-2">
-        <table className="w-full border-separate border-spacing-0">
+      {/* dir="ltr" on the scroll wrapper keeps scrollLeft=0→max in both languages.
+          The table gets the real dir so column order and text alignment are correct. */}
+      <div
+        ref={scrollRef}
+        dir="ltr"
+        className="w-full overflow-x-auto"
+        style={{ scrollbarWidth: "thin" }}
+      >
+        <table
+          dir={isRtl ? "rtl" : "ltr"}
+          className="min-w-[600px] w-full border-separate border-spacing-0"
+        >
           <thead>
             <tr className={`border-b ${headBorder}`}>
-              <th className={`text-left py-4 px-5 text-sm font-semibold ${dark ? 'text-slate-400' : 'text-gray-600'}`}>{t('reports.driver_insights.table.driver')}</th>
-              <th className={`text-right py-4 px-5 text-sm font-semibold ${dark ? 'text-slate-400' : 'text-gray-600'}`}>{t('reports.driver_insights.table.trips')}</th>
-              <th className={`text-right py-4 px-5 text-sm font-semibold ${dark ? 'text-slate-400' : 'text-gray-600'}`}>{t('reports.driver_insights.table.distance')}</th>
-              <th className={`text-right py-4 px-5 text-sm font-semibold ${dark ? 'text-slate-400' : 'text-gray-600'}`}>{t('reports.driver_insights.table.revenue')}</th>
-              <th className={`text-right py-4 px-5 text-sm font-semibold ${dark ? 'text-slate-400' : 'text-gray-600'}`}>{t('reports.driver_insights.table.avg_duration')}</th>
+              <th className={`whitespace-nowrap text-start py-4 px-5 text-sm font-semibold ${dark ? 'text-slate-400' : 'text-gray-600'}`}>{t('reports.driver_insights.table.driver')}</th>
+              <th className={`whitespace-nowrap text-end py-4 px-5 text-sm font-semibold ${dark ? 'text-slate-400' : 'text-gray-600'}`}>{t('reports.driver_insights.table.trips')}</th>
+              <th className={`whitespace-nowrap text-end py-4 px-5 text-sm font-semibold ${dark ? 'text-slate-400' : 'text-gray-600'}`}>{t('reports.driver_insights.table.distance')}</th>
+              <th className={`whitespace-nowrap text-end py-4 px-5 text-sm font-semibold ${dark ? 'text-slate-400' : 'text-gray-600'}`}>{t('reports.driver_insights.table.revenue')}</th>
+              <th className={`whitespace-nowrap text-end py-4 px-5 text-sm font-semibold ${dark ? 'text-slate-400' : 'text-gray-600'}`}>{t('reports.driver_insights.table.avg_duration')}</th>
             </tr>
           </thead>
           <tbody>
             {rows.map((row) => (
               <tr key={row.driver} className={`border-b ${rowBorder} last:border-0 transition-colors`}>
-                <td className={`py-4 px-5 text-sm font-medium ${tdStrong}`}>{row.driver}</td>
-                <td className={`py-4 px-5 text-sm text-right tabular-nums ${td}`}>{row.trips}</td>
-                <td className={`py-4 px-5 text-sm text-right ${td}`}>{row.distance}</td>
-                <td className={`py-4 px-5 text-sm text-right ${td}`}>{row.revenue}</td>
-                <td className={`py-4 px-5 text-sm text-right ${td}`}>{row.averageDuration}</td>
+                <td className={`whitespace-nowrap py-4 px-5 text-sm font-medium ${tdStrong}`}>{row.driver}</td>
+                <td className={`whitespace-nowrap py-4 px-5 text-sm text-end tabular-nums ${td}`}>{row.trips}</td>
+                <td className={`whitespace-nowrap py-4 px-5 text-sm text-end ${td}`}>{row.distance}</td>
+                <td className={`whitespace-nowrap py-4 px-5 text-sm text-end ${td}`}>{row.revenue}</td>
+                <td className={`whitespace-nowrap py-4 px-5 text-sm text-end ${td}`}>{row.averageDuration}</td>
               </tr>
             ))}
           </tbody>

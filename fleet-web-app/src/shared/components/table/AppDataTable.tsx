@@ -21,6 +21,18 @@ interface AppTrProps {
   children: ReactNode;
 }
 
+const THUMB_W = 80;
+
+// ─────────────────────────────────────────────────────────────────────────────
+// RTL SCROLL STRATEGY
+// The scroll container is always forced to dir="ltr" so that scrollLeft is
+// always a plain 0 → maxScroll value regardless of the page language.
+// For Arabic, we initialise scrollLeft = maxScroll so the right side (the
+// logical start in RTL) is visible without any extra JS tricks.
+// The <table> keeps dir="rtl" so column order and text alignment are correct.
+// The custom-scrollbar math needs no special RTL branches.
+// ─────────────────────────────────────────────────────────────────────────────
+
 const AppDataTable = ({
   columns,
   children,
@@ -30,15 +42,15 @@ const AppDataTable = ({
   pageSize = 7,
   title,
 }: AppDataTableProps) => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const isRtl = (i18n.language || "en").split("-")[0] === "ar";
+
   const rowNodes = useMemo(() => Children.toArray(children), [children]);
   const [currentPage, setCurrentPage] = useState(1);
-  const tableContainerRef = useRef<HTMLDivElement>(null);
-  const [scrollbarLeft, setScrollbarLeft] = useState(0);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [thumbLeft, setThumbLeft] = useState(0);
   const [showScrollbar, setShowScrollbar] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
-
-  const SCROLLBAR_THUMB_WIDTH = 80; // Fixed width in pixels
 
   const totalPages = Math.max(1, Math.ceil(rowNodes.length / pageSize));
   const safeCurrentPage = Math.min(currentPage, totalPages);
@@ -50,25 +62,22 @@ const AppDataTable = ({
 
   const resultsCount =
     typeof totalResults === "number" ? totalResults : rowNodes.length;
+
   void title;
-  const resolvedAriaLabel = ariaLabel || t('dataTable.aria');
+  const resolvedAriaLabel = ariaLabel || t("dataTable.aria");
 
   const pageButtons = useMemo(() => {
-    if (totalPages <= 5) {
-      return Array.from({ length: totalPages }, (_, index) => index + 1);
-    }
-
+    if (totalPages <= 5)
+      return Array.from({ length: totalPages }, (_, i) => i + 1);
     if (safeCurrentPage <= 3) return [1, 2, 3, 4, 5];
-    if (safeCurrentPage >= totalPages - 2) {
+    if (safeCurrentPage >= totalPages - 2)
       return [
         totalPages - 4,
         totalPages - 3,
         totalPages - 2,
         totalPages - 1,
         totalPages,
-      ].filter((page) => page > 0);
-    }
-
+      ].filter((p) => p > 0);
     return [
       safeCurrentPage - 2,
       safeCurrentPage - 1,
@@ -78,111 +87,78 @@ const AppDataTable = ({
     ];
   }, [safeCurrentPage, totalPages]);
 
-  // Update scrollbar on scroll
-  const updateScrollbar = () => {
-    if (tableContainerRef.current) {
-      const { scrollLeft, scrollWidth, clientWidth } =
-        tableContainerRef.current;
-
-      // Check if scrollbar is needed
-      const needsScroll = scrollWidth > clientWidth;
-      setShowScrollbar(needsScroll);
-
-      if (needsScroll) {
-        // Calculate maximum scrollbar position (track width - thumb width)
-        const trackWidth = clientWidth;
-        const maxThumbPosition = trackWidth - SCROLLBAR_THUMB_WIDTH;
-
-        // Calculate scrollbar thumb position
-        const maxScroll = scrollWidth - clientWidth;
-        const scrollPercentage = scrollLeft / maxScroll;
-        setScrollbarLeft(scrollPercentage * maxThumbPosition);
-      }
+  // ── Sync thumb to scroll position ─────────────────────────────────────────
+  const syncThumb = () => {
+    const el = containerRef.current;
+    if (!el) return;
+    const { scrollLeft, scrollWidth, clientWidth } = el;
+    const maxScroll = scrollWidth - clientWidth;
+    setShowScrollbar(maxScroll > 1);
+    if (maxScroll > 1) {
+      const maxThumb = clientWidth - THUMB_W;
+      setThumbLeft((scrollLeft / maxScroll) * maxThumb);
     }
   };
 
-  // Handle scrollbar drag
-  const handleScrollbarMouseDown = (e: React.MouseEvent) => {
+  // ── Initialise RTL scroll to rightmost position ────────────────────────────
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    if (isRtl) {
+      el.scrollLeft = el.scrollWidth - el.clientWidth;
+    } else {
+      el.scrollLeft = 0;
+    }
+    syncThumb();
+  }, [isRtl, paginatedRows]);
+
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    el.addEventListener("scroll", syncThumb);
+    window.addEventListener("resize", syncThumb);
+    return () => {
+      el.removeEventListener("scroll", syncThumb);
+      window.removeEventListener("resize", syncThumb);
+    };
+  }, [paginatedRows]);
+
+  // ── Custom scrollbar drag ──────────────────────────────────────────────────
+  const handleThumbDown = (e: React.MouseEvent) => {
     e.preventDefault();
     setIsDragging(true);
   };
 
   const handleMouseMove = (e: MouseEvent) => {
-    if (!isDragging || !tableContainerRef.current) return;
-
-    const container = tableContainerRef.current;
-    const scrollbarContainer = container.parentElement?.querySelector(
+    if (!isDragging || !containerRef.current) return;
+    const el = containerRef.current;
+    const track = el.parentElement?.querySelector(
       ".scrollbar-track",
-    ) as HTMLElement;
-
-    if (!scrollbarContainer) return;
-
-    const rect = scrollbarContainer.getBoundingClientRect();
-    const mouseX = e.clientX - rect.left;
-    
-    // Calculate percentage based on track width minus thumb width
-    const trackWidth = rect.width;
-    const maxThumbPosition = trackWidth - SCROLLBAR_THUMB_WIDTH;
-    const clampedMouseX = Math.max(0, Math.min(mouseX, maxThumbPosition));
-    const percentage = clampedMouseX / maxThumbPosition;
-
-    const { scrollWidth, clientWidth } = container;
-    const maxScroll = scrollWidth - clientWidth;
-
-    container.scrollLeft = percentage * maxScroll;
+    ) as HTMLElement | null;
+    if (!track) return;
+    const rect = track.getBoundingClientRect();
+    const maxThumb = rect.width - THUMB_W;
+    const clamped = Math.max(0, Math.min(e.clientX - rect.left, maxThumb));
+    el.scrollLeft = (clamped / maxThumb) * (el.scrollWidth - el.clientWidth);
   };
 
-  const handleMouseUp = () => {
-    setIsDragging(false);
-  };
+  const handleMouseUp = () => setIsDragging(false);
 
-  // Handle scrollbar track click
   const handleTrackClick = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (!tableContainerRef.current) return;
-
-    const container = tableContainerRef.current;
+    const el = containerRef.current;
+    if (!el) return;
     const rect = e.currentTarget.getBoundingClientRect();
-    const mouseX = e.clientX - rect.left;
-    
-    // Calculate percentage based on track width minus thumb width
-    const trackWidth = rect.width;
-    const maxThumbPosition = trackWidth - SCROLLBAR_THUMB_WIDTH;
-    const clampedMouseX = Math.max(0, Math.min(mouseX, maxThumbPosition));
-    const percentage = clampedMouseX / maxThumbPosition;
-
-    const { scrollWidth, clientWidth } = container;
-    const maxScroll = scrollWidth - clientWidth;
-
-    container.scrollLeft = percentage * maxScroll;
+    const maxThumb = rect.width - THUMB_W;
+    const clamped = Math.max(0, Math.min(e.clientX - rect.left, maxThumb));
+    el.scrollLeft = (clamped / maxThumb) * (el.scrollWidth - el.clientWidth);
   };
 
   useEffect(() => {
-    const container = tableContainerRef.current;
-    if (!container) return;
-
-    const handleScroll = () => updateScrollbar();
-    const handleResize = () => updateScrollbar();
-
-    container.addEventListener("scroll", handleScroll);
-    window.addEventListener("resize", handleResize);
-
-    // Initial update
-    updateScrollbar();
-
-    return () => {
-      container.removeEventListener("scroll", handleScroll);
-      window.removeEventListener("resize", handleResize);
-    };
-  }, [paginatedRows]);
-
-  useEffect(() => {
-    if (isDragging) {
-      document.addEventListener("mousemove", handleMouseMove);
-      document.addEventListener("mouseup", handleMouseUp);
-      document.body.style.cursor = "grabbing";
-      document.body.style.userSelect = "none";
-    }
-
+    if (!isDragging) return;
+    document.addEventListener("mousemove", handleMouseMove);
+    document.addEventListener("mouseup", handleMouseUp);
+    document.body.style.cursor = "grabbing";
+    document.body.style.userSelect = "none";
     return () => {
       document.removeEventListener("mousemove", handleMouseMove);
       document.removeEventListener("mouseup", handleMouseUp);
@@ -199,71 +175,67 @@ const AppDataTable = ({
           : "border-white/80 bg-[linear-gradient(105deg,#eefaff_0%,#f8fdff_48%,#edf7ff_100%)]"
       }`}
     >
-      {/* Table Container with Custom Scrollbar */}
+      {/*
+        Scroll container:
+        • Always dir="ltr" → scrollLeft is always 0–maxScroll (no RTL browser
+          quirks). scrollLeft=0 means physical left edge, maxScroll=physical right.
+        • For RTL, we start scrolled to maxScroll (right edge = logical start).
+        • The <table> gets the real dir so column order + alignment are correct.
+      */}
       <div
-        ref={tableContainerRef}
-        className="overflow-x-auto custom-scrollbar"
-        style={{
-          scrollbarWidth: "none", // Firefox
-          msOverflowStyle: "none", // IE/Edge
-        }}
+        ref={containerRef}
+        dir="ltr"
+        className="w-full overflow-x-auto"
+        style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
       >
         <table
-          className="min-w-full border-separate border-spacing-0 text-sm"
+          dir={isRtl ? "rtl" : "ltr"}
+          className="min-w-[700px] w-full border-separate border-spacing-0 text-sm"
           role="table"
           aria-label={resolvedAriaLabel}
         >
           <thead>
             <tr>
-              {columns.map((column) => (
+              {columns.map((col) => (
                 <th
-                  key={column}
+                  key={col}
                   scope="col"
-                  className={`px-5 py-3 text-left text-[12px] font-bold normal-case tracking-normal ${
+                  className={`whitespace-nowrap px-5 py-3 text-start text-[12px] font-bold normal-case tracking-normal ${
                     dark ? "text-slate-400" : "text-slate-500"
                   }`}
                 >
-                  {column}
+                  {col}
                 </th>
               ))}
             </tr>
           </thead>
-          <tbody
-            className={
-              dark ? "text-slate-200" : "text-slate-950"
-            }
-          >
+          <tbody className={dark ? "text-slate-200" : "text-slate-950"}>
             {paginatedRows}
           </tbody>
         </table>
       </div>
 
-      {/* Custom Horizontal Scrollbar */}
+      {/* Custom horizontal scrollbar */}
       {showScrollbar && (
         <div
-          className={`scrollbar-track relative h-3 px-2 py-1 cursor-pointer ${
-            dark ? "bg-slate-950/30" : "bg-white/35"
+          className={`scrollbar-track relative mt-1 h-3 w-full cursor-pointer rounded-full ${
+            dark ? "bg-slate-800/60" : "bg-slate-200/60"
           }`}
           onClick={handleTrackClick}
         >
           <div
-            className={`scrollbar-thumb h-1.5 rounded-full transition-colors ${
+            className={`absolute top-0.5 h-2 rounded-full transition-colors ${
               isDragging
                 ? "bg-blue-600"
-                : dark
-                  ? "bg-blue-500 hover:bg-blue-500"
-                  : "bg-blue-500 hover:bg-blue-600"
+                : "bg-blue-500 hover:bg-blue-600"
             }`}
-            style={{
-              width: `${SCROLLBAR_THUMB_WIDTH}px`,
-              marginLeft: `${scrollbarLeft}px`,
-            }}
-            onMouseDown={handleScrollbarMouseDown}
+            style={{ width: THUMB_W, left: thumbLeft }}
+            onMouseDown={handleThumbDown}
           />
         </div>
       )}
 
-      {/* Pagination Footer */}
+      {/* Pagination */}
       {resultsCount > 0 && (
         <div
           className={`mt-4 flex items-center justify-between border-t px-1 pt-4 text-xs ${
@@ -272,23 +244,21 @@ const AppDataTable = ({
               : "border-white/70 text-slate-500"
           }`}
         >
-          <span>
-            {t('common.showing_results', { count: resultsCount })}
-          </span>
+          <span>{t("common.showing_results", { count: resultsCount })}</span>
 
           {rowNodes.length > pageSize && (
             <div className="flex items-center gap-1">
               <button
                 type="button"
-                  className={`h-8 px-2 rounded-md transition-colors ${
-                    dark
+                className={`h-8 px-2 rounded-md transition-colors disabled:opacity-40 disabled:cursor-not-allowed ${
+                  dark
                     ? "text-slate-300 hover:bg-cyan-300/10"
                     : "text-slate-600 hover:bg-white/80"
-                } disabled:opacity-40 disabled:cursor-not-allowed`}
-                onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
+                }`}
+                onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
                 disabled={safeCurrentPage === 1}
               >
-                {t('dataTable.prev')}
+                {t("dataTable.prev")}
               </button>
 
               {pageButtons.map((page) => (
@@ -305,7 +275,7 @@ const AppDataTable = ({
                         : "text-slate-600 hover:bg-white/80"
                   }`}
                   onClick={() => setCurrentPage(page)}
-                  aria-label={t('dataTable.page', { page })}
+                  aria-label={t("dataTable.page", { page })}
                 >
                   {page}
                 </button>
@@ -313,17 +283,17 @@ const AppDataTable = ({
 
               <button
                 type="button"
-                  className={`h-8 px-2 rounded-md transition-colors ${
+                className={`h-8 px-2 rounded-md transition-colors disabled:opacity-40 disabled:cursor-not-allowed ${
                   dark
                     ? "text-slate-300 hover:bg-cyan-300/10"
                     : "text-slate-600 hover:bg-white/80"
-                } disabled:opacity-40 disabled:cursor-not-allowed`}
+                }`}
                 onClick={() =>
-                  setCurrentPage((prev) => Math.min(totalPages, prev + 1))
+                  setCurrentPage((p) => Math.min(totalPages, p + 1))
                 }
                 disabled={safeCurrentPage === totalPages}
               >
-                {t('dataTable.next')}
+                {t("dataTable.next")}
               </button>
             </div>
           )}
@@ -334,7 +304,9 @@ const AppDataTable = ({
 };
 
 export const AppTd = ({ children, className = "" }: AppTdProps) => (
-  <td className={`px-5 py-4 align-middle ${className}`}>{children}</td>
+  <td className={`whitespace-nowrap px-5 py-4 align-middle ${className}`}>
+    {children}
+  </td>
 );
 
 export const AppTr = ({ children }: AppTrProps) => (

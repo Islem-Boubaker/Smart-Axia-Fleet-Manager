@@ -1,5 +1,6 @@
 {
   "dashboard": {
+    "sectionLabel": "لوحة التحكم",
     "title": "لوحة التحكم",
     "overviewLine": "نظرة عامة على العمليات ليوم {{date}}",
     "newTrip": "رحلة جديدة",

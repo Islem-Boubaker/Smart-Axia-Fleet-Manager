@@ -361,31 +361,7 @@ const SettingsPage = () => {
             {tabTitle[activeTab] ?? t('settings.pageTitle')}
           </h2>
         </div>
-        <div className="mb-6 overflow-x-auto">
-          <div className="inline-flex min-w-full gap-2 rounded-2xl border border-slate-200/80 bg-white/70 p-2 shadow-sm dark:border-slate-700/60 dark:bg-slate-900/50 sm:min-w-0">
-            {tabs.map((tab) => {
-              const isActive = activeTab === tab.id;
-              return (
-                <button
-                  key={tab.id}
-                  type="button"
-                  onClick={() => navigate(`${ROUTES.SETTINGS}?tab=${tab.id}`)}
-                  className={`flex-1 whitespace-nowrap rounded-xl px-4 py-2.5 text-sm font-semibold transition-colors sm:flex-none ${
-                    isActive
-                      ? dark
-                        ? 'bg-cyan-300/15 text-cyan-100 ring-1 ring-cyan-200/20'
-                        : 'bg-slate-950 text-white'
-                      : dark
-                        ? 'text-slate-300 hover:bg-slate-800/70'
-                        : 'text-slate-600 hover:bg-white'
-                  }`}
-                >
-                  {tab.label}
-                </button>
-              );
-            })}
-          </div>
-        </div>
+       
         <div className="space-y-6 lg:space-y-8">{renderTabContent()}</div>
       </div>
     </div>

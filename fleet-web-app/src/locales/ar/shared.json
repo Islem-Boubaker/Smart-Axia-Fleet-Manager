@@ -1,8 +1,15 @@
 {
   "shared": {
     "userMenu": {
+      "account": "الحساب",
+      "viewProfile": "عرض الملف الشخصي",
       "settings": "الإعدادات",
-      "logout": "تسجيل الخروج"
+      "helpSupport": "المساعدة والدعم",
+      "displayAccessibility": "العرض وإمكانية الوصول",
+      "sendFeedback": "إرسال ملاحظة",
+      "logout": "تسجيل الخروج",
+      "menuAria": "قائمة الحساب",
+      "closeMenu": "إغلاق القائمة"
     },
     "notifications": {
       "title": "الإشعارات",

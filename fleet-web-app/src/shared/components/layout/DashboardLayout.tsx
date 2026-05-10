@@ -1,4 +1,4 @@
-import { useState, memo, useEffect, type CSSProperties } from 'react';
+import { useState, memo, useEffect } from 'react';
 import { Outlet, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { AppTopBar } from './Header/AppTopBar';
@@ -47,10 +47,7 @@ export const DashboardLayout = memo(() => {
       />
 
       <div
-        className={`relative z-10 flex-1 flex flex-col min-w-0 min-h-0 overflow-hidden p-2 transition-[margin] duration-300 ease-out sm:p-3 ${
-          isRtl ? 'lg:mr-[var(--sidebar-offset)]' : 'lg:ml-[var(--sidebar-offset)]'
-        }`}
-        style={{ '--sidebar-offset': `${sidebarExpanded ? 236 : 64}px` } as CSSProperties}
+        className="relative z-10 flex-1 flex flex-col min-w-0 min-h-0 overflow-hidden p-2 sm:p-3"
       >
         <AppTopBar dark={dark} setDark={setDark} onMenuClick={() => setSidebarOpen(true)} />
 

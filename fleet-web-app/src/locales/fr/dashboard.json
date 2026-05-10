@@ -1,5 +1,6 @@
 {
   "dashboard": {
+    "sectionLabel": "Tableau de bord",
     "title": "Tableau de bord",
     "overviewLine": "Vue d'ensemble des opérations pour le {{date}}",
     "newTrip": "Nouveau trajet",

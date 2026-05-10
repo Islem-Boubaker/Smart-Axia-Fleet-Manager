@@ -40,7 +40,7 @@ export const AppTopBar = memo(({ dark, setDark, onMenuClick }: AppTopBarProps) =
           dark
             ? 'border-cyan-200/10 bg-[#0F1B2D]/92 shadow-[0_20px_70px_rgba(0,0,0,0.24),inset_0_1px_0_rgba(255,255,255,0.04)]'
             : 'border-white/90 bg-white/95'
-        } ${isRtl ? 'flex-row-reverse' : ''}`}
+        }`}
       >
         <button
           type="button"

@@ -22,42 +22,28 @@ export const LanguageSelector = memo(({ dark = false }: { dark?: boolean }) => {
   const value = normalizeLang(i18n.language);
 
   // ── Responsive dropdown position ─────────────────────────────────────────
-  // We calculate once the dropdown opens whether it would overflow the right
-  // edge of the viewport and switch to left-aligned if so.
+  // Default: right-align the dropdown (extends leftward from the trigger).
+  // Flip to left-align only when that would clip the left edge of the viewport.
+  // NOTE: left/right in CSS absolute positioning are always physical (not affected
+  // by dir="rtl"), so no special RTL branch is needed here.
   const [dropdownStyle, setDropdownStyle] = useState<React.CSSProperties>({});
 
   useEffect(() => {
     if (!open || !containerRef.current) return;
 
     const DROPDOWN_WIDTH = 190;
-    const MARGIN = 8; // min gap from viewport edge
+    const MARGIN = 8;
     const rect = containerRef.current.getBoundingClientRect();
-    const vw = window.innerWidth;
 
-    let style: React.CSSProperties = {};
-
-    if (isRtl) {
-      // RTL: prefer opening to the right; flip left if it overflows
-      const wouldOverflowLeft = rect.left - DROPDOWN_WIDTH < MARGIN;
-      style = wouldOverflowLeft
+    // Right-aligned: dropdown's right edge = trigger's right edge → extends left.
+    // Falls back to left-aligned when that would overflow the left edge.
+    const wouldOverflowLeft = rect.right - DROPDOWN_WIDTH < MARGIN;
+    setDropdownStyle(
+      wouldOverflowLeft
         ? { left: 0, right: 'auto' }
-        : { right: 'auto', left: `${rect.left - DROPDOWN_WIDTH}px` };
-    } else {
-      // LTR: prefer opening to the left (right-aligned); flip right if overflow
-      const wouldOverflowLeft = rect.right - DROPDOWN_WIDTH < MARGIN;
-      if (wouldOverflowLeft) {
-        style = { left: 0, right: 'auto' };
-      } else {
-        // Also guard against right-edge overflow (very narrow screens)
-        const wouldOverflowRight = rect.right + DROPDOWN_WIDTH > vw - MARGIN;
-        style = wouldOverflowRight
-          ? { left: '50%', transform: 'translateX(-50%)', right: 'auto' }
-          : { right: 0, left: 'auto' };
-      }
-    }
-
-    setDropdownStyle(style);
-  }, [open, isRtl]);
+        : { right: 0, left: 'auto' },
+    );
+  }, [open]);
 
   // ── Outside-click + Escape ────────────────────────────────────────────────
   useEffect(() => {
