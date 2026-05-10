@@ -48,27 +48,21 @@ export default function SigninFormCard({
   const { t } = useTranslation();
   return (
     <div
-      className="sa-right"
+      className="sa-right flex flex-1 items-center justify-center"
       style={{
-        flex: 1,
-        minWidth: '340px',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
         background: 'linear-gradient(145deg, #e8eeff 0%, #dde8ff 40%, #e4eaff 70%, #eef1ff 100%)',
-        padding: '48px 28px',
+        padding: 'clamp(24px, 5vw, 48px) clamp(16px, 4vw, 28px)',
         position: 'relative',
       }}
     >
       <div
-        className="sa-card"
+        className="sa-card w-full"
         style={{
-          width: '100%',
           maxWidth: '420px',
           background: '#ffffff',
           borderRadius: '24px',
           boxShadow: '0 4px 6px rgba(0,0,0,0.04), 0 16px 48px rgba(37,99,235,0.10), 0 1px 3px rgba(0,0,0,0.05)',
-          padding: '38px 38px 34px',
+          padding: 'clamp(24px, 5vw, 38px) clamp(20px, 5vw, 38px) clamp(20px, 4vw, 34px)',
           animation: 'fadeUp 0.5s 0.1s ease both',
         }}
       >
@@ -98,7 +92,7 @@ export default function SigninFormCard({
         <h2
           style={{
             fontFamily: "'Sora', sans-serif",
-            fontSize: 'clamp(22px, 2.5vw, 28px)',
+            fontSize: 'clamp(18px, 5vw, 28px)',
             fontWeight: 700,
             color: '#0f172a',
             letterSpacing: '-0.025em',

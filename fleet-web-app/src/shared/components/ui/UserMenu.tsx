@@ -1,6 +1,5 @@
 import { useRef, useState, useEffect, type TouchEvent } from "react";
 import { createPortal } from "react-dom";
-import { useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import {
   FiSettings,
@@ -8,10 +7,8 @@ import {
   FiX,
 } from "react-icons/fi";
 import { useTranslation } from "react-i18next";
-import { api } from "../../services/api";
-import { clearCsrfToken } from "../../services/csrfToken";
-import { useAppDispatch, useAppSelector } from "../../hooks";
-import { clearUser } from "../../../store/authSlice";
+import { useAppSelector } from "../../hooks";
+import { useAuth } from "../../../features/auth/hooks/useAuth";
 import { ROUTES } from "../../../utils/constants";
 
 /* ── Media query hook ────────────────────────────────────────────── */
@@ -160,8 +157,7 @@ const UserMenu = () => {
   const [visible, setVisible] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
-  const dispatch = useAppDispatch();
-  const queryClient = useQueryClient();
+  const { signOut } = useAuth();
   const { user } = useAppSelector((s) => s.auth);
 
   const isRtl = (i18n.language || "en").split("-")[0] === "ar";
@@ -233,16 +229,7 @@ const UserMenu = () => {
 
   const handleLogout = async () => {
     closeMenu();
-    try {
-      await api.post("/user/logout");
-    } catch {
-      // ignore — we always clear local state
-    } finally {
-      dispatch(clearUser());
-      clearCsrfToken();
-      queryClient.clear();
-      navigate(ROUTES.SIGN_IN, { replace: true });
-    }
+    await signOut();
   };
 
   const sharedMenuProps: MenuContentProps = {

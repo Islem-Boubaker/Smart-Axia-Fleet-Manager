@@ -82,7 +82,7 @@ export default function SignIn() {
   };
 
   return (
-    <div className="sa-root sa-split" style={{ fontFamily: "'DM Sans', sans-serif", display: 'flex', minHeight: '100vh', width: '100%' }}>
+    <div className="sa-root sa-split flex min-h-screen w-full overflow-x-hidden" style={{ fontFamily: "'DM Sans', sans-serif" }}>
       <SigninHeroPanel />
       <SigninFormCard
         email={email}

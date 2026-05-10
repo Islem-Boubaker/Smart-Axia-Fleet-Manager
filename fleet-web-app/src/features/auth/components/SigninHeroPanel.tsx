@@ -5,13 +5,12 @@ export default function SigninHeroPanel() {
   const { t } = useTranslation();
   return (
     <div
-      className="sa-left"
+      className="sa-left hidden lg:flex"
       style={{
         position: 'relative',
         flex: '1.15',
         minHeight: '100vh',
         overflow: 'hidden',
-        display: 'flex',
         flexDirection: 'column',
         background: '#0c1018',
       }}
