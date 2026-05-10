@@ -17,6 +17,11 @@ if (missing.length > 0) {
   process.exit(1);
 }
 
+
+
+
+
+
 const PORT = Number(process.env.PORT) || 8080;
 const ENV = process.env.NODE_ENV || "development";
 const MAX_PORT_RETRIES = 10;
