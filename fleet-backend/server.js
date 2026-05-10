@@ -21,6 +21,9 @@ const PORT = Number(process.env.PORT) || 8080;
 const ENV = process.env.NODE_ENV || "development";
 const MAX_PORT_RETRIES = 10;
 
+
+
+
 // ─── Sequelize sync strategy ──────────────────────────────────────────────────
 const SYNC_OPTIONS = ENV === "development" ? { alter: { drop: false } } : null;
 
