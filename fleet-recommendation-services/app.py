@@ -17,6 +17,10 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 driver_model = DriverModel()
 vehicle_model = VehicleModel()
 
+
+
+
+
 _driver_load_error: str | None = None
 _vehicle_load_error: str | None = None
 
