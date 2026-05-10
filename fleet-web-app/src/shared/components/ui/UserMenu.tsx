@@ -6,11 +6,7 @@ import {
   FiSettings,
   FiLogOut,
   FiUser,
-  FiHelpCircle,
-  FiMonitor,
-  FiMessageSquare,
   FiX,
-  FiChevronDown,
 } from "react-icons/fi";
 import { useTranslation } from "react-i18next";
 import { api } from "../../services/api";
