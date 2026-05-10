@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useOutletContext, useLocation, useNavigate } from 'react-router-dom';
+import { useOutletContext, useLocation } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { FiEdit2 } from 'react-icons/fi';
 import { Card, Button } from '../../../shared/components';
@@ -15,7 +15,6 @@ import { settingsService } from '../services/settings.service';
 import { toast } from '../../../shared/components';
 import { pageShellClasses } from '../../../shared/utils/pageShell';
 import { queryKeys } from '../../../shared/services/queryKeys';
-import { ROUTES } from '../../../utils/constants';
 
 interface ThemeContext {
   dark: boolean;
@@ -163,7 +162,6 @@ const SettingsPage = () => {
   const { dark } = useOutletContext<ThemeContext>();
   const { t } = useTranslation();
   const location = useLocation();
-  const navigate = useNavigate();
   const { user } = useAppSelector((state) => state.auth);
   const dispatch = useAppDispatch();
   const { changePassword, updateNotifications, isLoading: isSettingsLoading } = useSettings();
@@ -182,11 +180,6 @@ const SettingsPage = () => {
   };
 
   const activeTab = getActiveTab();
-  const tabs = [
-    { id: 'profile', label: t('settings.tabs.profile') },
-    { id: 'notifications', label: t('settings.tabs.notifications') },
-    { id: 'security', label: t('settings.tabs.security') },
-  ] as const;
 
   const profileData: ProfileData = {
     name: user?.name || '',

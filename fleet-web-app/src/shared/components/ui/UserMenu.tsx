@@ -5,7 +5,6 @@ import { useNavigate } from "react-router-dom";
 import {
   FiSettings,
   FiLogOut,
-  FiUser,
   FiX,
 } from "react-icons/fi";
 import { useTranslation } from "react-i18next";

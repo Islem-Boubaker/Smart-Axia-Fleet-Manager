@@ -8,8 +8,6 @@ export const LanguageSelector = memo(({ dark = false }: { dark?: boolean }) => {
   const { i18n, t } = useTranslation();
   const [open, setOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
-  const isRtl = normalizeLang(i18n.language) === 'ar';
-
   const languages = useMemo(
     () => [
       { code: 'en', label: 'English',  shortLabel: 'EN', dir: 'ltr' as const },
