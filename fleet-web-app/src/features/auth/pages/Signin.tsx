@@ -15,6 +15,8 @@ type AuthErrors = {
 export default function SignIn() {
   const { t } = useTranslation();
   const { signIn, forgotPassword, loading, error } = useAuth();
+  // error may be an i18n key (e.g. 'auth.accessDenied') or a plain backend message.
+  const translatedError = error ? t(error, { defaultValue: error }) : undefined;
   const rememberedEmail = localStorage.getItem('axia.remember') ?? '';
   const [email, setEmail] = useState(rememberedEmail);
   const [password, setPassword] = useState('');
@@ -92,7 +94,7 @@ export default function SignIn() {
         isForgotMode={isForgotMode}
         loading={loading}
         success={success}
-        errors={{ ...errors, form: errors.form || error || undefined }}
+        errors={{ ...errors, form: errors.form || translatedError || undefined }}
         onEmailChange={(value) => {
           setEmail(value);
           setSuccess(false);

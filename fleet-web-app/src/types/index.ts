@@ -134,9 +134,6 @@ export interface Maintenance {
   updatedAt: string;
 }
 
-export interface AuthState {
-  user: User | null;
-  isAuthenticated: boolean;
-  loading: boolean;
-  error: string | null;
-}
+// AuthState is now the source of truth in src/store/authSlice.ts
+// Re-exported here for backward compatibility.
+export type { AuthState } from '../store/authSlice';

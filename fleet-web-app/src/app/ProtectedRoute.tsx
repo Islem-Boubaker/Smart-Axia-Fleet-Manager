@@ -1,24 +1,32 @@
-// src/router/ProtectedRoute.tsx
-import { Navigate, Outlet } from "react-router-dom";
-import { useSelector } from "react-redux";
-import { type RootState } from "../store"; // Adjust path to your store
-import { SimpleLoader } from "../shared/components";
+import { useEffect } from 'react';
+import { Navigate, Outlet } from 'react-router-dom';
+import { useQueryClient } from '@tanstack/react-query';
+import { useAppDispatch, useAppSelector } from '../shared/hooks';
+import { clearClientAuthState } from '../shared/services/authCleanup';
+import { SimpleLoader } from '../shared/components';
 
 export default function ProtectedRoute() {
-  const { isAuthenticated, loading } = useSelector(
-    (state: RootState) => state.auth,
-  );
+  const { isAuthenticated, initialized, user } = useAppSelector((state) => state.auth);
+  const dispatch = useAppDispatch();
+  const queryClient = useQueryClient();
 
-  // Show loading state while checking auth
-  if (loading) {
-    return <SimpleLoader />;
-  }
+  const isAdmin = user?.role?.toLowerCase() === 'admin';
 
-  // Redirect to sign in if not authenticated
-  if (!isAuthenticated) {
-    return <Navigate to="/signin" replace />;
-  }
+  // If authenticated but not ADMIN, clear everything and fall through to redirect.
+  useEffect(() => {
+    if (initialized && isAuthenticated && !isAdmin) {
+      void clearClientAuthState(queryClient, dispatch);
+    }
+  }, [initialized, isAuthenticated, isAdmin, queryClient, dispatch]);
 
-  // Render child routes if authenticated
+  // Wait for /me bootstrap to finish before making any routing decision.
+  if (!initialized) return <SimpleLoader />;
+
+  // Not logged in.
+  if (!isAuthenticated) return <Navigate to="/signin" replace />;
+
+  // Logged in but wrong role — clearClientAuthState fired above; redirect now.
+  if (!isAdmin) return <Navigate to="/signin" replace />;
+
   return <Outlet />;
 }

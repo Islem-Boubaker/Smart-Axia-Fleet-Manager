@@ -1,57 +1,65 @@
-
-import axios, {
-  AxiosError
-} from "axios";
-import type { AxiosInstance,AxiosRequestConfig,
-  AxiosResponse, InternalAxiosRequestConfig } from "axios";
-
+import axios from 'axios';
+import type {
+  AxiosError,
+  AxiosInstance,
+  AxiosRequestConfig,
+  AxiosResponse,
+  InternalAxiosRequestConfig,
+} from 'axios';
 import { getCsrfToken, setCsrfToken, clearCsrfToken } from './csrfToken';
+// Both flags imported from logoutFlag.ts which has zero deps — no circular chain.
+import { isLogoutInProgress, isLoggedOutLocally } from './logoutFlag';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
+// ── Helpers ───────────────────────────────────────────────────────────────────
 
 function getCsrfTokenFromCookie(): string | null {
-  if (typeof document === "undefined") return null;
-
-  const match = document.cookie
-    .split("; ")
-    .find((row) => row.startsWith("csrf-token="));
-
-  return match ? match.split("=")[1] : null;
+  if (typeof document === 'undefined') return null;
+  const match = document.cookie.split('; ').find((row) => row.startsWith('csrf-token='));
+  return match ? match.split('=')[1] : null;
 }
 
-const api: AxiosInstance = axios.create({
-  baseURL: API_BASE_URL,
-  withCredentials: true, 
-  headers: {
-    "Content-Type": "application/json",
-  },
-});
-
-const csrfBootstrapClient = axios.create({
-  baseURL: API_BASE_URL,
-  withCredentials: true,
-  headers: {
-    "Content-Type": "application/json",
-  },
-});
-
+// Endpoints that must never trigger the 401 → refresh retry loop.
 const AUTH_ENDPOINTS = [
   '/user/login',
   '/user/signup',
   '/user/forgot-password',
   '/user/refresh-token',
+  '/user/logout',
 ];
 
 function isAuthEndpoint(url?: string): boolean {
   if (!url) return false;
-  return AUTH_ENDPOINTS.some((endpoint) => url.includes(endpoint));
+  return AUTH_ENDPOINTS.some((e) => url.includes(e));
 }
+
+function shouldAttachCsrf(config: InternalAxiosRequestConfig): boolean {
+  const method = (config.method || 'get').toUpperCase();
+  return method !== 'GET' && method !== 'HEAD' && method !== 'OPTIONS';
+}
+
+// ── Axios instances ───────────────────────────────────────────────────────────
+
+export const api: AxiosInstance = axios.create({
+  baseURL: API_BASE_URL,
+  withCredentials: true,
+  headers: { 'Content-Type': 'application/json' },
+});
+
+// Separate client used only for the CSRF bootstrap so it doesn't trigger
+// the 401 interceptor on the main instance.
+const csrfBootstrapClient = axios.create({
+  baseURL: API_BASE_URL,
+  withCredentials: true,
+  headers: { 'Content-Type': 'application/json' },
+});
+
+// ── CSRF bootstrap ────────────────────────────────────────────────────────────
 
 async function ensureCsrfToken(): Promise<string | null> {
   const existing = getCsrfToken();
   if (existing) return existing;
-
   try {
     const response = await csrfBootstrapClient.post('/user/refresh-token');
     const token = response.data?.data?.csrfToken ?? response.data?.csrfToken;
@@ -62,84 +70,66 @@ async function ensureCsrfToken(): Promise<string | null> {
   }
 }
 
-function shouldAttachCsrf(config: InternalAxiosRequestConfig): boolean {
-  const method = (config.method || 'get').toUpperCase();
-  return method !== 'GET' && method !== 'HEAD' && method !== 'OPTIONS';
-}
-
+// ── Request interceptor ───────────────────────────────────────────────────────
 
 api.interceptors.request.use(
   async (config: InternalAxiosRequestConfig): Promise<InternalAxiosRequestConfig> => {
     if (shouldAttachCsrf(config) && !isAuthEndpoint(config.url)) {
       const token = getCsrfToken() || getCsrfTokenFromCookie() || (await ensureCsrfToken());
-      if (token) {
-        config.headers["X-CSRF-Token"] = token;
-      }
+      if (token) config.headers['X-CSRF-Token'] = token;
     }
-
     if (config.data instanceof FormData) {
-      delete config.headers["Content-Type"];
+      delete config.headers['Content-Type'];
     }
-
     return config;
   },
-  (error: AxiosError) => Promise.reject(error)
+  (error: AxiosError) => Promise.reject(error),
 );
 
-
+// ── Response interceptor ──────────────────────────────────────────────────────
 
 let isRefreshing = false;
-
-let pendingQueue: {
-  resolve: (value?: unknown) => void;
-  reject: (reason?: unknown) => void;
-}[] = [];
+let pendingQueue: { resolve: (v?: unknown) => void; reject: (r?: unknown) => void }[] = [];
 
 function processQueue(error: unknown): void {
-  pendingQueue.forEach((promise) => {
-    if (error) promise.reject(error);
-    else promise.resolve(undefined);
-  });
-
+  pendingQueue.forEach((p) => (error ? p.reject(error) : p.resolve(undefined)));
   pendingQueue = [];
 }
 
 api.interceptors.response.use(
   (response: AxiosResponse): AxiosResponse => {
+    // Capture fresh CSRF token from any successful response.
     const token = response.data?.data?.csrfToken ?? response.data?.csrfToken;
     if (token) setCsrfToken(token);
     return response;
   },
 
-  async (error: AxiosError): Promise<AxiosResponse | Promise<never>> => {
-    const originalRequest = error.config as AxiosRequestConfig & {
-      _retry?: boolean;
-    };
+  async (error: AxiosError): Promise<AxiosResponse | never> => {
+    const originalRequest = error.config as AxiosRequestConfig & { _retry?: boolean };
 
-    if (!error.response) {
-      return Promise.reject(error);
-    }
+    if (!error.response) return Promise.reject(error);
 
     const status = error.response.status;
 
+    // ── 403: clear CSRF if the backend says the token is invalid ─────────────
     if (status === 403) {
-      const data = error.response.data as unknown;
-      const message =
-        typeof data === 'object' && data !== null && 'message' in data
-          ? (data as { message?: unknown }).message
-          : undefined;
-      if (typeof message === 'string' && message.toLowerCase().includes('csrf')) {
+      const data = error.response.data as { message?: unknown } | null;
+      if (typeof data?.message === 'string' && data.message.toLowerCase().includes('csrf')) {
         clearCsrfToken();
       }
+      return Promise.reject(error);
     }
 
-    
+    // ── 401: attempt a single token refresh ───────────────────────────────────
     if (
       status === 401 &&
       !originalRequest._retry &&
-      !isAuthEndpoint(originalRequest.url)
+      !isAuthEndpoint(originalRequest.url) &&
+      !isLogoutInProgress() &&  // ← never refresh if we're logging out
+      !isLoggedOutLocally()   // ← never refresh after an explicit logout (survives page reload)
     ) {
       if (isRefreshing) {
+        // Queue this request until the ongoing refresh resolves.
         return new Promise((resolve, reject) => {
           pendingQueue.push({ resolve, reject });
         }).then(() => api(originalRequest));
@@ -149,18 +139,15 @@ api.interceptors.response.use(
       isRefreshing = true;
 
       try {
-        await api.post("/user/refresh-token");
-
+        await api.post('/user/refresh-token');
         processQueue(null);
-
         return api(originalRequest);
       } catch (refreshError) {
         processQueue(refreshError);
-
-        if (window.location.pathname !== "/signin") {
-          window.location.href = "/signin";
+        // Refresh failed — full page redirect to /signin (forces a clean reload).
+        if (typeof window !== 'undefined' && window.location.pathname !== '/signin') {
+          window.location.href = '/signin';
         }
-
         return Promise.reject(refreshError);
       } finally {
         isRefreshing = false;
@@ -168,11 +155,7 @@ api.interceptors.response.use(
     }
 
     return Promise.reject(error);
-  }
+  },
 );
 
-
-
 export default api;
-export { api };
-

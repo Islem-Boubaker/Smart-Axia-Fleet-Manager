@@ -1,107 +1,108 @@
-// ─────────────────────────────────────────────────────────────
-//  useAuth — cookie-based auth hook (no tokens in JS)
-// ─────────────────────────────────────────────────────────────
 import { useCallback } from 'react';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation } from '@tanstack/react-query';
+import { useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { useAppDispatch, useAppSelector } from '../../../shared/hooks';
-import { clearCsrfToken } from '../../../shared/services/csrfToken';
-import { setUser, clearUser, setLoading, setError } from '../../../store/authSlice';
+import { setLogoutInProgress } from '../../../shared/services/logoutFlag';
+import { clearClientAuthState, clearLogoutMarker } from '../../../shared/services/authCleanup';
+import { setUser, setLoading, setError } from '../../../store/authSlice';
 import { authAPI } from '../services/auth.service';
-import type { SignInCredentials, SignUpData } from '../services/auth.service';
+import type { SignInCredentials} from '../services/auth.service';
+
+const ADMIN_ROLE = 'admin';
+
+const isAdmin = (role?: string) => role?.toLowerCase() === ADMIN_ROLE;
 
 export const useAuth = () => {
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const { user, isAuthenticated, loading, error } = useAppSelector((state) => state.auth);
+  const { user, isAuthenticated, initialized, loading, error } = useAppSelector(
+    (state) => state.auth,
+  );
 
   const signInMutation = useMutation({ mutationFn: authAPI.signIn });
-  const signUpMutation = useMutation({ mutationFn: authAPI.signUp });
   const signOutMutation = useMutation({ mutationFn: authAPI.signOut });
 
+  // ── signIn ──────────────────────────────────────────────────────────────────
   const signIn = useCallback(
     async (credentials: SignInCredentials) => {
+      dispatch(setLoading(true));
+      dispatch(setError(null));
+
+      // Allow the refresh interceptor (may have been suppressed by a prior logout).
+      setLogoutInProgress(false);
+
       try {
-        dispatch(setLoading(true));
-        dispatch(setError(null));
         const authUser = await signInMutation.mutateAsync(credentials);
+
+        // ── Role guard: only ADMIN may enter this dashboard ──────────────────
+        if (!isAdmin(authUser.role)) {
+          // Best-effort: ask the backend to clear the session cookie it just set.
+          try {
+            await authAPI.signOut();
+          } catch {
+            // ignore — we always clean up locally
+          }
+          await clearClientAuthState(queryClient, dispatch);
+          dispatch(setError('auth.accessDenied'));
+          navigate('/signin', { replace: true });
+          return;
+        }
+
+        // Successful ADMIN login — clear the logout marker so future page
+        // loads run the /me bootstrap normally instead of staying on /signin.
+        clearLogoutMarker();
+
         dispatch(setUser(authUser));
-        navigate('/dashboard');
+        navigate('/dashboard', { replace: true });
       } catch (err: unknown) {
         const axiosErr = err as { response?: { data?: { message?: string } } };
-        const errorMessage = axiosErr.response?.data?.message || 'Sign in failed';
-        dispatch(setError(errorMessage));
+        const message = axiosErr.response?.data?.message || 'auth.signInFailed';
+        dispatch(setError(message));
         throw err;
       } finally {
         dispatch(setLoading(false));
       }
     },
-    [dispatch, navigate, signInMutation]
+    [dispatch, navigate, queryClient, signInMutation],
   );
 
-  const signUp = useCallback(
-    async (data: SignUpData) => {
-      try {
-        dispatch(setLoading(true));
-        dispatch(setError(null));
-        const authUser = await signUpMutation.mutateAsync(data);
-        dispatch(setUser(authUser));
-        navigate('/dashboard');
-      } catch (err: unknown) {
-        const axiosErr = err as { response?: { data?: { message?: string } } };
-        const errorMessage = axiosErr.response?.data?.message || 'Sign up failed';
-        dispatch(setError(errorMessage));
-        throw err;
-      } finally {
-        dispatch(setLoading(false));
-      }
-    },
-    [dispatch, navigate, signUpMutation]
-  );
-
+  // ── signOut ─────────────────────────────────────────────────────────────────
   const signOut = useCallback(async () => {
     try {
       await signOutMutation.mutateAsync();
-      dispatch(clearUser());
-      clearCsrfToken();
-      queryClient.clear();
-      navigate('/signin', { replace: true });
-    } catch (err) {
-      console.error('Sign out error:', err);
-      // Clear locally even if API call fails
-      dispatch(clearUser());
-      clearCsrfToken();
-      queryClient.clear();
+    } catch {
+      // Ignore API errors — we always clean up locally.
+    } finally {
+      await clearClientAuthState(queryClient, dispatch);
       navigate('/signin', { replace: true });
     }
   }, [dispatch, navigate, queryClient, signOutMutation]);
+
+  // ── forgotPassword ───────────────────────────────────────────────────────────
   const forgotPassword = useCallback(
     async (email: string) => {
       try {
         await authAPI.forgotPassword(email);
-      } catch (error: unknown) {
-        const axiosError = error as {
-          response?: { data?: { message?: string } };
-          message?: string;
-        };
-        const errorMessage = axiosError.response?.data?.message || axiosError.message || 'Failed to request new password';
-        dispatch(setError(errorMessage));
-        throw error;
+      } catch (err: unknown) {
+        const axiosErr = err as { response?: { data?: { message?: string } }; message?: string };
+        const message = axiosErr.response?.data?.message ?? axiosErr.message ?? 'auth.forgotFailed';
+        dispatch(setError(message));
+        throw err;
       }
     },
-    [dispatch]
+    [dispatch],
   );
 
   return {
     user,
     isAuthenticated,
+    initialized,
     loading,
     error,
     signIn,
-    signUp,
     signOut,
     forgotPassword,
   };
 };
-

@@ -34,6 +34,7 @@ const notificationSlice = createSlice({
   name: "notifications",
   initialState,
   reducers: {
+    resetNotifications: () => initialState,
     addNotification(state, action) {
       const exists = state.items.some((item) => item.id === action.payload.id);
       if (!exists) {
@@ -89,6 +90,6 @@ const notificationSlice = createSlice({
   },
 });
 
-export const { addNotification, setUnreadCount, markAsRead, markAllAsRead } = notificationSlice.actions;
+export const { resetNotifications, addNotification, setUnreadCount, markAsRead, markAllAsRead } = notificationSlice.actions;
 
 export default notificationSlice.reducer;

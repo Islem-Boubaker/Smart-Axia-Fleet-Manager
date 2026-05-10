@@ -1,18 +1,16 @@
-// src/router/PublicRoute.tsx
-import { Navigate, Outlet } from "react-router-dom";
-import { useSelector } from "react-redux";
-import { type RootState} from "../store";
-import { SimpleLoader } from "../shared/components";
+import { Navigate, Outlet } from 'react-router-dom';
+import { useAppSelector } from '../shared/hooks';
+import { SimpleLoader } from '../shared/components';
 
 export default function PublicRoute() {
-  const { isAuthenticated, loading } = useSelector((state: RootState) => state.auth);
+  const { isAuthenticated, initialized, user } = useAppSelector((state) => state.auth);
 
-  if (loading) {
-    return <SimpleLoader />;
-  }
+  // Wait for /me bootstrap before deciding whether to redirect.
+  if (!initialized) return <SimpleLoader />;
 
-  // Redirect to dashboard if already authenticated
-  if (isAuthenticated) {
+  // Only redirect to the dashboard if the session belongs to an ADMIN.
+  // A DRIVER who somehow has a valid cookie must not enter this admin UI.
+  if (isAuthenticated && user?.role?.toLowerCase() === 'admin') {
     return <Navigate to="/dashboard" replace />;
   }
 
