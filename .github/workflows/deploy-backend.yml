@@ -62,3 +62,8 @@ jobs:
           app-name: 'smart-axia-fleet-manager-server'
           slot-name: 'Production'
           package: ./fleet-backend
+
+
+
+
+          
