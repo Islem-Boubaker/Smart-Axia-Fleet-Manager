@@ -42,11 +42,7 @@ function AppLayout() {
           name="trips/live"
           options={{ animation: "slide_from_bottom" }}
         />
-        <Stack.Screen
-          name="maps/index"
-          options={{ animation: "slide_from_bottom" }}
-        />
-        <Stack.Screen
+<Stack.Screen
           name="reclamations/create"
           options={{ animation: "slide_from_right" }}
         />
