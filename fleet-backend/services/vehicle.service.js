@@ -7,8 +7,9 @@ import { getPagination, getPagingData } from '../utils/pagination.js';
 import { eventBus, FLEET_EVENTS } from '../events/eventBus.js';
 import { buildCarPrompt } from '../utils/promptBuilder.js';
 import validateAndFill from '../utils/validateAndFill.js';
-import { runAgents } from '../utils/runAgents.js';
 import { semanticSearch, semanticSet } from './semanticCache.service.js';
+import { callGeminiAndParse } from './geminiService.js';
+import { computeMaintenanceFlags } from './maintenanceRules.service.js';
 
 // ─────────────────────────────────────────────
 // Helpers
@@ -391,60 +392,52 @@ export const generateMaintenanceAI = async (vehicleId) => {
     const vehicle = await Vehicle.findByPk(vehicleId);
     if (!vehicle) return null;
 
-    const prompt = buildCarPrompt(vehicle);
-    const semanticPrompt = buildSemanticCachePrompt(vehicle);
+    // Normalize to plain object and fix legacy JSON-string fields
+    const normalized = vehicle.toJSON();
+    if (typeof normalized.reported_issues_text === 'string') {
+        try { normalized.reported_issues_text = JSON.parse(normalized.reported_issues_text); }
+        catch { normalized.reported_issues_text = []; }
+    }
 
+    // 1. Deterministic flags — fast, no API call needed
+    const flags = computeMaintenanceFlags(normalized);
+
+    const semanticPrompt = buildSemanticCachePrompt(vehicle);
     const semanticAttributes = {
         feature: 'maintenance-recommendation',
         vehicleId: String(vehicleId),
     };
 
-    const parseRecommendation = (rawText) => {
-        const raw = typeof rawText === 'string' ? rawText : '';
-        const clean = raw.replace(/```json|```/gi, '').trim();
-        const start = clean.indexOf('{');
-        const end = clean.lastIndexOf('}');
-
-        if (start === -1 || end === -1 || end < start) {
-            throw new Error('No valid JSON object found in AI output');
-        }
-
-        const jsonCandidate = clean.slice(start, end + 1);
-        let parsed = JSON.parse(jsonCandidate);
-        parsed = validateAndFill(parsed);
-        return parsed;
-    };
-
+    // 2. Check semantic cache
     const cached = await semanticSearch(semanticPrompt, { attributes: semanticAttributes });
-
     if (cached?.response) {
         try {
-            const parsed = parseRecommendation(cached.response);
-            await vehicle.update({
-                maintenance_recommandation_ai: parsed,
-            });
-            return parsed;
-        } catch (error) {
-            console.warn('[SemanticCache] Cached recommendation parse failed:', error.message);
+            const cacheParsed =
+                typeof cached.response === 'string'
+                    ? JSON.parse(cached.response)
+                    : cached.response;
+            const validated = validateAndFill(cacheParsed);
+            const toStore = { ...validated, flags, generated_at: new Date().toISOString() };
+            await vehicle.update({ maintenance_recommandation_ai: toStore });
+            return { flags, ...validated };
+        } catch (err) {
+            console.warn('[SemanticCache] Cached recommendation invalid, re-generating:', err.message);
         }
     }
 
-    const data = await runAgents(prompt);
-    const raw = typeof data?.response === 'string' ? data.response : '';
+    // 3. Build prompt with deterministic flags and call Gemini
+    const prompt = buildCarPrompt(normalized, flags);
+    const aiResult = await callGeminiAndParse(prompt);
 
-    try {
-        const parsed = parseRecommendation(raw);
+    // 4. Validate and normalise Gemini output shape
+    const validated = validateAndFill(aiResult);
 
-        await vehicle.update({
-            maintenance_recommandation_ai: parsed,
-        });
+    // 5. Persist with flags for transparency
+    const toStore = { ...validated, flags, generated_at: new Date().toISOString() };
+    await vehicle.update({ maintenance_recommandation_ai: toStore });
 
-        await semanticSet(semanticPrompt, JSON.stringify(parsed), {
-            attributes: semanticAttributes,
-        });
+    // 6. Cache the validated result
+    await semanticSet(semanticPrompt, JSON.stringify(validated), { attributes: semanticAttributes });
 
-        return parsed;
-    } catch (err) {
-        return { raw, parseError: true, error: err?.message || 'Invalid AI output' };
-    }
+    return { flags, ...validated };
 };

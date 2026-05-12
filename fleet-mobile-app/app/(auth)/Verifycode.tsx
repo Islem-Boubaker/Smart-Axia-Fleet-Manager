@@ -1,4 +1,4 @@
-import VerifyCodeScreen from "@/features/auth/screens/VerifyCodeScreen";
+import VerifyCodeScreen from "@/features/auth/screens/Verifycodescreen";
 
 export default function VerifyCodeRoute() {
   return <VerifyCodeScreen />;
