@@ -14,10 +14,22 @@ export type { VehicleStatusLabel };
 export interface MaintenanceRecommendation {
   overview: string;
   level: 'HIGH' | 'MEDIUM' | 'LOW';
+  justification?: string;
+  component?: string;
+  estimated_urgency_days?: number;
+}
+
+export interface MaintenanceFlag {
+  component: string;
+  severity: 'HIGH' | 'MEDIUM' | 'LOW';
+  note?: string;
+  kmOverdue?: number;
 }
 
 interface MaintenanceRecommendationPayload {
   recommendations: MaintenanceRecommendation[];
+  flags?: MaintenanceFlag[];
+  generated_at?: string;
 }
 
 export interface VehicleAssignmentSummary {
@@ -37,6 +49,7 @@ export interface VehicleTableRow {
   currentAssignment: VehicleAssignmentSummary | null;
   maintenanceHistory: Maintenance[];
   maintenanceRecommendations: MaintenanceRecommendation[];
+  maintenanceFlags: MaintenanceFlag[];
 }
 
 const getErrorMessage = (err: unknown, fallback: string): string => {
@@ -104,7 +117,13 @@ const isMaintenanceLevel = (value: unknown): value is MaintenanceRecommendation[
 const normalizeMaintenanceRecommendation = (value: unknown): MaintenanceRecommendation | null => {
   if (!value || typeof value !== 'object') return null;
 
-  const candidate = value as { overview?: unknown; level?: unknown };
+  const candidate = value as {
+    overview?: unknown;
+    level?: unknown;
+    justification?: unknown;
+    component?: unknown;
+    estimated_urgency_days?: unknown;
+  };
   const overview = typeof candidate.overview === 'string' ? candidate.overview.trim() : '';
   const level = isMaintenanceLevel(candidate.level) ? candidate.level : null;
 
@@ -113,7 +132,28 @@ const normalizeMaintenanceRecommendation = (value: unknown): MaintenanceRecommen
   return {
     overview,
     level,
+    justification: typeof candidate.justification === 'string' ? candidate.justification.trim() : undefined,
+    component: typeof candidate.component === 'string' ? candidate.component.trim() : undefined,
+    estimated_urgency_days: typeof candidate.estimated_urgency_days === 'number' ? candidate.estimated_urgency_days : undefined,
   };
+};
+
+export const parseMaintenanceFlags = (vehicle: Vehicle): MaintenanceFlag[] => {
+  const raw = vehicle.maintenance_recommandation_ai;
+  const parsed = (() => {
+    if (raw == null) return null;
+    if (typeof raw === 'string') { try { return JSON.parse(raw) as unknown; } catch { return null; } }
+    return raw;
+  })();
+  if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return [];
+  const flags = (parsed as { flags?: unknown }).flags;
+  if (!Array.isArray(flags)) return [];
+  return flags.filter(
+    (f): f is MaintenanceFlag =>
+      f != null && typeof f === 'object' &&
+      typeof (f as MaintenanceFlag).component === 'string' &&
+      ((f as MaintenanceFlag).severity === 'HIGH' || (f as MaintenanceFlag).severity === 'MEDIUM' || (f as MaintenanceFlag).severity === 'LOW'),
+  );
 };
 
 export const parseMaintenanceRecommendation = (vehicle: Vehicle): MaintenanceRecommendation[] => {
@@ -309,6 +349,7 @@ export const useVehicles = () => {
         currentAssignment,
         maintenanceHistory: vehicleMaintenanceHistory,
         maintenanceRecommendations: parseMaintenanceRecommendation(vehicle),
+        maintenanceFlags: parseMaintenanceFlags(vehicle),
       };
     });
   }, [maintenanceRecords, trips, vehicles]);

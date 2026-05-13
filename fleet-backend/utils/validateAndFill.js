@@ -1,21 +1,21 @@
 /**
- * Normalises Gemini output into a canonical { recommendation: {...} } shape.
+ * Normalises Gemini output into { recommendations: [...] } — the shape the frontend reads.
  *
- * Handles two schemas that Gemini may return:
- *   { recommendation: { overview, level, ... } }   ← new prompt format
- *   { recommendations: [{ overview, level }, ...] } ← old prompt format
+ * Accepts both schemas Gemini may return:
+ *   { recommendations: [{ overview, level, ... }] }  ← array format (prompt output)
+ *   { recommendation: { overview, level, ... } }     ← singular (defensive fallback)
  *
- * Returns the highest-severity recommendation in the new singular form.
+ * Always returns the single highest-severity item wrapped in an array.
  */
 export default function validateAndFill(parsed) {
     const rank = { HIGH: 3, MEDIUM: 2, LOW: 1 };
 
     // Collect candidates from either schema
     let candidates = [];
-    if (parsed?.recommendation && typeof parsed.recommendation === 'object') {
-        candidates = [parsed.recommendation];
-    } else if (Array.isArray(parsed?.recommendations)) {
+    if (Array.isArray(parsed?.recommendations)) {
         candidates = parsed.recommendations;
+    } else if (parsed?.recommendation && typeof parsed.recommendation === 'object') {
+        candidates = [parsed.recommendation];
     }
 
     const normalized = candidates
@@ -25,13 +25,15 @@ export default function validateAndFill(parsed) {
 
     if (normalized.length === 0) {
         return {
-            recommendation: {
-                overview: 'No critical maintenance risk detected from AI output.',
-                justification: 'All deterministic checks passed with no flags raised.',
-                level: 'LOW',
-                component: 'general',
-                estimated_urgency_days: 90,
-            },
+            recommendations: [
+                {
+                    overview: 'No critical maintenance risk detected from AI output.',
+                    justification: 'All deterministic checks passed with no flags raised.',
+                    level: 'LOW',
+                    component: 'general',
+                    estimated_urgency_days: 90,
+                },
+            ],
         };
     }
 
@@ -39,5 +41,5 @@ export default function validateAndFill(parsed) {
         rank[current.level] > rank[best.level] ? current : best
     );
 
-    return { recommendation: highest };
+    return { recommendations: [highest] };
 }

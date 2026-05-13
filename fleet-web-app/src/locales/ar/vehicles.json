@@ -16,7 +16,8 @@
       "suv": "دفع رباعي",
       "truck": "شاحنة",
       "motorcycle": "دراجة نارية",
-      "van": "حافلة صغيرة"
+      "van": "حافلة صغيرة",
+      "bus": "حافلة"
     },
     "status": {
       "available": "متاح",
@@ -84,7 +85,10 @@
       "assignmentStatus": "الحالة:",
       "assignmentStart": "البداية:",
       "recommendationsHeading": "توصيات الصيانة بالذكاء الاصطناعي",
-      "generate": "إنشاء"
+      "generate": "إنشاء",
+      "detectedFlags": "المشكلات المكتشفة",
+      "urgencyNow": "فوري",
+      "urgencyDays": "خلال {{n}} يوم"
     },
     "form": {
       "submitCreate": "إنشاء المركبة",
@@ -99,7 +103,71 @@
       "conditionWornOut": "مهترئ",
       "brakeCondition": "حالة الفرامل",
       "batteryStatus": "حالة البطارية",
-      "conditionWeak": "ضعيف"
+      "conditionWeak": "ضعيف",
+
+      "sectionIdentity": "التعريف",
+      "brand": "الماركة",
+      "brandPlaceholder": "مثال: Toyota",
+      "vehicleModel": "الموديل",
+      "modelPlaceholder": "مثال: Land Cruiser",
+      "year": "سنة الصنع",
+
+      "sectionSpecs": "المواصفات",
+      "fuelType": "نوع الوقود",
+      "fuelDiesel": "ديزل",
+      "fuelGasoline": "بنزين",
+      "fuelElectric": "كهربائي",
+      "fuelHybrid": "هجين",
+      "fuelLpg": "غاز",
+      "transmissionType": "ناقل الحركة",
+      "transManual": "يدوي",
+      "transAutomatic": "أوتوماتيك",
+      "transCvt": "CVT",
+      "transDct": "DCT",
+      "fuelEfficiency": "كفاءة الوقود (كم/لتر)",
+      "capacityKg": "الطاقة الاستيعابية (كغ)",
+      "loadType": "نوع الحمولة",
+      "loadGeneral": "عام",
+      "loadCold": "سلسلة تبريد",
+      "loadFragile": "هشّ",
+      "loadHeavy": "ثقيل",
+
+      "sectionCompliance": "الحالة والامتثال",
+
+      "sectionUsage": "الاستخدام والحالة",
+      "avgDailyKm": "متوسط الكم اليومي",
+      "drivingProfile": "نمط القيادة",
+      "profileMixed": "مختلط",
+      "profileCity": "مدينة",
+      "profileHighway": "طريق سريع",
+      "profileOffRoad": "طرق وعرة",
+      "climateZone": "المنطقة المناخية",
+      "climateHotDry": "حار وجاف",
+      "climateHumid": "رطب",
+      "climateTemperate": "معتدل",
+      "climateCold": "بارد",
+      "conditionRating": "تقييم الحالة (1–10)",
+      "accidentCount": "عدد الحوادث",
+
+      "sectionComponentAges": "عمر المكونات",
+      "tireAge": "عمر الإطارات (سنوات)",
+      "brakeAge": "عمر الفرامل (سنوات)",
+      "batteryHealth": "صحة البطارية (0–100 %)",
+      "yearsPlaceholder": "سنوات",
+
+      "sectionServiceHistory": "سجل الخدمة",
+      "lastServiceDate": "تاريخ آخر خدمة",
+      "lastBatteryChangeDate": "آخر تغيير للبطارية",
+      "lastOilChangeMileage": "آخر تغيير زيت (كم)",
+      "lastTireChangeMileage": "آخر تغيير إطارات (كم)",
+      "lastBrakeChangeMileage": "آخر تغيير فرامل (كم)",
+      "acLastServiceDate": "آخر خدمة للمكيف",
+      "coolantLastChangeDate": "آخر تغيير لسائل التبريد",
+
+      "sectionIssues": "المشكلات المُبلَّغ عنها",
+      "reportedIssues": "المشكلات المُبلَّغ عنها",
+      "reportedIssuesPlaceholder": "مثال: ضوضاء المحرك، المكيف لا يعمل",
+      "reportedIssuesHint": "افصل المشكلات بفواصل."
     }
   }
 }
