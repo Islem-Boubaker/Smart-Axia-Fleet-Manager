@@ -315,7 +315,7 @@ const VehicleDetailsModal = ({
                         }`}>
                           {rec.estimated_urgency_days === 0
                             ? t('vehicles.details.urgencyNow', 'Act now')
-                            : t('vehicles.details.urgencyDays', { days: rec.estimated_urgency_days }, `Within ${rec.estimated_urgency_days}d`)}
+                            : t('vehicles.details.urgencyDays', { days: rec.estimated_urgency_days, defaultValue: `Within ${rec.estimated_urgency_days}d` })}
                         </span>
                       )}
                     </div>
