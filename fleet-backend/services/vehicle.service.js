@@ -23,29 +23,20 @@ const publishSafely = (event, payload, label) => {
     }
 };
 
+// Minimal cache key — only fields that change the recommendation outcome.
+// Must stay under 128 tokens (semantic cache API limit).
 const buildSemanticCachePrompt = (vehicle) => {
-    const payload = {
-        id: vehicle?.id ?? null,
-        brand: vehicle?.brand ?? null,
-        model: vehicle?.model ?? null,
-        year: vehicle?.year ?? null,
-        mileage: vehicle?.mileage ?? null,
-        vehicle_type: vehicle?.vehicle_type ?? null,
-        transmission_type: vehicle?.transmission_type ?? null,
-        fuel_type: vehicle?.fuel_type ?? null,
-        engine_size: vehicle?.engine_size ?? null,
-        avg_daily_km: vehicle?.avg_daily_km ?? null,
-        driving_profile: vehicle?.driving_profile ?? null,
-        climate_zone: vehicle?.climate_zone ?? null,
-        accident_count: vehicle?.accident_count ?? null,
-        reported_issues_text: vehicle?.reported_issues_text ?? null,
-        last_oil_change_mileage: vehicle?.last_oil_change_mileage ?? null,
-        last_tire_change_mileage: vehicle?.last_tire_change_mileage ?? null,
-        last_brake_change_mileage: vehicle?.last_brake_change_mileage ?? null,
-    };
-
-    const prompt = JSON.stringify(payload);
-    return prompt.length <= 1024 ? prompt : prompt.slice(0, 1024);
+    const v = vehicle ?? {};
+    return [
+        `id:${v.id ?? ''}`,
+        `km:${v.mileage ?? 0}`,
+        `oil:${v.last_oil_change_mileage ?? 0}`,
+        `tire:${v.last_tire_change_mileage ?? 0}`,
+        `brake:${v.last_brake_change_mileage ?? 0}`,
+        `tireAge:${v.tire_age ?? 0}`,
+        `brakeAge:${v.brake_age ?? 0}`,
+        `year:${v.year ?? 0}`,
+    ].join(' ');
 };
 
 const VALID_VEHICLE_STATUSES = new Set([
@@ -419,7 +410,7 @@ export const generateMaintenanceAI = async (vehicleId) => {
             const validated = validateAndFill(cacheParsed);
             const toStore = { ...validated, flags, generated_at: new Date().toISOString() };
             await vehicle.update({ maintenance_recommandation_ai: toStore });
-            return { flags, ...validated };
+            return toStore;
         } catch (err) {
             console.warn('[SemanticCache] Cached recommendation invalid, re-generating:', err.message);
         }
@@ -429,15 +420,15 @@ export const generateMaintenanceAI = async (vehicleId) => {
     const prompt = buildCarPrompt(normalized, flags);
     const aiResult = await callGeminiAndParse(prompt);
 
-    // 4. Validate and normalise Gemini output shape
+    // 4. Validate and normalise Gemini output shape → { recommendations: [...] }
     const validated = validateAndFill(aiResult);
 
-    // 5. Persist with flags for transparency
+    // 5. Persist — store flags alongside for transparency
     const toStore = { ...validated, flags, generated_at: new Date().toISOString() };
     await vehicle.update({ maintenance_recommandation_ai: toStore });
 
     // 6. Cache the validated result
     await semanticSet(semanticPrompt, JSON.stringify(validated), { attributes: semanticAttributes });
 
-    return { flags, ...validated };
+    return toStore;
 };

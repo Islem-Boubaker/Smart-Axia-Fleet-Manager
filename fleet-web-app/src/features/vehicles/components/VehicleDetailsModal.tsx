@@ -2,12 +2,8 @@ import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Button, GlobalCard } from '../../../shared/components';
 import type { Vehicle } from '../../../types';
-import type { VehicleAssignmentSummary } from '../hooks/useVehicles';
-
-interface MaintenanceRecommendation {
-  overview: string;
-  level: 'HIGH' | 'MEDIUM' | 'LOW';
-}
+import type { VehicleAssignmentSummary, MaintenanceRecommendation, MaintenanceFlag } from '../hooks/useVehicles';
+import { parseMaintenanceFlags, parseMaintenanceRecommendation } from '../hooks/useVehicles';
 
 interface VehicleDetailsModalProps {
   isOpen: boolean;
@@ -53,18 +49,22 @@ const VehicleDetailsModal = ({
   const { t, i18n } = useTranslation();
   const [isGenerating, setIsGenerating] = useState(false);
   const [liveRecommendations, setLiveRecommendations] = useState<MaintenanceRecommendation[] | null>(null);
+  const [liveFlags, setLiveFlags] = useState<MaintenanceFlag[] | null>(null);
 
+  // Reset live state when modal closes
   useEffect(() => {
     if (!isOpen) {
       setLiveRecommendations(null);
+      setLiveFlags(null);
       setIsGenerating(false);
     }
   }, [isOpen]);
 
   const displayedRecommendations: MaintenanceRecommendation[] =
-    liveRecommendations ??
-    ((vehicle?.maintenance_recommandation_ai as { recommendations?: MaintenanceRecommendation[] } | null | undefined)
-      ?.recommendations ?? []);
+    liveRecommendations ?? (vehicle ? parseMaintenanceRecommendation(vehicle) : []);
+
+  const displayedFlags: MaintenanceFlag[] =
+    liveFlags ?? (vehicle ? parseMaintenanceFlags(vehicle) : []);
 
   const handleGenerateRecommendations = async () => {
     if (!vehicle) return;
@@ -73,6 +73,7 @@ const VehicleDetailsModal = ({
     try {
       const fresh = await onGenerateRecommendations(vehicle.id);
       setLiveRecommendations(fresh);
+      setLiveFlags(null);
       await onRecommendationsGenerated?.();
     } catch (generationError) {
       console.error('Failed to generate recommendations:', generationError);
@@ -119,6 +120,17 @@ const VehicleDetailsModal = ({
   const recommendationTextClass = dark
     ? 'mt-1 text-xs leading-relaxed text-slate-300'
     : 'mt-1 text-xs leading-relaxed text-slate-700';
+  const flagSeverityClass = (severity: MaintenanceFlag['severity']) => {
+    if (dark) {
+      if (severity === 'HIGH') return 'border-rose-400/20 bg-rose-950/25 text-rose-300';
+      if (severity === 'MEDIUM') return 'border-amber-300/20 bg-amber-950/20 text-amber-300';
+      return 'border-cyan-300/20 bg-cyan-950/20 text-cyan-300';
+    }
+    if (severity === 'HIGH') return 'border-rose-200 bg-rose-50 text-rose-600';
+    if (severity === 'MEDIUM') return 'border-amber-200 bg-amber-50 text-amber-600';
+    return 'border-blue-200 bg-blue-50 text-blue-600';
+  };
+
   const recommendationCardClass = (level: MaintenanceRecommendation['level']) => {
     if (dark) {
       if (level === 'HIGH') return 'rounded-xl border border-rose-400/25 bg-rose-950/30 px-4 py-3';
@@ -280,20 +292,66 @@ const VehicleDetailsModal = ({
             {displayedRecommendations.length === 0 ? (
               <p className={dark ? 'text-xs italic text-slate-500' : 'text-xs italic text-slate-400'}>{t('common.noRecommendationsYet')}</p>
             ) : (
-              <div className="space-y-2">
+              <div className="space-y-3">
                 {displayedRecommendations.map((rec, index) => (
-                  <div
-                    key={index}
-                    className={recommendationCardClass(rec.level)}
-                  >
-                    <span className={`text-[10px] font-bold uppercase tracking-widest ${recommendationLevelClass(rec.level)}`}>
-                      {rec.level}
-                    </span>
-                    <p className={recommendationTextClass}>
+                  <div key={index} className={recommendationCardClass(rec.level)}>
+                    {/* Level + component */}
+                    <div className="flex flex-wrap items-center gap-2 mb-1">
+                      <span className={`text-[10px] font-bold uppercase tracking-widest ${recommendationLevelClass(rec.level)}`}>
+                        {rec.level}
+                      </span>
+                      {rec.component && (
+                        <span className={`text-[10px] font-semibold uppercase tracking-wide px-1.5 py-0.5 rounded ${
+                          dark ? 'bg-slate-700 text-slate-300' : 'bg-slate-100 text-slate-600'
+                        }`}>
+                          {rec.component.replace(/_/g, ' ')}
+                        </span>
+                      )}
+                      {typeof rec.estimated_urgency_days === 'number' && (
+                        <span className={`ml-auto text-[10px] font-semibold ${
+                          rec.estimated_urgency_days === 0
+                            ? dark ? 'text-rose-300' : 'text-rose-600'
+                            : dark ? 'text-slate-400' : 'text-slate-500'
+                        }`}>
+                          {rec.estimated_urgency_days === 0
+                            ? t('vehicles.details.urgencyNow', 'Act now')
+                            : t('vehicles.details.urgencyDays', { days: rec.estimated_urgency_days }, `Within ${rec.estimated_urgency_days}d`)}
+                        </span>
+                      )}
+                    </div>
+                    {/* Action */}
+                    <p className={`${recommendationTextClass} font-medium`}>
                       {rec.overview}
                     </p>
+                    {/* Justification */}
+                    {rec.justification && (
+                      <p className={`mt-1 text-[11px] italic ${dark ? 'text-slate-400' : 'text-slate-500'}`}>
+                        {rec.justification}
+                      </p>
+                    )}
                   </div>
                 ))}
+              </div>
+            )}
+
+            {/* Detected flags sub-section */}
+            {displayedFlags.length > 0 && (
+              <div className="mt-4">
+                <p className={`mb-2 text-[11px] font-semibold uppercase tracking-wide ${dark ? 'text-slate-400' : 'text-slate-500'}`}>
+                  {t('vehicles.details.detectedFlags', 'Detected issues')}
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  {displayedFlags.map((flag, i) => (
+                    <span
+                      key={i}
+                      title={flag.note}
+                      className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-[11px] font-semibold ${flagSeverityClass(flag.severity)}`}
+                    >
+                      <span className="w-1.5 h-1.5 rounded-full bg-current opacity-80" />
+                      {flag.component.replace(/_/g, ' ')}
+                    </span>
+                  ))}
+                </div>
               </div>
             )}
           </section>

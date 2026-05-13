@@ -97,13 +97,15 @@ Analyze the vehicle data and the deterministic flags above. Return the SINGLE mo
 
 ## OUTPUT — STRICT JSON ONLY, NO MARKDOWN, NO PROSE
 {
-  "recommendation": {
-    "overview": "<imperative mechanical action>",
-    "justification": "<one sentence citing the specific data point>",
-    "level": "HIGH",
-    "component": "<specific component name>",
-    "estimated_urgency_days": 0
-  }
+  "recommendations": [
+    {
+      "overview": "<imperative mechanical action>",
+      "justification": "<one sentence citing the specific data point>",
+      "level": "HIGH",
+      "component": "<specific component name>",
+      "estimated_urgency_days": 0
+    }
+  ]
 }
 `.trim();
 }

@@ -6,10 +6,15 @@ export type { Vehicle };
 export interface MaintenanceRecommendation {
   overview: string;
   level: 'HIGH' | 'MEDIUM' | 'LOW';
+  justification?: string;
+  component?: string;
+  estimated_urgency_days?: number;
 }
 
 export interface MaintenanceRecommendationResponse {
   recommendations: MaintenanceRecommendation[];
+  flags?: Array<{ component: string; severity: string; note?: string; kmOverdue?: number }>;
+  generated_at?: string;
 }
 
 const normalizePhotos = (photos: unknown): string[] => {

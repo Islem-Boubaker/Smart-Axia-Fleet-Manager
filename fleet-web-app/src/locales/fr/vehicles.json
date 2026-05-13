@@ -16,7 +16,8 @@
       "suv": "SUV",
       "truck": "Camion",
       "motorcycle": "Moto",
-      "van": "Fourgon"
+      "van": "Fourgon",
+      "bus": "Bus"
     },
     "status": {
       "available": "Disponible",
@@ -84,7 +85,10 @@
       "assignmentStatus": "Statut :",
       "assignmentStart": "Début :",
       "recommendationsHeading": "Recommandations maintenance IA",
-      "generate": "Générer"
+      "generate": "Générer",
+      "detectedFlags": "Problèmes détectés",
+      "urgencyNow": "Immédiat",
+      "urgencyDays": "dans {{n}} jours"
     },
     "form": {
       "submitCreate": "Créer le véhicule",
@@ -99,7 +103,71 @@
       "conditionWornOut": "Usé",
       "brakeCondition": "État des freins",
       "batteryStatus": "État de la batterie",
-      "conditionWeak": "Faible"
+      "conditionWeak": "Faible",
+
+      "sectionIdentity": "Identification",
+      "brand": "Marque",
+      "brandPlaceholder": "ex. Toyota",
+      "vehicleModel": "Modèle",
+      "modelPlaceholder": "ex. Land Cruiser",
+      "year": "Année",
+
+      "sectionSpecs": "Caractéristiques",
+      "fuelType": "Type de carburant",
+      "fuelDiesel": "Diesel",
+      "fuelGasoline": "Essence",
+      "fuelElectric": "Électrique",
+      "fuelHybrid": "Hybride",
+      "fuelLpg": "GPL",
+      "transmissionType": "Boîte de vitesses",
+      "transManual": "Manuelle",
+      "transAutomatic": "Automatique",
+      "transCvt": "CVT",
+      "transDct": "DCT",
+      "fuelEfficiency": "Consommation (km/L)",
+      "capacityKg": "Capacité (kg)",
+      "loadType": "Type de charge",
+      "loadGeneral": "Général",
+      "loadCold": "Chaîne du froid",
+      "loadFragile": "Fragile",
+      "loadHeavy": "Lourd",
+
+      "sectionCompliance": "Statut & Conformité",
+
+      "sectionUsage": "Usage & Condition",
+      "avgDailyKm": "Km quotidiens moyens",
+      "drivingProfile": "Profil de conduite",
+      "profileMixed": "Mixte",
+      "profileCity": "Ville",
+      "profileHighway": "Autoroute",
+      "profileOffRoad": "Tout-terrain",
+      "climateZone": "Zone climatique",
+      "climateHotDry": "Chaud et sec",
+      "climateHumid": "Humide",
+      "climateTemperate": "Tempéré",
+      "climateCold": "Froid",
+      "conditionRating": "Note de condition (1–10)",
+      "accidentCount": "Nombre d'accidents",
+
+      "sectionComponentAges": "Âge des composants",
+      "tireAge": "Âge des pneus (ans)",
+      "brakeAge": "Âge des freins (ans)",
+      "batteryHealth": "Santé batterie (0–100 %)",
+      "yearsPlaceholder": "ans",
+
+      "sectionServiceHistory": "Historique de service",
+      "lastServiceDate": "Dernière date de service",
+      "lastBatteryChangeDate": "Dernier changement batterie",
+      "lastOilChangeMileage": "Dernier vidange (km)",
+      "lastTireChangeMileage": "Dernier changement pneus (km)",
+      "lastBrakeChangeMileage": "Dernier changement freins (km)",
+      "acLastServiceDate": "Dernier service climatisation",
+      "coolantLastChangeDate": "Dernier changement liquide de refroidissement",
+
+      "sectionIssues": "Problèmes signalés",
+      "reportedIssues": "Problèmes signalés",
+      "reportedIssuesPlaceholder": "ex. Bruit moteur, Climatisation en panne",
+      "reportedIssuesHint": "Séparez les problèmes par des virgules."
     }
   }
 }

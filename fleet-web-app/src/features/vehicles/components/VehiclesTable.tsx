@@ -204,6 +204,13 @@ const VehiclesTable = memo(
                       <AppStatusBadge variant={priorityVariant(primaryRecommendation.level)}>
                         {translatePriority(primaryRecommendation.level)}
                       </AppStatusBadge>
+                      {primaryRecommendation.component && (
+                        <span className={`self-center rounded px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${
+                          dark ? 'bg-slate-700 text-slate-300' : 'bg-slate-100 text-slate-500'
+                        }`}>
+                          {primaryRecommendation.component.replace(/_/g, ' ')}
+                        </span>
+                      )}
                       <p
                         className={`min-w-0 flex-1 text-xs leading-relaxed line-clamp-2 ${levelStyle(primaryRecommendation.level)}`}
                         title={primaryRecommendation.overview}
@@ -241,6 +248,13 @@ const VehiclesTable = memo(
                                 <AppStatusBadge variant={priorityVariant(rec.level)}>
                                   {translatePriority(rec.level)}
                                 </AppStatusBadge>
+                                {rec.component && (
+                                  <span className={`self-center rounded px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${
+                                    dark ? 'bg-slate-700 text-slate-300' : 'bg-slate-100 text-slate-500'
+                                  }`}>
+                                    {rec.component.replace(/_/g, ' ')}
+                                  </span>
+                                )}
                                 <p
                                   className={`min-w-0 flex-1 text-xs leading-relaxed line-clamp-2 ${levelStyle(rec.level)}`}
                                   title={rec.overview}

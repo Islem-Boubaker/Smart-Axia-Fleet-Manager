@@ -8,26 +8,90 @@ export interface User {
 
 export interface Vehicle {
   id: string;
-  vin?: string;
+
+  // ── Identity ────────────────────────────────────────────────────────────
   name: string;
-  photos?: string[];
+  vin?: string;
   plaque_immatriculation?: string;
-  type: 'car' | 'suv' | 'truck' | 'motorcycle' | 'van';
+  brand?: string;
+  model?: string;
+  year?: number | null;
+  photos?: string[];
+
+  // ── Type ────────────────────────────────────────────────────────────────
+  /** Frontend UI alias — normalised to vehicle_type by the backend */
+  type: 'car' | 'suv' | 'truck' | 'motorcycle' | 'van' | 'bus';
+  vehicle_type?: 'Car' | 'SUV' | 'Van' | 'Truck' | 'Bus' | 'Motorcycle';
+  /** @deprecated use vehicle_type */
+  Vehicle_Model?: 'Car' | 'SUV' | 'Van' | 'Truck' | 'Bus' | 'Motorcycle';
+
+  // ── Status ──────────────────────────────────────────────────────────────
   status: 'AVAILABLE' | 'IN_MAINTENANCE' | 'OUT_OF_SERVICE' | 'ON_TRIP';
-  Active: boolean;
-  Vehicle_Model: 'Car' | 'SUV' | 'Van' | 'Truck' | 'Bus' | 'Motorcycle';
+  is_active?: boolean;
+  /** @deprecated derived from status */
+  Active?: boolean;
+  /** @deprecated derived from status */
+  Need_Maintenance?: boolean;
+
+  // ── Specs ───────────────────────────────────────────────────────────────
+  fuel_type?: 'gasoline' | 'diesel' | 'electric' | 'hybrid' | 'lpg' | null;
+  transmission_type?: 'manual' | 'automatic' | 'cvt' | 'dct' | null;
+  engine_size?: number | null;
+  fuel_efficiency?: number | null;
+  capacity?: number | null;
+  loadType?: 'general' | 'cold' | 'fragile' | 'heavy';
+
+  // ── Legacy spec aliases ──────────────────────────────────────────────────
+  /** @deprecated use engine_size */
+  Engine_Size?: number | null;
+  /** @deprecated use capacity */
   max_load?: number | null;
+  consumption?: number | null;
+
+  // ── Compliance ──────────────────────────────────────────────────────────
   insurance_expiry_date?: string | null;
   tech_visit_expiry_date?: string | null;
-  consumption?: number | null;
-  Mileage: number;
-  Vehicle_Age: number;
-  Engine_Size?: number | null;
-  Tire_Condition: 'New' | 'Good' | 'Worn Out';
-  Brake_Condition: 'New' | 'Good' | 'Worn Out';
-  Battery_Status: 'New' | 'Good' | 'Weak';
-  Need_Maintenance: boolean;
+
+  // ── Mileage & Usage ──────────────────────────────────────────────────────
+  mileage?: number;
+  /** @deprecated use mileage */
+  Mileage?: number;
+  /** @deprecated use year */
+  Vehicle_Age?: number;
+  avg_daily_km?: number | null;
+  driving_profile?: 'city' | 'highway' | 'mixed' | 'off_road' | null;
+  climate_zone?: 'hot_dry' | 'cold' | 'humid' | 'temperate' | null;
+
+  // ── Condition ───────────────────────────────────────────────────────────
+  conditionRating?: number;
+  tire_age?: number | null;
+  brake_age?: number | null;
+  battery_status?: number | null;
+  accident_count?: number;
+  reported_issues_text?: string[];
+
+  // ── Legacy condition aliases ─────────────────────────────────────────────
+  /** @deprecated use tire_age */
+  Tire_Condition?: 'New' | 'Good' | 'Worn Out';
+  /** @deprecated use brake_age */
+  Brake_Condition?: 'New' | 'Good' | 'Worn Out';
+  /** @deprecated use battery_status */
+  Battery_Status?: 'New' | 'Good' | 'Weak';
+
+  // ── Service history ──────────────────────────────────────────────────────
+  last_service_date?: string | null;
+  last_oil_change_mileage?: number | null;
+  last_tire_change_mileage?: number | null;
+  last_brake_change_mileage?: number | null;
+  last_battery_change_date?: string | null;
+  ac_last_service_date?: string | null;
+  coolant_last_change_date?: string | null;
+  lastMaintenanceDate?: string | null;
+  nextMaintenanceDate?: string | null;
+
+  // ── AI ───────────────────────────────────────────────────────────────────
   maintenance_recommandation_ai?: unknown;
+
   createdAt?: string;
   updatedAt?: string;
 }
