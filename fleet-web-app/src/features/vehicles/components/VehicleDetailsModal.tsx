@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Button, GlobalCard } from '../../../shared/components';
+import { TranslatedText } from '../../../shared/components/TranslatedText';
 import type { Vehicle } from '../../../types';
 import type { VehicleAssignmentSummary, MaintenanceRecommendation, MaintenanceFlag } from '../hooks/useVehicles';
 import { parseMaintenanceFlags, parseMaintenanceRecommendation } from '../hooks/useVehicles';
@@ -301,11 +302,13 @@ const VehicleDetailsModal = ({
                         {rec.level}
                       </span>
                       {rec.component && (
-                        <span className={`text-[10px] font-semibold uppercase tracking-wide px-1.5 py-0.5 rounded ${
-                          dark ? 'bg-slate-700 text-slate-300' : 'bg-slate-100 text-slate-600'
-                        }`}>
-                          {rec.component.replace(/_/g, ' ')}
-                        </span>
+                        <TranslatedText
+                          as="span"
+                          text={rec.component.replace(/_/g, ' ')}
+                          className={`text-[10px] font-semibold uppercase tracking-wide px-1.5 py-0.5 rounded ${
+                            dark ? 'bg-slate-700 text-slate-300' : 'bg-slate-100 text-slate-600'
+                          }`}
+                        />
                       )}
                       {typeof rec.estimated_urgency_days === 'number' && (
                         <span className={`ml-auto text-[10px] font-semibold ${
@@ -314,20 +317,24 @@ const VehicleDetailsModal = ({
                             : dark ? 'text-slate-400' : 'text-slate-500'
                         }`}>
                           {rec.estimated_urgency_days === 0
-                            ? t('vehicles.details.urgencyNow', 'Act now')
-                            : t('vehicles.details.urgencyDays', { days: rec.estimated_urgency_days, defaultValue: `Within ${rec.estimated_urgency_days}d` })}
+                            ? t('vehicles.details.urgencyNow')
+                            : t('vehicles.details.urgencyDays', { n: rec.estimated_urgency_days })}
                         </span>
                       )}
                     </div>
                     {/* Action */}
-                    <p className={`${recommendationTextClass} font-medium`}>
-                      {rec.overview}
-                    </p>
+                    <TranslatedText
+                      as="p"
+                      text={rec.overview}
+                      className={`${recommendationTextClass} font-medium`}
+                    />
                     {/* Justification */}
                     {rec.justification && (
-                      <p className={`mt-1 text-[11px] italic ${dark ? 'text-slate-400' : 'text-slate-500'}`}>
-                        {rec.justification}
-                      </p>
+                      <TranslatedText
+                        as="p"
+                        text={rec.justification}
+                        className={`mt-1 text-[11px] italic ${dark ? 'text-slate-400' : 'text-slate-500'}`}
+                      />
                     )}
                   </div>
                 ))}
@@ -344,11 +351,10 @@ const VehicleDetailsModal = ({
                   {displayedFlags.map((flag, i) => (
                     <span
                       key={i}
-                      title={flag.note}
                       className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-[11px] font-semibold ${flagSeverityClass(flag.severity)}`}
                     >
                       <span className="w-1.5 h-1.5 rounded-full bg-current opacity-80" />
-                      {flag.component.replace(/_/g, ' ')}
+                      <TranslatedText text={flag.component.replace(/_/g, ' ')} />
                     </span>
                   ))}
                 </div>

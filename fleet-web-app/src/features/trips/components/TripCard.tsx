@@ -2,6 +2,7 @@ import { memo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { FiArrowRight, FiTruck, FiUser } from 'react-icons/fi';
 import { Badge } from '../../../shared/components';
+import { TranslatedText } from '../../../shared/components/TranslatedText';
 import type { Trip } from '../../../types';
 import { compactLocationLabel } from '../utils/locationLabel';
 
@@ -246,7 +247,11 @@ const TripCard = memo(({ trip, dark = false, index = 0, isBusy = false, onViewDe
                       {!isLast && <span className={`w-px h-7 my-1 ${connectorClass}`} />}
                     </div>
                     <div className="pb-1">
-                      <p className={`text-sm font-semibold ${dark ? 'text-slate-100' : 'text-slate-900'}`}>{point.title}</p>
+                      <p className={`text-sm font-semibold ${dark ? 'text-slate-100' : 'text-slate-900'}`}>
+                        {point.kind === 'stop'
+                          ? <TranslatedText text={point.title} />
+                          : point.title}
+                      </p>
                       <p className={`text-xs ${subtitleClass}`}>{point.subtitle}</p>
                     </div>
                   </div>

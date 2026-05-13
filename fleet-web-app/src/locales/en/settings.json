@@ -51,8 +51,22 @@
     },
     "notifications": {
       "email": "Email",
-      "push": "Push",
-      "save": "Save preferences"
+      "push": "Push notifications",
+      "save": "Save preferences",
+      "items": {
+        "emailTrips": "Trips",
+        "emailMaintenance": "Maintenance",
+        "emailDrivers": "Drivers",
+        "emailAI": "AI recommendations",
+        "emailSystem": "System",
+        "pushTrips": "Trips",
+        "pushMaintenance": "Maintenance",
+        "pushDrivers": "Drivers",
+        "pushAI": "AI recommendations",
+        "pushSystem": "System",
+        "pushAlerts": "Alerts",
+        "smsAlerts": "SMS alerts"
+      }
     },
     "sidebar": {
       "profile": "Profile",

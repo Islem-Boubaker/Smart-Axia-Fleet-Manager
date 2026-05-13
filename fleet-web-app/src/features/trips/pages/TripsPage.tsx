@@ -8,13 +8,17 @@ import TripsList from '../components/TripsList';
 import TripForm from '../components/TripForm';
 import TripDetailsView from '../components/TripDetailsView';
 import { useTrips } from '../hooks/useTrips';
+import { useTranslatedData } from '../../../shared/hooks/useTranslatedData';
 import { tripsService } from '../services/trips.service';
 import { Button, GlobalCard, Input, Select } from '../../../shared/components';
 import { vehiclesService } from '../../vehicles/services/vehicles.service';
 import { driversService } from '../../drivers/services/drivers.service';
 import type { Driver, Trip, TripStop, Vehicle } from '../../../types';
+
 import { pageShellClasses, pageShellInnerSpacing } from '../../../shared/utils/pageShell';
 import { queryKeys } from '../../../shared/services/queryKeys';
+
+const TRIP_TRANSLATE_FIELDS: (keyof Trip)[] = ['notes', 'region'];
 
 interface ThemeContext {
   dark: boolean;
@@ -125,7 +129,7 @@ const TripsPage = () => {
   const drivers = (driversQuery.data ?? []) as Driver[];
 
   const {
-    trips,
+    trips: rawTrips,
     meta,
     isLoading,
     error,
@@ -142,6 +146,8 @@ const TripsPage = () => {
     limit: 50,
     includeStops: true,
   });
+
+  const { translatedData: trips } = useTranslatedData<Trip>(rawTrips, TRIP_TRANSLATE_FIELDS);
 
   const filteredTrips = trips.filter(trip => {
     const matchesSearch = `${trip.driver?.name ?? ''} ${trip.vehicle?.name ?? ''} ${trip.vehicle?.plaque_immatriculation ?? ''} ${trip.startLocation} ${trip.endLocation}`

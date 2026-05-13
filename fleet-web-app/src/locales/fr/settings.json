@@ -52,7 +52,21 @@
     "notifications": {
       "email": "E-mail",
       "push": "Notifications push",
-      "save": "Enregistrer les préférences"
+      "save": "Enregistrer les préférences",
+      "items": {
+        "emailTrips": "Trajets",
+        "emailMaintenance": "Maintenance",
+        "emailDrivers": "Conducteurs",
+        "emailAI": "Recommandations IA",
+        "emailSystem": "Système",
+        "pushTrips": "Trajets",
+        "pushMaintenance": "Maintenance",
+        "pushDrivers": "Conducteurs",
+        "pushAI": "Recommandations IA",
+        "pushSystem": "Système",
+        "pushAlerts": "Alertes",
+        "smsAlerts": "Alertes SMS"
+      }
     },
     "sidebar": {
       "profile": "Profil",

@@ -1,4 +1,5 @@
 import { useCallback, useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { vehiclesService } from '../services/vehicles.service';
 import { tripsService } from '../../trips/services/trips.service';
@@ -81,24 +82,6 @@ const matchesVehicleMaintenance = (vehicle: Vehicle, maintenance: Maintenance): 
   return plate.length > 0 && plate === maintenancePlate;
 };
 
-const formatTripLabel = (date?: string): string => {
-  if (!date) return 'No trips';
-  const parsed = new Date(date);
-  if (Number.isNaN(parsed.getTime())) return 'No trips';
-
-  const now = Date.now();
-  const diffMs = now - parsed.getTime();
-  const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
-
-  if (diffDays <= 0) {
-    return `Today, ${parsed.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
-  }
-
-  if (diffDays === 1) return 'Yesterday';
-  if (diffDays < 7) return `${diffDays} days ago`;
-
-  return parsed.toLocaleDateString();
-};
 
 const applyMaintenanceRecommendationsToVehicle = (
   vehicle: Vehicle,
@@ -199,6 +182,27 @@ export const parseMaintenanceRecommendation = (vehicle: Vehicle): MaintenanceRec
 
 export const useVehicles = () => {
   const queryClient = useQueryClient();
+  const { t, i18n } = useTranslation();
+
+  const formatTripLabel = useCallback((date?: string): string => {
+    if (!date) return 'no_trips';
+    const parsed = new Date(date);
+    if (Number.isNaN(parsed.getTime())) return 'no_trips';
+
+    const now = Date.now();
+    const diffMs = now - parsed.getTime();
+    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+
+    if (diffDays <= 0) {
+      return t('vehicles.table.last_trip_today', {
+        time: parsed.toLocaleTimeString(i18n.language, { hour: '2-digit', minute: '2-digit' }),
+      });
+    }
+    if (diffDays === 1) return t('vehicles.table.last_trip_yesterday');
+    if (diffDays < 7) return t('vehicles.table.last_trip_days_ago', { count: diffDays });
+
+    return parsed.toLocaleDateString(i18n.language);
+  }, [t, i18n.language]);
 
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<VehicleStatusFilter>('all');
@@ -352,7 +356,7 @@ export const useVehicles = () => {
         maintenanceFlags: parseMaintenanceFlags(vehicle),
       };
     });
-  }, [maintenanceRecords, trips, vehicles]);
+  }, [formatTripLabel, maintenanceRecords, trips, vehicles]);
 
   const filteredVehicles = useMemo<VehicleTableRow[]>(() => {
     const normalizedSearch = searchQuery.trim().toLowerCase();

@@ -1,5 +1,6 @@
 import { AppDataTable, AppRowActions, AppStatusBadge, AppTd, AppTr } from '../../../shared/components';
 import { Badge } from '../../../shared/components';
+import { TranslatedText } from '../../../shared/components/TranslatedText';
 import { useTranslation } from 'react-i18next';
 import type { Driver } from '../../../types';
 
@@ -93,7 +94,11 @@ const DriversGrid = ({ drivers, isLoading, onEdit, onDelete, dark = false }: Pro
             <div>
               <div className="flex items-center gap-2">
                 <p className="font-semibold">{driver.name}</p>
-                {driver.experienceBadge ? <Badge size="sm" variant="info">{driver.experienceBadge.label}</Badge> : null}
+                {driver.experienceBadge ? (
+                  <Badge size="sm" variant="info">
+                    <TranslatedText text={driver.experienceBadge.label} />
+                  </Badge>
+                ) : null}
               </div>
               <p className={`text-xs ${dark ? 'text-slate-400' : 'text-slate-500'}`}>
                 {driver.licenseNumber || t('drivers.table.noLicense')}

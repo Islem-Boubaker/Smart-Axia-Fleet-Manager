@@ -5,6 +5,7 @@ import type { LatLngExpression } from 'leaflet';
 import type { Trip } from '../../../types';
 import 'leaflet/dist/leaflet.css';
 import { compactLocationLabel } from '../utils/locationLabel';
+import { TranslatedText } from '../../../shared/components/TranslatedText';
 import { tripsService, type TripLiveLocation } from '../services/trips.service';
 
 type TripDetailsViewProps = {
@@ -399,9 +400,11 @@ const TripDetailsView = ({ trip, dark = false }: TripDetailsViewProps) => {
           <div className="space-y-2">
             {orderedStops.map((stop) => (
               <div key={stop.id} className={`rounded-xl border px-3 py-2 ${dark ? 'border-slate-700/70 bg-slate-800/40' : 'border-slate-200 bg-slate-50/80'}`}>
-                <p className={`text-sm font-medium ${dark ? 'text-slate-100' : 'text-slate-900'}`}>
-                  {compactLocationLabel(stop.locationName)}
-                </p>
+                <TranslatedText
+                  as="p"
+                  text={compactLocationLabel(stop.locationName)}
+                  className={`text-sm font-medium ${dark ? 'text-slate-100' : 'text-slate-900'}`}
+                />
                 <p className={`text-xs ${dark ? 'text-slate-400' : 'text-slate-600'}`}>
                   {t('common.status')}: {t(`trips.stopStatus.${String(stop.status || '').toLowerCase()}`)} {stop.arrivalTime ? `${t('common.dashBullet')}${formatDateTime(stop.arrivalTime, i18n.language, t('common.na'))}` : ''}
                 </p>

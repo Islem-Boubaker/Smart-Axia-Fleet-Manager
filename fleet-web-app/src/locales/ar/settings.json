@@ -50,9 +50,23 @@
       }
     },
     "notifications": {
-      "email": "البريد",
+      "email": "البريد الإلكتروني",
       "push": "إشعارات فورية",
-      "save": "حفظ التفضيلات"
+      "save": "حفظ التفضيلات",
+      "items": {
+        "emailTrips": "الرحلات",
+        "emailMaintenance": "الصيانة",
+        "emailDrivers": "السائقون",
+        "emailAI": "توصيات الذكاء الاصطناعي",
+        "emailSystem": "النظام",
+        "pushTrips": "الرحلات",
+        "pushMaintenance": "الصيانة",
+        "pushDrivers": "السائقون",
+        "pushAI": "توصيات الذكاء الاصطناعي",
+        "pushSystem": "النظام",
+        "pushAlerts": "التنبيهات",
+        "smsAlerts": "تنبيهات SMS"
+      }
     },
     "sidebar": {
       "profile": "الملف الشخصي",

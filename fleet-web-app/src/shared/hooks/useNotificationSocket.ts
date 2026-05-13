@@ -7,6 +7,9 @@ import type { NotificationRecord } from "../services/notification.api";
 import { toast } from "../components";
 import { queryKeys } from '../services/queryKeys';
 import { localizeNotificationText } from '../utils/localizeNotification';
+import { useTranslatedData } from './useTranslatedData';
+
+const NOTIFICATION_FIELDS: (keyof NotificationRecord)[] = ['title', 'message'];
 
 export interface HeaderNotificationItem {
   id: string;
@@ -154,13 +157,22 @@ export function useNotificationSocket({ token }: UseNotificationSocketOptions = 
     };
   }, [queryClient, token]);
 
+  // Translate raw English title/message from the backend before localizing.
+  // Known notification types (insurance, tech-visit) use i18n keys in
+  // localizeNotificationText and ignore the raw fields; unknown types use
+  // the Azure-translated values directly.
+  const { translatedData: translatedItems } = useTranslatedData<NotificationRecord>(
+    items,
+    NOTIFICATION_FIELDS,
+  );
+
   const notifications = useMemo(
     () =>
-      items.map((item) => {
+      translatedItems.map((item) => {
         const localized = localizeNotificationText(item, t, i18n.language || 'en');
         return toHeaderNotification(item, localized.title, localized.message, i18n.language || 'en');
       }),
-    [i18n.language, items, t]
+    [i18n.language, translatedItems, t]
   );
 
   const markAsRead = useCallback(async (id: string) => {

@@ -2,6 +2,7 @@ import { memo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { FiMail, FiPhone, FiEdit2, FiTrash2, FiUser } from 'react-icons/fi';
 import { Badge } from '../../../shared/components';
+import { TranslatedText } from '../../../shared/components/TranslatedText';
 
 interface DriverCardProps {
   driver: any;
@@ -56,7 +57,11 @@ const DriverCard = memo(({ driver, onEdit, onDelete, dark = false }: DriverCardP
           <div className="min-w-0">
             <h3 className={`text-lg font-semibold truncate ${textClass}`}>{driver.name}</h3>
             <div className="flex items-center gap-2 mt-1 flex-wrap">
-              {driver.experienceBadge ? <Badge variant="info" size="sm">{driver.experienceBadge.label}</Badge> : null}
+              {driver.experienceBadge ? (
+                <Badge variant="info" size="sm">
+                  <TranslatedText text={driver.experienceBadge.label} />
+                </Badge>
+              ) : null}
               <span
                 className={`inline-flex items-center px-2 py-1 rounded-lg text-sm font-medium ${
                   dark ? 'bg-amber-500/15 text-amber-300' : 'bg-amber-50 text-amber-800'

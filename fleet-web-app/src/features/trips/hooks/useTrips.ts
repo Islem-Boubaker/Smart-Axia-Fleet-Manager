@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { tripsService, type CreateTripRequest, type PaginationMeta, type TripFilters } from '../services/trips.service';
 import type { Trip } from '../../../types';
@@ -83,9 +83,13 @@ export const useTrips = (filters: TripFilters = {}) => {
   const isLoading = tripsQuery.isLoading || createMutation.isPending;
   const error = actionError ?? (tripsQuery.error ? buildApiErrorMessage(tripsQuery.error, 'Failed to fetch trips.') : null);
 
-  const sortedTrips = [...(tripsQuery.data?.items ?? [])].sort(
-    (a, b) => new Date(b.startTime as string).getTime() - new Date(a.startTime as string).getTime()
-  ) as Trip[];
+  const sortedTrips = useMemo(
+    () =>
+      [...(tripsQuery.data?.items ?? [])].sort(
+        (a, b) => new Date(b.startTime as string).getTime() - new Date(a.startTime as string).getTime(),
+      ) as Trip[],
+    [tripsQuery.data?.items],
+  );
 
   return {
     trips: sortedTrips,

@@ -3,6 +3,7 @@ import type { Vehicle } from "../../../types";
 import { useTranslation } from "react-i18next";
 import type { VehicleTableRow } from "../hooks/useVehicles";
 import { AppDataTable, AppStatusBadge, AppTd, AppTr } from '../../../shared/components';
+import { TranslatedText } from '../../../shared/components/TranslatedText';
 import RowActions from "./RowActions";
 
 interface VehiclesTableProps {
@@ -189,7 +190,7 @@ const VehiclesTable = memo(
 
               {/* ── Last Trip ── */}
               <AppTd className={dark ? 'text-slate-300' : 'text-slate-500'}>
-                {row.lastTripLabel === 'No trips' ? t('common.no_trips') : row.lastTripLabel}
+                {row.lastTripLabel === 'no_trips' ? t('common.no_trips') : row.lastTripLabel}
               </AppTd>
 
               {/* ── Maintenance ── */}
@@ -205,18 +206,19 @@ const VehiclesTable = memo(
                         {translatePriority(primaryRecommendation.level)}
                       </AppStatusBadge>
                       {primaryRecommendation.component && (
-                        <span className={`self-center rounded px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${
-                          dark ? 'bg-slate-700 text-slate-300' : 'bg-slate-100 text-slate-500'
-                        }`}>
-                          {primaryRecommendation.component.replace(/_/g, ' ')}
-                        </span>
+                        <TranslatedText
+                          as="span"
+                          text={primaryRecommendation.component.replace(/_/g, ' ')}
+                          className={`self-center rounded px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${
+                            dark ? 'bg-slate-700 text-slate-300' : 'bg-slate-100 text-slate-500'
+                          }`}
+                        />
                       )}
-                      <p
+                      <TranslatedText
+                        as="p"
+                        text={primaryRecommendation.overview}
                         className={`min-w-0 flex-1 text-xs leading-relaxed line-clamp-2 ${levelStyle(primaryRecommendation.level)}`}
-                        title={primaryRecommendation.overview}
-                      >
-                        {primaryRecommendation.overview}
-                      </p>
+                      />
                     </div>
 
                     {hasMoreRecommendations && (
@@ -249,18 +251,19 @@ const VehiclesTable = memo(
                                   {translatePriority(rec.level)}
                                 </AppStatusBadge>
                                 {rec.component && (
-                                  <span className={`self-center rounded px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${
-                                    dark ? 'bg-slate-700 text-slate-300' : 'bg-slate-100 text-slate-500'
-                                  }`}>
-                                    {rec.component.replace(/_/g, ' ')}
-                                  </span>
+                                  <TranslatedText
+                                    as="span"
+                                    text={rec.component.replace(/_/g, ' ')}
+                                    className={`self-center rounded px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${
+                                      dark ? 'bg-slate-700 text-slate-300' : 'bg-slate-100 text-slate-500'
+                                    }`}
+                                  />
                                 )}
-                                <p
+                                <TranslatedText
+                                  as="p"
+                                  text={rec.overview}
                                   className={`min-w-0 flex-1 text-xs leading-relaxed line-clamp-2 ${levelStyle(rec.level)}`}
-                                  title={rec.overview}
-                                >
-                                  {rec.overview}
-                                </p>
+                                />
                               </div>
                             ))}
                           </div>

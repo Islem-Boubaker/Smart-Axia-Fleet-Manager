@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useMemo } from "react";
 import { useOutletContext } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 
@@ -9,8 +9,11 @@ import DriversSearch from "../components/DriversSearch";
 import DriversGrid from "../components/DriversGrid";
 import DriverModal from "../components/DriverModal";
 import { useVehicleOptions } from "../../vehicles/hooks/useVehicles";
+import { useTranslatedData } from "../../../shared/hooks/useTranslatedData";
 import type { Driver } from "../../../types";
 import { pageShellClasses, pageShellInnerSpacing } from "../../../shared/utils/pageShell";
+
+const DRIVER_TRANSLATE_FIELDS: (keyof Driver)[] = ['assignedVehicle'];
 
 interface ThemeContext {
   dark: boolean;
@@ -40,13 +43,23 @@ const DriversPage = () => {
     return true;
   };
 
-  const filteredDrivers = drivers.filter((driver) => {
-    const matchesSearch = `${driver.name} ${driver.email} ${driver.licenseNumber ?? ""}`
-      .toLowerCase()
-      .includes(searchQuery.toLowerCase());
-    const matchesStatus = statusFilter === 'all' ? true : driver.status === statusFilter;
-    return matchesSearch && matchesStatus && matchesScoreFilter(driver);
-  });
+  const filteredDrivers = useMemo(
+    () =>
+      drivers.filter((driver) => {
+        const matchesSearch = `${driver.name} ${driver.email} ${driver.licenseNumber ?? ""}`
+          .toLowerCase()
+          .includes(searchQuery.toLowerCase());
+        const matchesStatus = statusFilter === 'all' ? true : driver.status === statusFilter;
+        return matchesSearch && matchesStatus && matchesScoreFilter(driver);
+      }),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [drivers, searchQuery, statusFilter, scoreFilter],
+  );
+
+  const { translatedData: translatedDrivers } = useTranslatedData<Driver>(
+    filteredDrivers,
+    DRIVER_TRANSLATE_FIELDS,
+  );
 
   const handleAddDriver = useCallback(
     async (data: any, photo: File | null) => {
@@ -112,7 +125,7 @@ const DriversPage = () => {
           dark={dark}
         />
         <DriversGrid
-          drivers={filteredDrivers}
+          drivers={translatedDrivers}
           isLoading={isLoading}
           onEdit={handleEditDriver}
           onDelete={handleDeleteDriver}

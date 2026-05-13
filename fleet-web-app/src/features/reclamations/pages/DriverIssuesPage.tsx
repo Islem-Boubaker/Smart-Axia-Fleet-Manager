@@ -16,6 +16,9 @@ import reclamationsService, {
 } from '../services/reclamations.service';
 import { queryKeys } from '../../../shared/services/queryKeys';
 import { useUpdateReclamationStatus } from '../hooks/useReclamations';
+import { useTranslatedData } from '../../../shared/hooks/useTranslatedData';
+
+const RECLAMATION_TRANSLATE_FIELDS: (keyof ReclamationRecord)[] = ['subject', 'message'];
 
 interface ThemeContext {
   dark: boolean;
@@ -97,7 +100,8 @@ const DriverIssuesPage = () => {
     queryFn: vehiclesService.getVehicles,
   });
 
-  const items = useMemo(() => (reclamationsQuery.data?.items ?? []) as ReclamationRecord[], [reclamationsQuery.data?.items]);
+  const rawItems = useMemo(() => (reclamationsQuery.data?.items ?? []) as ReclamationRecord[], [reclamationsQuery.data?.items]);
+  const { translatedData: items } = useTranslatedData<ReclamationRecord>(rawItems, RECLAMATION_TRANSLATE_FIELDS);
   const drivers = useMemo(() => (driversQuery.data ?? []) as Driver[], [driversQuery.data]);
   const vehicles = useMemo(() => (vehiclesQuery.data ?? []) as Vehicle[], [vehiclesQuery.data]);
   const loading = reclamationsQuery.isLoading || driversQuery.isLoading || vehiclesQuery.isLoading;

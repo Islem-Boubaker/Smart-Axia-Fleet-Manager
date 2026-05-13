@@ -6,7 +6,7 @@ import { GlobalCard } from '../../../shared/components';
 import MaintenanceTable from '../components/MaintenanceTable';
 import MaintenanceForm from '../components/MaintenanceForm';
 import { MaintenanceHeader } from '../components/MaintenanceHeader';
-import { useMaintenance } from '../hooks/useMaintenance';
+import { useTranslatedMaintenance as useMaintenance } from '../hooks/useTranslatedMaintenance';
 import { maintenanceService } from '../services/maintenance.service';
 import type { Maintenance } from '../../../types';
 import { pageShellClasses, pageShellInnerSpacing } from '../../../shared/utils/pageShell';
