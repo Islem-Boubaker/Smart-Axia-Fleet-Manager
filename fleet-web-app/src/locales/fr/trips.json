@@ -68,6 +68,7 @@
       "smartRecHint": "Classez conducteurs et véhicules pour cet itinéraire.",
       "refreshSuggestions": "Actualiser les suggestions",
       "getMlSuggestions": "Obtenir suggestions ML",
+      "optimizeTrip": "Optimiser le trajet",
       "vehicleLabel": "Véhicule",
       "driverLabel": "Conducteur",
       "createTrip": "Créer le trajet",

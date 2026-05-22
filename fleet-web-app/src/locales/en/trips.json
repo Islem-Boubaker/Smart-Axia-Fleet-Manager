@@ -68,6 +68,7 @@
       "smartRecHint": "Rank drivers and vehicles for this specific route.",
       "refreshSuggestions": "Refresh Suggestions",
       "getMlSuggestions": "Get ML Suggestions",
+      "optimizeTrip": "Optimize Route",
       "vehicleLabel": "Vehicle",
       "driverLabel": "Driver",
       "createTrip": "Create trip",

@@ -13,6 +13,9 @@ router.post('/vehicle/addvehicle', authMiddleware.authorizeRoles('ADMIN', 'MANAG
 // so we only require role checks on admin-only mutating routes below.
 router.get('/vehicle/getvehicles', cacheMiddleware('vehicles', 'index', { requireAuth: true }), vehicleController.getAllVehicles);
 
+// Must be defined before /vehicle/getvehicle/:id to avoid "available" being parsed as an id param
+router.get('/vehicle/available', vehicleController.getAvailableVehicles);
+
 router.get('/vehicle/getvehicle/:id', cacheMiddleware('vehicles', 'show', { requireAuth: true }), vehicleController.getVehicleById);
 
 

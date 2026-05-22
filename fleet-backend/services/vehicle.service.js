@@ -238,6 +238,49 @@ export const createVehicle = async (data) => {
 // Read
 // ─────────────────────────────────────────────
 
+// Builds the display label for a vehicle — must match the frontend DriverForm label logic exactly.
+const buildVehicleLabel = (v) =>
+    v.plaque_immatriculation ? `${v.name} (${v.plaque_immatriculation})` : v.name;
+
+/**
+ * Returns vehicles eligible to be assigned to a driver:
+ *   - status === 'AVAILABLE' AND not already assigned to another driver
+ *   - PLUS the vehicle currently held by currentDriverId (edit-mode safety net)
+ *
+ * @param {string|null} currentDriverId  Pass the driver being edited so their
+ *   current vehicle stays in the list even if it is not AVAILABLE.
+ */
+export const getAvailableVehicles = async (currentDriverId = null) => {
+    await reconcileVehicleStatusesFromTrips();
+
+    // Parallel: all vehicles + other drivers' assignments + current driver's assignment
+    const [allVehicles, driversWithVehicles, currentDriver] = await Promise.all([
+        Vehicle.findAll({ order: [['createdAt', 'DESC']] }),
+        User.findAll({
+            where: {
+                role: 'DRIVER',
+                assignedVehicle: { [Op.and]: [{ [Op.ne]: null }, { [Op.ne]: '' }] },
+                ...(currentDriverId ? { id: { [Op.ne]: currentDriverId } } : {}),
+            },
+            attributes: ['assignedVehicle'],
+            raw: true,
+        }),
+        currentDriverId
+            ? User.findByPk(currentDriverId, { attributes: ['assignedVehicle'], raw: true })
+            : Promise.resolve(null),
+    ]);
+
+    const takenLabels = new Set(driversWithVehicles.map((d) => d.assignedVehicle).filter(Boolean));
+    const currentVehicleLabel = currentDriver?.assignedVehicle ?? null;
+
+    return allVehicles.filter((v) => {
+        const label = buildVehicleLabel(v);
+        const isAvailableAndFree = v.status === 'AVAILABLE' && !takenLabels.has(label);
+        const isCurrentDriverVehicle = Boolean(currentVehicleLabel && label === currentVehicleLabel);
+        return isAvailableAndFree || isCurrentDriverVehicle;
+    });
+};
+
 export const getAllVehicles = async (query = {}, cacheKey = null) => {
     await reconcileVehicleStatusesFromTrips();
     const { page, limit, offset } = getPagination(query);

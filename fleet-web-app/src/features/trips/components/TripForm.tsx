@@ -3,6 +3,7 @@ import { CircleMarker, MapContainer, TileLayer, useMapEvents } from 'react-leafl
 import type { LeafletMouseEvent } from 'leaflet';
 import { useTranslation } from 'react-i18next';
 import 'leaflet/dist/leaflet.css';
+import { FiZap } from 'react-icons/fi';
 import { Button, Input, Select } from '../../../shared/components';
 import type { Driver, Vehicle } from '../../../types';
 import { tripsService } from '../services/trips.service';
@@ -1134,55 +1135,77 @@ const TripForm = ({ vehicles, drivers, dark = false, isSubmitting = false, onSub
           : t('trips.form.estimatedFuelHint')}
       </div>
 
-      <div className={`flex flex-col sm:flex-row items-center justify-between p-4 rounded-2xl border ${dark ? 'border-indigo-500/30 bg-indigo-500/5' : 'border-indigo-100 bg-indigo-50/50'} gap-4`}>
-        <div className="flex-1">
-          <p className={`text-sm font-semibold ${dark ? 'text-indigo-300' : 'text-indigo-700'}`}>{t('trips.form.smartRecTitle')}</p>
-          <p className="text-xs text-gray-500 dark:text-slate-400">{t('trips.form.smartRecHint')}</p>
+      {/* Vehicle + driver selects with the ML "optimize" button inlined in the header row.
+          Replaces the old full-width recommendation block — same business logic, compact UI. */}
+      <div>
+        <div className="flex items-center justify-between mb-3">
+          <p className={`text-sm font-semibold ${dark ? 'text-slate-200' : 'text-slate-800'}`}>
+            {t('trips.form.vehicleLabel')} &amp; {t('trips.form.driverLabel')}
+          </p>
+          <Button
+            type="button"
+            variant="secondary"
+            size="sm"
+            onClick={handleGetRecommendations}
+            isLoading={isFetchingRecs}
+            disabled={!values.startTime || isFetchingRecs}
+            className="gap-1.5 text-indigo-600 border-indigo-200 hover:bg-indigo-50 dark:text-indigo-400 dark:border-indigo-500/40 dark:hover:bg-indigo-500/10 whitespace-nowrap text-xs"
+          >
+            <FiZap className="w-3.5 h-3.5 shrink-0" />
+            {recommendations ? t('trips.form.refreshSuggestions') : t('trips.form.optimizeTrip')}
+          </Button>
         </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label className="block text-[13px] text-gray-500 dark:text-slate-400 mb-1.5">
+              {t('trips.form.vehicleLabel')}
+            </label>
+            <Select
+              value={values.vehicleId}
+              onChange={handleVehicleChange}
+              dark={dark}
+              options={vehicleOptions}
+              className={errors.vehicleId ? '[&>button]:!border-red-500' : ''}
+            />
+            {errors.vehicleId && <p className="mt-1 text-sm text-red-600">{errors.vehicleId}</p>}
+          </div>
+
+          <div>
+            <label className="block text-[13px] text-gray-500 dark:text-slate-400 mb-1.5">
+              {t('trips.form.driverLabel')}
+            </label>
+            <Select
+              value={values.userId}
+              onChange={handleDriverChange}
+              dark={dark}
+              options={driverOptions}
+              className={errors.userId ? '[&>button]:!border-red-500' : ''}
+            />
+            {errors.userId && <p className="mt-1 text-sm text-red-600">{errors.userId}</p>}
+          </div>
+        </div>
+      </div>
+
+      {/* Sticky footer: sticks to the bottom of the scrollable modal body.
+          Negative horizontal margins cancel the parent's padding so the background
+          stretches edge-to-edge. On mobile buttons stack full-width; on sm+ they sit
+          side-by-side right-aligned. */}
+      <div className="sticky bottom-0 -mx-4 sm:-mx-5 -mb-4 sm:-mb-5 px-4 sm:px-5 py-4 mt-4 bg-white dark:bg-[#0b1628] border-t border-slate-100 dark:border-cyan-100/10 shadow-[0_-4px_12px_-6px_rgba(0,0,0,0.08)] flex flex-col-reverse sm:flex-row items-stretch sm:items-center sm:justify-end gap-3">
         <Button
           type="button"
-          variant="primary"
-          size="sm"
-          onClick={handleGetRecommendations}
-          isLoading={isFetchingRecs}
-          disabled={!values.startTime || isFetchingRecs}
-          className="bg-indigo-600 hover:bg-indigo-700 text-white shadow-sm whitespace-nowrap"
+          variant="secondary"
+          onClick={onCancel}
+          disabled={isSubmitting}
+          className="w-full sm:w-auto justify-center"
         >
-          {recommendations ? t('trips.form.refreshSuggestions') : t('trips.form.getMlSuggestions')}
-        </Button>
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div>
-          <label className="block text-[13px] text-gray-500 dark:text-slate-400 mb-1.5">{t('trips.form.vehicleLabel')}</label>
-          <Select
-            value={values.vehicleId}
-            onChange={handleVehicleChange}
-            dark={dark}
-            options={vehicleOptions}
-            className={errors.vehicleId ? '[&>button]:!border-red-500' : ''}
-          />
-          {errors.vehicleId && <p className="mt-1 text-sm text-red-600">{errors.vehicleId}</p>}
-        </div>
-
-        <div>
-          <label className="block text-[13px] text-gray-500 dark:text-slate-400 mb-1.5">{t('trips.form.driverLabel')}</label>
-          <Select
-            value={values.userId}
-            onChange={handleDriverChange}
-            dark={dark}
-            options={driverOptions}
-            className={errors.userId ? '[&>button]:!border-red-500' : ''}
-          />
-          {errors.userId && <p className="mt-1 text-sm text-red-600">{errors.userId}</p>}
-        </div>
-      </div>
-
-      <div className="flex items-center justify-end gap-3 pt-2">
-        <Button type="button" variant="secondary" onClick={onCancel} disabled={isSubmitting}>
           {t('common.cancel')}
         </Button>
-        <Button type="submit" isLoading={isSubmitting}>
+        <Button
+          type="submit"
+          isLoading={isSubmitting}
+          className="w-full sm:w-auto justify-center"
+        >
           {t('trips.form.createTrip')}
         </Button>
       </div>

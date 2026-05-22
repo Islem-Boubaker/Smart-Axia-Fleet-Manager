@@ -143,4 +143,12 @@ export const vehiclesService = {
   deleteVehicle: async (id: string): Promise<void> => {
     await api.delete(`/vehicle/deletevehicle/${id}`);
   },
+
+  // Returns vehicles eligible for driver assignment (status AVAILABLE + not taken by another driver).
+  // Pass currentDriverId when editing so the driver's current vehicle is always included.
+  getAvailableVehicles: async (currentDriverId?: string): Promise<Vehicle[]> => {
+    const params = currentDriverId ? `?currentDriverId=${encodeURIComponent(currentDriverId)}` : '';
+    const response = await api.get<ApiResponse<Vehicle[]>>(`/vehicle/available${params}`);
+    return (response.data.data ?? []).map(normalizeVehicle);
+  },
 };

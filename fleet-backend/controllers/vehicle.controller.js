@@ -61,6 +61,19 @@ export const getAllVehicles = async (req, res, next) => {
   }
 };
 
+// GET /vehicle/available?currentDriverId=<uuid>
+// Returns vehicles that can be assigned to a driver.
+// Pass currentDriverId when editing so the driver's current vehicle stays in the list.
+export const getAvailableVehicles = async (req, res, next) => {
+  try {
+    const currentDriverId = req.query.currentDriverId || null;
+    const vehicles = await vehicleService.getAvailableVehicles(currentDriverId);
+    res.status(StatusCodes.OK).json({ success: true, data: vehicles });
+  } catch (err) {
+    next(err);
+  }
+};
+
 export const getVehicleById = async (req, res, next) => {
   try {
     const vehicle = await vehicleService.getVehicleById(req.params.id, req.cacheKey);

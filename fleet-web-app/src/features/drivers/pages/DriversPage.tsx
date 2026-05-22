@@ -8,7 +8,7 @@ import DriversHeader from "../components/DriversHeader";
 import DriversSearch from "../components/DriversSearch";
 import DriversGrid from "../components/DriversGrid";
 import DriverModal from "../components/DriverModal";
-import { useVehicleOptions } from "../../vehicles/hooks/useVehicles";
+import { useAvailableVehicles } from "../../vehicles/hooks/useVehicles";
 import { useTranslatedData } from "../../../shared/hooks/useTranslatedData";
 import type { Driver } from "../../../types";
 import { pageShellClasses, pageShellInnerSpacing } from "../../../shared/utils/pageShell";
@@ -30,7 +30,10 @@ const DriversPage = () => {
   const [selectedDriver, setSelectedDriver] = useState<Driver | null>(null);
 
   const { drivers, isLoading, addDriver, updateDriver, deleteDriver } = useDrivers();
-  const { vehicles } = useVehicleOptions();
+  // Separate queries so the add-modal sees globally available vehicles and the
+  // edit-modal also includes the driver's current vehicle (even if in maintenance).
+  const { vehicles: addVehicles, isLoading: addVehiclesLoading } = useAvailableVehicles();
+  const { vehicles: editVehicles, isLoading: editVehiclesLoading } = useAvailableVehicles(selectedDriver?.id);
 
   const matchesScoreFilter = (driver: Driver) => {
     const score = typeof driver.driverScore === 'number' ? driver.driverScore : null;
@@ -137,7 +140,8 @@ const DriversPage = () => {
         onClose={() => setIsAddModalOpen(false)}
         title={t('drivers.addNew')}
         dark={dark}
-        vehicles={vehicles}
+        vehicles={addVehicles}
+        isLoadingVehicles={addVehiclesLoading}
         onSubmit={handleAddDriver}
       />
       <DriverModal
@@ -149,7 +153,8 @@ const DriversPage = () => {
         title={t('drivers.edit')}
         dark={dark}
         driver={selectedDriver}
-        vehicles={vehicles}
+        vehicles={editVehicles}
+        isLoadingVehicles={editVehiclesLoading}
         onSubmit={handleUpdateDriver}
       />
     </>
