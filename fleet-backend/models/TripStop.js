@@ -57,6 +57,12 @@ const TripStop = sequelize.define(
       type: DataTypes.STRING,
       allowNull: true,
     },
+
+    isDestination: {
+      type: DataTypes.BOOLEAN,
+      allowNull: false,
+      defaultValue: false,
+    },
   },
   {
     tableName: "trip_stops",
