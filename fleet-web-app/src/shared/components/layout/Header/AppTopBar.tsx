@@ -31,7 +31,7 @@ export const AppTopBar = memo(({ dark, setDark, onMenuClick }: AppTopBarProps) =
 
   return (
     <header
-      className={`shrink-0 z-20 pb-2 ${
+      className={`shrink-0 z-40 pb-2 ${
         dark ? 'text-slate-100' : 'text-slate-900'
       }`}
     >

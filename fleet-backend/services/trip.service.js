@@ -139,7 +139,7 @@ const validateDriver = async (userId) => {
 const buildOverlapWhere = ({ targetField, targetId, start, end, excludeTripId = null }) => {
   const where = {
     [targetField]: targetId,
-    status: { [Op.ne]: TRIP_STATUS.CANCELLED },
+    status: { [Op.in]: [TRIP_STATUS.SCHEDULED, TRIP_STATUS.ONGOING] },
     [Op.and]: [
       { startTime: { [Op.lt]: end } },
       {

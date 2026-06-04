@@ -45,6 +45,8 @@
       "endpointsHint": "Add endpoints on the map. The final endpoint becomes the destination, and earlier endpoints are stored as stops.",
       "addStop": "Add stop",
       "stopPlaceholder": "Type stop name/address or set from map",
+      "stopEstimatedArrival": "Estimated arrival",
+      "stopNotes": "Stop notes",
       "mapSectionTitle": "Pick locations on map",
       "mapSectionHint": "Pick Start for the departure point, then choose endpoint rows and click map to set each stop.",
       "setStart": "Set start",

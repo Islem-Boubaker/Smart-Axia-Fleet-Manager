@@ -45,6 +45,8 @@
       "endpointsHint": "Ajoutez des points sur la carte. Le dernier point devient la destination, les précédents sont des arrêts.",
       "addStop": "Ajouter un arrêt",
       "stopPlaceholder": "Nom/adresse ou définir sur la carte",
+      "stopEstimatedArrival": "Arrivée estimée",
+      "stopNotes": "Notes de l'arrêt",
       "mapSectionTitle": "Choisir sur la carte",
       "mapSectionHint": "Choisissez Départ pour le point de départ, puis une ligne d'arrêt et cliquez sur la carte.",
       "setStart": "Définir départ",

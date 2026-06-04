@@ -15,6 +15,7 @@ export interface TripStop {
   arrivalTime?: string | null;
   estimatedArrival?: string | null;
   notes?: string | null;
+  isDestination?: boolean | null;
 }
 
 export interface TripLocation {

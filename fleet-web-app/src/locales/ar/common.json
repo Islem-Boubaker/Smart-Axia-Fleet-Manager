@@ -180,7 +180,8 @@
     "unknownVehicle": "مركبة غير معروفة",
     "deleted": "محذوف",
     "saving": "جاري الحفظ…",
-    "showing_results": "عرض {{count}} نتيجة"
+    "showing_results": "عرض {{count}} نتيجة",
+    "saveChanges": "حفظ التعديلات"
   },
   "status": {
     "available": "متاح",

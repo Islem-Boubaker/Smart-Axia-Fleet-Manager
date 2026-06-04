@@ -180,7 +180,8 @@
     "unknownVehicle": "Unknown vehicle",
     "deleted": "Deleted",
     "saving": "Saving…",
-    "showing_results": "Showing {{count}} result(s)"
+    "showing_results": "Showing {{count}} result(s)",
+    "saveChanges": "Save Changes"
   },
   "status": {
     "available": "Available",
