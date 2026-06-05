@@ -149,12 +149,16 @@ export const reachStop = async (tripId, stopId, callerRole, callerId, arrivalTim
   const trip = await ensureTrip(tripId);
   ensureDriverOwnership(trip, callerRole, callerId);
 
-  if (trip.status !== "ongoing") {
-    throw createError("Trip must be ongoing to reach a stop", 409, "CONFLICT");
-  }
-
   const stop = await TripStop.findByPk(stopId);
   ensureStopBelongsToTrip(stop, tripId);
+
+  if (trip.status !== "ongoing") {
+    if (trip.status === "completed" && stop.status === "reached") {
+      return stop;
+    }
+
+    throw createError("Trip must be ongoing to reach a stop", 409, "CONFLICT");
+  }
 
   if (stop.status !== "pending") {
     throw createError("Only pending stops can be marked as reached", 409, "CONFLICT");

@@ -34,7 +34,6 @@ router.put(
 router.put(
   '/user/me/push-token',
   authMiddleware.authenticate,
-  csrfMiddleware.verifyCsrf,
   userController.updateMyPushToken
 );
 

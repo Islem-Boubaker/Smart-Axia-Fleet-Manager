@@ -17,7 +17,9 @@ const invalidateTripStopsCache = async (tripId) => {
   await cacheMiddleware.invalidatePattern('tripStops:index:*');
   if (tripId) {
     await cacheMiddleware.invalidatePattern(`tripStops:index:id=${tripId}*`);
+    await cacheMiddleware.invalidatePattern(`trips:show:id=${tripId}*`);
   }
+  await cacheMiddleware.invalidatePattern("trips:index:*");
 };
 
 export const addStops = async (req, res) => {
