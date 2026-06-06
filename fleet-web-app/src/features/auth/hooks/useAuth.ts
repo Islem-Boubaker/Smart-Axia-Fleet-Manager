@@ -4,7 +4,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { useAppDispatch, useAppSelector } from '../../../shared/hooks';
 import { setLogoutInProgress } from '../../../shared/services/logoutFlag';
-import { clearClientAuthState, clearLogoutMarker } from '../../../shared/services/authCleanup';
+import { clearClientAuthState, clearLogoutMarker, markLoggedIn } from '../../../shared/services/authCleanup';
 import { setUser, setLoading, setError } from '../../../store/authSlice';
 import { authAPI } from '../services/auth.service';
 import type { SignInCredentials} from '../services/auth.service';
@@ -53,6 +53,7 @@ export const useAuth = () => {
         // Successful ADMIN login — clear the logout marker so future page
         // loads run the /me bootstrap normally instead of staying on /signin.
         clearLogoutMarker();
+        markLoggedIn();
 
         dispatch(setUser(authUser));
         navigate('/dashboard', { replace: true });

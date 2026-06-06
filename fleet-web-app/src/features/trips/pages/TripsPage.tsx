@@ -10,7 +10,7 @@ import TripDetailsView from '../components/TripDetailsView';
 import { useTrips } from '../hooks/useTrips';
 import { useTranslatedData } from '../../../shared/hooks/useTranslatedData';
 import { tripsService } from '../services/trips.service';
-import { Button, GlobalCard, Input, Select } from '../../../shared/components';
+import { Button, GlobalCard, Input, Select, toast } from '../../../shared/components';
 import { vehiclesService } from '../../vehicles/services/vehicles.service';
 import { driversService } from '../../drivers/services/drivers.service';
 import type { Driver, Trip, TripStop, Vehicle } from '../../../types';
@@ -102,7 +102,6 @@ const TripsPage = () => {
   const [actionTripId, setActionTripId] = useState<string | null>(null);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [submitError, setSubmitError] = useState<string | null>(null);
   const [selectedTrip, setSelectedTrip] = useState<Trip | null>(null);
   const [editingTrip, setEditingTrip] = useState<Trip | null>(null);
   const [editValues, setEditValues] = useState<TripEditValues | null>(null);
@@ -113,7 +112,6 @@ const TripsPage = () => {
   const [isFetchingRecs, setIsFetchingRecs] = useState(false);
   const dismissedFocusedTripIdRef = useRef<string | null>(null);
 
-  const [editError, setEditError] = useState<string | null>(null);
   const [isEditSubmitting, setIsEditSubmitting] = useState(false);
   const vehiclesQuery = useQuery({
     queryKey: queryKeys.vehicles.lists(),
@@ -132,7 +130,6 @@ const TripsPage = () => {
     trips: rawTrips,
     meta,
     isLoading,
-    error,
     refetch,
     createTrip,
     updateTrip,
@@ -201,6 +198,10 @@ const TripsPage = () => {
     setActionTripId(tripId);
     try {
       await startTrip(tripId);
+      toast.success(t('trips.startSuccess', 'Trip started'));
+    } catch (err: unknown) {
+      const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
+      toast.error(msg || t('trips.errors.startFailed', 'Failed to start trip'));
     } finally {
       setActionTripId(null);
     }
@@ -210,6 +211,10 @@ const TripsPage = () => {
     setActionTripId(tripId);
     try {
       await completeTrip(tripId, { endTime: new Date().toISOString() });
+      toast.success(t('trips.completeSuccess', 'Trip completed'));
+    } catch (err: unknown) {
+      const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
+      toast.error(msg || t('trips.errors.completeFailed', 'Failed to complete trip'));
     } finally {
       setActionTripId(null);
     }
@@ -228,6 +233,10 @@ const TripsPage = () => {
     setActionTripId(tripId);
     try {
       await cancelTrip(tripId);
+      toast.success(t('trips.cancelSuccess', 'Trip cancelled'));
+    } catch (err: unknown) {
+      const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
+      toast.error(msg || t('trips.errors.cancelFailed', 'Failed to cancel trip'));
     } finally {
       setActionTripId(null);
     }
@@ -251,15 +260,15 @@ const TripsPage = () => {
     }>;
   }) => {
     try {
-      setSubmitError(null);
       setIsSubmitting(true);
       await createTrip(payload);
       setIsAddModalOpen(false);
+      toast.success(t('trips.createSuccess', 'Trip created successfully'));
     } catch (err: unknown) {
       const response = (err as { response?: { status?: number; data?: { message?: string; errors?: string[] } } })?.response;
       const message = response?.data?.message;
       const detailed = Array.isArray(response?.data?.errors) ? response?.data?.errors.join(' | ') : null;
-      setSubmitError(detailed || message || t('trips.errors.createFailed'));
+      toast.error(detailed || message || t('trips.errors.createFailed'));
     } finally {
       setIsSubmitting(false);
     }
@@ -271,7 +280,6 @@ const TripsPage = () => {
     setEditStops(toEditableStops(trip));
     setEditErrors({});
     setEditStopsError(null);
-    setEditError(null);
   };
 
   const handleEditField = (field: keyof TripEditValues, value: string) => {
@@ -458,11 +466,12 @@ const TripsPage = () => {
       setEditStops([]);
       setEditErrors({});
       setEditStopsError(null);
+      toast.success(t('trips.updateSuccess', 'Trip updated successfully'));
     } catch (err: unknown) {
       const response = (err as { response?: { data?: { message?: string; errors?: string[] } } })?.response;
       const message = response?.data?.message;
       const detailed = Array.isArray(response?.data?.errors) ? response?.data?.errors.join(' | ') : null;
-      setEditError(detailed || message || 'Failed to update trip.');
+      toast.error(detailed || message || 'Failed to update trip.');
     } finally {
       setIsEditSubmitting(false);
     }
@@ -470,13 +479,12 @@ const TripsPage = () => {
 
   const handleGetEditRecommendations = async () => {
     if (!editValues?.startTime || !editValues?.region) {
-      setEditError(t('trips.errors.recStartRegion'));
+      toast.error(t('trips.errors.recStartRegion'));
       return;
     }
 
     try {
       setIsFetchingRecs(true);
-      setEditError(null);
       
       const recs = await tripsService.getTripRecommendations({
         startTime: new Date(editValues.startTime).toISOString(),
@@ -496,7 +504,7 @@ const TripsPage = () => {
       }) : null);
 
     } catch (err) {
-      setEditError(t('trips.errors.recFailed'));
+      toast.error(t('trips.errors.recFailed'));
     } finally {
       setIsFetchingRecs(false);
     }
@@ -540,7 +548,6 @@ const TripsPage = () => {
             dark={dark}
             tripCount={meta.totalItems || filteredTrips.length}
             onAdd={() => {
-              setSubmitError(null);
               setIsAddModalOpen(true);
             }}
           />
@@ -551,11 +558,6 @@ const TripsPage = () => {
             onStatusChange={setStatusFilter}
             dark={dark}
           />
-          {error && (
-            <div className={`rounded-xl border px-4 py-3 text-sm ${dark ? 'border-red-900/50 bg-red-950/30 text-red-200' : 'border-red-200 bg-red-50 text-red-700'}`}>
-              {error}
-            </div>
-          )}
           {isLoading ? (
             <div className={`text-center py-16 rounded-2xl border ${dark ? 'border-slate-700 text-slate-400' : 'border-slate-200 text-slate-500'}`}>
               {t('trips.loading')}
@@ -585,11 +587,6 @@ const TripsPage = () => {
         title={t('trips.header.scheduleTrip')}
         maxWidth="2xl"
       >
-        {submitError && (
-          <div className={`mb-4 rounded-xl border px-4 py-3 text-sm ${dark ? 'border-red-900/50 bg-red-950/30 text-red-200' : 'border-red-200 bg-red-50 text-red-700'}`}>
-            {submitError}
-          </div>
-        )}
         <TripForm
           vehicles={vehicles}
           drivers={drivers}
@@ -627,12 +624,6 @@ const TripsPage = () => {
         title={t('trips.modals.editTitle')}
         maxWidth="2xl"
       >
-        {editError && (
-          <div className={`mb-4 rounded-xl border px-4 py-3 text-sm ${dark ? 'border-red-900/50 bg-red-950/30 text-red-200' : 'border-red-200 bg-red-50 text-red-700'}`}>
-            {editError}
-          </div>
-        )}
-
         {editValues && (
           <div className="space-y-4">
             <div className={`flex flex-col sm:flex-row items-center justify-between p-4 rounded-2xl border ${dark ? 'border-indigo-500/30 bg-indigo-500/5' : 'border-indigo-100 bg-indigo-50/50'} gap-4`}>

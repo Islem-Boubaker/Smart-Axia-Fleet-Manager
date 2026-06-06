@@ -5,7 +5,7 @@ import AppRouter from './app/router';
 import { authAPI } from './features/auth/services/auth.service';
 import { setUser, resetAuth } from './store/authSlice';
 import { useAppDispatch } from './shared/hooks';
-import { clearClientAuthState, isLoggedOutLocally } from './shared/services/authCleanup';
+import { clearClientAuthState, isLoggedOutLocally, isLoggedInLocally } from './shared/services/authCleanup';
 import { useWebPushRegistration } from './shared/hooks/useWebPushRegistration';
 
 // ── i18n → document dir/lang sync ────────────────────────────────────────────
@@ -41,7 +41,8 @@ export default function App() {
       //   • manual refresh in the same tab
       //   • opening a new tab
       //   • React StrictMode double effect invocation
-      if (isLoggedOutLocally()) {
+      // Skip /me entirely if the user never logged in or explicitly logged out.
+      if (isLoggedOutLocally() || !isLoggedInLocally()) {
         dispatch(resetAuth());
         return;
       }

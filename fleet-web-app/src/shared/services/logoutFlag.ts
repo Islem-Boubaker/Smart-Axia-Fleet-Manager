@@ -22,6 +22,27 @@ export const isLogoutInProgress = (): boolean => logoutInProgress;
 // creating a circular dependency through notificationSlice → notification.api → api.
 // ─────────────────────────────────────────────────────────────────────────────
 export const LOGOUT_MARKER_KEY = 'axia.logged_out';
+export const LOGIN_MARKER_KEY = 'axia.logged_in';
+
+export function markLoggedIn(): void {
+  try {
+    localStorage.setItem(LOGIN_MARKER_KEY, '1');
+  } catch { /* non-fatal */ }
+}
+
+export function clearLoginMarker(): void {
+  try {
+    localStorage.removeItem(LOGIN_MARKER_KEY);
+  } catch { /* non-fatal */ }
+}
+
+export function isLoggedInLocally(): boolean {
+  try {
+    return localStorage.getItem(LOGIN_MARKER_KEY) === '1';
+  } catch {
+    return false;
+  }
+}
 
 export function markLoggedOut(): void {
   try {

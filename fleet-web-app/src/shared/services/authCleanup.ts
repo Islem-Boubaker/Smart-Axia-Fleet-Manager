@@ -3,10 +3,10 @@ import type { AppDispatch } from '../../store';
 import { resetAuth } from '../../store/authSlice';
 import { resetNotifications } from '../../store/notificationSlice';
 import { clearCsrfToken } from './csrfToken';
-import { setLogoutInProgress, markLoggedOut } from './logoutFlag';
+import { setLogoutInProgress, markLoggedOut, clearLoginMarker } from './logoutFlag';
 
 // Re-export the helpers that callers (App.tsx, useAuth.ts) need.
-export { isLoggedOutLocally, clearLogoutMarker, LOGOUT_MARKER_KEY } from './logoutFlag';
+export { isLoggedOutLocally, isLoggedInLocally, clearLogoutMarker, markLoggedIn, LOGOUT_MARKER_KEY } from './logoutFlag';
 
 // ─── Storage scrub ────────────────────────────────────────────────────────────
 // These keys may hold auth residue from past versions or third-party libraries.
@@ -68,6 +68,7 @@ export async function clearClientAuthState(
   // Write the logout marker AFTER scrubbing so it isn't removed by scrubStorage.
   // This marker lives in localStorage and blocks /me bootstrap on next page load.
   markLoggedOut();
+  clearLoginMarker();
 
   // Reset Redux slices.
   dispatch(resetAuth());
