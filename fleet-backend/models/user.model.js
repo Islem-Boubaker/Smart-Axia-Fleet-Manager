@@ -131,6 +131,10 @@ const User = sequelize.define(
       type: DataTypes.STRING(255),
       allowNull: true,
     },
+    webPushSubscription: {
+      type: DataTypes.TEXT,
+      allowNull: true,
+    },
     completedTrips: {
       type: DataTypes.INTEGER,
       defaultValue: 0,

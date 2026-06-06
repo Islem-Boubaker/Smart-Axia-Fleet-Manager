@@ -8,6 +8,7 @@ import Vehicle from "../models/vehicle.model.js";
 import { getIO } from "../config/socket.js";
 import nodemailer from "nodemailer";
 import NotificationService from "../services/notification.service.js";
+import { sendWebPush, isWebPushConfigured } from "../utils/webPush.js";
 import {
   buildEmailAttachments,
   buildFleetEmailHtml,
@@ -52,6 +53,12 @@ const emitSocketNotification = (userId, notification) => {
 const createNotification = async (payload) => {
   const notification = await Notification.create(payload);
   emitSocketNotification(payload.userId, notification.toJSON());
+
+  if (isWebPushConfigured()) {
+    const webPushUsers = await getUsersWithWebPush([payload.userId]);
+    await sendWebPushToUsers(webPushUsers, notification);
+  }
+
   return notification;
 };
 
@@ -105,6 +112,64 @@ const sendEmailToUsers = async (users, { subject, message }) => {
   }
 
   console.info(`[NotificationHandlers] Email sent to ${targets.length} recipient(s).`);
+};
+
+const buildWebPushPayload = (notification) => ({
+  title: notification.title,
+  body: notification.message,
+  icon: "/images/app-icon.png",
+  badge: "/images/app-icon.png",
+  data: {
+    notificationId: notification.id,
+    type: notification.type,
+    group: notification.group,
+    entityType: notification.entityType,
+    entityId: notification.entityId,
+    actionUrl: notification.actionUrl,
+  },
+});
+
+const getUsersWithWebPush = async (userIds = [], preferenceKey) => {
+  if (!isWebPushConfigured()) return [];
+  if (!Array.isArray(userIds) || userIds.length === 0) return [];
+
+  const where = {
+    id: { [Op.in]: userIds },
+    isActive: true,
+    webPushSubscription: { [Op.ne]: null },
+  };
+
+  if (preferenceKey) where[preferenceKey] = true;
+
+  return User.findAll({
+    where,
+    attributes: ["id", "webPushSubscription"],
+  });
+};
+
+const sendWebPushToUsers = async (users = [], notificationOrMap) => {
+  if (!isWebPushConfigured() || !users.length) return;
+
+  const isMap = notificationOrMap instanceof Map;
+
+  await Promise.allSettled(
+    users.map(async (user) => {
+      const notif = isMap
+        ? notificationOrMap.get(String(user.id))
+        : notificationOrMap;
+      if (!notif) return;
+      const payload = buildWebPushPayload(
+        typeof notif.toJSON === "function" ? notif.toJSON() : notif
+      );
+      try {
+        await sendWebPush(user.webPushSubscription, payload);
+      } catch (err) {
+        if (err.expired) {
+          await User.update({ webPushSubscription: null }, { where: { id: user.id } });
+        }
+      }
+    })
+  );
 };
 
 const getUsersWithEmailPreference = async (userIds = [], preferenceKey) => {
@@ -539,6 +604,8 @@ eventBus.subscribe(FLEET_EVENTS.TRIP_STARTED, async ({ payload }) => {
       return NotificationService.sendExpoPush(user.expoPushToken, notification);
     })
   );
+  const webPushUsers = await getUsersWithWebPush(recipientIds, "pushTrips");
+  await sendWebPushToUsers(webPushUsers, notificationByUserId);
 });
 
 eventBus.subscribe(FLEET_EVENTS.TRIP_COMPLETED, async ({ payload }) => {
@@ -578,6 +645,8 @@ eventBus.subscribe(FLEET_EVENTS.TRIP_COMPLETED, async ({ payload }) => {
       return NotificationService.sendExpoPush(user.expoPushToken, notification);
     })
   );
+  const webPushUsers = await getUsersWithWebPush(recipientIds, "pushTrips");
+  await sendWebPushToUsers(webPushUsers, notificationByUserId);
 });
 
 eventBus.subscribe(FLEET_EVENTS.TRIP_CANCELLED, async ({ payload }) => {
@@ -620,6 +689,8 @@ eventBus.subscribe(FLEET_EVENTS.TRIP_CANCELLED, async ({ payload }) => {
       return NotificationService.sendExpoPush(user.expoPushToken, notification);
     })
   );
+  const webPushUsers = await getUsersWithWebPush(recipients, "pushTrips");
+  await sendWebPushToUsers(webPushUsers, notificationByUserId);
 });
 
 eventBus.subscribe(FLEET_EVENTS.DRIVER_ASSIGNED, async ({ payload }) => {

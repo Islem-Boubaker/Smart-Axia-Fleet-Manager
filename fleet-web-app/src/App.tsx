@@ -6,6 +6,7 @@ import { authAPI } from './features/auth/services/auth.service';
 import { setUser, resetAuth } from './store/authSlice';
 import { useAppDispatch } from './shared/hooks';
 import { clearClientAuthState, isLoggedOutLocally } from './shared/services/authCleanup';
+import { useWebPushRegistration } from './shared/hooks/useWebPushRegistration';
 
 // ── i18n → document dir/lang sync ────────────────────────────────────────────
 function I18nDocumentSync() {
@@ -22,6 +23,7 @@ function I18nDocumentSync() {
 export default function App() {
   const dispatch = useAppDispatch();
   const queryClient = useQueryClient();
+  useWebPushRegistration();
   // Guards against React StrictMode double-invocation: the ref is NOT reset
   // when React unmounts + remounts the component in dev mode, so the bootstrap
   // runs exactly once per real page load regardless of the React version or mode.

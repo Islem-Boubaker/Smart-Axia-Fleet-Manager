@@ -4,6 +4,8 @@ import { COOKIE_OPTIONS } from '../config/security.js';
 import { generateCsrfToken } from '../utils/jwt.js';
 import { uploadUserAvatar } from '../middlewares/upload.js';
 import cacheMiddleware from '../middlewares/cache.middleware.js';
+import { getVapidPublicKey } from '../utils/webPush.js';
+import User from '../models/user.model.js';
 
 const invalidateUserCache = async (id) => {
   await cacheMiddleware.invalidatePattern('users:index:*');
@@ -290,6 +292,44 @@ export const updateMyPushToken = async (req, res, next) => {
     await invalidateUserCache(req.user.id);
 
     res.status(StatusCodes.OK).json({ success: true, data: payload });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const getVapidKey = (_req, res) => {
+  const key = getVapidPublicKey();
+  if (!key) {
+    return res.status(StatusCodes.SERVICE_UNAVAILABLE).json({ success: false, message: 'Web push not configured' });
+  }
+  res.json({ success: true, data: { publicKey: key } });
+};
+
+export const saveMyWebPushSubscription = async (req, res, next) => {
+  try {
+    const subscription = req.body?.subscription;
+    if (!subscription?.endpoint) {
+      return res.status(StatusCodes.BAD_REQUEST).json({ success: false, message: 'Invalid subscription' });
+    }
+    await User.update(
+      { webPushSubscription: JSON.stringify(subscription) },
+      { where: { id: req.user.id } }
+    );
+    await invalidateUserCache(req.user.id);
+    res.json({ success: true });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const deleteMyWebPushSubscription = async (req, res, next) => {
+  try {
+    await User.update(
+      { webPushSubscription: null },
+      { where: { id: req.user.id } }
+    );
+    await invalidateUserCache(req.user.id);
+    res.json({ success: true });
   } catch (error) {
     next(error);
   }
