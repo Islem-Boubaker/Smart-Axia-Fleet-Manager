@@ -37,6 +37,10 @@ router.put(
   userController.updateMyPushToken
 );
 
+router.get('/user/web-push/vapid-public-key', userController.getVapidKey);
+router.post('/user/me/web-push-subscription', authMiddleware.authenticate, userController.saveMyWebPushSubscription);
+router.delete('/user/me/web-push-subscription', authMiddleware.authenticate, userController.deleteMyWebPushSubscription);
+
 router.patch(
   '/user/me/avatar',
   authMiddleware.authenticate,
