@@ -21,12 +21,13 @@ interface Props {
   dark?: boolean;
   driver?: Driver | null;
   vehicles?: Vehicle[];
+  isLoadingVehicles?: boolean;
   onSubmit: (data: DriverFormData, photo: File | null) => void;
 }
 
-const DriverModal = ({ isOpen, onClose, title, dark = false, driver, vehicles = [], onSubmit }: Props) => (
+const DriverModal = ({ isOpen, onClose, title, dark = false, driver, vehicles = [], isLoadingVehicles = false, onSubmit }: Props) => (
   <GlobalCard isOpen={isOpen} onClose={onClose} title={title} maxWidth="2xl">
-    <DriverForm driver={driver as any} vehicles={vehicles} dark={dark} onSubmit={onSubmit} onCancel={onClose} />
+    <DriverForm driver={driver as any} vehicles={vehicles} isLoadingVehicles={isLoadingVehicles} dark={dark} onSubmit={onSubmit} onCancel={onClose} />
   </GlobalCard>
 );
 

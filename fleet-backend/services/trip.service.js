@@ -139,7 +139,7 @@ const validateDriver = async (userId) => {
 const buildOverlapWhere = ({ targetField, targetId, start, end, excludeTripId = null }) => {
   const where = {
     [targetField]: targetId,
-    status: { [Op.ne]: TRIP_STATUS.CANCELLED },
+    status: { [Op.in]: [TRIP_STATUS.SCHEDULED, TRIP_STATUS.ONGOING] },
     [Op.and]: [
       { startTime: { [Op.lt]: end } },
       {
@@ -230,6 +230,32 @@ const getRouteDeviationThresholdMeters = () =>
 
 const getRouteDeviationCooldownMs = () =>
   getPositiveEnvNumber("ROUTE_DEVIATION_EVENT_COOLDOWN_MS", ROUTE_DEVIATION_EVENT_COOLDOWN_MS);
+
+const assertAllStopsResolved = async (tripId) => {
+  const destination = await TripStop.findOne({
+    where: { tripId, isDestination: true },
+  });
+
+  if (!destination || destination.status !== "reached") {
+    throw createError(
+      "Cannot complete trip: destination has not been reached",
+      409,
+      "DESTINATION_NOT_REACHED"
+    );
+  }
+
+  const pendingIntermediate = await TripStop.count({
+    where: { tripId, isDestination: false, status: "pending" },
+  });
+
+  if (pendingIntermediate > 0) {
+    throw createError(
+      "Cannot complete trip: some intermediate stops are still pending",
+      409,
+      "STOPS_PENDING"
+    );
+  }
+};
 
 const emitTripEvent = (event, payload) => {
   try {
@@ -579,10 +605,27 @@ export const createTrip = async (data) => {
       { transaction }
     );
 
+    let maxStopOrder = 0;
     if (Array.isArray(stops) && stops.length > 0) {
       const stopRows = stops.map((stop) => ({ ...stop, tripId: trip.id }));
       await TripStop.bulkCreate(stopRows, { transaction, validate: true });
+      maxStopOrder = Math.max(...stops.map((s) => Number(s.stopOrder) || 0));
     }
+
+    // Always create exactly one destination stop (isDestination = true, last stopOrder)
+    await TripStop.create(
+      {
+        tripId: trip.id,
+        stopOrder: maxStopOrder + 1,
+        locationName: trip.endLocation,
+        latitude: toFiniteNumberOrNull(trip.endLatitude),
+        longitude: toFiniteNumberOrNull(trip.endLongitude),
+        estimatedArrival: plannedEndTime ?? null,
+        status: "pending",
+        isDestination: true,
+      },
+      { transaction }
+    );
 
     return trip;
   });
@@ -702,6 +745,29 @@ export const updateTrip = async (tripId, data) => {
   }
 
   await trip.update(updatePayload);
+
+  // Propagate endLocation / endLat / endLng changes to the destination stop
+  const endLocationChanged =
+    data.endLocation !== undefined ||
+    data.endLatitude !== undefined ||
+    data.endLongitude !== undefined;
+
+  if (endLocationChanged) {
+    const destStop = await TripStop.findOne({
+      where: { tripId, isDestination: true },
+    });
+
+    if (destStop && destStop.status !== "reached") {
+      const destUpdates = {};
+      if (data.endLocation !== undefined) destUpdates.locationName = data.endLocation;
+      if (data.endLatitude !== undefined) destUpdates.latitude = toFiniteNumberOrNull(data.endLatitude);
+      if (data.endLongitude !== undefined) destUpdates.longitude = toFiniteNumberOrNull(data.endLongitude);
+      if (Object.keys(destUpdates).length > 0) {
+        await destStop.update(destUpdates);
+      }
+    }
+  }
+
   return fetchTripWithStops(trip.id);
 };
 
@@ -726,6 +792,10 @@ export const updateTripStatus = async (tripId, newStatus) => {
 
   if (newStatus === TRIP_STATUS.ONGOING) {
     await validateVehicle(trip.vehicleId);
+  }
+
+  if (newStatus === TRIP_STATUS.COMPLETED) {
+    await assertAllStopsResolved(tripId);
   }
 
   const updatePayload = { status: newStatus };
@@ -777,6 +847,8 @@ export const completeTrip = async (tripId, callerRole, callerId, settlement = {}
   if (trip.status !== TRIP_STATUS.ONGOING) {
     throw createError("Trip can only be completed from ongoing status", 409, "CONFLICT");
   }
+
+  await assertAllStopsResolved(tripId);
 
   const updates = {
     status: TRIP_STATUS.COMPLETED,

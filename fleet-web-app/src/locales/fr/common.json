@@ -180,7 +180,8 @@
     "unknownVehicle": "Véhicule inconnu",
     "deleted": "Supprimé",
     "saving": "Enregistrement…",
-    "showing_results": "Affichage de {{count}} résultat(s)"
+    "showing_results": "Affichage de {{count}} résultat(s)",
+    "saveChanges": "Enregistrer les modifications"
   },
   "status": {
     "available": "Disponible",

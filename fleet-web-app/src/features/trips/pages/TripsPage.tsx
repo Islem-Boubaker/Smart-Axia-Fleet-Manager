@@ -755,22 +755,6 @@ const TripsPage = () => {
               />
             </div>
 
-            <div>
-              <label className="block text-[13px] text-gray-500 dark:text-slate-400 mb-1.5">{t('trips.form.notesOptional')}</label>
-              <textarea
-                value={editValues.notes}
-                onChange={(e) => handleEditField('notes', e.target.value)}
-                rows={3}
-                className={`w-full px-4 py-2.5 border text-sm rounded-xl shadow-[0_1px_2px_rgba(0,0,0,0.02)] transition-all focus:outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand ${
-                  dark
-                    ? 'bg-slate-800/50 border-slate-700 text-white placeholder:text-slate-500 hover:border-slate-600'
-                    : 'bg-white border-gray-200 text-gray-900 placeholder:text-gray-400 hover:border-gray-300'
-                } ${editErrors.notes ? 'border-red-500' : ''}`}
-                placeholder={t('trips.form.notesPlaceholder')}
-              />
-              {editErrors.notes && <p className="mt-1 text-sm text-red-600">{editErrors.notes}</p>}
-            </div>
-
             <div className={`rounded-2xl border p-4 space-y-3 ${dark ? 'border-slate-700/80 bg-slate-900/30' : 'border-slate-200/90 bg-white/70'}`}>
               <div className="flex items-center justify-between gap-3">
                 <div>

@@ -10,6 +10,11 @@ export const queryKeys = {
     list: (filters?: unknown) => [...queryKeys.vehicles.lists(), filters] as const,
     details: () => [...queryKeys.vehicles.all, 'detail'] as const,
     detail: (id: string) => [...queryKeys.vehicles.details(), id] as const,
+    // Base key used for invalidation — covers all availableFor variants via prefix matching
+    available: () => [...queryKeys.vehicles.all, 'available'] as const,
+    // Per-driver variant used as query key in useAvailableVehicles
+    availableFor: (currentDriverId?: string) =>
+      [...queryKeys.vehicles.available(), currentDriverId ?? null] as const,
   },
 
   trips: {

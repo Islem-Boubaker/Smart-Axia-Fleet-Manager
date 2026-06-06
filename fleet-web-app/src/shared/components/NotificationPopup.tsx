@@ -15,6 +15,14 @@ import {
 import { localizeNotificationText } from '../utils/localizeNotification';
 
 /* ─────────────────────────────────────────────
+   Z-index scale (shared across the app)
+   z-40  → header / navigation
+   z-50  → page-level dropdowns (search, filters)
+   z-[60] → notifications panel + backdrop
+   z-[70] → modals
+───────────────────────────────────────────── */
+
+/* ─────────────────────────────────────────────
    Types
 ───────────────────────────────────────────── */
 export interface Notification {
@@ -48,7 +56,7 @@ interface NotificationPopupProps {
 }
 
 /* ─────────────────────────────────────────────
-   useMediaQuery hook (inline – no extra file needed)
+   useMediaQuery hook
 ───────────────────────────────────────────── */
 const useMediaQuery = (query: string) => {
   const [matches, setMatches] = useState(() =>
@@ -214,9 +222,11 @@ export const NotificationPopup = ({
   // Animation state: drive slide-in AFTER mount
   const [visible, setVisible] = useState(false);
 
+  // Desktop dropdown position — calculated from trigger's bounding rect
+  const [dropdownStyle, setDropdownStyle] = useState<React.CSSProperties>({});
+
   useEffect(() => {
     if (isOpen) {
-      // Tiny delay so the browser paints the off-screen position first
       const id = requestAnimationFrame(() => setVisible(true));
       return () => cancelAnimationFrame(id);
     } else {
@@ -224,6 +234,34 @@ export const NotificationPopup = ({
       return () => cancelAnimationFrame(id);
     }
   }, [isOpen]);
+
+  // Recalculate desktop dropdown position when opened
+  useEffect(() => {
+    if (!isOpen || isMobile || !triggerRef?.current) return;
+
+    const rect = triggerRef.current.getBoundingClientRect();
+    const panelWidth = 380;
+    const viewportWidth = window.innerWidth;
+
+    let left: number;
+    if (isRtl) {
+      // Align left edge of panel to left edge of trigger
+      left = rect.left;
+    } else {
+      // Align right edge of panel to right edge of trigger
+      left = rect.right - panelWidth;
+    }
+
+    // Clamp so panel never overflows viewport edges
+    left = Math.max(8, Math.min(left, viewportWidth - panelWidth - 8));
+
+    setDropdownStyle({
+      position: 'fixed',
+      top: rect.bottom + 8,
+      left,
+      width: panelWidth,
+    });
+  }, [isOpen, isMobile, isRtl, triggerRef]);
 
   // ── Desktop: close on outside click ──────────────────────────────
   useEffect(() => {
@@ -265,7 +303,7 @@ export const NotificationPopup = ({
 
   const handleTouchEnd = (e: React.TouchEvent) => {
     const delta = e.changedTouches[0].clientY - touchStartY.current;
-    if (delta < -60) onClose(); // swipe up → close
+    if (delta < -60) onClose();
   };
 
   const unreadCount = notifications.filter((n) => !n.read).length;
@@ -288,26 +326,30 @@ export const NotificationPopup = ({
     ));
   };
 
-  /* ── Desktop dropdown ─────────────────────────────────────────── */
+  const portalTarget = typeof document !== 'undefined' ? document.body : null;
+  if (!portalTarget) return null;
+
+  /* ── Desktop dropdown — portaled to body, fixed positioning ──── */
   const DesktopDropdown = (
     <div
       ref={popupRef}
       className="
         hidden lg:flex
-        absolute mt-2
-        w-[380px] max-w-[calc(100vw-2rem)]
+        flex-col
         bg-white dark:bg-gray-900
         rounded-xl shadow-2xl
         border border-gray-200 dark:border-gray-700
-        z-50
         max-h-[600px]
-        flex-col
         min-h-0
         animate-[scaleIn_0.15s_ease-out]
       "
       style={{
+        ...dropdownStyle,
+        // z-[60]: above header (z-40) and page dropdowns (z-50), below modals (z-[70])
+        zIndex: 60,
         boxShadow: '0 20px 60px -10px rgba(0,0,0,0.2)',
-        ...(isRtl ? { left: 0, transformOrigin: 'top left' } : { right: 0, transformOrigin: 'top right' }),
+        transformOrigin: isRtl ? 'top left' : 'top right',
+        maxWidth: 'calc(100vw - 1rem)',
       }}
     >
       {/* Sticky header */}
@@ -347,16 +389,17 @@ export const NotificationPopup = ({
   /* ── Mobile full-screen modal ─────────────────────────────────── */
   const MobileModal = (
     <div className="lg:hidden overflow-hidden">
-      {/* Backdrop */}
+      {/* Backdrop — z-[58]: below panel (z-[60]) */}
       <div
-        className={`fixed inset-0 z-[9998] bg-black/50 backdrop-blur-sm transition-opacity duration-300 ${
+        className={`fixed inset-0 bg-black/50 backdrop-blur-sm transition-opacity duration-300 ${
           visible ? 'opacity-100' : 'opacity-0'
         }`}
+        style={{ zIndex: 58 }}
         onClick={onClose}
         aria-hidden="true"
       />
 
-      {/* Panel – slides in from the top */}
+      {/* Panel */}
       <div
         role="dialog"
         aria-modal="true"
@@ -364,12 +407,13 @@ export const NotificationPopup = ({
         onTouchStart={handleTouchStart}
         onTouchEnd={handleTouchEnd}
         className={`
-          fixed inset-0 z-[9999] w-full h-full
+          fixed inset-0 w-full h-full
           bg-white dark:bg-slate-900
           flex flex-col
           transition-transform duration-300 ease-in-out
           ${visible ? 'translate-y-0' : '-translate-y-full'}
         `}
+        style={{ zIndex: 60 }}
       >
         {/* Sticky header */}
         <div className="sticky top-0 z-10 flex items-center justify-between px-4 py-4 border-b border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 shadow-sm">
@@ -414,13 +458,12 @@ export const NotificationPopup = ({
     </div>
   );
 
-  const mobilePortalTarget = typeof document !== 'undefined' ? document.body : null;
-
-  return (
+  return createPortal(
     <>
       {DesktopDropdown}
-      {mobilePortalTarget ? createPortal(MobileModal, mobilePortalTarget) : MobileModal}
-    </>
+      {MobileModal}
+    </>,
+    portalTarget
   );
 };
 

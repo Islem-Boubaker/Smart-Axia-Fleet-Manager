@@ -93,15 +93,19 @@ export const GlobalCard = ({
             </button>
           </div>
 
+          {/* Scrollable body — overflow-y-auto is intentionally on this div only.
+              The footer lives OUTSIDE so it is never scrolled away. */}
           <div className="min-h-0 flex-1 overflow-y-auto rounded-[22px] border border-slate-200/90 bg-white p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.85)] dark:border-cyan-100/10 dark:bg-[#0b1628] sm:p-5 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
             {children}
-
-            {footer && (
-              <div className="mt-5 border-t border-slate-100 pt-4 dark:border-cyan-100/10">
-                {footer}
-              </div>
-            )}
           </div>
+
+          {/* Sticky footer — always visible, separated from the body by a top border + shadow.
+              z-index is irrelevant here because it sits in normal flow after the scroll area. */}
+          {footer && (
+            <div className="shrink-0 border-t border-slate-100 dark:border-cyan-100/10 bg-white dark:bg-[#07111f] px-4 sm:px-5 py-4 shadow-[0_-4px_12px_-6px_rgba(0,0,0,0.08)]">
+              {footer}
+            </div>
+          )}
         </section>
       </div>
     </div>,

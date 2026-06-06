@@ -1,6 +1,6 @@
 import { useState } from "react";
 import type { FormEvent } from "react";
-import { FiUser, FiPlus } from "react-icons/fi";
+import { FiUser, FiPlus, FiAlertTriangle } from "react-icons/fi";
 import { useTranslation } from 'react-i18next';
 import { Select } from "../../../shared/components";
 import { Input } from "../../../shared/components/ui/Input";
@@ -21,12 +21,13 @@ interface DriverFormData {
 interface DriverFormProps {
   driver?: DriverFormData & { id?: string; avatar?: string };
   vehicles?: Vehicle[];
+  isLoadingVehicles?: boolean;
   dark?: boolean;
   onSubmit: (data: DriverFormData, photo: File | null) => void;
   onCancel: () => void;
 }
 
-const DriverForm = ({ driver, vehicles = [], dark = false, onSubmit, onCancel }: DriverFormProps) => {
+const DriverForm = ({ driver, vehicles = [], isLoadingVehicles = false, dark = false, onSubmit, onCancel }: DriverFormProps) => {
   const { t } = useTranslation();
   const [formData, setFormData] = useState<DriverFormData>({
     name: driver?.name || "",
@@ -79,9 +80,14 @@ const DriverForm = ({ driver, vehicles = [], dark = false, onSubmit, onCancel }:
       const vehicleLabel = vehicle.plaque_immatriculation
         ? `${vehicle.name} (${vehicle.plaque_immatriculation})`
         : vehicle.name;
+      const isInMaintenance = vehicle.status === 'IN_MAINTENANCE';
       return {
         value: vehicleLabel,
         label: vehicleLabel,
+        // Warning icon shown when the currently assigned vehicle is in maintenance
+        icon: isInMaintenance
+          ? <FiAlertTriangle className="text-amber-500 w-3 h-3 shrink-0" />
+          : undefined,
       };
     }),
   ];
@@ -229,7 +235,8 @@ const DriverForm = ({ driver, vehicles = [], dark = false, onSubmit, onCancel }:
             value={formData.assignedVehicle}
             onChange={(value) => handleSelectChange('assignedVehicle', value)}
             dark={dark}
-            placeholder={t('common.selectVehicle')}
+            placeholder={isLoadingVehicles ? t('common.loading') : t('common.selectVehicle')}
+            disabled={isLoadingVehicles}
             options={assignedVehicleOptionsWithLegacy}
           />
         </div>

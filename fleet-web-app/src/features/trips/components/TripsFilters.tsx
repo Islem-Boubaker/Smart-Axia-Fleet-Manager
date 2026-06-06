@@ -18,9 +18,9 @@ const TripsFilters = ({
   dark = false,
 }: Props) => {
   const { t } = useTranslation();
-  return (
+  return (  
   <div
-    className={`relative z-20 flex flex-col lg:flex-row gap-4 rounded-2xl border p-4 ${
+    className={`relative z-10 flex flex-col lg:flex-row gap-4 rounded-2xl border p-4 ${
       dark ? 'border-slate-700/80 bg-slate-900/40' : 'border-slate-200/90 bg-white/70 backdrop-blur-sm shadow-glass'
     }`}
   >

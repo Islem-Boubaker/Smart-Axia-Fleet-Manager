@@ -462,3 +462,20 @@ export const useVehicleOptions = () => {
     refetch: query.refetch,
   };
 };
+
+// Returns only vehicles eligible for driver assignment.
+// In edit mode pass currentDriverId so the driver's current vehicle is always included.
+export const useAvailableVehicles = (currentDriverId?: string) => {
+  const query = useQuery({
+    queryKey: queryKeys.vehicles.availableFor(currentDriverId),
+    queryFn: () => vehiclesService.getAvailableVehicles(currentDriverId),
+    staleTime: 2 * 60 * 1000,
+    refetchOnWindowFocus: false,
+  });
+
+  return {
+    vehicles: query.data ?? [],
+    isLoading: query.isLoading,
+    error: query.error ? getErrorMessage(query.error, 'Failed to fetch available vehicles') : null,
+  };
+};

@@ -31,6 +31,12 @@ export const useDrivers = () => {
     },
   });
 
+  const invalidateAfterDriverChange = () => {
+    queryClient.invalidateQueries({ queryKey: queryKeys.drivers.lists() });
+    // Available-vehicle list changes whenever a driver is assigned/unassigned
+    queryClient.invalidateQueries({ queryKey: queryKeys.vehicles.available() });
+  };
+
   const createMutation = useMutation({
     mutationFn: async (payload: { driverData: Partial<Driver> & { password: string }; photo?: File | null }) => {
       let created = await driversService.createDriver(payload.driverData);
@@ -41,7 +47,7 @@ export const useDrivers = () => {
     },
     onSuccess: () => {
       setActionError(null);
-      queryClient.invalidateQueries({ queryKey: queryKeys.drivers.lists() });
+      invalidateAfterDriverChange();
     },
   });
 
@@ -55,7 +61,7 @@ export const useDrivers = () => {
     },
     onSuccess: () => {
       setActionError(null);
-      queryClient.invalidateQueries({ queryKey: queryKeys.drivers.lists() });
+      invalidateAfterDriverChange();
     },
   });
 
@@ -63,7 +69,7 @@ export const useDrivers = () => {
     mutationFn: driversService.deleteDriver,
     onSuccess: () => {
       setActionError(null);
-      queryClient.invalidateQueries({ queryKey: queryKeys.drivers.lists() });
+      invalidateAfterDriverChange();
     },
   });
 

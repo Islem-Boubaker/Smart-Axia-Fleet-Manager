@@ -7,6 +7,7 @@ type MaybeStop = MaybeCoords & {
   id?: string | number | null;
   stopOrder?: number | null;
   locationName?: string | null;
+  isDestination?: boolean | null;
 };
 
 function normalizeText(value: string | null | undefined): string {
@@ -59,6 +60,10 @@ export function filterDestinationDuplicateStops<T extends MaybeStop>(
   let removedDuplicate = false;
 
   return stops.filter((stop, index) => {
+    // The canonical destination stop must always be kept — it is the stop
+    // the driver needs to reach to complete the trip.
+    if (stop.isDestination) return true;
+
     const isDuplicate = isSameStopAsDestination(stop, destinationLabel, destinationCoords);
 
     if (!isDuplicate || removedDuplicate) {

@@ -58,12 +58,16 @@ export const addStops = async (tripId, stopsInput) => {
     throw createError("No stops provided", 422, "VALIDATION_ERROR");
   }
 
+  // Reject any attempt to create a second destination stop via this endpoint
+  if (stops.some((s) => s.isDestination)) {
+    throw createError("Cannot add a second destination stop", 409, "DESTINATION_ALREADY_EXISTS");
+  }
+
   const newOrders = stops.map((stop) => stop.stopOrder);
   ensureNoDuplicateOrder(newOrders);
 
   const existing = await TripStop.findAll({
     where: { tripId },
-    attributes: ["stopOrder"],
   });
 
   const existingOrders = new Set(existing.map((stop) => stop.stopOrder));
@@ -73,8 +77,28 @@ export const addStops = async (tripId, stopsInput) => {
     }
   }
 
-  const payload = stops.map((stop) => ({ ...stop, tripId }));
-  return TripStop.bulkCreate(payload, { validate: true, returning: true });
+  const destination = existing.find((s) => s.isDestination);
+
+  const created = await sequelize.transaction(async (transaction) => {
+    const payload = stops.map((stop) => ({ ...stop, tripId }));
+    const newStops = await TripStop.bulkCreate(payload, { validate: true, returning: true, transaction });
+
+    // Re-pin destination to max stopOrder + 1 so it always stays last
+    if (destination) {
+      const allOrders = [
+        ...existing.filter((s) => !s.isDestination).map((s) => s.stopOrder),
+        ...newOrders,
+      ];
+      const maxOrder = Math.max(...allOrders);
+      if (destination.stopOrder <= maxOrder) {
+        await destination.update({ stopOrder: maxOrder + 1 }, { transaction });
+      }
+    }
+
+    return newStops;
+  });
+
+  return created;
 };
 
 export const getStops = async (tripId, callerRole, callerId, cacheKey = null) => {
@@ -137,6 +161,10 @@ export const deleteStop = async (tripId, stopId) => {
   const stop = await TripStop.findByPk(stopId);
   ensureStopBelongsToTrip(stop, tripId);
 
+  if (stop.isDestination) {
+    throw createError("Cannot delete the destination stop", 409, "DESTINATION_NOT_DELETABLE");
+  }
+
   if (stop.status === "reached") {
     throw createError("Cannot delete a reached stop", 409, "CONFLICT");
   }
@@ -171,14 +199,17 @@ export const reachStop = async (tripId, stopId, callerRole, callerId, arrivalTim
     arrivalTime: reachedAt,
   });
 
-  const pendingStops = await TripStop.count({
-    where: {
-      tripId,
-      status: "pending",
-    },
+  // Auto-complete only when ALL stops (including destination) are resolved
+  const destination = stop.isDestination ? stop : await TripStop.findOne({
+    where: { tripId, isDestination: true },
   });
 
-  if (pendingStops === 0) {
+  const destinationReached = destination && destination.status === "reached";
+  const pendingIntermediate = await TripStop.count({
+    where: { tripId, isDestination: false, status: "pending" },
+  });
+
+  if (destinationReached && pendingIntermediate === 0) {
     await trip.update({
       status: "completed",
       endTime: reachedAt,
@@ -208,6 +239,10 @@ export const skipStop = async (tripId, stopId, callerRole, callerId, notes) => {
   const stop = await TripStop.findByPk(stopId);
   ensureStopBelongsToTrip(stop, tripId);
 
+  if (stop.isDestination) {
+    throw createError("Cannot skip the destination stop", 409, "DESTINATION_NOT_SKIPPABLE");
+  }
+
   if (stop.status !== "pending") {
     throw createError("Only pending stops can be skipped", 409, "CONFLICT");
   }
@@ -233,10 +268,26 @@ export const reorderStops = async (tripId, orderArray = []) => {
 
   const stops = await TripStop.findAll({ where: { tripId } });
   const tripStopIds = new Set(stops.map((stop) => String(stop.id)));
+  const destination = stops.find((s) => s.isDestination);
 
   for (const stopId of inputIds) {
     if (!tripStopIds.has(String(stopId))) {
       throw createError("One or more stops do not belong to this trip", 422, "VALIDATION_ERROR");
+    }
+  }
+
+  // Reject any payload that tries to reorder the destination away from last position
+  if (destination) {
+    const destEntry = orderArray.find((item) => String(item.stopId) === String(destination.id));
+    if (destEntry) {
+      const maxRequestedOrder = Math.max(...inputOrders);
+      if (destEntry.stopOrder !== maxRequestedOrder) {
+        throw createError(
+          "The destination stop must remain last in stopOrder",
+          409,
+          "DESTINATION_MUST_BE_LAST"
+        );
+      }
     }
   }
 

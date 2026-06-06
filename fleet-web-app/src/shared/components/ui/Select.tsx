@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import type { ReactNode } from 'react';
+import { createPortal } from 'react-dom';
+import type { CSSProperties, ReactNode } from 'react';
 import { FiCheck, FiChevronDown } from 'react-icons/fi';
 
 export interface SelectOption {
@@ -24,6 +25,14 @@ const themed = (dark: boolean | undefined, lightClass: string, darkClass: string
   return `${lightClass} dark:${darkClass}`;
 };
 
+// Z-index scale (all portals render as siblings of the modal at document.body level):
+//   modal outer container : z-[9999]  (GlobalCard)
+//   dropdown portal        : 10000    ← must beat the modal
+//   toasts/notifications   : 11000+
+const DROPDOWN_Z = 10000;
+const LIST_MAX_H = 288; // max-h-72 = 18 × 16 = 288 px
+const GAP = 4;          // gap between trigger bottom and list top
+
 export const Select = ({
   value,
   options,
@@ -34,28 +43,78 @@ export const Select = ({
   className = '',
 }: SelectProps) => {
   const [open, setOpen] = useState(false);
+  const [dropdownStyle, setDropdownStyle] = useState<CSSProperties>({});
   const wrapperRef = useRef<HTMLDivElement | null>(null);
+  const dropdownRef = useRef<HTMLDivElement | null>(null);
 
   const selected = useMemo(() => options.find((opt) => opt.value === value), [options, value]);
 
+  // Calculates position for the portal list.
+  // Flips the list ABOVE the trigger when there is not enough viewport space below.
+  const calcPosition = () => {
+    if (!wrapperRef.current) return;
+    const rect = wrapperRef.current.getBoundingClientRect();
+    const vh = window.innerHeight;
+
+    const spaceBelow = vh - rect.bottom - GAP;
+    const spaceAbove = rect.top - GAP;
+    const renderAbove = spaceBelow < LIST_MAX_H && spaceAbove > spaceBelow;
+
+    if (renderAbove) {
+      setDropdownStyle({
+        position: 'fixed',
+        bottom: vh - rect.top + GAP,
+        left: rect.left,
+        width: rect.width,
+        maxHeight: Math.min(LIST_MAX_H, spaceAbove),
+        zIndex: DROPDOWN_Z,
+      });
+    } else {
+      setDropdownStyle({
+        position: 'fixed',
+        top: rect.bottom + GAP,
+        left: rect.left,
+        width: rect.width,
+        maxHeight: Math.min(LIST_MAX_H, Math.max(spaceBelow, 120)),
+        zIndex: DROPDOWN_Z,
+      });
+    }
+  };
+
+  // Outside-click closes the dropdown; checks both the trigger wrapper and the portal list.
   useEffect(() => {
-    const onPointerDown = (event: MouseEvent) => {
-      if (!wrapperRef.current) return;
-      if (!wrapperRef.current.contains(event.target as Node)) {
+    const onPointerDown = (e: MouseEvent) => {
+      const t = e.target as Node;
+      if (!wrapperRef.current?.contains(t) && !dropdownRef.current?.contains(t)) {
         setOpen(false);
       }
     };
-
     document.addEventListener('mousedown', onPointerDown);
     return () => document.removeEventListener('mousedown', onPointerDown);
   }, []);
+
+  // Close on any ancestor scroll so the list doesn't float away from the trigger.
+  useEffect(() => {
+    if (!open) return;
+    const onScroll = (e: Event) => {
+      if (dropdownRef.current?.contains(e.target as Node)) return; // allow internal list scroll
+      setOpen(false);
+    };
+    window.addEventListener('scroll', onScroll, true);
+    return () => window.removeEventListener('scroll', onScroll, true);
+  }, [open]);
+
+  const handleToggle = () => {
+    if (!open) calcPosition();
+    setOpen((prev) => !prev);
+  };
 
   return (
     <div ref={wrapperRef} className={`relative w-full ${className}`}>
       <button
         type="button"
         disabled={disabled}
-        onClick={() => setOpen((prev) => !prev)}
+        onClick={handleToggle}
         className={`w-full px-4 py-2.5 rounded-xl border text-left text-sm font-medium transition-all flex items-center justify-between gap-3 disabled:opacity-60 disabled:cursor-not-allowed ${themed(
           dark,
           'border-slate-200 bg-white/90 text-slate-800 hover:border-slate-300',
@@ -69,15 +128,20 @@ export const Select = ({
         <FiChevronDown className={`shrink-0 transition-transform ${open ? 'rotate-180' : ''}`} />
       </button>
 
-      {open && !disabled && (
+      {/* Portal: escapes every overflow / stacking context in the modal.
+          Position is fixed so parent transforms have no effect.
+          maxHeight flips above the trigger when space below is insufficient. */}
+      {open && !disabled && typeof document !== 'undefined' && createPortal(
         <div
-          className={`absolute z-[80] mt-2 w-full rounded-2xl border p-2 shadow-xl backdrop-blur-lg ${themed(
+          ref={dropdownRef}
+          style={dropdownStyle}
+          className={`overflow-y-auto rounded-2xl border p-2 shadow-xl ${themed(
             dark,
-            'border-slate-200 bg-white/95',
-            'border-slate-700 bg-slate-900/95'
+            'border-slate-200 bg-white',
+            'border-slate-700 bg-slate-900'
           )}`}
         >
-          <ul className="max-h-72 overflow-auto space-y-1">
+          <ul className="space-y-1">
             {options.map((option) => {
               const isSelected = option.value === value;
               return (
@@ -104,7 +168,8 @@ export const Select = ({
               );
             })}
           </ul>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );
