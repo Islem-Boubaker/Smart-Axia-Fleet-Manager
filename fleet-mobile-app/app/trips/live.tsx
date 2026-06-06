@@ -273,10 +273,7 @@ export default function LiveTripScreen() {
     try {
       await markStopReached(tripId, nextStopId, new Date().toISOString());
       await reload();
-      // Backend may have auto-completed the trip (isDestination stop reached)
-      if (trip?.backendStatus === "completed") {
-        router.replace("/(tabs)/trips");
-      }
+      // If backend auto-completed the trip, the useEffect below will navigate away
     } catch (err) {
       autoReachedStopIdsRef.current[nextStopId] = false;
       setLocalStopStatuses((current) => {
@@ -286,7 +283,7 @@ export default function LiveTripScreen() {
       });
       throw err;
     }
-  }, [markStopReached, nextStop, reload, router, trip?.backendStatus, tripId]);
+  }, [markStopReached, nextStop, reload, tripId]);
 
   const handleCompleteTrip = React.useCallback(async () => {
     if (!tripId) return;
@@ -295,14 +292,23 @@ export default function LiveTripScreen() {
       await completeTrip(tripId, { endTime: new Date().toISOString() });
       router.replace("/(tabs)/trips");
     } catch (err: any) {
-      // Trip was already auto-completed by backend when destination stop was reached
       if (err?.response?.status === 409) {
+        // Trip was already auto-completed by the backend; navigate away
         router.replace("/(tabs)/trips");
         return;
       }
       throw err;
     }
   }, [completeTrip, router, tripId]);
+
+  // Navigate away when the backend marks the trip as completed or cancelled
+  // (covers auto-completion via isDestination stop, and the race condition where
+  //  completeTrip returns 409 because the trip was already completed)
+  useEffect(() => {
+    if (trip?.backendStatus === "completed" || trip?.backendStatus === "cancelled") {
+      router.replace("/(tabs)/trips");
+    }
+  }, [trip?.backendStatus, router]);
 
   useEffect(() => {
     if (!tripId || !driverLocation || !nextStop?.coordinate) return;
