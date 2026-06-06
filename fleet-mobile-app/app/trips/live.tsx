@@ -273,6 +273,10 @@ export default function LiveTripScreen() {
     try {
       await markStopReached(tripId, nextStopId, new Date().toISOString());
       await reload();
+      // Backend may have auto-completed the trip (isDestination stop reached)
+      if (trip?.backendStatus === "completed") {
+        router.replace("/(tabs)/trips");
+      }
     } catch (err) {
       autoReachedStopIdsRef.current[nextStopId] = false;
       setLocalStopStatuses((current) => {
@@ -282,7 +286,7 @@ export default function LiveTripScreen() {
       });
       throw err;
     }
-  }, [markStopReached, nextStop, reload, tripId]);
+  }, [markStopReached, nextStop, reload, router, trip?.backendStatus, tripId]);
 
   const handleCompleteTrip = React.useCallback(async () => {
     if (!tripId) return;
@@ -290,7 +294,12 @@ export default function LiveTripScreen() {
     try {
       await completeTrip(tripId, { endTime: new Date().toISOString() });
       router.replace("/(tabs)/trips");
-    } catch (err) {
+    } catch (err: any) {
+      // Trip was already auto-completed by backend when destination stop was reached
+      if (err?.response?.status === 409) {
+        router.replace("/(tabs)/trips");
+        return;
+      }
       throw err;
     }
   }, [completeTrip, router, tripId]);
