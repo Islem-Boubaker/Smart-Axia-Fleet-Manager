@@ -154,7 +154,7 @@ export default function LiveTripScreen() {
   }, [resolvedStops]);
   const canCompleteAtDestination = Boolean(
     tripId &&
-    trip?.backendStatus === "ongoing" &&
+    trip?.backendStatus !== "cancelled" &&
     !nextStop &&
     resolvedStops.every((stop) => stop.effectiveStatus === "reached" || stop.effectiveStatus === "skipped"),
   );
@@ -301,11 +301,8 @@ export default function LiveTripScreen() {
     }
   }, [completeTrip, router, tripId]);
 
-  // Navigate away when the backend marks the trip as completed or cancelled
-  // (covers auto-completion via isDestination stop, and the race condition where
-  //  completeTrip returns 409 because the trip was already completed)
   useEffect(() => {
-    if (trip?.backendStatus === "completed" || trip?.backendStatus === "cancelled") {
+    if (trip?.backendStatus === "cancelled") {
       router.replace("/(tabs)/trips");
     }
   }, [trip?.backendStatus, router]);
