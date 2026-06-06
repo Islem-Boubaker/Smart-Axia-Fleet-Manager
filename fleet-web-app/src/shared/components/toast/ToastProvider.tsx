@@ -111,7 +111,8 @@ export const ToastProvider = ({ children }: ToastProviderProps) => {
       {createPortal(
         <div
           aria-label="Notifications"
-          className="fixed top-4 right-4 z-[99999] flex flex-col gap-3 pointer-events-none"
+          className="fixed top-4 right-4 flex flex-col gap-3 pointer-events-none"
+          style={{ zIndex: 2147483647 }}
         >
           {toasts.map((t) => (
             <ToastItem key={t.id} toast={t} onRemove={removeToast} />
