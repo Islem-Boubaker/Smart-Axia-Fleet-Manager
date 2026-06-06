@@ -1,9 +1,11 @@
 export type NotificationType =
   | "trip"
-  | "schedule"
-  | "claim"
-  | "admin"
-  | "alert";
+  | "maintenance"
+  | "ai"
+  | "driver"
+  | "system"
+  | "alert"
+  | "claim";
 
 export interface RawNotification {
   id: string;
@@ -14,6 +16,10 @@ export interface RawNotification {
   group: string;
   read: boolean;
   readAt: string | null;
+  actionUrl?: string | null;
+  entityType?: string | null;
+  entityId?: string | number | null;
+  priority?: string | null;
 }
 
 export interface NotificationItem {
@@ -25,6 +31,9 @@ export interface NotificationItem {
   time: string;
   type: NotificationType;
   unread: boolean;
+  actionUrl?: string | null;
+  entityType?: string | null;
+  entityId?: string | number | null;
 }
 
 export interface NotificationGroup {

@@ -1,12 +1,12 @@
 import React from 'react';
 import { View, Text } from 'react-native';
 import { useTranslation } from 'react-i18next';
-import type { NotificationGroup } from '../types/notification.types';
+import type { NotificationGroup, NotificationItem } from '../types/notification.types';
 import { NotificationRow } from './NotificationRow';
 
 interface Props {
   group: NotificationGroup;
-  onItemPress: (id: string) => void;
+  onItemPress: (item: NotificationItem) => void;
 }
 
 export function NotificationGroupCard({ group, onItemPress }: Props) {

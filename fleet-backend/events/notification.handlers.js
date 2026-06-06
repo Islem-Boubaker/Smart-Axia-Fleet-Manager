@@ -469,6 +469,7 @@ eventBus.subscribe(FLEET_EVENTS.TRIP_ASSIGNED, async ({ payload }) => {
     message: `${driverName}, you have been assigned to a trip from ${route}.`,
     entityId: payload.tripId,
     entityType: "trip",
+    actionUrl: buildTripActionUrl(payload.tripId),
     metadata: {
       referenceId: payload.tripId,
       referenceType: "trip",
@@ -516,6 +517,7 @@ eventBus.subscribe(FLEET_EVENTS.TRIP_STARTED, async ({ payload }) => {
       message: `${driverName} started the trip from ${route}.`,
       entityId: payload.tripId,
       entityType: "trip",
+      actionUrl: buildTripActionUrl(payload.tripId),
       metadata: { referenceId: payload.tripId, referenceType: "trip", driverName },
     }))
   );
@@ -554,6 +556,7 @@ eventBus.subscribe(FLEET_EVENTS.TRIP_COMPLETED, async ({ payload }) => {
       message: `${driverName} completed the trip from ${route}.`,
       entityId: payload.tripId,
       entityType: "trip",
+      actionUrl: buildTripActionUrl(payload.tripId),
       metadata: { referenceId: payload.tripId, referenceType: "trip", driverName },
     }))
   );
@@ -595,6 +598,7 @@ eventBus.subscribe(FLEET_EVENTS.TRIP_CANCELLED, async ({ payload }) => {
       message: `The trip from ${route} assigned to ${driverName} has been cancelled.`,
       entityId: payload.tripId,
       entityType: "trip",
+      actionUrl: buildTripActionUrl(payload.tripId),
       metadata: { referenceId: payload.tripId, referenceType: "trip", driverName },
     }))
   );

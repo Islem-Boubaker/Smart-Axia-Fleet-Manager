@@ -2,41 +2,67 @@ import * as React from "react";
 import { View, Text, ScrollView, ActivityIndicator } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useTranslation } from "react-i18next";
+import { useRouter } from "expo-router";
 import { useNotification } from "../hooks/useNotification";
 import { NotificationHeader } from "../components/NotificationHeader";
 import { NotificationGroupCard } from "../components/NotificationGroupCard";
+import type { NotificationItem } from "../types/notification.types";
+
+function buildMobileRoute(item: NotificationItem): string | null {
+  const { entityType, entityId } = item;
+  if (!entityType) return null;
+
+  const id = entityId != null ? String(entityId) : null;
+
+  switch (entityType) {
+    case "trip":        return id ? `/trips/${id}` : "/(tabs)/trips";
+    case "maintenance": return "/(tabs)/home";
+    case "reclamation": return "/(tabs)/home";
+    default:            return null;
+  }
+}
 
 export default function NotificationsScreen() {
   const { t } = useTranslation();
+  const router = useRouter();
   const { groups, loading, error, unreadCount, markAsRead, markAllAsRead } =
     useNotification();
+
+  const handleItemPress = React.useCallback(
+    async (item: NotificationItem) => {
+      if (item.unread) {
+        await markAsRead(item.id);
+      }
+      const route = buildMobileRoute(item);
+      if (route) {
+        router.push(route as any);
+      }
+    },
+    [markAsRead, router],
+  );
 
   return (
     <SafeAreaView
       edges={["top", "left", "right"]}
       className="flex-1 bg-gray-100 dark:bg-[#0B1220]"
     >
-      {/* Header */}
       <NotificationHeader
         onMarkAllRead={markAllAsRead}
         unreadCount={unreadCount}
       />
 
-      {/* Loading state */}
       {loading && (
         <View className="flex-1 items-center justify-center">
           <ActivityIndicator size="large" color="#2D9B6F" />
         </View>
       )}
 
-      {/* Error state */}
       {!loading && error && (
         <View className="flex-1 items-center justify-center px-8">
           <Text className="text-base text-gray-400 dark:text-slate-400 text-center">{t(error)}</Text>
         </View>
       )}
 
-      {/* Empty state */}
       {!loading && !error && groups.every((g) => g.items.length === 0) && (
         <View className="flex-1 items-center justify-center px-8">
           <Text className="text-4xl mb-3">🔔</Text>
@@ -49,7 +75,6 @@ export default function NotificationsScreen() {
         </View>
       )}
 
-      {/* Notification list */}
       {!loading && !error && (
         <ScrollView
           showsVerticalScrollIndicator={false}
@@ -59,7 +84,7 @@ export default function NotificationsScreen() {
             <NotificationGroupCard
               key={group.group}
               group={group}
-              onItemPress={markAsRead}
+              onItemPress={handleItemPress}
             />
           ))}
         </ScrollView>

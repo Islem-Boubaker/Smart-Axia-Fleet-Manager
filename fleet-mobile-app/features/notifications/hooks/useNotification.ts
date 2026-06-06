@@ -13,14 +13,21 @@ import type {
 const SOCKET_URL = resolveApiBaseUrl(process.env.EXPO_PUBLIC_API_URL);
 
 function mapType(rawType: string, group: string): NotificationType {
-  const t = (rawType || group || "").toLowerCase();
-  if (t.includes("trip")) return "trip";
+  switch ((group || "").toLowerCase()) {
+    case "trip":        return "trip";
+    case "maintenance": return "maintenance";
+    case "ai":          return "ai";
+    case "driver":      return "driver";
+    case "system":      return "system";
+    case "alerts":      return "alert";
+  }
+  const t = (rawType || "").toLowerCase();
+  if (t.includes("trip"))                              return "trip";
+  if (t.includes("maintenance"))                       return "maintenance";
   if (t.includes("reclamation") || t.includes("claim")) return "claim";
-  if (t === "maintenance") return "alert";
-  if (t === "warning") return "claim";
-  if (t === "success") return "schedule";
-  if (t === "trip") return "trip";
-  return "admin";
+  if (t.includes("ai") || t.includes("route"))        return "ai";
+  if (t.includes("driver"))                            return "driver";
+  return "system";
 }
 
 function getKnownNotificationKeys(notification: RawNotification) {
@@ -85,6 +92,9 @@ function groupNotifications(items: RawNotification[]): NotificationGroup[] {
       time: formatTime(n.createdAt),
       type: mapType(n.type, n.group),
       unread: !n.read && !n.readAt,
+      actionUrl: n.actionUrl ?? null,
+      entityType: n.entityType ?? null,
+      entityId: n.entityId ?? null,
     };
 
     if (dateString === todayDate) {
