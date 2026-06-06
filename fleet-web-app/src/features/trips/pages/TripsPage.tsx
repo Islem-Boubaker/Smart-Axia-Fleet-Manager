@@ -378,7 +378,6 @@ const TripsPage = () => {
 
     try {
       setIsEditSubmitting(true);
-      setEditError(null);
 
       await updateTrip(editingTrip.id, {
         vehicleId: editValues.vehicleId,
@@ -582,7 +581,6 @@ const TripsPage = () => {
         onClose={() => {
           if (isSubmitting) return;
           setIsAddModalOpen(false);
-          setSubmitError(null);
         }}
         title={t('trips.header.scheduleTrip')}
         maxWidth="2xl"
@@ -596,7 +594,6 @@ const TripsPage = () => {
           onCancel={() => {
             if (isSubmitting) return;
             setIsAddModalOpen(false);
-            setSubmitError(null);
           }}
         />
       </GlobalCard>
@@ -619,7 +616,6 @@ const TripsPage = () => {
           setEditStops([]);
           setEditErrors({});
           setEditStopsError(null);
-          setEditError(null);
         }}
         title={t('trips.modals.editTitle')}
         maxWidth="2xl"
@@ -847,7 +843,6 @@ const TripsPage = () => {
                   setEditStops([]);
                   setEditErrors({});
                   setEditStopsError(null);
-                  setEditError(null);
                 }}
                 disabled={isEditSubmitting}
               >
