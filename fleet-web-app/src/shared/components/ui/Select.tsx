@@ -25,10 +25,10 @@ const themed = (dark: boolean | undefined, lightClass: string, darkClass: string
   return `${lightClass} dark:${darkClass}`;
 };
 
-// Z-index scale (all portals render as siblings of the modal at document.body level):
-//   modal outer container : z-[9999]  (GlobalCard)
-//   dropdown portal        : 10000    ← must beat the modal
-//   toasts/notifications   : 11000+
+// Z-index scale (all portals render as siblings in document.body):
+//   modal outer container : z-[9999]   (GlobalCard)
+//   dropdown portal        : 10000     ← must beat the modal
+//   toasts                 : 99999     ← always on top of everything
 const DROPDOWN_Z = 10000;
 const LIST_MAX_H = 288; // max-h-72 = 18 × 16 = 288 px
 const GAP = 4;          // gap between trigger bottom and list top
