@@ -22,7 +22,6 @@ export default function AuthLayout() {
         }}
       />
       <Stack.Screen name="forgotPassword" />
-      <Stack.Screen name="Verifycode" />
     </Stack>
   );
 }

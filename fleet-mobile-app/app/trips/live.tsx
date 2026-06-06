@@ -1,6 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { ActivityIndicator, Alert, StatusBar, Text, TouchableOpacity, View } from "react-native";
-import MapView, { Marker, Polyline } from "react-native-maps";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import * as Location from "expo-location";
@@ -14,19 +13,13 @@ import { useTripDetail } from "@/features/trips/hooks/useTripDetail";
 import { useRoutePolyline } from "@/features/trips/hooks/useRoutePolyline";
 import { tripsApi } from "@/features/trips/services/trips.api";
 import { resolveTunisiaAddressToCoord } from "@/features/trips/utils/geocoding";
-import { filterDestinationDuplicateStops } from "@/features/trips/utils/routeDedup";
-import { getStatusTranslationKey } from "@/shared/utils/translateStatus";
+import { OpenStreetMapView, type OpenStreetMapMarker, type OpenStreetMapPolyline } from "@/shared/components/maps/OpenStreetMapView";
 
 type LatLng = { latitude: number; longitude: number };
 type StopStatus = "pending" | "reached" | "skipped" | "unknown";
 
-const DEFAULT_REGION = {
-  latitude: 36.8065,
-  longitude: 10.1815,
-  latitudeDelta: 0.25,
-  longitudeDelta: 0.25,
-};
 const ARRIVAL_RADIUS_METERS = 60;
+const ROUTE_RECALCULATE_DISTANCE_METERS = 120;
 
 function toAddress(value: unknown): string {
   if (typeof value === "string") return value.trim();
@@ -66,44 +59,24 @@ function areCoordsClose(a: LatLng | null, b: LatLng | null, epsilon = 0.0002): b
   return Math.abs(a.latitude - b.latitude) <= epsilon && Math.abs(a.longitude - b.longitude) <= epsilon;
 }
 
-function getRegion(coords: LatLng[]) {
-  if (coords.length === 0) {
-    return DEFAULT_REGION;
-  }
-  const lats = coords.map((c) => c.latitude);
-  const lngs = coords.map((c) => c.longitude);
-  const minLat = Math.min(...lats);
-  const maxLat = Math.max(...lats);
-  const minLng = Math.min(...lngs);
-  const maxLng = Math.max(...lngs);
-
-  return {
-    latitude: (minLat + maxLat) / 2,
-    longitude: (minLng + maxLng) / 2,
-    latitudeDelta: Math.max(0.03, (maxLat - minLat) * 1.4),
-    longitudeDelta: Math.max(0.03, (maxLng - minLng) * 1.4),
-  };
-}
-
 export default function LiveTripScreen() {
   const { isDark } = useAppTheme();
   const { t } = useTranslation();
   const router = useRouter();
-  const mapRef = useRef<MapView | null>(null);
   const watchSubscriptionRef = useRef<Location.LocationSubscription | null>(null);
   const lastPingAtRef = useRef(0);
   const pingDisabledRef = useRef(false);
-  const hasInitialFitRef = useRef(false);
+  const routingDriverLocationRef = useRef<LatLng | null>(null);
   const autoReachedStopIdsRef = useRef<Record<string, boolean>>({});
   const geocodeCacheRef = useRef<Record<string, LatLng>>({});
-  const lastFittedRouteKeyRef = useRef("");
 
   const params = useLocalSearchParams<{ tripId?: string | string[] }>();
   const tripId = Array.isArray(params.tripId) ? params.tripId[0] : params.tripId;
 
   const { trip, isLoading, error, reload } = useTripDetail(tripId);
-  const { markStopReached, isSubmitting: isSubmittingTripAction } = useTripActions();
+  const { completeTrip, markStopReached, isSubmitting: isSubmittingTripAction } = useTripActions();
   const [driverLocation, setDriverLocation] = useState<LatLng | null>(null);
+  const [routingDriverLocation, setRoutingDriverLocation] = useState<LatLng | null>(null);
   const [destinationCoord, setDestinationCoord] = useState<LatLng | null>(null);
   const [resolvedStopCoords, setResolvedStopCoords] = useState<Record<string, LatLng>>({});
   const [localStopStatuses, setLocalStopStatuses] = useState<Record<string, StopStatus>>({});
@@ -140,9 +113,7 @@ export default function LiveTripScreen() {
   const sortedStops = useMemo(() => {
     return [...(trip?.stops ?? [])].sort((a, b) => a.stopOrder - b.stopOrder);
   }, [trip?.stops]);
-  const visibleSortedStops = useMemo(() => {
-    return filterDestinationDuplicateStops(sortedStops, destinationAddress, destinationCoordsFromTrip);
-  }, [destinationAddress, destinationCoordsFromTrip, sortedStops]);
+  const visibleSortedStops = sortedStops;
 
   useEffect(() => {
     setLocalStopStatuses({});
@@ -181,6 +152,12 @@ export default function LiveTripScreen() {
       }) ?? null
     );
   }, [resolvedStops]);
+  const canCompleteAtDestination = Boolean(
+    tripId &&
+    trip?.backendStatus === "ongoing" &&
+    !nextStop &&
+    resolvedStops.every((stop) => stop.effectiveStatus === "reached" || stop.effectiveStatus === "skipped"),
+  );
 
   const stopCoords = useMemo(() => {
     return resolvedStops
@@ -289,6 +266,7 @@ export default function LiveTripScreen() {
     if (!tripId || !nextStop?.id) return;
 
     const nextStopId = String(nextStop.id);
+
     autoReachedStopIdsRef.current[nextStopId] = true;
     setLocalStopStatuses((current) => ({ ...current, [nextStopId]: "reached" }));
 
@@ -305,6 +283,17 @@ export default function LiveTripScreen() {
       throw err;
     }
   }, [markStopReached, nextStop, reload, tripId]);
+
+  const handleCompleteTrip = React.useCallback(async () => {
+    if (!tripId) return;
+
+    try {
+      await completeTrip(tripId, { endTime: new Date().toISOString() });
+      router.replace("/(tabs)/trips");
+    } catch (err) {
+      throw err;
+    }
+  }, [completeTrip, router, tripId]);
 
   useEffect(() => {
     if (!tripId || !driverLocation || !nextStop?.coordinate) return;
@@ -332,7 +321,7 @@ export default function LiveTripScreen() {
     let mounted = true;
 
     async function startTracking() {
-      if (!tripId) return;
+      if (!tripId || trip?.backendStatus === "completed" || trip?.backendStatus === "cancelled") return;
 
       const { status } = await Location.requestForegroundPermissionsAsync();
       if (status !== "granted") {
@@ -349,10 +338,13 @@ export default function LiveTripScreen() {
       });
 
       if (mounted) {
-        setDriverLocation({
+        const currentPoint = {
           latitude: current.coords.latitude,
           longitude: current.coords.longitude,
-        });
+        };
+        setDriverLocation(currentPoint);
+        setRoutingDriverLocation(currentPoint);
+        routingDriverLocationRef.current = currentPoint;
         setLocationAccuracy(current.coords.accuracy ?? null);
       }
 
@@ -368,6 +360,13 @@ export default function LiveTripScreen() {
             longitude: update.coords.longitude,
           };
           setDriverLocation(point);
+          if (
+            !routingDriverLocationRef.current ||
+            getDistanceMeters(point, routingDriverLocationRef.current) >= ROUTE_RECALCULATE_DISTANCE_METERS
+          ) {
+            routingDriverLocationRef.current = point;
+            setRoutingDriverLocation(point);
+          }
           setLocationAccuracy(update.coords.accuracy ?? null);
 
           const now = Date.now();
@@ -413,11 +412,12 @@ export default function LiveTripScreen() {
         watchSubscriptionRef.current = null;
       }
     };
-  }, [t, tripId]);
+  }, [t, trip?.backendStatus, tripId]);
 
   const routeInputPoints = useMemo(() => {
     const points: LatLng[] = [];
-    if (driverLocation) points.push(driverLocation);
+    const routeOrigin = routingDriverLocation ?? driverLocation;
+    if (routeOrigin) points.push(routeOrigin);
 
     for (const stopCoord of remainingStopCoords) {
       if (!points.some((point) => areCoordsClose(point, stopCoord))) {
@@ -430,61 +430,67 @@ export default function LiveTripScreen() {
     }
 
     return points;
-  }, [destinationCoord, driverLocation, remainingStopCoords]);
+  }, [destinationCoord, driverLocation, remainingStopCoords, routingDriverLocation]);
 
   const { routeCoords, isFetchingRoute } = useRoutePolyline(routeInputPoints);
-  const routeViewportCoords = useMemo(() => {
-    const points = routeCoords.length >= 2 ? routeCoords : routeInputPoints;
-    return points;
+  const mapMarkers = useMemo<OpenStreetMapMarker[]>(() => {
+    const markers: OpenStreetMapMarker[] = [];
+
+    if (driverLocation) {
+      markers.push({
+        id: "driver",
+        coordinate: driverLocation,
+        color: "#1F63E0",
+        label: t("trips.live.location"),
+      });
+    }
+
+    for (const stop of visibleSortedStops) {
+      const resolvedStop = resolvedStops.find((item) => String(item.id) === String(stop.id));
+      if (!resolvedStop?.coordinate) continue;
+
+      const isNext = Boolean(nextStop && String(nextStop.id) === String(stop.id));
+      const normalizedStatus = resolvedStop.effectiveStatus;
+      const color =
+        isNext
+          ? "#F59E0B"
+          : normalizedStatus === "reached"
+            ? "#16A34A"
+            : normalizedStatus === "skipped"
+              ? "#6B7280"
+              : "#2563EB";
+
+      markers.push({
+        id: `stop-${stop.id}`,
+        coordinate: resolvedStop.coordinate,
+        color,
+        label: stop.locationName,
+      });
+    }
+
+    if (destinationCoord) {
+      markers.push({
+        id: "destination",
+        coordinate: destinationCoord,
+        color: "#DC2626",
+        label: destinationAddress || t("trips.destination"),
+      });
+    }
+
+    return markers;
+  }, [destinationAddress, destinationCoord, driverLocation, nextStop, resolvedStops, t, visibleSortedStops]);
+
+  const mapPolylines = useMemo<OpenStreetMapPolyline[]>(() => {
+    if (routeCoords.length >= 2) {
+      return [{ id: "route", coordinates: routeCoords, color: "#1F63E0", width: 5 }];
+    }
+
+    if (routeInputPoints.length >= 2) {
+      return [{ id: "route-draft", coordinates: routeInputPoints, color: "#60A5FA", width: 3, dashed: true }];
+    }
+
+    return [];
   }, [routeCoords, routeInputPoints]);
-  const routeViewportKey = useMemo(
-    () => routeInputPoints.map((point) => `${point.latitude}:${point.longitude}`).join("|"),
-    [routeInputPoints],
-  );
-
-  const mapCoords = useMemo(() => {
-    const points: LatLng[] = [];
-    if (driverLocation) points.push(driverLocation);
-    for (const stop of stopCoords) points.push(stop);
-    if (destinationCoord && !points.some((point) => areCoordsClose(point, destinationCoord))) {
-      points.push(destinationCoord);
-    }
-    return points;
-  }, [destinationCoord, driverLocation, stopCoords]);
-
-  useEffect(() => {
-    if (!mapRef.current || mapCoords.length === 0) return;
-
-    if (!hasInitialFitRef.current) {
-      hasInitialFitRef.current = true;
-      if (mapCoords.length === 1) {
-        mapRef.current.animateToRegion(
-          {
-            latitude: mapCoords[0].latitude,
-            longitude: mapCoords[0].longitude,
-            latitudeDelta: 0.012,
-            longitudeDelta: 0.012,
-          },
-          500,
-        );
-        return;
-      }
-
-      mapRef.current.fitToCoordinates(mapCoords, {
-        edgePadding: { top: 120, right: 36, bottom: 220, left: 36 },
-        animated: true,
-      });
-      return;
-    }
-
-    if (routeViewportCoords.length >= 2 && routeViewportKey !== lastFittedRouteKeyRef.current) {
-      lastFittedRouteKeyRef.current = routeViewportKey;
-      mapRef.current.fitToCoordinates(routeViewportCoords, {
-        edgePadding: { top: 120, right: 36, bottom: 220, left: 36 },
-        animated: true,
-      });
-    }
-  }, [mapCoords, routeViewportCoords, routeViewportKey]);
 
   if (isLoading) return <LoadingSpinner fullScreen />;
 
@@ -523,50 +529,11 @@ export default function LiveTripScreen() {
         </View>
       </View>
 
-      <MapView
-        ref={mapRef}
-        style={{ flex: 1 }}
-        initialRegion={getRegion(mapCoords)}
-        showsUserLocation
-        showsMyLocationButton
-        showsCompass
-      >
-        {routeCoords.length >= 2 ? (
-          <Polyline coordinates={routeCoords} strokeColor="#1F63E0" strokeWidth={5} />
-        ) : routeInputPoints.length >= 2 ? (
-          <Polyline coordinates={routeInputPoints} strokeColor="#60A5FA" strokeWidth={3} lineDashPattern={[8, 4]} />
-        ) : null}
-
-        {visibleSortedStops.map((stop) => {
-          const resolvedStop = resolvedStops.find((item) => String(item.id) === String(stop.id));
-          if (!resolvedStop?.coordinate) return null;
-          const isNext = Boolean(nextStop && String(nextStop.id) === String(stop.id));
-          const normalizedStatus = resolvedStop.effectiveStatus;
-          const pinColor =
-            isNext
-              ? "#F59E0B"
-              : normalizedStatus === "reached"
-                ? "#16A34A"
-                : normalizedStatus === "skipped"
-                  ? "#6B7280"
-                  : "#2563EB";
-
-          return (
-            <Marker
-              key={String(stop.id)}
-              coordinate={resolvedStop.coordinate}
-              title={t("trips.stopNumber", { number: stop.stopOrder })}
-              description={`${stop.locationName} · ${t(getStatusTranslationKey(normalizedStatus))}`}
-              pinColor={pinColor}
-            />
-          );
-        })}
-
-        {destinationCoord ? (
-          <Marker coordinate={destinationCoord} title={destinationAddress || t("trips.destination")} description={t("trips.tripDestination")} pinColor="#DC2626" />
-        ) : null}
-
-      </MapView>
+      <OpenStreetMapView
+        markers={mapMarkers}
+        polylines={mapPolylines}
+        fallbackLabel={locationError ?? t("trips.live.resolvingDestination")}
+      />
 
       <View className="absolute bottom-5 left-4 right-4 bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-3xl px-4 py-4 shadow-float">
         <Text className="text-[11px] font-semibold tracking-wide text-gray-500 dark:text-slate-400">
@@ -617,6 +584,22 @@ export default function LiveTripScreen() {
           >
             <Text className="text-center text-white font-bold">
               {isSubmittingTripAction ? t("trips.live.updatingStop") : t("trips.live.stopReached")}
+            </Text>
+          </TouchableOpacity>
+        ) : canCompleteAtDestination ? (
+          <TouchableOpacity
+            onPress={() => {
+              void handleCompleteTrip().catch((err) => {
+                const message = err instanceof Error ? err.message : t("trips.errors.completeTrip");
+                Alert.alert(t("trips.errors.completeTripTitle"), message);
+              });
+            }}
+            disabled={isSubmittingTripAction}
+            className="mt-4 rounded-2xl bg-teal-700 px-4 py-3"
+            style={{ opacity: isSubmittingTripAction ? 0.6 : 1 }}
+          >
+            <Text className="text-center text-white font-bold">
+              {isSubmittingTripAction ? t("trips.live.completingTrip") : t("trips.live.completeTrip")}
             </Text>
           </TouchableOpacity>
         ) : null}

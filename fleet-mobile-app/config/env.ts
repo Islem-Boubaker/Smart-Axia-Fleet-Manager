@@ -1,10 +1,6 @@
-/**
- * Environment configuration
- * Add your API URLs, keys, and other environment-specific settings here
- */
+import { DEPLOYED_API_BASE_URL } from "@/shared/utils/apiBase";
 
 export const ENV = {
-  API_URL: process.env.EXPO_PUBLIC_API_URL || 'http://localhost:3000',
+  API_URL: process.env.EXPO_PUBLIC_API_URL || DEPLOYED_API_BASE_URL,
   APP_NAME: 'Smart Axia Fleet Manager',
-  // Add more environment variables as needed
 };

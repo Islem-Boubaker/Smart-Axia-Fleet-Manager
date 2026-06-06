@@ -24,12 +24,12 @@ interface BackendTrip {
   tripNumber?: string;
   status: "scheduled" | "ongoing" | "completed" | "cancelled";
   region?: string;
-  startLocation: string;
-  startLatitude?: number | null;
-  startLongitude?: number | null;
-  endLocation: string;
-  endLatitude?: number | null;
-  endLongitude?: number | null;
+  startLocation?: string | { address?: string | null; latitude?: number | string | null; longitude?: number | string | null } | null;
+  startLatitude?: number | string | null;
+  startLongitude?: number | string | null;
+  endLocation?: string | { address?: string | null; latitude?: number | string | null; longitude?: number | string | null } | null;
+  endLatitude?: number | string | null;
+  endLongitude?: number | string | null;
   startTime?: string;
   endTime?: string;
   distance?: number;
@@ -57,6 +57,49 @@ const formatDate = (value?: string) => {
   return new Date(value).toLocaleDateString();
 };
 
+const toFiniteNumber = (value: unknown): number | null => {
+  if (value == null || value === "") return null;
+  const parsed = typeof value === "number" ? value : Number(value);
+  return Number.isFinite(parsed) ? parsed : null;
+};
+
+const getLocationAddress = (value: BackendTrip["startLocation"]): string => {
+  if (typeof value === "string") return value;
+  return String(value?.address ?? "");
+};
+
+const getLocationLatitude = (
+  value: BackendTrip["startLocation"],
+  fallback: unknown,
+): number | null => {
+  if (value && typeof value === "object") {
+    return toFiniteNumber(value.latitude) ?? toFiniteNumber(fallback);
+  }
+  return toFiniteNumber(fallback);
+};
+
+const getLocationLongitude = (
+  value: BackendTrip["startLocation"],
+  fallback: unknown,
+): number | null => {
+  if (value && typeof value === "object") {
+    return toFiniteNumber(value.longitude) ?? toFiniteNumber(fallback);
+  }
+  return toFiniteNumber(fallback);
+};
+
+const normalizeStop = (stop: TripStop, index: number): TripStop => ({
+  ...stop,
+  id: String(stop.id ?? index),
+  stopOrder: Number.isFinite(Number(stop.stopOrder)) ? Number(stop.stopOrder) : index + 1,
+  locationName: formatLocationLabel(stop.locationName),
+  latitude: toFiniteNumber(stop.latitude),
+  longitude: toFiniteNumber(stop.longitude),
+  status: ["pending", "reached", "skipped"].includes(String(stop.status))
+    ? stop.status
+    : "pending",
+});
+
 const toTrip = (item: BackendTrip): Trip => {
   const vehicleLabel =
     item.vehicle?.name ||
@@ -64,13 +107,14 @@ const toTrip = (item: BackendTrip): Trip => {
     item.vehicle?.Vehicle_Model ||
     "Assigned vehicle";
   const normalizedStops =
-    item.stops?.map((stop) => ({
-      ...stop,
-      locationName: formatLocationLabel(stop.locationName),
-    })) ?? [];
+    item.stops?.map((stop, index) => normalizeStop(stop, index)) ?? [];
   const firstStop = normalizedStops[0];
-  const startLocationLabel = formatLocationLabel(item.startLocation);
-  const endLocationLabel = formatLocationLabel(item.endLocation);
+  const startLatitude = getLocationLatitude(item.startLocation, item.startLatitude);
+  const startLongitude = getLocationLongitude(item.startLocation, item.startLongitude);
+  const endLatitude = getLocationLatitude(item.endLocation, item.endLatitude);
+  const endLongitude = getLocationLongitude(item.endLocation, item.endLongitude);
+  const startLocationLabel = formatLocationLabel(getLocationAddress(item.startLocation));
+  const endLocationLabel = formatLocationLabel(getLocationAddress(item.endLocation));
 
   return {
     id: item.id,
@@ -96,21 +140,21 @@ const toTrip = (item: BackendTrip): Trip => {
     actualEndTime: item.endTime,
     fare: item.cost ?? null,
     fuel: item.fuel ?? null,
-    startLatitude: item.startLatitude ?? null,
-    startLongitude: item.startLongitude ?? null,
-    endLatitude: item.endLatitude ?? null,
-    endLongitude: item.endLongitude ?? null,
+    startLatitude,
+    startLongitude,
+    endLatitude,
+    endLongitude,
     pickupLocation: {
       address: startLocationLabel,
       city: item.region ?? "",
-      latitude: item.startLatitude ?? null,
-      longitude: item.startLongitude ?? null,
+      latitude: startLatitude,
+      longitude: startLongitude,
     },
     destinationLocation: {
       address: endLocationLabel,
       city: item.region ?? "",
-      latitude: item.endLatitude ?? null,
-      longitude: item.endLongitude ?? null,
+      latitude: endLatitude,
+      longitude: endLongitude,
     },
     stops: normalizedStops,
   };

@@ -288,18 +288,6 @@ export const signUp = async (
   throw new Error("signUp endpoint is not available in the current backend routes.");
 };
 
-export const signInWithApple = async (): Promise<AuthResponse> => {
-  throw new Error("Apple sign-in endpoint is not available in the current backend routes.");
-};
-
-export const signInWithGoogle = async (): Promise<AuthResponse> => {
-  throw new Error("Google sign-in endpoint is not available in the current backend routes.");
-};
-
-export const verifyOtpLink = async (): Promise<AuthResponse> => {
-  throw new Error("OTP verification endpoint is not available in the current backend routes.");
-};
-
 export const refreshAccessToken = async (): Promise<void> => {
   await refreshSession();
 };

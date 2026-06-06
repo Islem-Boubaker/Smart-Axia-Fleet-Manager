@@ -2,31 +2,30 @@
   "expo": {
     "name": "Smart Axia Fleet Manager",
     "slug": "Smart-Axia-Fleet-Manager",
-    "owner": "islemboubaker",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/images/icon.png",
+    "icon": "./assets/images/app-icon-black.png",
     "scheme": "fleetmobileapp",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
       "supportsTablet": true,
-      "googleServicesFile": "./GoogleService-Info.plist",
       "bundleIdentifier": "com.islemboubaker.SmartAxiaFleetManager"
     },
     "android": {
-      "icon": "./assets/images/icon.png",
+      "icon": "./assets/images/app-icon-black.png",
       "adaptiveIcon": {
-        "foregroundImage": "./assets/images/icon.png",
-        "backgroundColor": "#ffffff"
+        "foregroundImage": "./assets/images/adaptive-icon-black.png",
+        "backgroundColor": "#000000"
       },
-      "googleServicesFile": "./google-services.json",
       "package": "com.islemboubaker.SmartAxiaFleetManager",
       "permissions": [
         "ACCESS_FINE_LOCATION",
         "ACCESS_COARSE_LOCATION",
+        "POST_NOTIFICATIONS",
         "android.permission.ACCESS_COARSE_LOCATION",
-        "android.permission.ACCESS_FINE_LOCATION"
+        "android.permission.ACCESS_FINE_LOCATION",
+        "android.permission.POST_NOTIFICATIONS"
       ]
     },
     "web": {
@@ -38,16 +37,17 @@
       [
         "expo-splash-screen",
         {
-          "image": "./assets/images/icon.png",
+          "image": "./assets/images/splash-logo-black.png",
           "imageWidth": 200,
           "resizeMode": "contain",
-          "backgroundColor": "#ffffff",
+          "backgroundColor": "#000000",
           "dark": {
             "backgroundColor": "#000000"
           }
         }
       ],
       "expo-secure-store",
+      "expo-notifications",
       [
         "expo-build-properties",
         {
@@ -56,10 +56,6 @@
           }
         }
       ],
-      "expo-web-browser",
-      "@react-native-firebase/app",
-      "@react-native-firebase/auth",
-      "expo-apple-authentication",
       [
         "expo-location",
         {
@@ -73,7 +69,18 @@
     },
     "extra": {
       "eas": {
-        "projectId": "1b823134-dd66-49ae-9faf-64304dc704cd"
+        "projectId": "03ec7089-4dbf-4016-9075-4a0ea31614f3"
+      }
+    },
+    "owner": "bedis_gh",
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/03ec7089-4dbf-4016-9075-4a0ea31614f3",
+      "checkAutomatically": "NEVER",
+      "requestHeaders": {
+        "expo-channel-name": "preview"
       }
     }
   }

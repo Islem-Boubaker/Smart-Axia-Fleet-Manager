@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useMemo } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useRouter, useSegments, useRootNavigationState } from "expo-router";
-import * as Linking from "expo-linking";
 
 import type { AppDispatch, RootState } from "@/store";
 import {
@@ -36,14 +35,6 @@ import {
   updateUser as updateUserApi,
   updateUserAvatar as updateUserAvatarApi,
 } from "../services/auth.api";
-import { useGoogleAuth } from "@/lib/auth/googleAuth";
-import { signInWithApple } from "@/lib/auth/appleAuth";
-import {
-  sendOtpEmail,
-  completeEmailLinkSignIn,
-  isEmailSignInLink,
-} from "@/lib/auth/emailOtp";
-import { signOutFirebase, subscribeToAuthState } from "@/lib/auth/firebaseAuth";
 import type { AuthResponse, CreateDriverInput, GetUsersQuery, UploadAvatarInput, User, UserRole } from "../types/auth.types";
 
 const persistAuthSession = async (
@@ -74,6 +65,16 @@ const clearSession = async (dispatch: AppDispatch): Promise<void> => {
   dispatch(clearUser());
 };
 
+const assertMobileDriver = async (
+  dispatch: AppDispatch,
+  user: User | null | undefined,
+): Promise<User> => {
+  if (user?.role === "DRIVER") return user;
+
+  await clearSession(dispatch);
+  throw new Error("Only driver accounts can sign in to the mobile app.");
+};
+
 const bootstrapSession = async (dispatch: AppDispatch): Promise<void> => {
   dispatch(setLoading(true));
 
@@ -87,12 +88,19 @@ const bootstrapSession = async (dispatch: AppDispatch): Promise<void> => {
   }
 
   if (cachedUser) {
+    if (cachedUser.role !== "DRIVER") {
+      await clearSession(dispatch);
+      dispatch(setLoading(false));
+      return;
+    }
+
     dispatch(setUser(cachedUser));
     dispatch(setLoading(true));
   }
 
   try {
     const currentUser = await getCurrentUser();
+    await assertMobileDriver(dispatch, currentUser);
     dispatch(setUser(currentUser));
     await saveUserToStorage(currentUser);
   } catch (error) {
@@ -104,6 +112,7 @@ const bootstrapSession = async (dispatch: AppDispatch): Promise<void> => {
     try {
       await refreshSession();
       const currentUser = await getCurrentUser();
+      await assertMobileDriver(dispatch, currentUser);
       dispatch(setUser(currentUser));
       await saveUserToStorage(currentUser);
     } catch {
@@ -151,69 +160,14 @@ export function useAuthState() {
 
 export function useAuthBootstrap() {
   const dispatch = useDispatch<AppDispatch>();
-  const router = useRouter();
-
-  const handleEmailOtpLink = useCallback(
-    async (url: string) => {
-      try {
-        const isOtpLink = await isEmailSignInLink(url);
-        if (!isOtpLink) return;
-
-        dispatch(setLoading(true));
-        console.log("📧 Magic link detected:", url);
-        await completeEmailLinkSignIn(url);
-
-        // Backend currently exposes /user/login + cookie refresh flow.
-        // Email-link verification does not establish backend auth session directly.
-        dispatch(setError("Magic link verified with Firebase. Please sign in to start your backend session."));
-        router.replace("/(auth)/login");
-      } catch (err) {
-        console.error("📧 Magic link sign-in failed:", err);
-      } finally {
-        dispatch(setLoading(false));
-      }
-    },
-    [dispatch, router],
-  );
 
   useEffect(() => {
     void bootstrapSession(dispatch);
   }, [dispatch]);
-
-  useEffect(() => {
-    const handleInitialUrl = async () => {
-      const initialUrl = await Linking.getInitialURL();
-      if (initialUrl) {
-        await handleEmailOtpLink(initialUrl);
-      }
-    };
-
-    const subscription = Linking.addEventListener("url", (event) => {
-      void handleEmailOtpLink(event.url);
-    });
-
-    void handleInitialUrl();
-
-    return () => subscription.remove();
-  }, [handleEmailOtpLink]);
-
-  useEffect(() => {
-    const unsubscribe = subscribeToAuthState((user) => {
-      if (!user) {
-        console.log("🔐 Firebase auth: signed out");
-        return;
-      }
-
-      console.log("🔐 Firebase auth: signed in", user.uid);
-    });
-
-    return () => unsubscribe();
-  }, []);
 }
 
 export function useAuthActions() {
   const dispatch = useDispatch<AppDispatch>();
-  const { signInWithGoogle: signInWithGoogleSdk } = useGoogleAuth();
   const user = useSelector((state: RootState) => state.auth.user);
   const isLoading = useSelector((state: RootState) => state.auth.isLoading);
 
@@ -225,6 +179,7 @@ export function useAuthActions() {
       try {
         console.log("🔐 Logging in with email/password...");
         const payload = await loginApi(email, password);
+        await assertMobileDriver(dispatch, payload.user);
         await persistAuthSession(dispatch, payload);
         return payload.user;
       } catch (error: unknown) {
@@ -236,46 +191,6 @@ export function useAuthActions() {
       }
     },
     [dispatch],
-  );
-
-  const loginWithApple = useCallback(async (): Promise<User> => {
-    dispatch(clearError());
-    dispatch(setProvider("apple"));
-    dispatch(setLoading(true));
-    try {
-      await signInWithApple();
-      throw new Error("Apple sign-in is not configured on this backend. Use email/password login.");
-    } catch (error: unknown) {
-      const message = extractErrorMessage(error, "Apple sign-in failed.");
-      dispatch(setError(message));
-      throw error;
-    } finally {
-      dispatch(setLoading(false));
-    }
-  }, [dispatch]);
-
-  const loginWithGoogle = useCallback(async (): Promise<User> => {
-    dispatch(clearError());
-    dispatch(setProvider("google"));
-    dispatch(setLoading(true));
-    try {
-      await signInWithGoogleSdk();
-      throw new Error("Google sign-in is not configured on this backend. Use email/password login.");
-    } catch (error: unknown) {
-      const message = extractErrorMessage(error, "Google sign-in failed.");
-      dispatch(setError(message));
-      throw error;
-    } finally {
-      dispatch(setLoading(false));
-    }
-  }, [dispatch, signInWithGoogleSdk]);
-
-  const sendEmailOtp = useCallback(
-    async (email: string): Promise<void> => {
-      console.log("📧 Requesting magic link for:", email);
-      await sendOtpEmail(email);
-    },
-    [],
   );
 
   const signUp = useCallback(async (): Promise<User> => {
@@ -296,7 +211,6 @@ export function useAuthActions() {
     dispatch(setLoading(true));
     try {
       await logoutApi();
-      await signOutFirebase();
       await clearSession(dispatch);
     } finally {
       dispatch(setLoading(false));
@@ -434,9 +348,6 @@ export function useAuthActions() {
     isLoading,
     user,
     loginWithEmailPassword,
-    loginWithApple,
-    loginWithGoogle,
-    sendEmailOtp,
     resetPassword,
     signUp,
     logout,

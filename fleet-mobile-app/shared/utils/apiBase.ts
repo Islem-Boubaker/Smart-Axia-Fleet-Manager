@@ -1,7 +1,10 @@
 import Constants from "expo-constants";
 import * as Device from "expo-device";
 
-const DEFAULT_BASE_URL = "http://localhost:3000";
+export const DEPLOYED_API_BASE_URL =
+  "https://smart-axia-fleet-manager-server-ayfdfkdjb4g9cfbx.spaincentral-01.azurewebsites.net";
+
+const DEFAULT_BASE_URL = DEPLOYED_API_BASE_URL;
 const LOCAL_HOSTS = new Set(["localhost", "127.0.0.1", "0.0.0.0"]);
 const PRIVATE_IPV4_PATTERNS = [
   /^10\./,

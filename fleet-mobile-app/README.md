@@ -16,6 +16,28 @@ This is an [Expo](https://expo.dev) project created with [`create-expo-app`](htt
    npx expo start
    ```
 
+## Build Android APK
+
+The preview build profile creates an installable Android APK and points the app at the deployed Azure backend:
+
+```bash
+npm run build:android:apk
+```
+
+Backend used by the APK:
+
+```text
+https://smart-axia-fleet-manager-server-ayfdfkdjb4g9cfbx.spaincentral-01.azurewebsites.net
+```
+
+For Play Store release builds, use the production profile. This creates an Android App Bundle (`.aab`):
+
+```bash
+npm run build:android:aab
+```
+
+EAS cloud builds upload the mobile project to Expo's build service. For a fully local APK build, install Android Studio/SDK, set `ANDROID_HOME`, then generate the native Android project with `npx expo prebuild --platform android` and build with Gradle.
+
 In the output, you'll find options to open the app in a
 
 - [development build](https://docs.expo.dev/develop/development-builds/introduction/)

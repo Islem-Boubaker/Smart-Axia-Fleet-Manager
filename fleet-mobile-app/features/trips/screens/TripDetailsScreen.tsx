@@ -14,7 +14,6 @@ import {
   Alert,
   I18nManager,
 } from "react-native";
-import MapView, { Marker, Polyline } from "react-native-maps";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { BlurView } from "expo-blur";
 import { Accordion } from "../components/ui/Accordion";
@@ -29,6 +28,7 @@ import type { UiTripStatus } from "../types/trip.types";
 import { useAppTheme } from "@/shared/theme/ThemeProvider";
 import { tripsApi } from "../services/trips.api";
 import { getStatusTranslationKey } from "@/shared/utils/translateStatus";
+import { OpenStreetMapView, type OpenStreetMapMarker, type OpenStreetMapPolyline } from "@/shared/components/maps/OpenStreetMapView";
 
 if (Platform.OS === "android") {
   UIManager.setLayoutAnimationEnabledExperimental?.(true);
@@ -61,20 +61,8 @@ function formatDate(iso: string | null | undefined): string {
   catch { return "—"; }
 }
 
-function getRegion(coords: LatLng[]) {
-  if (coords.length === 0) {
-    return { latitude: 36.8065, longitude: 10.1815, latitudeDelta: 0.5, longitudeDelta: 0.5 };
-  }
-  const lats = coords.map((c) => c.latitude);
-  const lngs = coords.map((c) => c.longitude);
-  const minLat = Math.min(...lats), maxLat = Math.max(...lats);
-  const minLng = Math.min(...lngs), maxLng = Math.max(...lngs);
-  return {
-    latitude:      (minLat + maxLat) / 2,
-    longitude:     (minLng + maxLng) / 2,
-    latitudeDelta:  Math.max(0.05, (maxLat - minLat) * 1.4),
-    longitudeDelta: Math.max(0.05, (maxLng - minLng) * 1.4),
-  };
+function isFiniteCoord(value: unknown): value is number {
+  return typeof value === "number" && Number.isFinite(value);
 }
 
 // ─── Screen ───────────────────────────────────────────────────────────────────
@@ -84,7 +72,6 @@ export default function TripDetailScreen() {
   const { isDark } = useAppTheme();
   const { t } = useTranslation();
   const { id } = useLocalSearchParams<{ id: string }>();
-  const mapRef = useRef<MapView | null>(null);
   const geocodeCache = useRef<Record<string, LatLng>>({});
   const colors = useMemo(
     () => ({
@@ -125,7 +112,7 @@ export default function TripDetailScreen() {
   const stops = useMemo(() => trip?.stops ?? [], [trip?.stops]);
   const sortedStops = useMemo(() => [...stops].sort((a, b) => a.stopOrder - b.stopOrder), [stops]);
   const validStops = useMemo(
-    () => sortedStops.filter((s) => s.latitude != null && s.longitude != null),
+    () => sortedStops.filter((s) => isFiniteCoord(s.latitude) && isFiniteCoord(s.longitude)),
     [sortedStops],
   );
 
@@ -144,11 +131,12 @@ export default function TripDetailScreen() {
   const stopNameCoordsMap = useMemo(() => {
     const map: Record<string, LatLng> = {};
     for (const stop of validStops) {
+      if (!isFiniteCoord(stop.latitude) || !isFiniteCoord(stop.longitude)) continue;
       const key = normalizeAddressKey(stop.locationName);
       if (!map[key]) {
         map[key] = {
-          latitude: stop.latitude as number,
-          longitude: stop.longitude as number,
+          latitude: stop.latitude,
+          longitude: stop.longitude,
         };
       }
     }
@@ -156,13 +144,13 @@ export default function TripDetailScreen() {
   }, [validStops]);
 
   const originCoordsFromTrip = useMemo(() => {
-    if (trip?.pickupLocation?.latitude != null && trip?.pickupLocation?.longitude != null) {
+    if (isFiniteCoord(trip?.pickupLocation?.latitude) && isFiniteCoord(trip?.pickupLocation?.longitude)) {
       return {
         latitude: trip.pickupLocation.latitude,
         longitude: trip.pickupLocation.longitude,
       };
     }
-    if (trip?.startLatitude != null && trip?.startLongitude != null) {
+    if (isFiniteCoord(trip?.startLatitude) && isFiniteCoord(trip?.startLongitude)) {
       return {
         latitude: trip.startLatitude,
         longitude: trip.startLongitude,
@@ -172,13 +160,13 @@ export default function TripDetailScreen() {
   }, [trip?.pickupLocation?.latitude, trip?.pickupLocation?.longitude, trip?.startLatitude, trip?.startLongitude]);
 
   const destinationCoordsFromTrip = useMemo(() => {
-    if (trip?.destinationLocation?.latitude != null && trip?.destinationLocation?.longitude != null) {
+    if (isFiniteCoord(trip?.destinationLocation?.latitude) && isFiniteCoord(trip?.destinationLocation?.longitude)) {
       return {
         latitude: trip.destinationLocation.latitude,
         longitude: trip.destinationLocation.longitude,
       };
     }
-    if (trip?.endLatitude != null && trip?.endLongitude != null) {
+    if (isFiniteCoord(trip?.endLatitude) && isFiniteCoord(trip?.endLongitude)) {
       return {
         latitude: trip.endLatitude,
         longitude: trip.endLongitude,
@@ -245,17 +233,17 @@ export default function TripDetailScreen() {
     const points: LatLng[] = [];
     if (originCoord) points.push(originCoord);
     for (const stop of visibleStops) {
-      if (stop.latitude == null || stop.longitude == null) continue;
+      if (!isFiniteCoord(stop.latitude) || !isFiniteCoord(stop.longitude)) continue;
       points.push({
-        latitude: stop.latitude as number,
-        longitude: stop.longitude as number,
+        latitude: stop.latitude,
+        longitude: stop.longitude,
       });
     }
     if (destinationCoord) points.push(destinationCoord);
     return points;
   }, [destinationCoord, originCoord, visibleStops]);
   const validCoords = useMemo(
-    () => visibleStops.filter((s) => s.latitude != null && s.longitude != null),
+    () => visibleStops.filter((s) => isFiniteCoord(s.latitude) && isFiniteCoord(s.longitude)),
     [visibleStops],
   );
 
@@ -264,34 +252,49 @@ export default function TripDetailScreen() {
   // ── Real road route ───────────────────────────────────────────────────────
   const { routeCoords, isFetchingRoute } = useRoutePolyline(routePathCoords);
 
-  React.useEffect(() => {
-    if (!mapRef.current || allMarkerCoords.length === 0) return;
-
-    if (allMarkerCoords.length === 1) {
-      mapRef.current.animateToRegion(
-        {
-          latitude: allMarkerCoords[0].latitude,
-          longitude: allMarkerCoords[0].longitude,
-          latitudeDelta: 0.08,
-          longitudeDelta: 0.08,
-        },
-        400,
-      );
-      return;
+  const mapMarkers = useMemo<OpenStreetMapMarker[]>(() => {
+    const markers: OpenStreetMapMarker[] = [];
+    if (originCoord) {
+      markers.push({
+        id: "origin",
+        coordinate: originCoord,
+        color: "#22C55E",
+        label: originAddress || t("trips.start"),
+      });
     }
 
-    requestAnimationFrame(() => {
-      mapRef.current?.fitToCoordinates(allMarkerCoords, {
-        edgePadding: {
-          top: 110,
-          right: 48,
-          bottom: 220,
-          left: 48,
-        },
-        animated: true,
+    for (const stop of validCoords) {
+      markers.push({
+        id: `stop-${stop.id}`,
+        coordinate: { latitude: stop.latitude!, longitude: stop.longitude! },
+        color: "#2563EB",
+        label: stop.locationName,
       });
-    });
-  }, [allMarkerCoords]);
+    }
+
+    if (destinationCoord) {
+      markers.push({
+        id: "destination",
+        coordinate: destinationCoord,
+        color: "#DC2626",
+        label: destinationAddress || t("trips.end"),
+      });
+    }
+
+    return markers;
+  }, [destinationAddress, destinationCoord, originAddress, originCoord, t, validCoords]);
+
+  const mapPolylines = useMemo<OpenStreetMapPolyline[]>(() => {
+    if (routeCoords.length >= 2) {
+      return [{ id: "route", coordinates: routeCoords, color: "#6B21F5", width: 4 }];
+    }
+
+    if (routePathCoords.length >= 2) {
+      return [{ id: "route-draft", coordinates: routePathCoords, color: colors.routeDraft, width: 3, dashed: true }];
+    }
+
+    return [];
+  }, [colors.routeDraft, routeCoords, routePathCoords]);
 
   // ── Sheet animation ───────────────────────────────────────────────────────
   const animateTo = (toValue: number, expanded: boolean) => {
@@ -363,8 +366,6 @@ export default function TripDetailScreen() {
   }
 
   // ── Derived values ────────────────────────────────────────────────────────
-  const mapRegion   = getRegion(allMarkerCoords);
-
   const backendStatus = trip.backendStatus ?? "scheduled";
   const statusStyle   = TRIP_STATUS_STYLES[trip.status] ?? TRIP_STATUS_STYLES.pending;
 
@@ -411,55 +412,11 @@ export default function TripDetailScreen() {
     <View style={{ flex: 1, backgroundColor: colors.pageBg }}>
 
       {/* ── MAP ── */}
-      <MapView ref={mapRef} style={{ flex: 1 }} initialRegion={mapRegion}>
-
-        {/* Real road polyline — shown once fetched */}
-        {routeCoords.length >= 2 && (
-          <Polyline
-            coordinates={routeCoords}
-            strokeColor="#6B21F5"
-            strokeWidth={4}
-          />
-        )}
-
-        {/* Fallback straight-line polyline while route is loading */}
-        {isFetchingRoute && routePathCoords.length >= 2 && (
-          <Polyline
-            coordinates={routePathCoords}
-            strokeColor={colors.routeDraft}
-            strokeWidth={2}
-            lineDashPattern={[6, 4]}
-          />
-        )}
-
-        {originCoord && (
-          <Marker
-            coordinate={originCoord}
-            title={originAddress || t("trips.start")}
-            description={t("trips.startLocation")}
-            pinColor="#22C55E"
-          />
-        )}
-
-        {validCoords.map((stop) => (
-          <Marker
-            key={stop.id}
-            coordinate={{ latitude: stop.latitude!, longitude: stop.longitude! }}
-            title={t("trips.stopWithNumber", { number: stop.stopOrder, name: stop.locationName })}
-            description={t("trips.stopStatus", { number: stop.stopOrder, status: t(getStatusTranslationKey(stop.status)) })}
-            pinColor="#2563EB"
-          />
-        ))}
-
-        {destinationCoord && (
-          <Marker
-            coordinate={destinationCoord}
-            title={destinationAddress || t("trips.end")}
-            description={t("trips.destination")}
-            pinColor="#DC2626"
-          />
-        )}
-      </MapView>
+      <OpenStreetMapView
+        markers={mapMarkers}
+        polylines={mapPolylines}
+        fallbackLabel={isGeocoding || isFetchingRoute ? t("trips.loadingRoute") : `${trip.from} → ${trip.to}`}
+      />
 
       {/* ── FLOATING HEADER ── */}
       <View
@@ -533,7 +490,7 @@ export default function TripDetailScreen() {
                 {trip.vehicle}
               </Text>
               <Text style={{ color: colors.subtext, fontSize: 12, marginTop: 2 }}>
-                {trip.pickupLocation.address} → {trip.destinationLocation.address}
+                {originAddress || "—"} → {destinationAddress || "—"}
               </Text>
             </View>
             <View

@@ -9,6 +9,7 @@ export interface TripStop {
   id: string;
   stopOrder: number;
   locationName: string;
+  isDestination?: boolean;
   latitude?: number | null;
   longitude?: number | null;
   status: "pending" | "reached" | "skipped";

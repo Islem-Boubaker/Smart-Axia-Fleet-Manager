@@ -8,7 +8,7 @@ const apiUrl = resolveApiBaseUrl(process.env.EXPO_PUBLIC_API_URL);
 
 if (!apiUrl) {
   console.warn(
-    "⚠️ WARNING: EXPO_PUBLIC_API_URL not configured! Using localhost fallback.",
+    "⚠️ WARNING: EXPO_PUBLIC_API_URL not configured! Using deployed API fallback.",
   );
 }
 

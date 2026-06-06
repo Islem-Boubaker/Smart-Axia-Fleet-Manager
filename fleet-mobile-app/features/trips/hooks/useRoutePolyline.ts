@@ -32,7 +32,7 @@ export function useRoutePolyline(points: LatLng[]): UseRoutePolylineResult {
   const routeRequestKey = useMemo(
     () =>
       validPoints
-        .map((p) => `${p.latitude}:${p.longitude}`)
+        .map((p) => `${p.latitude.toFixed(5)}:${p.longitude.toFixed(5)}`)
         .join("|"),
     [validPoints],
   );

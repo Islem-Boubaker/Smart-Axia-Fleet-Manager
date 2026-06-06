@@ -12,13 +12,10 @@ export default function SignInScreen() {
     isLoading,
     loadingProvider,
     error,
-    linkSent,
-    showApple,
     onEmailChange,
     onPasswordChange,
     onTogglePassword,
     onSubmit,
-    onLoginWithApple,
     onForgotPassword,
   } = useLogin();
 
@@ -39,13 +36,10 @@ export default function SignInScreen() {
           isLoading={isLoading}
           loadingProvider={loadingProvider}
           error={error}
-          linkSent={linkSent}
-          showApple={showApple}
           onEmailChange={onEmailChange}
           onPasswordChange={onPasswordChange}
           onTogglePassword={onTogglePassword}
           onSubmit={onSubmit}
-          onLoginWithApple={onLoginWithApple}
           onForgotPassword={onForgotPassword}
         />
 

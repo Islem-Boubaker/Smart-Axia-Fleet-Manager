@@ -69,9 +69,18 @@ export const notificationApi = {
   },
 
   async registerPushToken(_userId: string, token: string) {
-    const r = await api.put("/user/me/push-token", {
-      expoPushToken: token,
-    });
-    return r.data;
+    const payload = { expoPushToken: token };
+
+    try {
+      const r = await api.put("/user/me/push-token", payload);
+      return r.data;
+    } catch (error: any) {
+      const status = error?.response?.status;
+      if (status !== 403 && status !== 419) throw error;
+
+      await api.post("/user/refresh-token", {});
+      const retry = await api.put("/user/me/push-token", payload);
+      return retry.data;
+    }
   },
 };

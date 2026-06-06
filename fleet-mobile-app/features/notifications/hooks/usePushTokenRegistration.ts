@@ -6,7 +6,7 @@ import * as Device from "expo-device";
 
 import type { RootState } from "@/store";
 import { notificationApi } from "../services/notification.api";
-import { getExpoPushToken, requestPushPermission } from "../utils/pushNotifications";
+import { configurePushNotifications, getExpoPushToken, requestPushPermission } from "../utils/pushNotifications";
 
 type ExpoProjectConfig = {
   easConfig?: { projectId?: string };
@@ -65,6 +65,12 @@ async function getPushToken(): Promise<string | null> {
 export function usePushTokenRegistration() {
   const user = useSelector((state: RootState) => state.auth.user);
   const attemptedForUserRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    void configurePushNotifications().catch((error) => {
+      console.error("[PushRegistration] Failed to configure notifications:", error);
+    });
+  }, []);
 
   useEffect(() => {
     if (!user?.id) {

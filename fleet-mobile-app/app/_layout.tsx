@@ -12,6 +12,7 @@ import { useAuthBootstrap, useAuthGuard } from "../features/auth/hooks/useAuth";
 import { useRealtimeNotificationToasts } from "../features/notifications/hooks/useRealtimeNotificationToasts";
 import { usePushTokenRegistration } from "../features/notifications/hooks/usePushTokenRegistration";
 import { ToastProvider } from "../shared/components/toast";
+import { RequiredUpdateGate } from "../shared/components/updates/RequiredUpdateGate";
 import { ThemeProvider } from "../shared/theme/ThemeProvider";
 
 function AppLayout() {
@@ -21,6 +22,14 @@ function AppLayout() {
   usePushTokenRegistration();
 
   const isLoading = useSelector((state: RootState) => state.auth.isLoading);
+
+  if (isLoading) {
+    return (
+      <View className="flex-1 items-center justify-center bg-white dark:bg-[#0B1220]">
+        <ActivityIndicator size="large" color="#2D9B6F" />
+      </View>
+    );
+  }
 
   return (
     <>
@@ -63,12 +72,6 @@ function AppLayout() {
           options={{ animation: "slide_from_right" }}
         />
       </Stack>
-
-      {isLoading && (
-        <View className="absolute inset-0 items-center justify-center bg-white dark:bg-[#0B1220]">
-          <ActivityIndicator size="large" color="#2D9B6F" />
-        </View>
-      )}
       </View>
     </>
   );
@@ -83,6 +86,7 @@ export default function RootLayout() {
           <ThemeProvider>
             <ToastProvider>
               <AppLayout />
+              <RequiredUpdateGate />
             </ToastProvider>
           </ThemeProvider>
         </SafeAreaProvider>
