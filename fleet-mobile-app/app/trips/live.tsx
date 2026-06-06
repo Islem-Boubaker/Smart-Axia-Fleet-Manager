@@ -154,7 +154,7 @@ export default function LiveTripScreen() {
   }, [resolvedStops]);
   const canCompleteAtDestination = Boolean(
     tripId &&
-    trip?.backendStatus === "ongoing" &&
+    trip?.backendStatus !== "cancelled" &&
     !nextStop &&
     resolvedStops.every((stop) => stop.effectiveStatus === "reached" || stop.effectiveStatus === "skipped"),
   );
@@ -273,6 +273,7 @@ export default function LiveTripScreen() {
     try {
       await markStopReached(tripId, nextStopId, new Date().toISOString());
       await reload();
+      // If backend auto-completed the trip, the useEffect below will navigate away
     } catch (err) {
       autoReachedStopIdsRef.current[nextStopId] = false;
       setLocalStopStatuses((current) => {
@@ -290,10 +291,21 @@ export default function LiveTripScreen() {
     try {
       await completeTrip(tripId, { endTime: new Date().toISOString() });
       router.replace("/(tabs)/trips");
-    } catch (err) {
+    } catch (err: any) {
+      if (err?.response?.status === 409) {
+        // Trip was already auto-completed by the backend; navigate away
+        router.replace("/(tabs)/trips");
+        return;
+      }
       throw err;
     }
   }, [completeTrip, router, tripId]);
+
+  useEffect(() => {
+    if (trip?.backendStatus === "cancelled") {
+      router.replace("/(tabs)/trips");
+    }
+  }, [trip?.backendStatus, router]);
 
   useEffect(() => {
     if (!tripId || !driverLocation || !nextStop?.coordinate) return;

@@ -28,6 +28,9 @@ export const tokenStorage = {
     await setItem(ACCESS_KEY, access);
     await setItem(REFRESH_KEY, refresh);
   },
+  saveAccessToken: async (access: string) => {
+    await setItem(ACCESS_KEY, access);
+  },
   getAccessToken: () => getItem(ACCESS_KEY),
   getRefreshToken: () => getItem(REFRESH_KEY),
   clearTokens: async () => {

@@ -6,7 +6,7 @@ import { NotificationAvatar } from './NotificationAvatar';
 
 interface Props {
   item: NotificationItem;
-  onPress: (id: string) => void;
+  onPress: (item: NotificationItem) => void;
 }
 
 export function NotificationRow({ item, onPress }: Props) {
@@ -17,7 +17,7 @@ export function NotificationRow({ item, onPress }: Props) {
       className={`flex-row items-center px-4 py-3.5 gap-3 ${
         item.unread ? 'bg-emerald-50/40 dark:bg-emerald-500/10' : 'bg-white dark:bg-slate-900'
       }`}
-      onPress={() => onPress(item.id)}
+      onPress={() => onPress(item)}
       activeOpacity={0.75}
     >
       {/* Icon avatar */}

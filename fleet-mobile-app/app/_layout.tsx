@@ -1,9 +1,11 @@
 import "../index.css";
 import "../i18n";
 import { SafeAreaProvider } from "react-native-safe-area-context";
-import { Stack } from "expo-router";
+import { Stack, useRouter } from "expo-router";
 import { Provider, useSelector } from "react-redux";
 import { View, ActivityIndicator } from "react-native";
+import { useEffect, useRef } from "react";
+import * as Notifications from "expo-notifications";
 
 import { store } from "../store/index";
 import type { RootState } from "../store";
@@ -15,11 +17,52 @@ import { ToastProvider } from "../shared/components/toast";
 import { RequiredUpdateGate } from "../shared/components/updates/RequiredUpdateGate";
 import { ThemeProvider } from "../shared/theme/ThemeProvider";
 
+function buildRouteFromPushData(data: Record<string, unknown>): string | null {
+  const entityType = data?.entityType as string | undefined;
+  const entityId   = data?.entityId   as string | number | undefined;
+  if (!entityType) return null;
+  const id = entityId != null ? String(entityId) : null;
+  switch (entityType) {
+    case "trip":        return id ? `/trips/${id}` : "/(tabs)/trips";
+    case "maintenance": return "/(tabs)/home";
+    case "reclamation": return "/(tabs)/home";
+    default:            return null;
+  }
+}
+
 function AppLayout() {
   useAuthBootstrap();
   useAuthGuard();
   useRealtimeNotificationToasts();
   usePushTokenRegistration();
+
+  const router = useRouter();
+  const notificationListener = useRef<Notifications.EventSubscription | null>(null);
+  const responseListener     = useRef<Notifications.EventSubscription | null>(null);
+
+  useEffect(() => {
+    // Handle tapping a push notification while the app is open or backgrounded
+    responseListener.current = Notifications.addNotificationResponseReceivedListener(
+      (response) => {
+        const data = response.notification.request.content.data as Record<string, unknown>;
+        const route = buildRouteFromPushData(data);
+        if (route) router.push(route as any);
+      },
+    );
+
+    // Handle the notification that cold-launched the app
+    Notifications.getLastNotificationResponseAsync().then((response) => {
+      if (!response) return;
+      const data = response.notification.request.content.data as Record<string, unknown>;
+      const route = buildRouteFromPushData(data);
+      if (route) router.push(route as any);
+    });
+
+    return () => {
+      notificationListener.current?.remove();
+      responseListener.current?.remove();
+    };
+  }, [router]);
 
   const isLoading = useSelector((state: RootState) => state.auth.isLoading);
 

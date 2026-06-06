@@ -3,6 +3,8 @@ import axios, { AxiosError, AxiosHeaders, InternalAxiosRequestConfig } from "axi
 import { resolveApiBaseUrl } from "../utils/apiBase";
 import { buildCookieHeader, clearCookies, syncCookiesFromServer } from "./cookieJar";
 import { clearCsrfToken, getCsrfToken, saveCsrfToken } from "./csrf";
+import { store } from "@/store";
+import { clearUser } from "@/store/slices/authSlice";
 
 const apiUrl = resolveApiBaseUrl(process.env.EXPO_PUBLIC_API_URL);
 
@@ -152,6 +154,15 @@ const hasAuthRoute = (url?: string): boolean => {
 const refreshAccessToken = async (): Promise<void> => {
   const response = await refreshClient.post("/user/refresh-token", {});
   await applyResponseAuth(response);
+
+  // The new access token arrives as Set-Cookie, not in the response body.
+  // tokenStorage still holds the old expired token, so subsequent requests
+  // would keep sending the stale one and loop on 401. Sync it here.
+  const updatedCookie = await buildCookieHeader();
+  const newAccessToken = getCookieValue(updatedCookie, "accessToken");
+  if (newAccessToken) {
+    await tokenStorage.saveAccessToken(newAccessToken);
+  }
 };
 
 api.interceptors.request.use(applyRequestAuth);
@@ -185,6 +196,7 @@ api.interceptors.response.use(
       await tokenStorage.clearTokens();
       await clearCookies();
       clearCsrfToken();
+      store.dispatch(clearUser());
       return Promise.reject(refreshError);
     } finally {
       isRefreshing = false;
