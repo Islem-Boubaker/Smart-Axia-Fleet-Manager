@@ -48,12 +48,12 @@ jobs:
         with:
           name: node-app
           path: ./fleet-backend
-
       - name: Login to Azure
         uses: azure/login@v2
         with:
-          creds: ${{ secrets.AZURE_CREDENTIALS }}
-
+          client-id: ${{ secrets.AZUREAPPSERVICE_CLIENTID_B8644B46FED14E80AFD630ED8E806922 }}
+          tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_2B8220972C3D48BA904CA4E44D85456E }}
+          subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_F8DE6CD383F0479D807A21B0B2CEDCC5 }}
       - name: 'Deploy to Azure Web App'
         id: deploy-to-webapp
         uses: azure/webapps-deploy@v3
