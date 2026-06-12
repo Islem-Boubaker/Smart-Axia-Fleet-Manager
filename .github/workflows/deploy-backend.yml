@@ -58,7 +58,7 @@ jobs:
         id: deploy-to-webapp
         uses: azure/webapps-deploy@v3
         with:
-          app-name: 'smart-axia-fleet-manager-server'
+          app-name: 'smart-axia-fleet-manager-serveur'
           slot-name: 'Production'
           package: ./fleet-backend
 
