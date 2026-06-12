@@ -293,7 +293,7 @@ export const forgotPasswordSvc = async (email) => {
 };
 
 export const changePasswordSvc = async (userId, currentPassword, newPassword) => {
-  const user = await User.findByPk(userId);
+  const user = await User.scope('withPassword').findByPk(userId);
   if (!user) {
     const err = new Error('User not found');
     err.statusCode = 404;
