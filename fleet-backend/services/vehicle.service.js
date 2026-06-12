@@ -461,10 +461,22 @@ export const generateMaintenanceAI = async (vehicleId) => {
 
     // 3. Build prompt with deterministic flags and call Gemini
     const prompt = buildCarPrompt(normalized, flags);
-    const aiResult = await callGeminiAndParse(prompt);
+    let aiResult;
+    try {
+        aiResult = await callGeminiAndParse(prompt);
+    } catch (aiErr) {
+        console.error('[generateMaintenanceAI] AI call failed, returning fallback:', aiErr.message);
+        return { recommendations: [], flags, warning: 'AI service unavailable', generated_at: new Date().toISOString() };
+    }
 
     // 4. Validate and normalise Gemini output shape → { recommendations: [...] }
-    const validated = validateAndFill(aiResult);
+    let validated;
+    try {
+        validated = validateAndFill(aiResult);
+    } catch (parseErr) {
+        console.error('[generateMaintenanceAI] validateAndFill failed:', parseErr.message);
+        return { recommendations: [], flags, warning: 'AI service unavailable', generated_at: new Date().toISOString() };
+    }
 
     // 5. Persist — store flags alongside for transparency
     const toStore = { ...validated, flags, generated_at: new Date().toISOString() };

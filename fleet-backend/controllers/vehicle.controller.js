@@ -211,9 +211,13 @@ export const checkIdleVehicles = async (req, res, next) => {
 export const MaintenanceRecommandationAI = async (req, res, next) => {
   try {
     const recommendation = await vehicleService.generateMaintenanceAI(req.params.id);
+    if (!recommendation) {
+      return res.status(StatusCodes.NOT_FOUND).json({ success: false, message: 'Vehicle not found' });
+    }
     await invalidateVehicleCache(req.params.id);
     return successResponse(res, recommendation, 'AI recommendation generated and saved');
   } catch (err) {
+    console.error('[maintenance-ai] Error:', err.message);
     next(err);
   }
 };

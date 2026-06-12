@@ -8,37 +8,34 @@ const __dirname = path.dirname(__filename);
 
 dotenv.config({ path: path.resolve(__dirname, '../.env'), quiet: true });
 
-const GEMINI_BASE_URL = process.env.GEMINI_BASE_URL || 'https://generativelanguage.googleapis.com/v1beta';
-const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-2.0-flash';
+const GROQ_BASE_URL = 'https://api.groq.com/openai/v1';
+const GROQ_MODEL = process.env.GROQ_MODEL || 'llama-3.3-70b-versatile';
 
 /**
- * Calls Gemini with JSON mode enabled and returns parsed result.
- * Strips markdown fences as a fallback in case Gemini ignores responseMimeType.
+ * Calls Groq (llama-3.3-70b-versatile) with JSON mode and returns parsed result.
+ * Drop-in replacement for callGeminiAndParse — same signature and return shape.
  *
  * @param {string} prompt
- * @returns {Promise<object>} parsed JSON object from Gemini
+ * @returns {Promise<object>} parsed JSON object
  */
 export async function callGeminiAndParse(prompt) {
-    const apiKey = process.env.GEMINI_API_KEY;
-    if (!apiKey) throw new Error('GEMINI_API_KEY is missing from environment variables');
-
-    const url = `${GEMINI_BASE_URL}/models/${GEMINI_MODEL}:generateContent`;
+    const apiKey = process.env.GROQ_API_KEY;
+    if (!apiKey) throw new Error('GROQ_API_KEY is missing from environment variables');
 
     let data;
     try {
         const response = await axios.post(
-            url,
+            `${GROQ_BASE_URL}/chat/completions`,
             {
-                contents: [{ parts: [{ text: prompt }] }],
-                generationConfig: {
-                    temperature: 0.3,
-                    responseMimeType: 'application/json',
-                },
+                model: GROQ_MODEL,
+                messages: [{ role: 'user', content: prompt }],
+                response_format: { type: 'json_object' },
+                temperature: 0.3,
             },
             {
                 headers: {
                     'Content-Type': 'application/json',
-                    'X-goog-api-key': apiKey,
+                    'Authorization': `Bearer ${apiKey}`,
                 },
                 timeout: 60000,
             }
@@ -48,25 +45,23 @@ export async function callGeminiAndParse(prompt) {
         const status = err?.response?.status;
         const details = err?.response?.data
             ? JSON.stringify(err.response.data)
-            : err?.message || 'Unknown Gemini error';
-        throw new Error(`Gemini request failed${status ? ` (${status})` : ''}: ${details}`);
+            : err?.message || 'Unknown Groq error';
+        throw new Error(`Groq request failed${status ? ` (${status})` : ''}: ${details}`);
     }
 
-    console.log('[Gemini] Raw response:', JSON.stringify(data, null, 2));
-
-    const text = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+    const text = data?.choices?.[0]?.message?.content;
     if (!text) {
-        const finishReason = data?.candidates?.[0]?.finishReason;
-        throw new Error(`Empty Gemini response — finishReason: ${finishReason ?? 'unknown'}`);
+        const finishReason = data?.choices?.[0]?.finish_reason;
+        throw new Error(`Empty Groq response — finish_reason: ${finishReason ?? 'unknown'}`);
     }
 
-    // Strip markdown fences in case Gemini ignores responseMimeType
+    // Strip markdown fences as safety net
     const clean = text.replace(/```json\s*/gi, '').replace(/```\s*/gi, '').trim();
 
     try {
         return JSON.parse(clean);
     } catch (e) {
-        console.error('[Gemini] JSON parse failed. Raw text:', clean);
-        throw new Error(`Gemini returned invalid JSON: ${e.message}`);
+        console.error('[Groq] JSON parse failed. Raw text:', clean);
+        throw new Error(`Groq returned invalid JSON: ${e.message}`);
     }
 }
