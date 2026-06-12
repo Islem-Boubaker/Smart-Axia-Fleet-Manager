@@ -47,12 +47,18 @@
         "min_length": "Le nouveau mot de passe doit contenir au moins 6 caractères.",
         "mismatch": "Les mots de passe ne correspondent pas.",
         "unavailable": "Le changement de mot de passe est temporairement indisponible."
-      }
+      },
+      "toast_updating": "Mise à jour du mot de passe…",
+      "toast_success": "Mot de passe modifié avec succès",
+      "toast_failed": "Échec de la modification. Veuillez réessayer."
     },
     "notifications": {
       "email": "E-mail",
       "push": "Notifications push",
       "save": "Enregistrer les préférences",
+      "toast_saving": "Enregistrement des préférences…",
+      "toast_success": "Préférences enregistrées avec succès",
+      "toast_failed": "Échec de l'enregistrement. Veuillez réessayer.",
       "items": {
         "emailTrips": "Trajets",
         "emailMaintenance": "Maintenance",

@@ -47,12 +47,18 @@
         "min_length": "New password must be at least 6 characters.",
         "mismatch": "Passwords do not match.",
         "unavailable": "Password change is currently unavailable."
-      }
+      },
+      "toast_updating": "Updating password…",
+      "toast_success": "Password changed successfully",
+      "toast_failed": "Failed to change password. Please try again."
     },
     "notifications": {
       "email": "Email",
       "push": "Push notifications",
       "save": "Save preferences",
+      "toast_saving": "Saving preferences…",
+      "toast_success": "Preferences saved successfully",
+      "toast_failed": "Failed to save preferences. Please try again.",
       "items": {
         "emailTrips": "Trips",
         "emailMaintenance": "Maintenance",
